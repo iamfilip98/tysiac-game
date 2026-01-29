@@ -1,3 +1,5 @@
 {
-  "framework": "nextjs"
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && npm install -g pnpm && pnpm install",
+  "buildCommand": "cd ../.. && pnpm build --filter=@tysiac/shared && pnpm build --filter=@tysiac/web"
 }
