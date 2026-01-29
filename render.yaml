@@ -1,0 +1,29 @@
+# Render Blueprint for Tysiąc Game Backend
+# Deploy at: https://dashboard.render.com/select-repo?type=blueprint
+
+databases:
+  - name: tysiac-db
+    databaseName: tysiac
+    plan: free
+    region: frankfurt
+
+services:
+  - type: web
+    name: tysiac-server
+    runtime: node
+    region: frankfurt
+    plan: free
+    buildCommand: pnpm install && pnpm build --filter=@tysiac/shared && pnpm build --filter=@tysiac/server
+    startCommand: node apps/server/dist/index.js
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: tysiac-db
+          property: connectionString
+      - key: PORT
+        value: 3001
+      - key: CORS_ORIGIN
+        sync: false # Set this to your Vercel frontend URL after deployment
+      - key: NODE_ENV
+        value: production
