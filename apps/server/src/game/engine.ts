@@ -296,8 +296,9 @@ export class GameEngine {
 
     this.broadcastState();
 
-    // Player still needs to play a card (should play Queen)
-    this.promptCurrentPlayer();
+    // Auto-play the Queen of the marriage suit
+    const queen: Card = { suit, rank: 'Q' };
+    this.handlePlayCard(playerId, queen);
   }
 
   handlePlayCard(playerId: string, card: Card): void {

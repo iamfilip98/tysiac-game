@@ -129,6 +129,9 @@ export function setupSocketHandlers(io: TypedServer) {
       const engine = new GameEngine(game, io, room.id);
       gameEngines.set(game.id, engine);
 
+      // Emit game:started event to all players
+      io.to(room.id).emit('game:started', { gameId: game.id });
+
       // Start the game
       engine.startGame();
     });

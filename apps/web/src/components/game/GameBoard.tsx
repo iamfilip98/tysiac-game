@@ -16,10 +16,10 @@ import { cn } from '@/lib/utils';
 import type { Card as CardType, Suit } from '@tysiac/shared';
 
 const MARRIAGE_VALUES: Record<Suit, number> = {
-  clubs: 40,
-  diamonds: 60,
-  hearts: 80,
-  spades: 100,
+  spades: 40,
+  clubs: 60,
+  diamonds: 80,
+  hearts: 100,
 };
 
 export function GameBoard() {
@@ -48,9 +48,15 @@ export function GameBoard() {
 
   // Get current player info
   const myPlayer = gameState?.players.find((p) => p.id === playerId);
+  // Order other players: left = next player (clockwise), right = previous player
   const otherPlayers = useMemo(() => {
     if (!gameState || !playerId) return [];
-    return gameState.players.filter((p) => p.id !== playerId);
+    const myIndex = gameState.players.findIndex((p) => p.id === playerId);
+    if (myIndex === -1) return [];
+    // Player to the left plays after me (clockwise), player to the right plays before me
+    const leftPlayer = gameState.players[(myIndex + 1) % 3];
+    const rightPlayer = gameState.players[(myIndex + 2) % 3];
+    return [leftPlayer, rightPlayer];
   }, [gameState, playerId]);
 
   // Marriage action check
@@ -98,8 +104,8 @@ export function GameBoard() {
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
 
-      {/* Score board - top right */}
-      <div className="absolute top-4 right-4 z-20">
+      {/* Score board - top center */}
+      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
         <ScoreBoard
           players={gameState.players}
           scores={scores}

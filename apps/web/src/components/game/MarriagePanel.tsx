@@ -14,10 +14,10 @@ interface MarriagePanelProps {
 }
 
 const MARRIAGE_VALUES: Record<Suit, number> = {
-  clubs: 40,
-  diamonds: 60,
-  hearts: 80,
-  spades: 100,
+  spades: 40,
+  clubs: 60,
+  diamonds: 80,
+  hearts: 100,
 };
 
 export function MarriagePanel({

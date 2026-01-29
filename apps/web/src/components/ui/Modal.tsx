@@ -37,6 +37,7 @@ export function Modal({ isOpen, onClose, children, className, showOverlay = true
             className={cn(
               'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
               'w-full max-w-md p-6',
+              'max-h-[90vh] overflow-y-auto',
               'bg-gradient-to-b from-table-800 to-table-900',
               'border border-table-600 rounded-2xl',
               'shadow-2xl',

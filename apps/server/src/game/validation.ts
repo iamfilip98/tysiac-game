@@ -2,10 +2,10 @@ import type { Card, Suit, GameState, TrickState } from '@tysiac/shared';
 import { RANK_STRENGTH, getTotalMarriageValue, hasMarriage } from '@tysiac/shared';
 
 /**
- * Card play validation for Polish Tysiąc with custom rules:
- * - 1st player: Must follow suit AND beat if possible
- * - 2nd player: Free play (any card)
- * - 3rd player: Free play UNLESS 2nd player couldn't follow suit (then must follow/beat)
+ * Card play validation for Polish Tysiąc:
+ * - All players must follow suit if they can
+ * - Must beat highest card if possible when following suit
+ * - If can't follow suit, must trump if possible
  */
 
 export interface ValidationResult {
@@ -17,7 +17,7 @@ export function getValidCards(
   hand: Card[],
   trick: TrickState,
   trumpSuit: Suit | null,
-  game: GameState
+  _game: GameState
 ): Card[] {
   // If first to play, any card is valid
   if (trick.cards.length === 0) {
@@ -25,40 +25,11 @@ export function getValidCards(
   }
 
   const leadSuit = trick.leadSuit!;
-  const cardsInSuit = hand.filter(c => c.suit === leadSuit);
-  const trumpCards = trumpSuit ? hand.filter(c => c.suit === trumpSuit) : [];
 
   // Get highest card played so far
   const highestCard = getHighestCardInTrick(trick.cards.map(c => c.card), leadSuit, trumpSuit);
 
-  // Position in trick (0-indexed: 0=first, 1=second, 2=third)
-  const position = trick.cards.length;
-
-  if (position === 1) {
-    // 2nd player: FREE PLAY - any card is valid
-    return [...hand];
-  }
-
-  if (position === 2) {
-    // 3rd player: Check if 2nd player could follow suit
-    const secondPlayerCard = trick.cards[1].card;
-    const secondPlayerId = trick.cards[1].playerId;
-
-    // Get 2nd player's hand at the time they played
-    const secondPlayerHand = getPlayerHandBeforePlay(game, secondPlayerId, secondPlayerCard);
-    const secondPlayerCouldFollowSuit = secondPlayerHand.some(c => c.suit === leadSuit);
-
-    if (!secondPlayerCouldFollowSuit) {
-      // 2nd couldn't follow suit, so 3rd must follow standard rules
-      return getCardsFollowingStandardRules(hand, leadSuit, trumpSuit, highestCard);
-    } else {
-      // 2nd could follow suit, so 3rd has free play
-      return [...hand];
-    }
-  }
-
-  // 1st player after lead (shouldn't happen as lead is position 0)
-  // Default to standard rules
+  // All players must follow standard rules: follow suit if possible, beat if possible
   return getCardsFollowingStandardRules(hand, leadSuit, trumpSuit, highestCard);
 }
 
@@ -110,13 +81,6 @@ function getCardsFollowingStandardRules(
 
   // Can't follow suit or trump, any card is valid
   return [...hand];
-}
-
-function getPlayerHandBeforePlay(game: GameState, playerId: string, cardPlayed: Card): Card[] {
-  // This reconstructs what the player's hand was before they played
-  // For simplicity, we assume the current hand + the played card
-  const currentHand = game.currentRound!.players[playerId].hand;
-  return [...currentHand, cardPlayed];
 }
 
 export function canBeat(
