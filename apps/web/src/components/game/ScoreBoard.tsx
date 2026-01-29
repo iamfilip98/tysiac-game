@@ -1,0 +1,151 @@
+'use client';
+
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { getSuitSymbol } from '@/lib/utils';
+import type { Suit } from '@tysiac/shared';
+
+interface ScoreBoardProps {
+  players: { id: string; name: string; isAI: boolean }[];
+  scores: Record<
+    string,
+    { totalScore: number; roundScores: number[]; isOnBarrel: boolean }
+  >;
+  currentPlayerId: string;
+  bidWinner?: string | null;
+  finalBid?: number;
+  trumpSuit?: Suit | null;
+}
+
+export function ScoreBoard({
+  players,
+  scores,
+  currentPlayerId,
+  bidWinner,
+  finalBid,
+  trumpSuit,
+}: ScoreBoardProps) {
+  return (
+    <div className="bg-table-900/90 backdrop-blur border border-table-600 rounded-xl p-4 min-w-[200px]">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-3 pb-2 border-b border-table-600">
+        <h3 className="text-sm font-semibold text-white/80">Scores</h3>
+        {trumpSuit && (
+          <div className="flex items-center gap-1 text-sm">
+            <span className="text-white/60">Trump:</span>
+            <span
+              className={cn(
+                'text-lg',
+                trumpSuit === 'hearts' || trumpSuit === 'diamonds'
+                  ? 'text-red-500'
+                  : 'text-white'
+              )}
+            >
+              {getSuitSymbol(trumpSuit)}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {/* Players */}
+      <div className="space-y-2">
+        {players.map((player) => {
+          const score = scores[player.id];
+          const isMe = player.id === currentPlayerId;
+          const isBidder = bidWinner === player.id;
+
+          return (
+            <motion.div
+              key={player.id}
+              layout
+              className={cn(
+                'flex items-center justify-between p-2 rounded-lg',
+                isMe && 'bg-gold-500/10 ring-1 ring-gold-500/30',
+                isBidder && !isMe && 'bg-white/5'
+              )}
+            >
+              <div className="flex items-center gap-2">
+                {/* Player name */}
+                <span
+                  className={cn(
+                    'text-sm font-medium',
+                    isMe ? 'text-gold-400' : 'text-white'
+                  )}
+                >
+                  {player.name}
+                  {player.isAI && (
+                    <span className="ml-1 text-xs text-white/40">(AI)</span>
+                  )}
+                </span>
+
+                {/* Bid indicator */}
+                {isBidder && finalBid && (
+                  <span className="px-1.5 py-0.5 text-xs bg-gold-500/20 text-gold-400 rounded">
+                    {finalBid}
+                  </span>
+                )}
+              </div>
+
+              {/* Score */}
+              <div className="flex items-center gap-2">
+                {score?.isOnBarrel && (
+                  <motion.span
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-xs text-amber-400"
+                    title="On the barrel (800+)"
+                  >
+                    🛢️
+                  </motion.span>
+                )}
+                <span
+                  className={cn(
+                    'font-mono font-bold',
+                    score?.totalScore >= 800
+                      ? 'text-amber-400'
+                      : score?.totalScore < 0
+                      ? 'text-red-400'
+                      : 'text-white'
+                  )}
+                >
+                  {score?.totalScore ?? 0}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })}
+      </div>
+
+      {/* Goal reminder */}
+      <div className="mt-3 pt-2 border-t border-table-600 text-center text-xs text-white/40">
+        First to 1000 wins!
+      </div>
+    </div>
+  );
+}
+
+// Compact inline score display
+interface InlineScoreProps {
+  score: number;
+  isOnBarrel?: boolean;
+  className?: string;
+}
+
+export function InlineScore({ score, isOnBarrel, className }: InlineScoreProps) {
+  return (
+    <span
+      className={cn(
+        'font-mono font-medium',
+        score >= 800
+          ? 'text-amber-400'
+          : score < 0
+          ? 'text-red-400'
+          : 'text-green-400',
+        className
+      )}
+    >
+      {score}
+      {isOnBarrel && ' 🛢️'}
+    </span>
+  );
+}

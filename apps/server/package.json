@@ -1,0 +1,33 @@
+{
+  "name": "@tysiac/server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio"
+  },
+  "dependencies": {
+    "@tysiac/shared": "workspace:*",
+    "fastify": "^4.26.0",
+    "@fastify/cors": "^9.0.0",
+    "socket.io": "^4.7.0",
+    "xstate": "^5.9.0",
+    "drizzle-orm": "^0.30.0",
+    "postgres": "^3.4.0",
+    "nanoid": "^5.0.0",
+    "dotenv": "^16.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "drizzle-kit": "^0.20.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.4.0"
+  }
+}

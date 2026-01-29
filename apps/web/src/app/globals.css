@@ -1,0 +1,175 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 5 46% 4%;
+  --foreground: 0 0% 95%;
+}
+
+@layer base {
+  body {
+    @apply bg-table-950 text-white antialiased;
+    background-image: radial-gradient(circle at 50% 50%, #1a3d2b 0%, #052e16 100%);
+    min-height: 100vh;
+  }
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
+/* Card table felt texture */
+.felt-texture {
+  background-image:
+    radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* Electric border animation */
+.electric-border {
+  --border-color: #fbbf24;
+  --glow-color: rgba(251, 191, 36, 0.5);
+  position: relative;
+}
+
+.electric-border::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  padding: 2px;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    var(--border-color) 0%,
+    transparent 30%,
+    var(--border-color) 50%,
+    transparent 70%,
+    var(--border-color) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  filter: drop-shadow(0 0 10px var(--glow-color));
+}
+
+/* Card styles */
+.playing-card {
+  @apply relative rounded-lg overflow-hidden transition-all duration-200;
+  aspect-ratio: 2.5 / 3.5;
+  background: linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%);
+  box-shadow:
+    0 4px 6px -1px rgba(0, 0, 0, 0.3),
+    0 2px 4px -1px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.playing-card.red {
+  --card-color: #dc2626;
+}
+
+.playing-card.black {
+  --card-color: #1a1a1a;
+}
+
+.playing-card:hover {
+  transform: translateY(-8px);
+  box-shadow:
+    0 10px 15px -3px rgba(0, 0, 0, 0.3),
+    0 4px 6px -2px rgba(0, 0, 0, 0.2);
+}
+
+.playing-card.selected {
+  transform: translateY(-16px);
+  box-shadow:
+    0 15px 20px -5px rgba(0, 0, 0, 0.4),
+    0 0 20px rgba(251, 191, 36, 0.5);
+}
+
+/* Card back pattern */
+.card-back {
+  background:
+    repeating-linear-gradient(
+      45deg,
+      #1e3a5f 0px,
+      #1e3a5f 10px,
+      #2d4a6f 10px,
+      #2d4a6f 20px
+    );
+  position: relative;
+}
+
+.card-back::after {
+  content: '';
+  position: absolute;
+  inset: 4px;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+/* Suit colors */
+.suit-hearts, .suit-diamonds {
+  color: #dc2626;
+}
+
+.suit-clubs, .suit-spades {
+  color: #1a1a1a;
+}
+
+/* Glowing button */
+.btn-glow {
+  @apply relative overflow-hidden;
+}
+
+.btn-glow::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.2) 50%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s linear infinite;
+}
+
+/* Score display */
+.score-positive {
+  @apply text-green-400;
+}
+
+.score-negative {
+  @apply text-red-400;
+}
+
+.score-barrel {
+  @apply text-amber-400;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}

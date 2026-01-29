@@ -1,0 +1,20 @@
+{
+  "name": "tysiac-game",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "test": "turbo test",
+    "dev:web": "turbo dev --filter=@tysiac/web",
+    "dev:server": "turbo dev --filter=@tysiac/server",
+    "db:generate": "pnpm --filter=@tysiac/server db:generate",
+    "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
+    "db:push": "pnpm --filter=@tysiac/server db:push"
+  },
+  "devDependencies": {
+    "turbo": "^2.0.0",
+    "typescript": "^5.4.0"
+  }
+}
