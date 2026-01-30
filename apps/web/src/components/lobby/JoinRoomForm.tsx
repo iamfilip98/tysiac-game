@@ -53,8 +53,11 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
             error={error || undefined}
           />
 
-          {/* Spacer to match CreateRoomForm height (matches private room toggle) */}
-          <div className="h-6" aria-hidden="true" />
+          {/* Spacer to match CreateRoomForm height (matches private room toggle row) */}
+          <div className="flex items-center gap-3" aria-hidden="true">
+            <div className="w-12 h-6" />
+            <span className="text-sm text-transparent">Private room</span>
+          </div>
         </div>
 
         <Button
