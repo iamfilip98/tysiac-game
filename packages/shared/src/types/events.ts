@@ -36,6 +36,7 @@ export interface ClientToServerEvents {
   // Game events
   'game:bid': (amount: number) => void;
   'game:pass': () => void;
+  'game:confirmTalon': () => void;
   'game:distributeTalon': (distribution: { playerId: string; card: Card }[]) => void;
   'game:playCard': (card: Card) => void;
   'game:declareMarriage': (suit: Suit) => void;

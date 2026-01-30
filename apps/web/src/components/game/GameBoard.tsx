@@ -57,6 +57,7 @@ export function GameBoard() {
     playCard,
     declareMarriage,
     distributeTalon,
+    confirmTalon,
     leaveRoom,
     startGame,
   } = useSocket();
@@ -80,6 +81,16 @@ export function GameBoard() {
     marriageAction &&
     marriageAction.type === 'declareMarriage' &&
     gameState?.round?.currentTrick?.cards.length === 0;
+
+  // Track talon confirmation state
+  const [hasConfirmedTalon, setHasConfirmedTalon] = useState(false);
+
+  // Reset confirmation state when phase changes
+  useEffect(() => {
+    if (gameState?.phase !== 'talonReveal') {
+      setHasConfirmedTalon(false);
+    }
+  }, [gameState?.phase]);
 
   // Get my declared marriages
   const myDeclaredMarriages = playerId
@@ -137,10 +148,10 @@ export function GameBoard() {
         />
       </div>
 
-      {/* Round info - top left */}
+      {/* Round info - centered under ScoreBoard */}
       {round && (
-        <div className="absolute top-4 left-4 z-20">
-          <div className="bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-3">
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20">
+          <div className="bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-3 text-center">
             <div className="text-sm text-white/60">Round {round.roundNumber}</div>
             <div className="text-xs text-white/60 mt-1">
               Dealer:{' '}
@@ -220,8 +231,31 @@ export function GameBoard() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
+              className="flex flex-col items-center gap-4"
             >
               <TalonDisplay talon={talon} isRevealed={true} />
+              {!hasConfirmedTalon && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  onClick={() => {
+                    setHasConfirmedTalon(true);
+                    confirmTalon();
+                  }}
+                  className="px-6 py-2 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-colors shadow-lg"
+                >
+                  Continue
+                </motion.button>
+              )}
+              {hasConfirmedTalon && (
+                <motion.div
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-white/60 text-sm"
+                >
+                  Waiting for other players...
+                </motion.div>
+              )}
             </motion.div>
           )}
 

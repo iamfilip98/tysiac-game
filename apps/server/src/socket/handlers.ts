@@ -176,14 +176,20 @@ export function setupSocketHandlers(io: TypedServer) {
           }
 
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.setPlayerReady(playerId, isReady);
           if (room) {
             io.to(room.id).emit('room:updated', room);
+          } else {
+            socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
           }
         } catch (error) {
           console.error('Error setting ready:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to set ready state' });
         }
       });
     });
@@ -192,7 +198,10 @@ export function setupSocketHandlers(io: TypedServer) {
       withRateLimit(socket, 'room:addAI', () => {
         try {
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
           if (!room || room.hostId !== playerId) {
@@ -220,7 +229,10 @@ export function setupSocketHandlers(io: TypedServer) {
           }
 
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
           if (!room || room.hostId !== playerId) {
@@ -243,29 +255,49 @@ export function setupSocketHandlers(io: TypedServer) {
       withRateLimit(socket, 'room:startGame', () => {
         try {
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            console.log('[room:startGame] Failed: No playerId for socket', socket.id);
+            socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room to start the game' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
-          if (!room || room.hostId !== playerId) {
+          if (!room) {
+            console.log('[room:startGame] Failed: No room found for player', playerId);
+            socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+            return;
+          }
+
+          if (room.hostId !== playerId) {
+            console.log('[room:startGame] Failed: Player is not host', { playerId, hostId: room.hostId });
             socket.emit('room:error', { code: 'NOT_HOST', message: 'Only the host can start the game' });
             return;
           }
 
           // Prevent race condition with lock
           if (gameCreationLocks.has(room.id)) {
+            console.log('[room:startGame] Failed: Game creation already in progress for room', room.id);
             socket.emit('room:error', { code: 'GAME_STARTING', message: 'Game is already starting' });
             return;
           }
 
           if (room.gameId) {
+            console.log('[room:startGame] Failed: Game already exists', { roomId: room.id, gameId: room.gameId });
             socket.emit('room:error', { code: 'GAME_EXISTS', message: 'Game already exists' });
             return;
           }
 
           if (!roomService.canStartGame(room)) {
-            socket.emit('room:error', { code: 'CANNOT_START', message: 'Cannot start game yet' });
+            console.log('[room:startGame] Failed: canStartGame returned false', {
+              roomId: room.id,
+              playerCount: room.players.length,
+              readyStatus: room.players.map(p => ({ id: p.id, name: p.name, isReady: p.isReady, isAI: p.isAI }))
+            });
+            socket.emit('room:error', { code: 'CANNOT_START', message: 'Cannot start game yet - need 3 players and all human players must be ready' });
             return;
           }
+
+          console.log('[room:startGame] Starting game for room', room.id);
 
           // Set lock
           gameCreationLocks.add(room.id);
@@ -309,13 +341,22 @@ export function setupSocketHandlers(io: TypedServer) {
           }
 
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
-          if (!room || !room.gameId) return;
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
 
           const engine = gameEngines.get(room.gameId);
-          if (!engine) return;
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
 
           engine.handleBid(playerId, parsed.data);
         } catch (error) {
@@ -329,18 +370,56 @@ export function setupSocketHandlers(io: TypedServer) {
       withRateLimit(socket, 'game:pass', () => {
         try {
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
-          if (!room || !room.gameId) return;
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
 
           const engine = gameEngines.get(room.gameId);
-          if (!engine) return;
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
 
           engine.handlePass(playerId);
         } catch (error) {
           console.error('Error handling pass:', error);
           socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to process pass' });
+        }
+      });
+    });
+
+    socket.on('game:confirmTalon', () => {
+      withRateLimit(socket, 'game:confirmTalon', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
+
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
+
+          engine.handleConfirmTalon(playerId);
+        } catch (error) {
+          console.error('Error confirming talon:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to confirm talon' });
         }
       });
     });
@@ -355,13 +434,22 @@ export function setupSocketHandlers(io: TypedServer) {
           }
 
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
-          if (!room || !room.gameId) return;
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
 
           const engine = gameEngines.get(room.gameId);
-          if (!engine) return;
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
 
           engine.handleDistributeTalon(playerId, parsed.data);
         } catch (error) {
@@ -381,13 +469,22 @@ export function setupSocketHandlers(io: TypedServer) {
           }
 
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
-          if (!room || !room.gameId) return;
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
 
           const engine = gameEngines.get(room.gameId);
-          if (!engine) return;
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
 
           engine.handlePlayCard(playerId, parsed.data);
         } catch (error) {
@@ -407,13 +504,22 @@ export function setupSocketHandlers(io: TypedServer) {
           }
 
           const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
 
           const room = roomService.getRoomByPlayerId(playerId);
-          if (!room || !room.gameId) return;
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
 
           const engine = gameEngines.get(room.gameId);
-          if (!engine) return;
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
 
           engine.handleDeclareMarriage(playerId, parsed.data);
         } catch (error) {

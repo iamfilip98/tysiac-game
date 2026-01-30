@@ -23,10 +23,10 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
   };
 
   return (
-    <ElectricBorder active={false}>
+    <ElectricBorder active color="#3b82f6">
       <form
         onSubmit={handleSubmit}
-        className="bg-table-900/90 backdrop-blur p-6 rounded-xl border border-table-600"
+        className="bg-table-900/90 backdrop-blur p-6 rounded-xl"
       >
         <h2 className="text-xl font-bold text-white mb-4">Join Room</h2>
 

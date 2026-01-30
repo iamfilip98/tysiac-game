@@ -132,61 +132,83 @@ export function useSocket() {
     };
   }, []);
 
+  // Helper to check connection and emit with error handling
+  const safeEmit = useCallback((
+    event: string,
+    ...args: unknown[]
+  ): boolean => {
+    const socket = socketRef.current;
+    if (!socket?.connected) {
+      setError('Not connected to server. Please refresh the page.');
+      return false;
+    }
+    (socket.emit as (event: string, ...args: unknown[]) => void)(event, ...args);
+    return true;
+  }, [setError]);
+
   // Room actions
   const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean) => {
-    socketRef.current?.emit('room:create', { playerName, roomName, isPrivate });
-  }, []);
+    safeEmit('room:create', { playerName, roomName, isPrivate });
+  }, [safeEmit]);
 
   const joinRoom = useCallback((playerName: string, roomCode: string) => {
-    socketRef.current?.emit('room:join', { playerName, roomCode });
-  }, []);
+    safeEmit('room:join', { playerName, roomCode });
+  }, [safeEmit]);
 
   const leaveRoom = useCallback(() => {
-    socketRef.current?.emit('room:leave');
+    safeEmit('room:leave');
     resetRoom();
     resetGame();
-  }, [resetRoom, resetGame]);
+  }, [safeEmit, resetRoom, resetGame]);
 
   const setReady = useCallback((isReady: boolean) => {
-    socketRef.current?.emit('room:ready', isReady);
-  }, []);
+    safeEmit('room:ready', isReady);
+  }, [safeEmit]);
 
   const addAI = useCallback(() => {
-    socketRef.current?.emit('room:addAI');
-  }, []);
+    safeEmit('room:addAI');
+  }, [safeEmit]);
 
   const removeAI = useCallback((aiId: string) => {
-    socketRef.current?.emit('room:removeAI', aiId);
-  }, []);
+    safeEmit('room:removeAI', aiId);
+  }, [safeEmit]);
 
   const startGame = useCallback(() => {
-    socketRef.current?.emit('room:startGame');
-  }, []);
+    safeEmit('room:startGame');
+  }, [safeEmit]);
 
   // Game actions
   const bid = useCallback((amount: number) => {
-    socketRef.current?.emit('game:bid', amount);
-    setValidActions([]);
-  }, [setValidActions]);
+    if (safeEmit('game:bid', amount)) {
+      setValidActions([]);
+    }
+  }, [safeEmit, setValidActions]);
 
   const pass = useCallback(() => {
-    socketRef.current?.emit('game:pass');
-    setValidActions([]);
-  }, [setValidActions]);
+    if (safeEmit('game:pass')) {
+      setValidActions([]);
+    }
+  }, [safeEmit, setValidActions]);
 
   const distributeTalon = useCallback((distribution: { playerId: string; card: Card }[]) => {
-    socketRef.current?.emit('game:distributeTalon', distribution);
-    setValidActions([]);
-  }, [setValidActions]);
+    if (safeEmit('game:distributeTalon', distribution)) {
+      setValidActions([]);
+    }
+  }, [safeEmit, setValidActions]);
 
   const playCard = useCallback((card: Card) => {
-    socketRef.current?.emit('game:playCard', card);
-    setValidActions([]);
-  }, [setValidActions]);
+    if (safeEmit('game:playCard', card)) {
+      setValidActions([]);
+    }
+  }, [safeEmit, setValidActions]);
 
   const declareMarriage = useCallback((suit: Suit) => {
-    socketRef.current?.emit('game:declareMarriage', suit);
-  }, []);
+    safeEmit('game:declareMarriage', suit);
+  }, [safeEmit]);
+
+  const confirmTalon = useCallback(() => {
+    safeEmit('game:confirmTalon');
+  }, [safeEmit]);
 
   return {
     // Room actions
@@ -201,6 +223,7 @@ export function useSocket() {
     // Game actions
     bid,
     pass,
+    confirmTalon,
     distributeTalon,
     playCard,
     declareMarriage,

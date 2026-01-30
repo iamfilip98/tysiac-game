@@ -161,7 +161,13 @@ export function RoomLobby({
                     onRemove={() => onRemoveAI(slot.id)}
                   />
                 ) : (
-                  <EmptySlot key={`empty-${index}`} />
+                  <EmptySlot
+                    key={`empty-${index}`}
+                    isHost={isHost}
+                    canAddAI={canAddAI}
+                    isAddingAI={isAddingAI}
+                    onAddAI={handleAddAI}
+                  />
                 )
               )}
             </div>
@@ -184,21 +190,9 @@ export function RoomLobby({
             {/* Host actions - Start Game is now a separate prominent button */}
             {isHost && (
               <>
-                {/* Add AI button - only show if room not full */}
-                {canAddAI && (
-                  <Button
-                    variant="secondary"
-                    onClick={handleAddAI}
-                    disabled={isAddingAI}
-                    className="w-full"
-                    aria-busy={isAddingAI}
-                  >
-                    {isAddingAI ? 'Adding...' : 'Add AI Player'}
-                  </Button>
-                )}
-
-                {/* Start Game - prominent, separate button */}
+                {/* Start Game - prominent, separate button with extra top margin */}
                 <motion.div
+                  className="mt-4 pt-4 border-t border-table-600"
                   animate={canStart ? { scale: [1, 1.02, 1] } : {}}
                   transition={{ duration: 1.5, repeat: canStart ? Infinity : 0 }}
                 >
@@ -241,7 +235,14 @@ export function RoomLobby({
 }
 
 // Empty slot component with fixed height matching PlayerSlot
-function EmptySlot() {
+interface EmptySlotProps {
+  isHost: boolean;
+  canAddAI: boolean;
+  isAddingAI: boolean;
+  onAddAI: () => void;
+}
+
+function EmptySlot({ isHost, canAddAI, isAddingAI, onAddAI }: EmptySlotProps) {
   return (
     <div
       className={cn(
@@ -252,7 +253,24 @@ function EmptySlot() {
       role="listitem"
       aria-label="Empty player slot"
     >
-      Waiting for player...
+      {isHost && canAddAI ? (
+        <button
+          onClick={onAddAI}
+          disabled={isAddingAI}
+          className={cn(
+            'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors',
+            'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300',
+            'border border-purple-500/30 hover:border-purple-500/50',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+          aria-busy={isAddingAI}
+        >
+          <span className="text-lg">🤖</span>
+          {isAddingAI ? 'Adding...' : 'Add AI'}
+        </button>
+      ) : (
+        'Waiting for player...'
+      )}
     </div>
   );
 }

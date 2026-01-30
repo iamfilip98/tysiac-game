@@ -17,6 +17,9 @@ export class GameEngine {
   private currentBidder: string = '';
   private passedPlayers: string[] = [];
 
+  // Talon confirmation tracking
+  private talonConfirmations: Set<string> = new Set();
+
   // Track all timers for cleanup
   private activeTimers: Set<NodeJS.Timeout> = new Set();
   private isCleanedUp: boolean = false;
@@ -241,19 +244,51 @@ export class GameEngine {
     const round = this.game.currentRound!;
     round.talonRevealed = true;
 
+    // Reset talon confirmations
+    this.talonConfirmations.clear();
+
     this.broadcastState();
 
-    // Add talon to bid winner's hand
-    const bidWinnerId = round.bidWinner!;
-    round.players[bidWinnerId].hand.push(...round.talon);
-    round.cardsToDistribute = [...round.talon];
+    // Auto-confirm for AI players
+    for (const player of this.game.players) {
+      if (player.isAI) {
+        this.talonConfirmations.add(player.id);
+      }
+    }
 
-    this.safeSetTimeout(() => {
-      if (this.isCleanedUp) return;
-      this.game.phase = 'talonDistribution';
-      this.broadcastState();
-      this.promptCurrentPlayer();
-    }, 1000);
+    // Check if all human players already confirmed (all AI)
+    this.checkTalonConfirmations();
+  }
+
+  handleConfirmTalon(playerId: string): void {
+    if (this.isCleanedUp) return;
+    if (this.game.phase !== 'talonReveal') return;
+
+    // Add player confirmation
+    this.talonConfirmations.add(playerId);
+    this.checkTalonConfirmations();
+  }
+
+  private checkTalonConfirmations(): void {
+    if (this.isCleanedUp) return;
+
+    // Check if all players have confirmed
+    const allConfirmed = this.game.players.every(p => this.talonConfirmations.has(p.id));
+
+    if (allConfirmed) {
+      // Add talon to bid winner's hand and proceed to distribution
+      const round = this.game.currentRound!;
+      const bidWinnerId = round.bidWinner!;
+      round.players[bidWinnerId].hand.push(...round.talon);
+      round.cardsToDistribute = [...round.talon];
+
+      this.safeSetTimeout(() => {
+        if (this.isCleanedUp) return;
+        this.game.phase = 'talonDistribution';
+        this.broadcastState();
+        this.promptCurrentPlayer();
+      }, 500);
+    }
   }
 
   handleDistributeTalon(playerId: string, distribution: { playerId: string; card: Card }[]): void {
