@@ -52,6 +52,9 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
             required
             error={error || undefined}
           />
+
+          {/* Spacer to match CreateRoomForm height (matches private room toggle) */}
+          <div className="h-6" aria-hidden="true" />
         </div>
 
         <Button
