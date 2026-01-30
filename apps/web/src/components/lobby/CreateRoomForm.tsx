@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn } from '@/lib/utils';
 
 interface CreateRoomFormProps {
@@ -25,7 +24,7 @@ export function CreateRoomForm({ onSubmit, isLoading }: CreateRoomFormProps) {
   };
 
   return (
-    <ElectricBorder active color="#22c55e">
+    <div className="rounded-xl border-2 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
       <form
         onSubmit={handleSubmit}
         className="bg-table-900/90 backdrop-blur p-6 rounded-xl"
@@ -81,6 +80,6 @@ export function CreateRoomForm({ onSubmit, isLoading }: CreateRoomFormProps) {
           {isLoading ? 'Creating...' : 'Create Room'}
         </Button>
       </form>
-    </ElectricBorder>
+    </div>
   );
 }

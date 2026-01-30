@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { ElectricBorder } from '@/components/ui/ElectricBorder';
 
 interface JoinRoomFormProps {
   onSubmit: (playerName: string, roomCode: string) => void;
@@ -23,7 +22,7 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
   };
 
   return (
-    <ElectricBorder active color="#3b82f6">
+    <div className="rounded-xl border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
       <form
         onSubmit={handleSubmit}
         className="bg-table-900/90 backdrop-blur p-6 rounded-xl"
@@ -48,7 +47,7 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
             value={roomCode}
             onChange={(e) => setRoomCode(e.target.value.toUpperCase())}
             maxLength={6}
-            className="font-mono tracking-widest text-center text-lg"
+            className="font-mono tracking-widest text-center uppercase"
             required
             error={error || undefined}
           />
@@ -69,6 +68,6 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
           {isLoading ? 'Joining...' : 'Join Room'}
         </Button>
       </form>
-    </ElectricBorder>
+    </div>
   );
 }
