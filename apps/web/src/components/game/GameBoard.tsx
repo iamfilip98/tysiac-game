@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayerHand, OpponentHand } from './PlayerHand';
 import { TrickPile } from './TrickPile';
@@ -15,6 +15,20 @@ import { useSocket } from '@/hooks/useSocket';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, Suit } from '@tysiac/shared';
 
+// Hook to track screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 const MARRIAGE_VALUES: Record<Suit, number> = {
   spades: 40,
   clubs: 60,
@@ -23,6 +37,7 @@ const MARRIAGE_VALUES: Record<Suit, number> = {
 };
 
 export function GameBoard() {
+  const isMobile = useIsMobile();
   const { playerId } = useRoomStore();
   const {
     gameState,
@@ -77,8 +92,14 @@ export function GameBoard() {
 
   if (!gameState || !playerId) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-white/60">Loading game...</div>
+      <div className="flex items-center justify-center h-screen" role="status" aria-label="Loading game">
+        <div className="text-white/80 flex items-center gap-3">
+          <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" aria-hidden="true">
+            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          Loading game...
+        </div>
       </div>
     );
   }
@@ -121,12 +142,12 @@ export function GameBoard() {
         <div className="absolute top-4 left-4 z-20">
           <div className="bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-3">
             <div className="text-sm text-white/60">Round {round.roundNumber}</div>
-            <div className="text-xs text-white/40 mt-1">
+            <div className="text-xs text-white/60 mt-1">
               Dealer:{' '}
               {gameState.players.find((p) => p.id === round.dealer)?.name}
             </div>
             {phase === 'trickPlaying' && (
-              <div className="text-xs text-white/40">
+              <div className="text-xs text-white/60">
                 Trick {round.completedTricks + 1} of 7
               </div>
             )}
@@ -145,7 +166,10 @@ export function GameBoard() {
       )}
 
       {/* Opponents */}
-      <div className="absolute top-24 left-8 z-10">
+      <div className={cn(
+        'absolute z-10',
+        isMobile ? 'top-20 left-2' : 'top-24 left-8'
+      )}>
         {otherPlayers[0] && (
           <OpponentHand
             cardCount={getOpponentHandSize(otherPlayers[0].id)}
@@ -158,7 +182,10 @@ export function GameBoard() {
         )}
       </div>
 
-      <div className="absolute top-24 right-8 z-10">
+      <div className={cn(
+        'absolute z-10',
+        isMobile ? 'top-20 right-2' : 'top-24 right-8'
+      )}>
         {otherPlayers[1] && (
           <OpponentHand
             cardCount={getOpponentHandSize(otherPlayers[1].id)}
@@ -217,7 +244,10 @@ export function GameBoard() {
       </div>
 
       {/* Action panels */}
-      <div className="absolute bottom-32 left-1/2 -translate-x-1/2 z-30">
+      <div className={cn(
+        'absolute left-1/2 -translate-x-1/2 z-30 w-full px-4 sm:w-auto sm:px-0',
+        isMobile ? 'bottom-28' : 'bottom-32'
+      )}>
         <AnimatePresence mode="wait">
           {/* Bidding panel */}
           {phase === 'bidding' && (
@@ -286,7 +316,10 @@ export function GameBoard() {
       </div>
 
       {/* Player's hand */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10">
+      <div className={cn(
+        'absolute left-1/2 -translate-x-1/2 z-10',
+        isMobile ? 'bottom-2' : 'bottom-4'
+      )}>
         <PlayerHand
           cards={myHand}
           validActions={validActions}
@@ -303,9 +336,14 @@ export function GameBoard() {
           initial={{ opacity: 0 }}
           animate={{ opacity: [0.5, 1, 0.5] }}
           transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-48 left-1/2 -translate-x-1/2 z-20"
+          className={cn(
+            'absolute left-1/2 -translate-x-1/2 z-20',
+            isMobile ? 'bottom-36' : 'bottom-48'
+          )}
+          role="status"
+          aria-live="assertive"
         >
-          <div className="px-4 py-2 bg-gold-500/20 border border-gold-500/50 rounded-full text-gold-400 text-sm">
+          <div className="px-4 py-2 bg-gold-500/20 border border-gold-500/50 rounded-full text-gold-400 text-sm font-medium">
             Your turn - select a card to play
           </div>
         </motion.div>

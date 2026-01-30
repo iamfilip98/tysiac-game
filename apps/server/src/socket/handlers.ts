@@ -4,6 +4,17 @@ import * as roomService from '../services/roomService.js';
 import * as gameService from '../services/gameService.js';
 import { GameEngine } from '../game/engine.js';
 import { getValidActions, getClientGameState } from '../game/stateManager.js';
+import { checkRateLimit, clearRateLimits } from '../security/rateLimit.js';
+import { createSession, validateSession, invalidatePlayerSession, getSessionToken } from '../security/session.js';
+import {
+  CreateRoomSchema,
+  JoinRoomSchema,
+  BidAmountSchema,
+  TalonDistributionSchema,
+  CardSchema,
+  SuitSchema,
+  ReconnectSchema,
+} from '../validation/schemas.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -12,261 +23,536 @@ type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
 const socketToPlayer = new Map<string, string>();
 const playerToSocket = new Map<string, string>();
 
-// Store game engines
+// Store game engines with cleanup callbacks
 const gameEngines = new Map<string, GameEngine>();
+
+// Track pending game creations to prevent race conditions
+const gameCreationLocks = new Set<string>();
+
+// Disconnect timeout tracking for graceful reconnection
+const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
+const DISCONNECT_GRACE_PERIOD = 60000; // 60 seconds
+
+// Helper to wrap handlers with rate limiting and error handling
+function withRateLimit<T>(
+  socket: TypedSocket,
+  eventName: string,
+  handler: () => T
+): T | undefined {
+  const { allowed, retryAfter } = checkRateLimit(socket.id, eventName);
+  if (!allowed) {
+    socket.emit('room:error', {
+      code: 'RATE_LIMITED',
+      message: `Too many requests. Try again in ${Math.ceil((retryAfter || 1000) / 1000)} seconds`,
+    });
+    return undefined;
+  }
+  return handler();
+}
+
+function cleanupGame(gameId: string, roomId: string): void {
+  const engine = gameEngines.get(gameId);
+  if (engine) {
+    engine.cleanup();
+    gameEngines.delete(gameId);
+  }
+  gameCreationLocks.delete(roomId);
+}
 
 export function setupSocketHandlers(io: TypedServer) {
   io.on('connection', (socket: TypedSocket) => {
     console.log(`Client connected: ${socket.id}`);
 
     // Room events
-    socket.on('room:create', ({ playerName, roomName, isPrivate }) => {
-      const playerId = `player-${socket.id}`;
-      socketToPlayer.set(socket.id, playerId);
-      playerToSocket.set(playerId, socket.id);
+    socket.on('room:create', (data) => {
+      withRateLimit(socket, 'room:create', () => {
+        try {
+          const parsed = CreateRoomSchema.safeParse(data);
+          if (!parsed.success) {
+            socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid room data' });
+            return;
+          }
 
-      const room = roomService.createRoom(playerId, playerName, roomName, isPrivate);
-      socket.join(room.id);
+          const { playerName, roomName, isPrivate } = parsed.data;
+          const playerId = `player-${socket.id}`;
 
-      socket.emit('room:created', room);
-      broadcastRoomList(io);
+          // Clear any existing mappings for this socket
+          const existingPlayer = socketToPlayer.get(socket.id);
+          if (existingPlayer) {
+            playerToSocket.delete(existingPlayer);
+            invalidatePlayerSession(existingPlayer);
+          }
+
+          socketToPlayer.set(socket.id, playerId);
+          playerToSocket.set(playerId, socket.id);
+
+          const room = roomService.createRoom(playerId, playerName, roomName, isPrivate);
+          const sessionToken = createSession(playerId, room.id);
+
+          socket.join(room.id);
+          socket.emit('room:created', { ...room, sessionToken });
+          broadcastRoomList(io);
+        } catch (error) {
+          console.error('Error creating room:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to create room' });
+        }
+      });
     });
 
-    socket.on('room:join', ({ playerName, roomCode }) => {
-      const room = roomService.getRoomByCode(roomCode);
+    socket.on('room:join', (data) => {
+      withRateLimit(socket, 'room:join', () => {
+        try {
+          const parsed = JoinRoomSchema.safeParse(data);
+          if (!parsed.success) {
+            socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid join data' });
+            return;
+          }
 
-      if (!room) {
-        socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
-        return;
-      }
+          const { playerName, roomCode } = parsed.data;
+          const room = roomService.getRoomByCode(roomCode);
 
-      if (room.players.length >= 3) {
-        socket.emit('room:error', { code: 'ROOM_FULL', message: 'Room is full' });
-        return;
-      }
+          if (!room) {
+            socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+            return;
+          }
 
-      if (room.gameId) {
-        socket.emit('room:error', { code: 'GAME_IN_PROGRESS', message: 'Game already in progress' });
-        return;
-      }
+          if (room.players.length >= 3) {
+            socket.emit('room:error', { code: 'ROOM_FULL', message: 'Room is full' });
+            return;
+          }
 
-      const playerId = `player-${socket.id}`;
-      socketToPlayer.set(socket.id, playerId);
-      playerToSocket.set(playerId, socket.id);
+          if (room.gameId) {
+            socket.emit('room:error', { code: 'GAME_IN_PROGRESS', message: 'Game already in progress' });
+            return;
+          }
 
-      const updatedRoom = roomService.joinRoom(room.id, playerId, playerName);
-      if (!updatedRoom) {
-        socket.emit('room:error', { code: 'JOIN_FAILED', message: 'Failed to join room' });
-        return;
-      }
+          const playerId = `player-${socket.id}`;
 
-      socket.join(updatedRoom.id);
-      socket.emit('room:joined', { room: updatedRoom, playerId });
+          // Clear any existing mappings for this socket
+          const existingPlayer = socketToPlayer.get(socket.id);
+          if (existingPlayer) {
+            playerToSocket.delete(existingPlayer);
+            invalidatePlayerSession(existingPlayer);
+          }
 
-      // Notify others
-      socket.to(updatedRoom.id).emit('room:updated', updatedRoom);
-      broadcastRoomList(io);
+          socketToPlayer.set(socket.id, playerId);
+          playerToSocket.set(playerId, socket.id);
+
+          const updatedRoom = roomService.joinRoom(room.id, playerId, playerName);
+          if (!updatedRoom) {
+            socket.emit('room:error', { code: 'JOIN_FAILED', message: 'Failed to join room' });
+            return;
+          }
+
+          const sessionToken = createSession(playerId, updatedRoom.id);
+
+          socket.join(updatedRoom.id);
+          socket.emit('room:joined', { room: updatedRoom, playerId, sessionToken });
+          socket.to(updatedRoom.id).emit('room:updated', updatedRoom);
+          broadcastRoomList(io);
+        } catch (error) {
+          console.error('Error joining room:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to join room' });
+        }
+      });
     });
 
     socket.on('room:leave', () => {
-      handlePlayerLeave(io, socket);
+      withRateLimit(socket, 'room:leave', () => {
+        try {
+          handlePlayerLeave(io, socket, true);
+        } catch (error) {
+          console.error('Error leaving room:', error);
+        }
+      });
     });
 
     socket.on('room:ready', (isReady) => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'room:ready', () => {
+        try {
+          if (typeof isReady !== 'boolean') {
+            socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid ready state' });
+            return;
+          }
 
-      const room = roomService.setPlayerReady(playerId, isReady);
-      if (room) {
-        io.to(room.id).emit('room:updated', room);
-      }
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
+
+          const room = roomService.setPlayerReady(playerId, isReady);
+          if (room) {
+            io.to(room.id).emit('room:updated', room);
+          }
+        } catch (error) {
+          console.error('Error setting ready:', error);
+        }
+      });
     });
 
     socket.on('room:addAI', () => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'room:addAI', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || room.hostId !== playerId) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || room.hostId !== playerId) {
+            socket.emit('room:error', { code: 'NOT_HOST', message: 'Only the host can add AI' });
+            return;
+          }
 
-      const updatedRoom = roomService.addAI(room.id);
-      if (updatedRoom) {
-        io.to(updatedRoom.id).emit('room:updated', updatedRoom);
-      }
+          const updatedRoom = roomService.addAI(room.id);
+          if (updatedRoom) {
+            io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+          }
+        } catch (error) {
+          console.error('Error adding AI:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to add AI' });
+        }
+      });
     });
 
     socket.on('room:removeAI', (aiId) => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'room:removeAI', () => {
+        try {
+          if (typeof aiId !== 'string') {
+            socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid AI ID' });
+            return;
+          }
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || room.hostId !== playerId) return;
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const updatedRoom = roomService.removeAI(room.id, aiId);
-      if (updatedRoom) {
-        io.to(updatedRoom.id).emit('room:updated', updatedRoom);
-      }
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || room.hostId !== playerId) {
+            socket.emit('room:error', { code: 'NOT_HOST', message: 'Only the host can remove AI' });
+            return;
+          }
+
+          const updatedRoom = roomService.removeAI(room.id, aiId);
+          if (updatedRoom) {
+            io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+          }
+        } catch (error) {
+          console.error('Error removing AI:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to remove AI' });
+        }
+      });
     });
 
     socket.on('room:startGame', () => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'room:startGame', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || room.hostId !== playerId) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || room.hostId !== playerId) {
+            socket.emit('room:error', { code: 'NOT_HOST', message: 'Only the host can start the game' });
+            return;
+          }
 
-      if (!roomService.canStartGame(room)) {
-        socket.emit('room:error', { code: 'CANNOT_START', message: 'Cannot start game yet' });
-        return;
-      }
+          // Prevent race condition with lock
+          if (gameCreationLocks.has(room.id)) {
+            socket.emit('room:error', { code: 'GAME_STARTING', message: 'Game is already starting' });
+            return;
+          }
 
-      // Create game
-      const players = room.players.map(p => ({ id: p.id, name: p.name, isAI: p.isAI }));
-      const game = gameService.createGame(room.id, players);
-      roomService.setGameId(room.id, game.id);
+          if (room.gameId) {
+            socket.emit('room:error', { code: 'GAME_EXISTS', message: 'Game already exists' });
+            return;
+          }
 
-      // Create game engine
-      const engine = new GameEngine(game, io, room.id);
-      gameEngines.set(game.id, engine);
+          if (!roomService.canStartGame(room)) {
+            socket.emit('room:error', { code: 'CANNOT_START', message: 'Cannot start game yet' });
+            return;
+          }
 
-      // Emit game:started event to all players
-      io.to(room.id).emit('game:started', { gameId: game.id });
+          // Set lock
+          gameCreationLocks.add(room.id);
 
-      // Start the game
-      engine.startGame();
+          // Create game
+          const players = room.players.map(p => ({ id: p.id, name: p.name, isAI: p.isAI }));
+          const game = gameService.createGame(room.id, players);
+          roomService.setGameId(room.id, game.id);
+
+          // Create game engine with cleanup callback
+          const engine = new GameEngine(game, io, room.id, () => {
+            cleanupGame(game.id, room.id);
+          });
+          gameEngines.set(game.id, engine);
+
+          // Start the game - engine will broadcast initial state to all players
+          engine.startGame();
+        } catch (error) {
+          console.error('Error starting game:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to start game' });
+          // Release lock on error
+          const playerId = socketToPlayer.get(socket.id);
+          if (playerId) {
+            const room = roomService.getRoomByPlayerId(playerId);
+            if (room) {
+              gameCreationLocks.delete(room.id);
+            }
+          }
+        }
+      });
     });
 
     // Game events
     socket.on('game:bid', (amount) => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'game:bid', () => {
+        try {
+          const parsed = BidAmountSchema.safeParse(amount);
+          if (!parsed.success) {
+            socket.emit('game:error', { code: 'INVALID_INPUT', message: 'Invalid bid amount' });
+            return;
+          }
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || !room.gameId) return;
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const engine = gameEngines.get(room.gameId);
-      if (!engine) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) return;
 
-      engine.handleBid(playerId, amount);
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) return;
+
+          engine.handleBid(playerId, parsed.data);
+        } catch (error) {
+          console.error('Error handling bid:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to process bid' });
+        }
+      });
     });
 
     socket.on('game:pass', () => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'game:pass', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || !room.gameId) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) return;
 
-      const engine = gameEngines.get(room.gameId);
-      if (!engine) return;
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) return;
 
-      engine.handlePass(playerId);
+          engine.handlePass(playerId);
+        } catch (error) {
+          console.error('Error handling pass:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to process pass' });
+        }
+      });
     });
 
     socket.on('game:distributeTalon', (distribution) => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'game:distributeTalon', () => {
+        try {
+          const parsed = TalonDistributionSchema.safeParse(distribution);
+          if (!parsed.success) {
+            socket.emit('game:error', { code: 'INVALID_INPUT', message: 'Invalid distribution' });
+            return;
+          }
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || !room.gameId) return;
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const engine = gameEngines.get(room.gameId);
-      if (!engine) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) return;
 
-      engine.handleDistributeTalon(playerId, distribution);
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) return;
+
+          engine.handleDistributeTalon(playerId, parsed.data);
+        } catch (error) {
+          console.error('Error distributing talon:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to distribute talon' });
+        }
+      });
     });
 
     socket.on('game:playCard', (card) => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'game:playCard', () => {
+        try {
+          const parsed = CardSchema.safeParse(card);
+          if (!parsed.success) {
+            socket.emit('game:error', { code: 'INVALID_INPUT', message: 'Invalid card' });
+            return;
+          }
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || !room.gameId) return;
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const engine = gameEngines.get(room.gameId);
-      if (!engine) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) return;
 
-      engine.handlePlayCard(playerId, card);
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) return;
+
+          engine.handlePlayCard(playerId, parsed.data);
+        } catch (error) {
+          console.error('Error playing card:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to play card' });
+        }
+      });
     });
 
     socket.on('game:declareMarriage', (suit) => {
-      const playerId = socketToPlayer.get(socket.id);
-      if (!playerId) return;
+      withRateLimit(socket, 'game:declareMarriage', () => {
+        try {
+          const parsed = SuitSchema.safeParse(suit);
+          if (!parsed.success) {
+            socket.emit('game:error', { code: 'INVALID_INPUT', message: 'Invalid suit' });
+            return;
+          }
 
-      const room = roomService.getRoomByPlayerId(playerId);
-      if (!room || !room.gameId) return;
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
 
-      const engine = gameEngines.get(room.gameId);
-      if (!engine) return;
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) return;
 
-      engine.handleDeclareMarriage(playerId, suit);
-    });
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) return;
 
-    // Reconnection
-    socket.on('player:reconnect', ({ roomId, playerId }) => {
-      const room = roomService.getRoom(roomId);
-      if (!room) {
-        socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
-        return;
-      }
-
-      if (!room.players.some(p => p.id === playerId)) {
-        socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'Player not in room' });
-        return;
-      }
-
-      // Update mappings
-      socketToPlayer.set(socket.id, playerId);
-      playerToSocket.set(playerId, socket.id);
-      socket.join(roomId);
-
-      // Get game state if exists
-      let gameState: ClientGameState | null = null;
-      if (room.gameId) {
-        const game = gameService.getGame(room.gameId);
-        if (game) {
-          gameState = getClientGameState(game, playerId);
+          engine.handleDeclareMarriage(playerId, parsed.data);
+        } catch (error) {
+          console.error('Error declaring marriage:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to declare marriage' });
         }
-      }
-
-      socket.emit('connection:restored', { room, gameState });
-      socket.to(roomId).emit('player:reconnected', playerId);
+      });
     });
 
-    // Disconnection
+    // Reconnection with session validation
+    socket.on('player:reconnect', (data) => {
+      withRateLimit(socket, 'player:reconnect', () => {
+        try {
+          const parsed = ReconnectSchema.safeParse(data);
+          if (!parsed.success) {
+            socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid reconnect data' });
+            return;
+          }
+
+          const { roomId, playerId, sessionToken } = parsed.data;
+
+          // Validate session token
+          if (!validateSession(sessionToken, playerId)) {
+            socket.emit('room:error', { code: 'INVALID_SESSION', message: 'Invalid or expired session' });
+            return;
+          }
+
+          const room = roomService.getRoom(roomId);
+          if (!room) {
+            socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
+            return;
+          }
+
+          if (!room.players.some(p => p.id === playerId)) {
+            socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'Player not in room' });
+            return;
+          }
+
+          // Cancel any pending disconnect timeout
+          const timeout = disconnectTimeouts.get(playerId);
+          if (timeout) {
+            clearTimeout(timeout);
+            disconnectTimeouts.delete(playerId);
+          }
+
+          // Clear old socket mapping if exists
+          const oldSocketId = playerToSocket.get(playerId);
+          if (oldSocketId && oldSocketId !== socket.id) {
+            socketToPlayer.delete(oldSocketId);
+          }
+
+          // Update mappings
+          socketToPlayer.set(socket.id, playerId);
+          playerToSocket.set(playerId, socket.id);
+          socket.join(roomId);
+
+          // Get game state if exists
+          let gameState: ClientGameState | null = null;
+          if (room.gameId) {
+            const game = gameService.getGame(room.gameId);
+            if (game) {
+              gameState = getClientGameState(game, playerId);
+            }
+          }
+
+          socket.emit('connection:restored', { room, gameState });
+          socket.to(roomId).emit('player:reconnected', playerId);
+        } catch (error) {
+          console.error('Error reconnecting:', error);
+          socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to reconnect' });
+        }
+      });
+    });
+
+    // Disconnection with grace period
     socket.on('disconnect', () => {
       console.log(`Client disconnected: ${socket.id}`);
-      handlePlayerLeave(io, socket);
+      clearRateLimits(socket.id);
+      handlePlayerLeave(io, socket, false);
     });
   });
 }
 
-function handlePlayerLeave(io: TypedServer, socket: TypedSocket) {
+function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: boolean) {
   const playerId = socketToPlayer.get(socket.id);
   if (!playerId) return;
 
   const room = roomService.getRoomByPlayerId(playerId);
 
-  // Clean up mappings
+  // Clean up socket mappings
   socketToPlayer.delete(socket.id);
-  playerToSocket.delete(playerId);
 
   if (room) {
     socket.leave(room.id);
 
-    // Notify others of disconnect (they might reconnect)
-    socket.to(room.id).emit('player:disconnected', playerId);
+    // If game is in progress, use grace period for reconnection
+    if (room.gameId && !immediate) {
+      socket.to(room.id).emit('player:disconnected', playerId);
 
-    // If game is in progress, don't remove immediately (allow reconnect)
-    if (!room.gameId) {
-      const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
+      // Set timeout for cleanup
+      const timeout = setTimeout(() => {
+        disconnectTimeouts.delete(playerId);
+        playerToSocket.delete(playerId);
+        invalidatePlayerSession(playerId);
 
-      if (!wasDeleted && updatedRoom) {
-        io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+        // If still disconnected after grace period, handle as leave
+        const currentSocketId = playerToSocket.get(playerId);
+        if (!currentSocketId) {
+          // Player didn't reconnect, handle game state accordingly
+          console.log(`Player ${playerId} did not reconnect within grace period`);
+        }
+      }, DISCONNECT_GRACE_PERIOD);
+
+      disconnectTimeouts.set(playerId, timeout);
+    } else {
+      // Immediate leave or no game in progress
+      playerToSocket.delete(playerId);
+      invalidatePlayerSession(playerId);
+
+      // Clear any existing timeout
+      const timeout = disconnectTimeouts.get(playerId);
+      if (timeout) {
+        clearTimeout(timeout);
+        disconnectTimeouts.delete(playerId);
       }
 
-      broadcastRoomList(io);
+      if (!room.gameId) {
+        const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
+
+        if (!wasDeleted && updatedRoom) {
+          io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+        }
+
+        broadcastRoomList(io);
+      }
     }
+  } else {
+    playerToSocket.delete(playerId);
+    invalidatePlayerSession(playerId);
   }
 }
 

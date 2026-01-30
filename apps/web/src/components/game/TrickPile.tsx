@@ -1,9 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
+
+// Hook to track screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 interface TrickPileProps {
   cards: { playerId: string; card: CardType }[];
@@ -12,24 +27,35 @@ interface TrickPileProps {
 }
 
 export function TrickPile({ cards, players, currentPlayerId }: TrickPileProps) {
+  const isMobile = useIsMobile();
+
   // Position cards based on who played them relative to current player
   const getCardPosition = (playerId: string) => {
     const currentIndex = players.findIndex((p) => p.id === currentPlayerId);
     const playerIndex = players.findIndex((p) => p.id === playerId);
     const relativePosition = (playerIndex - currentIndex + 3) % 3;
 
-    // 0 = self (bottom), 1 = left, 2 = right
-    const positions = [
-      { x: 0, y: 40, rotate: 0 },     // Self (bottom)
-      { x: -60, y: -20, rotate: -15 }, // Left
-      { x: 60, y: -20, rotate: 15 },   // Right
-    ];
+    // Responsive positions: 0 = self (bottom), 1 = left, 2 = right
+    const positions = isMobile
+      ? [
+          { x: 0, y: 30, rotate: 0 },     // Self (bottom)
+          { x: -40, y: -15, rotate: -10 }, // Left
+          { x: 40, y: -15, rotate: 10 },   // Right
+        ]
+      : [
+          { x: 0, y: 40, rotate: 0 },     // Self (bottom)
+          { x: -60, y: -20, rotate: -15 }, // Left
+          { x: 60, y: -20, rotate: 15 },   // Right
+        ];
 
     return positions[relativePosition];
   };
 
   return (
-    <div className="relative w-48 h-48 flex items-center justify-center">
+    <div className={cn(
+      'relative flex items-center justify-center',
+      isMobile ? 'w-36 h-36' : 'w-48 h-48'
+    )}>
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full bg-table-800/50 border border-table-600/30" />
 
@@ -68,7 +94,7 @@ export function TrickPile({ cards, players, currentPlayerId }: TrickPileProps) {
               className="absolute"
               style={{ zIndex: index }}
             >
-              <Card card={card} size="md" isPlayable={false} />
+              <Card card={card} size={isMobile ? 'sm' : 'md'} isPlayable={false} />
             </motion.div>
           );
         })}

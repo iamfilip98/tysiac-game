@@ -21,6 +21,7 @@ export interface RoundScoreResult {
  *
  * Rules:
  * - Bidder must hit EXACT bid to score; otherwise loses bid amount
+ * - Marriage points ONLY count for the bidder (not non-bidders)
  * - Non-bidders round to nearest 10 (6+ rounds up), but only if under 800
  * - Players at/above 800 (on barrel) get 0 unless they're bidder
  * - Barrel: must reach 1000 or stay. 3 failed attempts = fall back to 800
@@ -43,8 +44,9 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
     // Calculate trick points
     const trickPoints = playerState.pointsFromTricks;
 
-    // Marriage points (only count for bidder or if declared by player)
-    const marriagePoints = playerState.marriagePoints;
+    // Marriage points ONLY count for the bidder
+    // Non-bidders do not get marriage bonus even if they declared
+    const marriagePoints = isBidder ? playerState.marriagePoints : 0;
 
     // Total points earned this round
     const totalRoundPoints = trickPoints + marriagePoints;
@@ -52,6 +54,8 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
     // Determine score change based on rules
     let scoreChange: number;
     const wasOnBarrel = currentScore.totalScore >= BARREL_THRESHOLD && currentScore.totalScore < WINNING_SCORE;
+    let newTotalScore: number;
+    let fellOffBarrel = false;
 
     if (isBidder) {
       // Bidder must hit exact bid
@@ -60,40 +64,46 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
       } else {
         scoreChange = -finalBid; // Lose the bid amount
       }
+
+      // Handle barrel rules for bidder
+      if (wasOnBarrel) {
+        const tentativeScore = currentScore.totalScore + scoreChange;
+
+        if (tentativeScore >= WINNING_SCORE) {
+          // Reached 1000, wins!
+          newTotalScore = tentativeScore;
+          currentScore.barrelAttempts = 0;
+        } else {
+          // Failed to reach 1000 while on barrel
+          const newAttempts = currentScore.barrelAttempts + 1;
+
+          if (newAttempts >= 3) {
+            // Fall off barrel after 3 attempts - reset to 800
+            newTotalScore = BARREL_THRESHOLD;
+            fellOffBarrel = true;
+            currentScore.barrelAttempts = 0;
+            // Actual score change reflects the fall
+            scoreChange = BARREL_THRESHOLD - currentScore.totalScore;
+          } else {
+            // Stay on barrel, score doesn't change
+            newTotalScore = currentScore.totalScore;
+            scoreChange = 0; // No actual change when staying on barrel
+            currentScore.barrelAttempts = newAttempts;
+          }
+        }
+      } else {
+        newTotalScore = currentScore.totalScore + scoreChange;
+      }
     } else {
       // Non-bidder
       if (wasOnBarrel) {
         // On barrel: no points from defending
         scoreChange = 0;
+        newTotalScore = currentScore.totalScore;
       } else {
         // Round to nearest 10 (6+ rounds up)
-        scoreChange = roundToTen(totalRoundPoints);
-      }
-    }
-
-    // Calculate new total
-    let newTotalScore = currentScore.totalScore + scoreChange;
-    let fellOffBarrel = false;
-
-    // Handle barrel rules
-    if (isBidder && wasOnBarrel) {
-      if (newTotalScore < WINNING_SCORE) {
-        // Failed to reach 1000 while on barrel
-        const newAttempts = currentScore.barrelAttempts + 1;
-
-        if (newAttempts >= 3) {
-          // Fall off barrel after 3 attempts
-          newTotalScore = BARREL_THRESHOLD;
-          fellOffBarrel = true;
-          currentScore.barrelAttempts = 0;
-        } else {
-          // Stay on barrel, score doesn't change
-          newTotalScore = currentScore.totalScore;
-          currentScore.barrelAttempts = newAttempts;
-        }
-      } else {
-        // Reached 1000, wins!
-        currentScore.barrelAttempts = 0;
+        scoreChange = roundToTen(trickPoints); // Only trick points, no marriage
+        newTotalScore = currentScore.totalScore + scoreChange;
       }
     }
 
@@ -120,7 +130,7 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
 
   // Check if bidder made their bid
   const bidderResult = results.find(r => r.playerId === bidWinnerId)!;
-  const bidderMadeBid = bidderResult.scoreChange > 0;
+  const bidderMadeBid = bidderResult.totalRoundPoints >= finalBid;
 
   return {
     bidderMadeBid,

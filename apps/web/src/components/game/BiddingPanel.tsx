@@ -23,6 +23,8 @@ export function BiddingPanel({
   isMyTurn,
 }: BiddingPanelProps) {
   const [selectedBid, setSelectedBid] = useState<number | null>(null);
+  const [isBidding, setIsBidding] = useState(false);
+  const [isPassing, setIsPassing] = useState(false);
 
   const bidAction = validActions.find((a) => a.type === 'bid');
   const canPass = validActions.some((a) => a.type === 'pass');
@@ -44,9 +46,21 @@ export function BiddingPanel({
   }, [minBid, maxBid]);
 
   const handleBid = () => {
-    if (selectedBid) {
+    if (selectedBid && !isBidding) {
+      setIsBidding(true);
       onBid(selectedBid);
       setSelectedBid(null);
+      // Reset after timeout in case of failure
+      setTimeout(() => setIsBidding(false), 2000);
+    }
+  };
+
+  const handlePass = () => {
+    if (!isPassing) {
+      setIsPassing(true);
+      onPass();
+      // Reset after timeout in case of failure
+      setTimeout(() => setIsPassing(false), 2000);
     }
   };
 
@@ -96,25 +110,32 @@ export function BiddingPanel({
         {/* Action buttons */}
         <div className="flex gap-3">
           {canPass && (
-            <Button variant="secondary" onClick={onPass} className="flex-1">
-              Pass
+            <Button
+              variant="secondary"
+              onClick={handlePass}
+              disabled={isPassing}
+              className="flex-1"
+              aria-busy={isPassing}
+            >
+              {isPassing ? 'Passing...' : 'Pass'}
             </Button>
           )}
           {bidAction && (
             <Button
               variant="primary"
               onClick={handleBid}
-              disabled={!selectedBid}
+              disabled={!selectedBid || isBidding}
               className="flex-1"
-              glow
+              glow={!isBidding && !!selectedBid}
+              aria-busy={isBidding}
             >
-              Bid {selectedBid || '...'}
+              {isBidding ? 'Bidding...' : `Bid ${selectedBid || '...'}`}
             </Button>
           )}
         </div>
 
         {/* Max bid hint */}
-        <div className="mt-3 text-center text-xs text-white/40">
+        <div className="mt-3 text-center text-xs text-white/60">
           Max bid: {maxBid} (based on marriages in hand)
         </div>
       </div>

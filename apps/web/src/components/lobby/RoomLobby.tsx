@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
@@ -25,6 +26,10 @@ export function RoomLobby({
   onStart,
   onLeave,
 }: RoomLobbyProps) {
+  const [copied, setCopied] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
+  const [isAddingAI, setIsAddingAI] = useState(false);
+
   const isHost = room.hostId === currentPlayerId;
   const currentPlayer = room.players.find((p) => p.id === currentPlayerId);
   const canStart =
@@ -32,8 +37,39 @@ export function RoomLobby({
     room.players.filter((p) => !p.isAI).every((p) => p.isReady);
   const canAddAI = room.players.length < 3;
 
+  const handleCopyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(room.code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Fallback for older browsers
+      const textArea = document.createElement('textarea');
+      textArea.value = room.code;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const handleStart = () => {
+    setIsStarting(true);
+    onStart();
+    // Reset after timeout in case of failure
+    setTimeout(() => setIsStarting(false), 5000);
+  };
+
+  const handleAddAI = () => {
+    setIsAddingAI(true);
+    onAddAI();
+    setTimeout(() => setIsAddingAI(false), 1000);
+  };
+
   return (
-    <div className="max-w-lg mx-auto">
+    <div className="max-w-lg mx-auto" role="region" aria-label="Room lobby">
       <ElectricBorder active color="#fbbf24">
         <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl">
           {/* Header */}
@@ -41,47 +77,82 @@ export function RoomLobby({
             <h2 className="text-2xl font-bold text-white mb-2">{room.name}</h2>
             <div className="flex items-center justify-center gap-2">
               <span className="text-sm text-white/60">Room Code:</span>
-              <span className="font-mono text-lg text-gold-400 tracking-widest bg-table-800 px-3 py-1 rounded">
+              <span
+                className="font-mono text-lg text-gold-400 tracking-widest bg-table-800 px-3 py-1 rounded"
+                aria-label={`Room code: ${room.code.split('').join(' ')}`}
+              >
                 {room.code}
               </span>
               <button
-                onClick={() => navigator.clipboard.writeText(room.code)}
-                className="p-1 text-white/40 hover:text-white transition-colors"
-                title="Copy code"
+                onClick={handleCopyCode}
+                className="p-1 text-white/40 hover:text-white transition-colors rounded focus:outline-none focus:ring-2 focus:ring-gold-500"
+                aria-label={copied ? 'Copied!' : 'Copy room code'}
               >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
-                  />
-                </svg>
+                {copied ? (
+                  <svg
+                    className="w-4 h-4 text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"
+                    />
+                  </svg>
+                )}
               </button>
             </div>
+            {copied && (
+              <motion.p
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="text-sm text-green-400 mt-2"
+                role="status"
+              >
+                Copied to clipboard!
+              </motion.p>
+            )}
           </div>
 
           {/* Players */}
           <div className="space-y-3 mb-6">
-            <div className="text-sm text-white/60 mb-2">
+            <div className="text-sm text-white/60 mb-2" id="players-label">
               Players ({room.players.length}/3)
             </div>
 
-            {room.players.map((player, index) => (
-              <PlayerSlot
-                key={player.id}
-                player={player}
-                isCurrentPlayer={player.id === currentPlayerId}
-                isHost={player.isHost}
-                canRemove={isHost && player.isAI}
-                onRemove={() => onRemoveAI(player.id)}
-              />
-            ))}
+            <ul aria-labelledby="players-label" className="space-y-3">
+              {room.players.map((player) => (
+                <li key={player.id}>
+                  <PlayerSlot
+                    player={player}
+                    isCurrentPlayer={player.id === currentPlayerId}
+                    isHost={player.isHost}
+                    canRemove={isHost && player.isAI}
+                    onRemove={() => onRemoveAI(player.id)}
+                  />
+                </li>
+              ))}
+            </ul>
 
             {/* Empty slots */}
             {Array.from({ length: 3 - room.players.length }).map((_, i) => (
@@ -90,6 +161,8 @@ export function RoomLobby({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 className="p-3 rounded-lg border-2 border-dashed border-table-600 text-center text-white/40"
+                role="listitem"
+                aria-label="Empty player slot"
               >
                 Waiting for player...
               </motion.div>
@@ -104,6 +177,7 @@ export function RoomLobby({
                 variant={currentPlayer?.isReady ? 'danger' : 'secondary'}
                 onClick={() => onReady(!currentPlayer?.isReady)}
                 className="w-full"
+                aria-pressed={currentPlayer?.isReady}
               >
                 {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
               </Button>
@@ -114,20 +188,22 @@ export function RoomLobby({
               <div className="flex gap-3">
                 <Button
                   variant="secondary"
-                  onClick={onAddAI}
-                  disabled={!canAddAI}
+                  onClick={handleAddAI}
+                  disabled={!canAddAI || isAddingAI}
                   className="flex-1"
+                  aria-busy={isAddingAI}
                 >
-                  Add AI
+                  {isAddingAI ? 'Adding...' : 'Add AI'}
                 </Button>
                 <Button
                   variant="primary"
-                  onClick={onStart}
-                  disabled={!canStart}
+                  onClick={handleStart}
+                  disabled={!canStart || isStarting}
                   className="flex-1"
-                  glow={canStart}
+                  glow={canStart && !isStarting}
+                  aria-busy={isStarting}
                 >
-                  Start Game
+                  {isStarting ? 'Starting...' : 'Start Game'}
                 </Button>
               </div>
             )}
@@ -140,7 +216,7 @@ export function RoomLobby({
 
           {/* Start hint */}
           {isHost && !canStart && (
-            <div className="mt-4 text-center text-sm text-white/40">
+            <div className="mt-4 text-center text-sm text-white/40" role="status">
               {room.players.length < 3
                 ? 'Need 3 players to start'
                 : 'All players must be ready to start'}
@@ -187,6 +263,7 @@ function PlayerSlot({
               ? 'bg-purple-500/20 text-purple-400'
               : 'bg-table-700 text-white'
           )}
+          aria-hidden="true"
         >
           {player.isAI ? '🤖' : player.name[0].toUpperCase()}
         </div>
@@ -225,12 +302,15 @@ function PlayerSlot({
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             className="text-green-400 text-sm flex items-center gap-1"
+            role="status"
+            aria-label={`${player.name} is ready`}
           >
             <svg
               className="w-4 h-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"
@@ -242,21 +322,24 @@ function PlayerSlot({
             Ready
           </motion.span>
         ) : (
-          <span className="text-white/40 text-sm">Not ready</span>
+          <span className="text-white/40 text-sm" aria-label={`${player.name} is not ready`}>
+            Not ready
+          </span>
         )}
 
         {/* Remove AI button */}
         {canRemove && (
           <button
             onClick={onRemove}
-            className="p-1 text-red-400 hover:text-red-300 transition-colors"
-            title="Remove AI"
+            className="p-1 text-red-400 hover:text-red-300 transition-colors rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+            aria-label={`Remove ${player.name}`}
           >
             <svg
               className="w-4 h-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
+              aria-hidden="true"
             >
               <path
                 strokeLinecap="round"

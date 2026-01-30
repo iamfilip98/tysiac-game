@@ -74,7 +74,7 @@ export function ScoreBoard({
                 >
                   {player.name}
                   {player.isAI && (
-                    <span className="ml-1 text-xs text-white/40">(AI)</span>
+                    <span className="ml-1 text-xs text-white/60">(AI)</span>
                   )}
                 </span>
 
@@ -92,10 +92,12 @@ export function ScoreBoard({
                   <motion.span
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="text-xs text-amber-400"
-                    title="On the barrel (800+)"
+                    className="text-xs text-amber-400 flex items-center gap-1"
+                    role="img"
+                    aria-label="On the barrel (800+)"
                   >
-                    🛢️
+                    <span aria-hidden="true">🛢️</span>
+                    <span className="sr-only">On barrel</span>
                   </motion.span>
                 )}
                 <span
@@ -117,7 +119,7 @@ export function ScoreBoard({
       </div>
 
       {/* Goal reminder */}
-      <div className="mt-3 pt-2 border-t border-table-600 text-center text-xs text-white/40">
+      <div className="mt-3 pt-2 border-t border-table-600 text-center text-xs text-white/60">
         First to 1000 wins!
       </div>
     </div>
@@ -145,7 +147,12 @@ export function InlineScore({ score, isOnBarrel, className }: InlineScoreProps) 
       )}
     >
       {score}
-      {isOnBarrel && ' 🛢️'}
+      {isOnBarrel && (
+        <span role="img" aria-label="on barrel">
+          {' '}
+          <span aria-hidden="true">🛢️</span>
+        </span>
+      )}
     </span>
   );
 }

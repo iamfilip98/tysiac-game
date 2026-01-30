@@ -11,23 +11,66 @@ export class GameEngine {
   private io: Server;
   private roomId: string;
   private ai: AIPlayer;
+  private onCleanup?: () => void;
 
   // Bidding state tracking
   private currentBidder: string = '';
   private passedPlayers: string[] = [];
 
-  constructor(game: GameState, io: Server, roomId: string) {
+  // Track all timers for cleanup
+  private activeTimers: Set<NodeJS.Timeout> = new Set();
+  private isCleanedUp: boolean = false;
+  private isFirstRound: boolean = true;
+
+  constructor(game: GameState, io: Server, roomId: string, onCleanup?: () => void) {
     this.game = game;
     this.io = io;
     this.roomId = roomId;
     this.ai = new AIPlayer();
+    this.onCleanup = onCleanup;
+  }
+
+  // Safe setTimeout that tracks timers for cleanup
+  private safeSetTimeout(callback: () => void, delay: number): NodeJS.Timeout | null {
+    if (this.isCleanedUp) return null;
+
+    const timer = setTimeout(() => {
+      this.activeTimers.delete(timer);
+      if (!this.isCleanedUp) {
+        try {
+          callback();
+        } catch (error) {
+          console.error('Error in timer callback:', error);
+        }
+      }
+    }, delay);
+
+    this.activeTimers.add(timer);
+    return timer;
+  }
+
+  // Cleanup method to prevent memory leaks
+  cleanup(): void {
+    if (this.isCleanedUp) return;
+    this.isCleanedUp = true;
+
+    // Clear all active timers
+    for (const timer of this.activeTimers) {
+      clearTimeout(timer);
+    }
+    this.activeTimers.clear();
+
+    console.log(`GameEngine cleaned up for room ${this.roomId}`);
   }
 
   startGame(): void {
+    if (this.isCleanedUp) return;
     this.startNewRound();
   }
 
   private startNewRound(): void {
+    if (this.isCleanedUp) return;
+
     const roundNumber = this.game.currentRound ? this.game.currentRound.roundNumber + 1 : 1;
 
     // Dealer rotates each round
@@ -75,10 +118,12 @@ export class GameEngine {
     this.broadcastState();
 
     // Start bidding after a short delay (for dealing animation)
-    setTimeout(() => this.startBidding(), 500);
+    this.safeSetTimeout(() => this.startBidding(), 500);
   }
 
   private startBidding(): void {
+    if (this.isCleanedUp) return;
+
     const round = this.game.currentRound!;
     const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
 
@@ -97,6 +142,7 @@ export class GameEngine {
   }
 
   handleBid(playerId: string, amount: number): void {
+    if (this.isCleanedUp) return;
     if (this.game.phase !== 'bidding') return;
     if (playerId !== this.currentBidder) return;
 
@@ -120,6 +166,7 @@ export class GameEngine {
   }
 
   handlePass(playerId: string): void {
+    if (this.isCleanedUp) return;
     if (this.game.phase !== 'bidding') return;
     if (playerId !== this.currentBidder) return;
 
@@ -139,6 +186,8 @@ export class GameEngine {
   }
 
   private advanceBidding(): void {
+    if (this.isCleanedUp) return;
+
     const round = this.game.currentRound!;
 
     // Check if bidding is complete (2 players passed)
@@ -186,6 +235,8 @@ export class GameEngine {
   }
 
   private endBidding(): void {
+    if (this.isCleanedUp) return;
+
     this.game.phase = 'talonReveal';
     const round = this.game.currentRound!;
     round.talonRevealed = true;
@@ -197,7 +248,8 @@ export class GameEngine {
     round.players[bidWinnerId].hand.push(...round.talon);
     round.cardsToDistribute = [...round.talon];
 
-    setTimeout(() => {
+    this.safeSetTimeout(() => {
+      if (this.isCleanedUp) return;
       this.game.phase = 'talonDistribution';
       this.broadcastState();
       this.promptCurrentPlayer();
@@ -205,6 +257,7 @@ export class GameEngine {
   }
 
   handleDistributeTalon(playerId: string, distribution: { playerId: string; card: Card }[]): void {
+    if (this.isCleanedUp) return;
     if (this.game.phase !== 'talonDistribution') return;
 
     const round = this.game.currentRound!;
@@ -222,6 +275,13 @@ export class GameEngine {
     // Each other player must receive exactly 1 card
     if (!otherPlayers.every(p => targetPlayers.filter(t => t === p).length === 1)) {
       this.sendError(playerId, 'Each opponent must receive exactly 1 card');
+      return;
+    }
+
+    // Check for duplicate cards in distribution
+    const distributedCards = distribution.map(d => `${d.card.suit}-${d.card.rank}`);
+    if (new Set(distributedCards).size !== distributedCards.length) {
+      this.sendError(playerId, 'Cannot give the same card twice');
       return;
     }
 
@@ -251,6 +311,8 @@ export class GameEngine {
   }
 
   private startTrickPlaying(): void {
+    if (this.isCleanedUp) return;
+
     const round = this.game.currentRound!;
 
     round.currentTrick = {
@@ -266,6 +328,7 @@ export class GameEngine {
   }
 
   handleDeclareMarriage(playerId: string, suit: Suit): void {
+    if (this.isCleanedUp) return;
     if (this.game.phase !== 'trickPlaying') return;
 
     const round = this.game.currentRound!;
@@ -302,6 +365,7 @@ export class GameEngine {
   }
 
   handlePlayCard(playerId: string, card: Card): void {
+    if (this.isCleanedUp) return;
     if (this.game.phase !== 'trickPlaying') return;
 
     const round = this.game.currentRound!;
@@ -341,10 +405,19 @@ export class GameEngine {
   }
 
   private completeTrick(): void {
+    if (this.isCleanedUp) return;
+
     const round = this.game.currentRound!;
     const trick = round.currentTrick!;
 
     const winnerId = getTrickWinner(trick, round.trumpSuit);
+
+    // Safety check for winner
+    if (!winnerId) {
+      console.error('Failed to determine trick winner');
+      return;
+    }
+
     const trickCards = trick.cards.map(c => c.card);
 
     // Calculate points
@@ -363,7 +436,7 @@ export class GameEngine {
 
     // Check if round is complete (7 tricks)
     if (round.completedTricks >= 7) {
-      setTimeout(() => this.endRound(), 1500);
+      this.safeSetTimeout(() => this.endRound(), 1500);
     } else {
       // Start next trick
       round.currentTrick = {
@@ -373,7 +446,8 @@ export class GameEngine {
         trickNumber: round.completedTricks + 1,
       };
 
-      setTimeout(() => {
+      this.safeSetTimeout(() => {
+        if (this.isCleanedUp) return;
         this.broadcastState();
         this.promptCurrentPlayer();
       }, 1000);
@@ -381,6 +455,8 @@ export class GameEngine {
   }
 
   private endRound(): void {
+    if (this.isCleanedUp) return;
+
     this.game.phase = 'roundScoring';
 
     const scoreResult = calculateRoundScores(this.game);
@@ -393,13 +469,15 @@ export class GameEngine {
 
     // Check for winner
     if (this.game.winner) {
-      setTimeout(() => this.endGame(), 2000);
+      this.safeSetTimeout(() => this.endGame(), 2000);
     } else {
-      setTimeout(() => this.startNewRound(), 3000);
+      this.safeSetTimeout(() => this.startNewRound(), 3000);
     }
   }
 
   private endGame(): void {
+    if (this.isCleanedUp) return;
+
     this.game.phase = 'gameEnd';
 
     const finalScores: Record<string, number> = {};
@@ -413,9 +491,25 @@ export class GameEngine {
     });
 
     this.broadcastState();
+
+    // Trigger cleanup callback
+    if (this.onCleanup) {
+      this.safeSetTimeout(() => {
+        if (this.onCleanup) {
+          this.onCleanup();
+        }
+      }, 5000);
+    }
   }
 
   private broadcastState(): void {
+    if (this.isCleanedUp) return;
+
+    const eventName = this.isFirstRound ? 'game:started' : 'game:stateUpdate';
+    if (this.isFirstRound) {
+      this.isFirstRound = false;
+    }
+
     // Send personalized state to each player
     for (const player of this.game.players) {
       if (player.isAI) continue;
@@ -424,12 +518,14 @@ export class GameEngine {
       const socketId = this.getSocketId(player.id);
 
       if (socketId) {
-        this.io.to(socketId).emit('game:stateUpdate', clientState);
+        this.io.to(socketId).emit(eventName, clientState);
       }
     }
   }
 
   private promptCurrentPlayer(): void {
+    if (this.isCleanedUp) return;
+
     const round = this.game.currentRound;
     if (!round) return;
 
@@ -453,7 +549,7 @@ export class GameEngine {
 
     // Check if AI player
     if (isAIPlayer(this.game, currentPlayerId)) {
-      setTimeout(() => this.handleAITurn(currentPlayerId, actions), 800);
+      this.safeSetTimeout(() => this.handleAITurn(currentPlayerId, actions), 800);
     } else {
       const socketId = this.getSocketId(currentPlayerId);
       if (socketId) {
@@ -463,47 +559,82 @@ export class GameEngine {
   }
 
   private handleAITurn(playerId: string, actions: ValidAction[]): void {
-    const round = this.game.currentRound!;
-    const hand = round.players[playerId].hand;
+    if (this.isCleanedUp) return;
 
-    if (this.game.phase === 'bidding') {
-      const decision = this.ai.decideBid(hand, round.finalBid, this.passedPlayers.length);
+    try {
+      const round = this.game.currentRound!;
+      const hand = round.players[playerId].hand;
 
-      if (decision.shouldBid && decision.amount) {
-        this.handleBid(playerId, decision.amount);
-      } else {
-        this.handlePass(playerId);
-      }
-    } else if (this.game.phase === 'talonDistribution') {
-      const distribution = this.ai.decideDistribution(
-        hand,
-        this.game.players.filter(p => p.id !== playerId).map(p => p.id)
-      );
-      this.handleDistributeTalon(playerId, distribution);
-    } else if (this.game.phase === 'trickPlaying') {
-      const trick = round.currentTrick!;
-      const playAction = actions.find(a => a.type === 'playCard');
+      if (this.game.phase === 'bidding') {
+        const decision = this.ai.decideBid(hand, round.finalBid, this.passedPlayers.length);
 
-      if (playAction && playAction.type === 'playCard') {
-        // Check for marriage declaration first
-        const marriageAction = actions.find(a => a.type === 'declareMarriage');
-        if (marriageAction && marriageAction.type === 'declareMarriage' && trick.cards.length === 0) {
-          const marriage = this.ai.decideMarriage(hand, round.players[playerId].declaredMarriages);
-          if (marriage) {
-            this.handleDeclareMarriage(playerId, marriage);
-            return;
-          }
+        if (decision.shouldBid && decision.amount) {
+          this.handleBid(playerId, decision.amount);
+        } else {
+          this.handlePass(playerId);
         }
-
-        const card = this.ai.decideCard(
-          playAction.validCards,
-          trick,
-          round.trumpSuit,
-          round.bidWinner === playerId,
-          round.finalBid
+      } else if (this.game.phase === 'talonDistribution') {
+        const distribution = this.ai.decideDistribution(
+          hand,
+          this.game.players.filter(p => p.id !== playerId).map(p => p.id)
         );
-        this.handlePlayCard(playerId, card);
+        this.handleDistributeTalon(playerId, distribution);
+      } else if (this.game.phase === 'trickPlaying') {
+        const trick = round.currentTrick!;
+        const playAction = actions.find(a => a.type === 'playCard');
+
+        if (playAction && playAction.type === 'playCard') {
+          // Check for marriage declaration first
+          const marriageAction = actions.find(a => a.type === 'declareMarriage');
+          if (marriageAction && marriageAction.type === 'declareMarriage' && trick.cards.length === 0) {
+            const marriage = this.ai.decideMarriage(hand, round.players[playerId].declaredMarriages);
+            if (marriage) {
+              this.handleDeclareMarriage(playerId, marriage);
+              return;
+            }
+          }
+
+          const card = this.ai.decideCard(
+            playAction.validCards,
+            trick,
+            round.trumpSuit,
+            round.bidWinner === playerId,
+            round.finalBid
+          );
+          this.handlePlayCard(playerId, card);
+        }
       }
+    } catch (error) {
+      console.error('Error in AI turn:', error);
+      // Fallback: try to make any valid move
+      this.handleAIFallback(playerId, actions);
+    }
+  }
+
+  private handleAIFallback(playerId: string, actions: ValidAction[]): void {
+    if (this.isCleanedUp) return;
+
+    try {
+      if (this.game.phase === 'bidding') {
+        this.handlePass(playerId);
+      } else if (this.game.phase === 'talonDistribution') {
+        const round = this.game.currentRound!;
+        const hand = round.players[playerId].hand;
+        const others = this.game.players.filter(p => p.id !== playerId);
+        if (hand.length >= 2 && others.length >= 2) {
+          this.handleDistributeTalon(playerId, [
+            { playerId: others[0].id, card: hand[0] },
+            { playerId: others[1].id, card: hand[1] },
+          ]);
+        }
+      } else if (this.game.phase === 'trickPlaying') {
+        const playAction = actions.find(a => a.type === 'playCard');
+        if (playAction && playAction.type === 'playCard' && playAction.validCards.length > 0) {
+          this.handlePlayCard(playerId, playAction.validCards[0]);
+        }
+      }
+    } catch (error) {
+      console.error('AI fallback also failed:', error);
     }
   }
 

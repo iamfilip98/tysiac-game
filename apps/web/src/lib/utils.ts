@@ -24,6 +24,28 @@ export function getSuitColor(suit: string): 'red' | 'black' {
   return suit === 'hearts' || suit === 'diamonds' ? 'red' : 'black';
 }
 
+export function getSuitName(suit: string): string {
+  const names: Record<string, string> = {
+    clubs: 'clubs',
+    diamonds: 'diamonds',
+    hearts: 'hearts',
+    spades: 'spades',
+  };
+  return names[suit] || suit;
+}
+
 export function getRankDisplay(rank: string): string {
   return rank;
+}
+
+export function getCardDescription(card: { suit: string; rank: string }): string {
+  const rankNames: Record<string, string> = {
+    '9': 'Nine',
+    '10': 'Ten',
+    'J': 'Jack',
+    'Q': 'Queen',
+    'K': 'King',
+    'A': 'Ace',
+  };
+  return `${rankNames[card.rank] || card.rank} of ${getSuitName(card.suit)}`;
 }

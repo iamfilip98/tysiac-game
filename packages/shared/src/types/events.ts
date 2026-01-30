@@ -47,8 +47,8 @@ export interface ClientToServerEvents {
 // Server -> Client events
 export interface ServerToClientEvents {
   // Room events
-  'room:created': (room: Room) => void;
-  'room:joined': (data: { room: Room; playerId: string }) => void;
+  'room:created': (data: Room & { sessionToken: string }) => void;
+  'room:joined': (data: { room: Room; playerId: string; sessionToken: string }) => void;
   'room:updated': (room: Room) => void;
   'room:playerJoined': (player: RoomPlayer) => void;
   'room:playerLeft': (playerId: string) => void;

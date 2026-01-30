@@ -52,10 +52,13 @@ export function MarriagePanel({
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => onDeclare(suit)}
+                aria-label={`Declare ${suit} marriage for ${value} points`}
                 className={cn(
                   'flex flex-col items-center gap-1 p-3 rounded-xl',
                   'bg-table-800 hover:bg-table-700 transition-all',
-                  'border border-table-600 hover:border-gold-500/50'
+                  'border-2 border-table-600 hover:border-gold-500/50',
+                  'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
+                  'active:bg-table-600'
                 )}
               >
                 <span
@@ -63,6 +66,7 @@ export function MarriagePanel({
                     'text-3xl',
                     isRed ? 'text-red-500' : 'text-white'
                   )}
+                  aria-hidden="true"
                 >
                   {symbol}
                 </span>

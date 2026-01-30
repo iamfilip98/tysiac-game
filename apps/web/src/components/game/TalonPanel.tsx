@@ -131,18 +131,18 @@ export function TalonDistributionPanel({
 
   return (
     <ElectricBorder active color="#22c55e">
-      <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl max-w-2xl">
+      <div className="bg-table-900/90 backdrop-blur p-4 sm:p-6 rounded-xl max-w-2xl">
         <div className="text-center mb-4">
-          <h3 className="text-xl font-bold text-white mb-2">
+          <h3 className="text-lg sm:text-xl font-bold text-white mb-2">
             Distribute Talon Cards
           </h3>
-          <p className="text-sm text-white/60">
+          <p className="text-xs sm:text-sm text-white/60">
             Select a player, then click a card to give them
           </p>
         </div>
 
         {/* Player selection */}
-        <div className="flex justify-center gap-4 mb-6">
+        <div className="flex justify-center gap-2 sm:gap-4 mb-4 sm:mb-6">
           {otherPlayers.map((player) => {
             const assignedCard = selectedCards.get(player.id);
             const isSelected = currentTarget === player.id;
@@ -154,7 +154,7 @@ export function TalonDistributionPanel({
                 whileTap={{ scale: 0.98 }}
                 onClick={() => setCurrentTarget(player.id)}
                 className={cn(
-                  'px-4 py-3 rounded-xl transition-all min-w-[120px]',
+                  'px-3 sm:px-4 py-2 sm:py-3 rounded-lg sm:rounded-xl transition-all min-w-[100px] sm:min-w-[120px]',
                   isSelected
                     ? 'bg-gold-500 text-table-950 ring-2 ring-gold-300'
                     : 'bg-table-800 text-white hover:bg-table-700',
@@ -174,7 +174,7 @@ export function TalonDistributionPanel({
         </div>
 
         {/* Card selection */}
-        <div className="flex flex-wrap justify-center gap-2 mb-6">
+        <div className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4 sm:mb-6">
           {sortedHand.map((card) => {
             const selected = isCardSelected(card);
             const assignee = getCardAssignee(card);

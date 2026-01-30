@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
@@ -15,6 +15,20 @@ interface PlayerHandProps {
   isMyTurn: boolean;
 }
 
+// Hook to track screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
+
 export function PlayerHand({
   cards,
   validActions,
@@ -23,6 +37,8 @@ export function PlayerHand({
   onPlayCard,
   isMyTurn,
 }: PlayerHandProps) {
+  const isMobile = useIsMobile();
+
   // Get playable cards from valid actions
   const playableCards = useMemo(() => {
     const playAction = validActions.find((a) => a.type === 'playCard');
@@ -71,21 +87,26 @@ export function PlayerHand({
     }
   };
 
-  // Calculate fan layout
+  // Calculate fan layout - responsive spread
   const cardCount = sortedCards.length;
-  const fanAngle = Math.min(cardCount * 5, 40); // Total spread angle
+  const fanAngle = isMobile ? Math.min(cardCount * 4, 30) : Math.min(cardCount * 5, 40);
   const startAngle = -fanAngle / 2;
 
   return (
-    <div className="relative flex justify-center items-end h-40">
+    <div
+      className="relative flex justify-center items-end h-28 sm:h-40"
+      role="group"
+      aria-label={`Your hand: ${cardCount} cards${isMyTurn ? '. Your turn to play.' : ''}`}
+    >
       <AnimatePresence mode="popLayout">
         {sortedCards.map((card, index) => {
           const playable = isCardPlayable(card);
           const selected = isCardSelected(card);
 
-          // Calculate position in fan
+          // Calculate position in fan - responsive spread
           const angle = startAngle + (index / Math.max(cardCount - 1, 1)) * fanAngle;
-          const xOffset = (index - (cardCount - 1) / 2) * 50; // Horizontal spread
+          const baseSpread = isMobile ? 28 : 50;
+          const xOffset = (index - (cardCount - 1) / 2) * baseSpread;
 
           return (
             <motion.div
@@ -117,7 +138,7 @@ export function PlayerHand({
                 isSelected={selected}
                 isPlayable={playable && isMyTurn}
                 onClick={() => handleCardClick(card)}
-                size="lg"
+                size={isMobile ? 'md' : 'lg'}
               />
             </motion.div>
           );
@@ -130,6 +151,7 @@ export function PlayerHand({
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           className="absolute -bottom-8 text-sm text-gold-400"
+          aria-live="polite"
         >
           Click again to play
         </motion.div>
@@ -161,7 +183,11 @@ export function OpponentHand({
   const cardDirection = position === 'top' ? 'horizontal' : 'vertical';
 
   return (
-    <div className={cn('flex gap-2', positionClasses[position])}>
+    <div
+      className={cn('flex gap-2', positionClasses[position])}
+      role="group"
+      aria-label={`${playerName}'s hand: ${cardCount} cards${isCurrentTurn ? '. Their turn.' : ''}`}
+    >
       {/* Player name */}
       <div
         className={cn(
@@ -175,18 +201,21 @@ export function OpponentHand({
             animate={{ opacity: [0.5, 1, 0.5] }}
             transition={{ duration: 1.5, repeat: Infinity }}
             className="ml-2"
+            aria-hidden="true"
           >
             •
           </motion.span>
         )}
+        {isCurrentTurn && <span className="sr-only"> (their turn)</span>}
       </div>
 
       {/* Cards */}
       <div
         className={cn(
           'flex',
-          cardDirection === 'vertical' ? 'flex-col -space-y-8' : '-space-x-6'
+          cardDirection === 'vertical' ? 'flex-col -space-y-6 sm:-space-y-8' : '-space-x-4 sm:-space-x-6'
         )}
+        aria-hidden="true"
       >
         {Array.from({ length: cardCount }).map((_, i) => (
           <motion.div
@@ -195,7 +224,7 @@ export function OpponentHand({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: i * 0.05 }}
             className={cn(
-              'w-10 h-14 rounded-md card-back',
+              'w-7 h-10 sm:w-10 sm:h-14 rounded-md card-back',
               cardDirection === 'vertical' && 'rotate-90'
             )}
           />

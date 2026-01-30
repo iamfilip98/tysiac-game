@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { CreateRoomForm } from '@/components/lobby/CreateRoomForm';
 import { JoinRoomForm } from '@/components/lobby/JoinRoomForm';
@@ -9,12 +9,25 @@ import { GameBoard } from '@/components/game/GameBoard';
 import { useSocket } from '@/hooks/useSocket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
+import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 
 export default function HomePage() {
   const [tab, setTab] = useState<'create' | 'join'>('create');
+  const { showToast } = useToast();
+  const previousError = useRef<string | null>(null);
 
   const { room, playerId, isConnected, isConnecting, error } = useRoomStore();
+
+  // Show toast when error changes
+  useEffect(() => {
+    if (error && error !== previousError.current) {
+      showToast(error, 'error');
+      previousError.current = error;
+    } else if (!error) {
+      previousError.current = null;
+    }
+  }, [error, showToast]);
   const { gameState } = useGameStore();
 
   const {
@@ -76,7 +89,7 @@ export default function HomePage() {
                 : 'bg-red-500'
             )}
           />
-          <span className="text-xs text-white/40">
+          <span className="text-xs text-white/60">
             {isConnecting
               ? 'Connecting...'
               : isConnected
@@ -157,7 +170,7 @@ export default function HomePage() {
         className="mt-12 text-center max-w-md"
       >
         <h3 className="text-white/60 font-medium mb-3">Quick Rules</h3>
-        <ul className="text-sm text-white/40 space-y-1">
+        <ul className="text-sm text-white/60 space-y-1">
           <li>• 3 players, 24-card deck (9-A in each suit)</li>
           <li>• Bid for the right to pick up the talon</li>
           <li>• Declare marriages (K+Q) for bonus points</li>

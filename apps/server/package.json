@@ -14,15 +14,16 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
-    "@tysiac/shared": "workspace:*",
-    "fastify": "^4.26.0",
     "@fastify/cors": "^9.0.0",
+    "@tysiac/shared": "workspace:*",
+    "dotenv": "^16.4.0",
+    "drizzle-orm": "^0.30.0",
+    "fastify": "^4.26.0",
+    "nanoid": "^5.0.0",
+    "postgres": "^3.4.0",
     "socket.io": "^4.7.0",
     "xstate": "^5.9.0",
-    "drizzle-orm": "^0.30.0",
-    "postgres": "^3.4.0",
-    "nanoid": "^5.0.0",
-    "dotenv": "^16.4.0"
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",

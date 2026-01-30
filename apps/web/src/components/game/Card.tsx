@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { getSuitSymbol, getSuitColor } from '@/lib/utils';
+import { getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
 
 interface CardProps {
@@ -36,6 +36,14 @@ export function Card({
 }: CardProps) {
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
+  const cardDescription = getCardDescription(card);
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === 'Enter' || e.key === ' ') && isPlayable && onClick) {
+      e.preventDefault();
+      onClick();
+    }
+  };
 
   if (isFaceDown) {
     return (
@@ -49,9 +57,13 @@ export function Card({
           className
         )}
         style={style}
+        role="img"
+        aria-label="Face-down card"
       />
     );
   }
+
+  const isInteractive = isPlayable && onClick;
 
   return (
     <motion.div
@@ -69,20 +81,26 @@ export function Card({
         stiffness: 300,
         damping: 25,
       }}
-      onClick={isPlayable ? onClick : undefined}
+      onClick={isInteractive ? onClick : undefined}
+      onKeyDown={isInteractive ? handleKeyDown : undefined}
+      role={isInteractive ? 'button' : 'img'}
+      tabIndex={isInteractive ? 0 : -1}
+      aria-label={`${cardDescription}${isSelected ? ', selected' : ''}${isPlayable ? '' : ', not playable'}`}
+      aria-pressed={isInteractive ? isSelected : undefined}
       className={cn(
         'playing-card',
         color === 'red' ? 'red' : 'black',
         sizeClasses[size],
         isPlayable && 'cursor-pointer',
-        !isPlayable && 'opacity-60 cursor-not-allowed',
+        !isPlayable && 'opacity-50 cursor-not-allowed',
         isSelected && 'ring-2 ring-gold-400 shadow-glow',
+        isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
         className
       )}
       style={style}
     >
       {/* Card content */}
-      <div className="absolute inset-1 flex flex-col justify-between p-1">
+      <div className="absolute inset-1 flex flex-col justify-between p-1" aria-hidden="true">
         {/* Top left */}
         <div className={cn('flex flex-col items-center leading-none', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
           <span className="font-bold">{card.rank}</span>
@@ -114,6 +132,8 @@ export function CardPlaceholder({ size = 'md', className }: { size?: 'sm' | 'md'
         sizeClasses[size],
         className
       )}
+      role="presentation"
+      aria-hidden="true"
     />
   );
 }
@@ -122,11 +142,15 @@ export function CardPlaceholder({ size = 'md', className }: { size?: 'sm' | 'md'
 export function MiniCard({ card, className }: { card: CardType; className?: string }) {
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
+  const description = getCardDescription(card);
 
   return (
-    <span className={cn('inline-flex items-center gap-0.5 font-mono text-sm', color === 'red' ? 'text-red-400' : 'text-white', className)}>
-      {card.rank}
-      {suitSymbol}
+    <span
+      className={cn('inline-flex items-center gap-0.5 font-mono text-sm', color === 'red' ? 'text-red-400' : 'text-white', className)}
+      role="img"
+      aria-label={description}
+    >
+      <span aria-hidden="true">{card.rank}{suitSymbol}</span>
     </span>
   );
 }
