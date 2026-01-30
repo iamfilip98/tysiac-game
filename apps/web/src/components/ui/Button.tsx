@@ -13,17 +13,26 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant = 'primary', size = 'md', glow = false, children, disabled, ...props }, ref) => {
     const baseStyles =
-      'relative inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-table-950 disabled:opacity-50 disabled:cursor-not-allowed';
+      'relative inline-flex items-center justify-center font-medium transition-all duration-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-table-950';
+
+    // Disabled styles - more obviously grayed out
+    const disabledStyles = disabled
+      ? 'opacity-40 cursor-not-allowed pointer-events-none grayscale'
+      : '';
 
     const variants = {
-      primary:
-        'bg-gradient-to-r from-gold-500 to-gold-600 text-table-950 hover:from-gold-400 hover:to-gold-500 focus:ring-gold-500 shadow-lg hover:shadow-glow',
-      secondary:
-        'bg-table-800/80 text-white border border-table-600 hover:bg-table-700 focus:ring-table-500',
-      ghost:
-        'bg-transparent text-white hover:bg-white/10 focus:ring-white/50',
-      danger:
-        'bg-red-600 text-white hover:bg-red-500 focus:ring-red-500',
+      primary: disabled
+        ? 'bg-gray-600 text-gray-400'
+        : 'bg-gradient-to-r from-gold-500 to-gold-600 text-table-950 hover:from-gold-400 hover:to-gold-500 focus:ring-gold-500 shadow-lg hover:shadow-glow',
+      secondary: disabled
+        ? 'bg-table-900 text-white/30 border border-table-700'
+        : 'bg-table-800/80 text-white border border-table-600 hover:bg-table-700 focus:ring-table-500',
+      ghost: disabled
+        ? 'bg-transparent text-white/30'
+        : 'bg-transparent text-white hover:bg-white/10 focus:ring-white/50',
+      danger: disabled
+        ? 'bg-gray-600 text-gray-400'
+        : 'bg-red-600 text-white hover:bg-red-500 focus:ring-red-500',
     };
 
     const sizes = {
@@ -39,7 +48,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           baseStyles,
           variants[variant],
           sizes[size],
-          glow && 'btn-glow',
+          disabledStyles,
+          glow && !disabled && 'btn-glow',
           className
         )}
         disabled={disabled}

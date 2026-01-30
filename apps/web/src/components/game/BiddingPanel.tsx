@@ -4,7 +4,6 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn } from '@/lib/utils';
 import type { ValidAction } from '@tysiac/shared';
 
 interface BiddingPanelProps {
@@ -22,35 +21,30 @@ export function BiddingPanel({
   onPass,
   isMyTurn,
 }: BiddingPanelProps) {
-  const [selectedBid, setSelectedBid] = useState<number | null>(null);
   const [isBidding, setIsBidding] = useState(false);
   const [isPassing, setIsPassing] = useState(false);
 
   const bidAction = validActions.find((a) => a.type === 'bid');
   const canPass = validActions.some((a) => a.type === 'pass');
 
-  const { minBid, maxBid } = useMemo(() => {
+  // Next bid is always current + 10
+  const nextBid = useMemo(() => {
     if (bidAction && bidAction.type === 'bid') {
-      return { minBid: bidAction.minBid, maxBid: bidAction.maxBid };
+      return bidAction.minBid;
     }
-    return { minBid: 110, maxBid: 120 };
-  }, [bidAction]);
+    return currentBid + 10;
+  }, [bidAction, currentBid]);
 
-  // Generate bid options
-  const bidOptions = useMemo(() => {
-    const options: number[] = [];
-    for (let bid = minBid; bid <= maxBid; bid += 10) {
-      options.push(bid);
-    }
-    return options;
-  }, [minBid, maxBid]);
+  // Check if player can still bid (hasn't exceeded max based on marriages)
+  const canBid = useMemo(() => {
+    if (!bidAction || bidAction.type !== 'bid') return false;
+    return nextBid <= bidAction.maxBid;
+  }, [bidAction, nextBid]);
 
   const handleBid = () => {
-    if (selectedBid && !isBidding) {
+    if (canBid && !isBidding) {
       setIsBidding(true);
-      onBid(selectedBid);
-      setSelectedBid(null);
-      // Reset after timeout in case of failure
+      onBid(nextBid);
       setTimeout(() => setIsBidding(false), 2000);
     }
   };
@@ -59,7 +53,6 @@ export function BiddingPanel({
     if (!isPassing) {
       setIsPassing(true);
       onPass();
-      // Reset after timeout in case of failure
       setTimeout(() => setIsPassing(false), 2000);
     }
   };
@@ -77,67 +70,49 @@ export function BiddingPanel({
 
   return (
     <ElectricBorder active={isMyTurn} color="#22c55e">
-      <div className="bg-table-900/90 backdrop-blur p-4 rounded-xl">
+      <div className="bg-table-900/90 backdrop-blur p-4 rounded-xl min-w-[280px]">
         <div className="text-center mb-4">
           <div className="text-sm text-white/60 mb-1">Your turn to bid</div>
-          <div className="text-xl font-bold text-gold-400">
+          <div className="text-2xl font-bold text-gold-400">
             Current: {currentBid}
           </div>
         </div>
 
-        {/* Bid options grid */}
-        {bidAction && (
-          <div className="grid grid-cols-4 gap-2 mb-4">
-            {bidOptions.map((bid) => (
-              <motion.button
-                key={bid}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setSelectedBid(bid)}
-                className={cn(
-                  'py-2 px-3 rounded-lg font-medium transition-all',
-                  selectedBid === bid
-                    ? 'bg-gold-500 text-table-950'
-                    : 'bg-table-800 text-white hover:bg-table-700'
-                )}
-              >
-                {bid}
-              </motion.button>
-            ))}
-          </div>
-        )}
-
-        {/* Action buttons */}
+        {/* Simple two-button layout: Pass or Bid +10 */}
         <div className="flex gap-3">
           {canPass && (
             <Button
               variant="secondary"
               onClick={handlePass}
               disabled={isPassing}
-              className="flex-1"
+              className="flex-1 py-3 text-lg"
               aria-busy={isPassing}
             >
               {isPassing ? 'Passing...' : 'Pass'}
             </Button>
           )}
-          {bidAction && (
-            <Button
-              variant="primary"
-              onClick={handleBid}
-              disabled={!selectedBid || isBidding}
-              className="flex-1"
-              glow={!isBidding && !!selectedBid}
-              aria-busy={isBidding}
-            >
-              {isBidding ? 'Bidding...' : `Bid ${selectedBid || '...'}`}
-            </Button>
+          {canBid && (
+            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="primary"
+                onClick={handleBid}
+                disabled={isBidding}
+                className="w-full py-3 text-lg"
+                glow={!isBidding}
+                aria-busy={isBidding}
+              >
+                {isBidding ? 'Bidding...' : `Bid ${nextBid}`}
+              </Button>
+            </motion.div>
           )}
         </div>
 
-        {/* Max bid hint */}
-        <div className="mt-3 text-center text-xs text-white/60">
-          Max bid: {maxBid} (based on marriages in hand)
-        </div>
+        {/* Show max bid info */}
+        {bidAction && bidAction.type === 'bid' && (
+          <div className="mt-3 text-center text-xs text-white/50">
+            You can bid up to {bidAction.maxBid} based on your marriages
+          </div>
+        )}
       </div>
     </ElectricBorder>
   );

@@ -17,6 +17,9 @@ interface RoomLobbyProps {
   onLeave: () => void;
 }
 
+// Fixed height for player slots to prevent layout shifts
+const SLOT_HEIGHT = 'h-[72px]';
+
 export function RoomLobby({
   room,
   currentPlayerId,
@@ -43,7 +46,6 @@ export function RoomLobby({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textArea = document.createElement('textarea');
       textArea.value = room.code;
       document.body.appendChild(textArea);
@@ -56,20 +58,27 @@ export function RoomLobby({
   };
 
   const handleStart = () => {
+    if (!canStart || isStarting) return;
     setIsStarting(true);
     onStart();
-    // Reset after timeout in case of failure
     setTimeout(() => setIsStarting(false), 5000);
   };
 
   const handleAddAI = () => {
+    if (!canAddAI || isAddingAI) return;
     setIsAddingAI(true);
     onAddAI();
     setTimeout(() => setIsAddingAI(false), 1000);
   };
 
+  // Build the 3-slot array: filled slots + empty slots
+  const slots = [
+    ...room.players,
+    ...Array(3 - room.players.length).fill(null),
+  ];
+
   return (
-    <div className="max-w-lg mx-auto" role="region" aria-label="Room lobby">
+    <div className="w-full max-w-lg mx-auto" role="region" aria-label="Room lobby">
       <ElectricBorder active color="#fbbf24">
         <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl">
           {/* Header */}
@@ -134,78 +143,81 @@ export function RoomLobby({
             )}
           </div>
 
-          {/* Players */}
-          <div className="space-y-3 mb-6">
+          {/* Players - Fixed height container for 3 slots */}
+          <div className="mb-6">
             <div className="text-sm text-white/60 mb-2" id="players-label">
               Players ({room.players.length}/3)
             </div>
 
-            <ul aria-labelledby="players-label" className="space-y-3">
-              {room.players.map((player) => (
-                <li key={player.id}>
+            <div className="space-y-3" aria-labelledby="players-label">
+              {slots.map((slot, index) =>
+                slot ? (
                   <PlayerSlot
-                    player={player}
-                    isCurrentPlayer={player.id === currentPlayerId}
-                    isHost={player.isHost}
-                    canRemove={isHost && player.isAI}
-                    onRemove={() => onRemoveAI(player.id)}
+                    key={slot.id}
+                    player={slot}
+                    isCurrentPlayer={slot.id === currentPlayerId}
+                    isHost={slot.isHost}
+                    canRemove={isHost && slot.isAI}
+                    onRemove={() => onRemoveAI(slot.id)}
                   />
-                </li>
-              ))}
-            </ul>
-
-            {/* Empty slots */}
-            {Array.from({ length: 3 - room.players.length }).map((_, i) => (
-              <motion.div
-                key={`empty-${i}`}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="p-3 rounded-lg border-2 border-dashed border-table-600 text-center text-white/40"
-                role="listitem"
-                aria-label="Empty player slot"
-              >
-                Waiting for player...
-              </motion.div>
-            ))}
+                ) : (
+                  <EmptySlot key={`empty-${index}`} />
+                )
+              )}
+            </div>
           </div>
 
           {/* Actions */}
           <div className="space-y-3">
-            {/* Ready toggle */}
+            {/* Ready toggle - only for non-AI players */}
             {!currentPlayer?.isAI && (
               <Button
                 variant={currentPlayer?.isReady ? 'danger' : 'secondary'}
                 onClick={() => onReady(!currentPlayer?.isReady)}
-                className="w-full"
+                className="w-full py-3"
                 aria-pressed={currentPlayer?.isReady}
               >
                 {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
               </Button>
             )}
 
-            {/* Host actions */}
+            {/* Host actions - Start Game is now a separate prominent button */}
             {isHost && (
-              <div className="flex gap-3">
-                <Button
-                  variant="secondary"
-                  onClick={handleAddAI}
-                  disabled={!canAddAI || isAddingAI}
-                  className="flex-1"
-                  aria-busy={isAddingAI}
+              <>
+                {/* Add AI button - only show if room not full */}
+                {canAddAI && (
+                  <Button
+                    variant="secondary"
+                    onClick={handleAddAI}
+                    disabled={isAddingAI}
+                    className="w-full"
+                    aria-busy={isAddingAI}
+                  >
+                    {isAddingAI ? 'Adding...' : 'Add AI Player'}
+                  </Button>
+                )}
+
+                {/* Start Game - prominent, separate button */}
+                <motion.div
+                  animate={canStart ? { scale: [1, 1.02, 1] } : {}}
+                  transition={{ duration: 1.5, repeat: canStart ? Infinity : 0 }}
                 >
-                  {isAddingAI ? 'Adding...' : 'Add AI'}
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleStart}
-                  disabled={!canStart || isStarting}
-                  className="flex-1"
-                  glow={canStart && !isStarting}
-                  aria-busy={isStarting}
-                >
-                  {isStarting ? 'Starting...' : 'Start Game'}
-                </Button>
-              </div>
+                  <Button
+                    variant="primary"
+                    onClick={handleStart}
+                    disabled={!canStart || isStarting}
+                    className={cn(
+                      'w-full py-4 text-lg font-bold',
+                      !canStart && 'opacity-50 cursor-not-allowed'
+                    )}
+                    glow={canStart && !isStarting}
+                    aria-busy={isStarting}
+                    aria-disabled={!canStart}
+                  >
+                    {isStarting ? 'Starting Game...' : 'Start Game'}
+                  </Button>
+                </motion.div>
+              </>
             )}
 
             {/* Leave button */}
@@ -214,16 +226,33 @@ export function RoomLobby({
             </Button>
           </div>
 
-          {/* Start hint */}
+          {/* Start hint - show requirements */}
           {isHost && !canStart && (
             <div className="mt-4 text-center text-sm text-white/40" role="status">
               {room.players.length < 3
-                ? 'Need 3 players to start'
-                : 'All players must be ready to start'}
+                ? `Need ${3 - room.players.length} more player${3 - room.players.length > 1 ? 's' : ''} to start`
+                : 'You must click "Ready Up" before starting'}
             </div>
           )}
         </div>
       </ElectricBorder>
+    </div>
+  );
+}
+
+// Empty slot component with fixed height matching PlayerSlot
+function EmptySlot() {
+  return (
+    <div
+      className={cn(
+        SLOT_HEIGHT,
+        'flex items-center justify-center',
+        'rounded-lg border-2 border-dashed border-table-600 text-white/40'
+      )}
+      role="listitem"
+      aria-label="Empty player slot"
+    >
+      Waiting for player...
     </div>
   );
 }
@@ -248,17 +277,19 @@ function PlayerSlot({
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       className={cn(
-        'flex items-center justify-between p-3 rounded-lg',
+        SLOT_HEIGHT,
+        'flex items-center justify-between px-3 rounded-lg',
         isCurrentPlayer
           ? 'bg-gold-500/10 border border-gold-500/30'
           : 'bg-table-800/50 border border-table-600'
       )}
+      role="listitem"
     >
       <div className="flex items-center gap-3">
-        {/* Avatar placeholder */}
+        {/* Avatar */}
         <div
           className={cn(
-            'w-10 h-10 rounded-full flex items-center justify-center font-bold',
+            'w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0',
             player.isAI
               ? 'bg-purple-500/20 text-purple-400'
               : 'bg-table-700 text-white'
@@ -268,23 +299,23 @@ function PlayerSlot({
           {player.isAI ? '🤖' : player.name[0].toUpperCase()}
         </div>
 
-        <div>
-          <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
             <span
               className={cn(
-                'font-medium',
+                'font-medium truncate',
                 isCurrentPlayer ? 'text-gold-400' : 'text-white'
               )}
             >
               {player.name}
             </span>
             {isHost && (
-              <span className="text-xs bg-gold-500/20 text-gold-400 px-1.5 py-0.5 rounded">
+              <span className="text-xs bg-gold-500/20 text-gold-400 px-1.5 py-0.5 rounded shrink-0">
                 Host
               </span>
             )}
             {player.isAI && (
-              <span className="text-xs bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded">
+              <span className="text-xs bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded shrink-0">
                 AI
               </span>
             )}
@@ -295,7 +326,7 @@ function PlayerSlot({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 shrink-0">
         {/* Ready status */}
         {player.isReady ? (
           <motion.span
@@ -331,7 +362,7 @@ function PlayerSlot({
         {canRemove && (
           <button
             onClick={onRemove}
-            className="p-1 text-red-400 hover:text-red-300 transition-colors rounded focus:outline-none focus:ring-2 focus:ring-red-500"
+            className="p-1.5 text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors rounded focus:outline-none focus:ring-2 focus:ring-red-500"
             aria-label={`Remove ${player.name}`}
           >
             <svg
