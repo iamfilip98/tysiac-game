@@ -315,6 +315,12 @@ export function setupSocketHandlers(io: TypedServer) {
 
           // Start the game - engine will broadcast initial state to all players
           engine.startGame();
+
+          // Notify clients that room now has a gameId
+          const updatedRoom = roomService.getRoom(room.id);
+          if (updatedRoom) {
+            io.to(room.id).emit('room:updated', updatedRoom);
+          }
         } catch (error) {
           console.error('Error starting game:', error);
           socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to start game' });
