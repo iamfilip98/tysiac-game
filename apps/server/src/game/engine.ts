@@ -482,8 +482,8 @@ export class GameEngine {
 
     round.completedTricks++;
 
-    // Check if round is complete (7 tricks)
-    if (round.completedTricks >= 7) {
+    // Check if round is complete (8 tricks)
+    if (round.completedTricks >= 8) {
       this.safeSetTimeout(() => this.endRound(), 1500);
     } else {
       // Start next trick

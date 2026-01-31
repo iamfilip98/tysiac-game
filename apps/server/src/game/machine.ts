@@ -351,7 +351,7 @@ export const machineActions = {
     trickState.currentPlayer = winnerId;
     trickState.trickNumber++;
 
-    if (round.completedTricks < 7) {
+    if (round.completedTricks < 8) {
       round.currentTrick = {
         cards: [],
         leadSuit: null,

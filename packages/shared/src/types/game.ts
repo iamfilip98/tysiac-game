@@ -39,7 +39,7 @@ export interface TrickState {
   cards: { playerId: string; card: Card }[];
   leadSuit: Suit | null;
   currentPlayer: string;
-  trickNumber: number; // 1-7
+  trickNumber: number; // 1-8
 }
 
 // Round state

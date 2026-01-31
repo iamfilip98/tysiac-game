@@ -80,7 +80,7 @@ export function PhaseIndicator({ phase, roundNumber, trickNumber }: PhaseIndicat
       case 'talonDistribution':
         return 'Card distribution';
       case 'trickPlaying':
-        return trickNumber ? `Trick ${trickNumber} of 7` : 'Playing tricks';
+        return trickNumber ? `Trick ${trickNumber} of 8` : 'Playing tricks';
       case 'roundScoring':
         return 'Scoring round';
       case 'gameEnd':

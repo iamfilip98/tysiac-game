@@ -150,17 +150,18 @@ export function GameBoard() {
         {/* Round info */}
         {round && (
           <>
-            <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-3 text-center">
-              <div className="text-sm text-white/60">Round {round.roundNumber}</div>
-              <div className="text-xs text-white/60 mt-1">
-                Dealer:{' '}
-                {gameState.players.find((p) => p.id === round.dealer)?.name}
+            <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl px-3 py-1.5">
+              <div className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-white/60">
+                <span>Round {round.roundNumber}</span>
+                <span className="text-white/30">•</span>
+                <span>Dealer: {gameState.players.find((p) => p.id === round.dealer)?.name}</span>
+                {phase === 'trickPlaying' && (
+                  <>
+                    <span className="text-white/30">•</span>
+                    <span>Trick {round.completedTricks + 1}/8</span>
+                  </>
+                )}
               </div>
-              {phase === 'trickPlaying' && (
-                <div className="text-xs text-white/60">
-                  Trick {round.completedTricks + 1} of 7
-                </div>
-              )}
             </div>
 
             {/* My marriages */}
