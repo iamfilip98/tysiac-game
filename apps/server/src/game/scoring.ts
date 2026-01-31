@@ -1,5 +1,6 @@
 import type { GameState, PlayerScore, RoundResult, Suit } from '@tysiac/shared';
 import { WINNING_SCORE, BARREL_THRESHOLD, MARRIAGE_VALUES, CARD_POINTS } from '@tysiac/shared';
+import { logDebug } from '../services/debugService.js';
 
 export interface RoundScoreResult {
   bidderMadeBid: boolean;
@@ -132,7 +133,7 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
     const isNowOnBarrel = newTotalScore >= BARREL_THRESHOLD && newTotalScore < WINNING_SCORE;
     currentScore.isOnBarrel = isNowOnBarrel;
 
-    results.push({
+    const playerResult = {
       playerId: player.id,
       trickPoints,
       marriagePoints,
@@ -143,7 +144,22 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
       fellOffBarrel,
       isDealer: player.id === round.dealer,
       sittingOut: isSittingOutDealer,
+    };
+
+    logDebug({
+      gameId: game.id,
+      playerId: player.id,
+      eventType: 'scoring:player',
+      eventData: {
+        isBidder,
+        finalBid,
+        previousScore: currentScore.totalScore,
+        ...playerResult,
+      },
+      result: 'success',
     });
+
+    results.push(playerResult);
   }
 
   // Check if bidder made their bid
