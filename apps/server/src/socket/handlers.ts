@@ -660,29 +660,16 @@ export function setupSocketHandlers(io: TypedServer) {
           let gameState: ClientGameState | null = null;
           let validActions: ValidAction[] = [];
           if (room.gameId) {
-            console.log('[RECONNECT] Looking up game:', room.gameId);
             const game = gameService.getGame(room.gameId);
-            console.log('[RECONNECT] Game found:', !!game);
 
             if (game) {
-              console.log('[RECONNECT] Game phase:', game.phase);
-              console.log('[RECONNECT] Current round:', !!game.currentRound);
-              if (game.currentRound) {
-                console.log('[RECONNECT] Current trick:', !!game.currentRound.currentTrick);
-                console.log('[RECONNECT] Current trick player:', game.currentRound.currentTrick?.currentPlayer);
-                console.log('[RECONNECT] Player hand size:', game.currentRound.players[playerId]?.hand?.length);
-              }
-
               gameState = getClientGameState(game, playerId);
-              console.log('[RECONNECT] Client game state created, myHand size:', gameState.myHand?.length);
 
               // Get or recreate game engine
               let engine = gameEngines.get(room.gameId);
-              console.log('[RECONNECT] Existing engine:', !!engine);
 
               if (!engine) {
                 // Engine was lost (server restart?) - recreate it from game state
-                console.log('[RECONNECT] Recreating engine for game:', room.gameId);
                 engine = new GameEngine(
                   game,
                   io,
@@ -692,18 +679,29 @@ export function setupSocketHandlers(io: TypedServer) {
                   true // isRecreated = true
                 );
                 gameEngines.set(room.gameId, engine);
-                console.log('[RECONNECT] Engine recreated');
               }
 
+              // Try engine first
               validActions = engine.getValidActionsForPlayer(playerId);
-              console.log('[RECONNECT] Valid actions count:', validActions.length);
-              console.log('[RECONNECT] Valid actions:', JSON.stringify(validActions));
+
+              // FALLBACK: If no actions but it looks like player's turn, calculate directly
+              if (validActions.length === 0 && game.phase === 'trickPlaying') {
+                const round = game.currentRound;
+                if (round?.currentTrick?.currentPlayer === playerId) {
+                  // It IS this player's turn - calculate valid cards directly
+                  const hand = round.players[playerId]?.hand || [];
+                  if (hand.length > 0) {
+                    // Use getValidActions directly with empty bidding state
+                    validActions = getValidActions(game, playerId, {
+                      currentBidder: '',
+                      currentBid: round.finalBid,
+                      passedPlayers: [],
+                    });
+                  }
+                }
+              }
             }
           }
-
-          console.log('[RECONNECT] Sending connection:restored with:');
-          console.log('[RECONNECT]   - gameState:', !!gameState);
-          console.log('[RECONNECT]   - validActions count:', validActions.length);
 
           // Send everything in one event to avoid race conditions
           socket.emit('connection:restored', { room, gameState, validActions });
