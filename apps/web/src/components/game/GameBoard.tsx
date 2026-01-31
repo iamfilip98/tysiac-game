@@ -146,35 +146,35 @@ export function GameBoard() {
           finalBid={round?.finalBid}
           trumpSuit={round?.trumpSuit}
         />
-      </div>
 
-      {/* Round info - centered under ScoreBoard */}
-      {round && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-20">
-          <div className="bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-3 text-center">
-            <div className="text-sm text-white/60">Round {round.roundNumber}</div>
-            <div className="text-xs text-white/60 mt-1">
-              Dealer:{' '}
-              {gameState.players.find((p) => p.id === round.dealer)?.name}
+        {/* Round info */}
+        {round && (
+          <>
+            <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-3 text-center">
+              <div className="text-sm text-white/60">Round {round.roundNumber}</div>
+              <div className="text-xs text-white/60 mt-1">
+                Dealer:{' '}
+                {gameState.players.find((p) => p.id === round.dealer)?.name}
+              </div>
+              {phase === 'trickPlaying' && (
+                <div className="text-xs text-white/60">
+                  Trick {round.completedTricks + 1} of 7
+                </div>
+              )}
             </div>
-            {phase === 'trickPlaying' && (
-              <div className="text-xs text-white/60">
-                Trick {round.completedTricks + 1} of 7
+
+            {/* My marriages */}
+            {myDeclaredMarriages.length > 0 && (
+              <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-2">
+                <DeclaredMarriages
+                  marriages={myDeclaredMarriages}
+                  totalPoints={myMarriagePoints}
+                />
               </div>
             )}
-          </div>
-
-          {/* My marriages */}
-          {myDeclaredMarriages.length > 0 && (
-            <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-2">
-              <DeclaredMarriages
-                marriages={myDeclaredMarriages}
-                totalPoints={myMarriagePoints}
-              />
-            </div>
-          )}
-        </div>
-      )}
+          </>
+        )}
+      </div>
 
       {/* Opponents */}
       <div className={cn(
