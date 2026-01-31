@@ -659,6 +659,10 @@ export function setupSocketHandlers(io: TypedServer) {
               const engine = gameEngines.get(room.gameId);
               if (engine) {
                 validActions = engine.getValidActionsForPlayer(playerId);
+                console.log('[player:reconnect] Valid actions for player:', playerId, JSON.stringify(validActions));
+                console.log('[player:reconnect] Game phase:', game.phase);
+                console.log('[player:reconnect] Current trick player:', game.currentRound?.currentTrick?.currentPlayer);
+                console.log('[player:reconnect] Player hand size:', game.currentRound?.players[playerId]?.hand?.length);
               }
             }
           }
@@ -667,7 +671,10 @@ export function setupSocketHandlers(io: TypedServer) {
 
           // Send valid actions if it's this player's turn
           if (validActions.length > 0) {
+            console.log('[player:reconnect] Sending game:yourTurn with', validActions.length, 'actions');
             socket.emit('game:yourTurn', { validActions });
+          } else {
+            console.log('[player:reconnect] No valid actions to send');
           }
 
           socket.to(roomId).emit('player:reconnected', playerId);

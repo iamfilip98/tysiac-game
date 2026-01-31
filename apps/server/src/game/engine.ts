@@ -781,13 +781,32 @@ export class GameEngine {
    */
   getValidActionsForPlayer(playerId: string): ValidAction[] {
     const round = this.game.currentRound;
-    if (!round) return [];
+    if (!round) {
+      console.log('[getValidActionsForPlayer] No round, returning empty');
+      return [];
+    }
 
-    return getValidActions(this.game, playerId, {
+    console.log('[getValidActionsForPlayer] Getting actions for', playerId);
+    console.log('[getValidActionsForPlayer] Phase:', this.game.phase);
+    console.log('[getValidActionsForPlayer] CurrentBidder:', this.currentBidder);
+    console.log('[getValidActionsForPlayer] CurrentTrickPlayer:', round.currentTrick?.currentPlayer);
+
+    const actions = getValidActions(this.game, playerId, {
       currentBidder: this.currentBidder,
       currentBid: round.finalBid,
       passedPlayers: this.passedPlayers,
     });
+
+    console.log('[getValidActionsForPlayer] Returning', actions.length, 'actions');
+    if (actions.length > 0) {
+      console.log('[getValidActionsForPlayer] Action types:', actions.map(a => a.type));
+      const playCardAction = actions.find(a => a.type === 'playCard');
+      if (playCardAction && playCardAction.type === 'playCard') {
+        console.log('[getValidActionsForPlayer] Valid cards count:', playCardAction.validCards.length);
+      }
+    }
+
+    return actions;
   }
 
   /**
