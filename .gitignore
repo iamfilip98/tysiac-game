@@ -38,3 +38,4 @@ coverage
 *.db
 *.sqlite
 .vercel
+.env.prod
