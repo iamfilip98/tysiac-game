@@ -140,6 +140,14 @@ export function getValidActions(
       break;
     }
 
+    case 'playOrPassDecision': {
+      // Only bid winner can make this decision
+      if (round.bidWinner !== playerId) break;
+
+      actions.push({ type: 'playOrPass' });
+      break;
+    }
+
     case 'talonDistribution': {
       if (round.bidWinner !== playerId) break;
 

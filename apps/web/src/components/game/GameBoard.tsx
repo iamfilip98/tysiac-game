@@ -7,6 +7,8 @@ import { TrickPile } from './TrickPile';
 import { ScoreBoard } from './ScoreBoard';
 import { BiddingPanel } from './BiddingPanel';
 import { TalonDisplay, TalonDistributionPanel } from './TalonPanel';
+import { PlayOrPassPanel } from './PlayOrPassPanel';
+import { WykladanaModal } from './WykladanaModal';
 import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultModal';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
@@ -41,8 +43,11 @@ export function GameBoard() {
     showGameEnd,
     isMyTurn,
     serverDebug,
+    lastMarriageDeclared,
+    wykladanaData,
+    showWykladana,
   } = useGameStore();
-  const { selectCard } = useGameStore();
+  const { selectCard, setShowWykladana } = useGameStore();
   const { setShowRoundResult, setShowGameEnd } = useGameStore();
 
   const {
@@ -51,6 +56,7 @@ export function GameBoard() {
     playCard,
     distributeTalon,
     confirmTalon,
+    playOrPass,
     leaveRoom,
     leaveGame,
     startGame,
@@ -284,6 +290,7 @@ export function GameBoard() {
                 cards={round.currentTrick.cards}
                 players={gameState.players}
                 currentPlayerId={playerId}
+                marriageCard={lastMarriageDeclared ? { suit: lastMarriageDeclared.suit } : null}
               />
             </motion.div>
           )}
@@ -310,6 +317,22 @@ export function GameBoard() {
                 onBid={bid}
                 onPass={pass}
                 isMyTurn={isMyTurn}
+              />
+            </motion.div>
+          )}
+
+          {/* Play or Pass decision (when bid is 100) */}
+          {phase === 'playOrPassDecision' && (
+            <motion.div
+              key="playOrPass"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+            >
+              <PlayOrPassPanel
+                onPlay={() => playOrPass('play')}
+                onPass={() => playOrPass('pass')}
+                isMyTurn={isMyTurn && round?.bidWinner === playerId}
               />
             </motion.div>
           )}
@@ -368,6 +391,15 @@ export function GameBoard() {
             Your turn - select a card to play
           </div>
         </motion.div>
+      )}
+
+      {/* WYKLADANA celebration */}
+      {showWykladana && wykladanaData && (
+        <WykladanaModal
+          playerName={wykladanaData.playerName}
+          bid={wykladanaData.bid}
+          onComplete={() => setShowWykladana(false)}
+        />
       )}
 
       {/* Round result modal */}

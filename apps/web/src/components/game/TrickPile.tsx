@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
-import type { Card as CardType } from '@tysiac/shared';
+import type { Card as CardType, Suit } from '@tysiac/shared';
 
 // Hook to track screen size
 function useIsMobile() {
@@ -24,9 +24,10 @@ interface TrickPileProps {
   cards: { playerId: string; card: CardType }[];
   players: { id: string; name: string; seatIndex: number }[];
   currentPlayerId: string; // The viewing player
+  marriageCard?: { suit: Suit } | null; // If a marriage was just declared, show Q as gold
 }
 
-export function TrickPile({ cards, players, currentPlayerId }: TrickPileProps) {
+export function TrickPile({ cards, players, currentPlayerId, marriageCard }: TrickPileProps) {
   const isMobile = useIsMobile();
 
   // Position cards based on who played them relative to current player
@@ -95,7 +96,12 @@ export function TrickPile({ cards, players, currentPlayerId }: TrickPileProps) {
               className="absolute will-change-transform"
               style={{ zIndex: index, transform: 'translateZ(0)' }}
             >
-              <Card card={card} size={isMobile ? 'sm' : 'md'} isPlayable={false} />
+              <Card
+                card={card}
+                size={isMobile ? 'sm' : 'md'}
+                isPlayable={false}
+                isMarriageCard={marriageCard?.suit === card.suit && card.rank === 'Q'}
+              />
             </motion.div>
           );
         })}

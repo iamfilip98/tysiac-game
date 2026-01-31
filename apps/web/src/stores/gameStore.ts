@@ -10,6 +10,11 @@ interface GameState {
   showGameEnd: boolean;
   isMyTurn: boolean;
   serverDebug: any | null;
+  // Marriage display state
+  lastMarriageDeclared: { playerId: string; suit: Suit } | null;
+  // WYKLADANA celebration state
+  wykladanaData: { playerName: string; bid: number } | null;
+  showWykladana: boolean;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -20,6 +25,9 @@ interface GameState {
   setShowGameEnd: (show: boolean) => void;
   setIsMyTurn: (isMyTurn: boolean) => void;
   setServerDebug: (debug: any) => void;
+  setLastMarriageDeclared: (data: { playerId: string; suit: Suit } | null) => void;
+  setWykladanaData: (data: { playerName: string; bid: number } | null) => void;
+  setShowWykladana: (show: boolean) => void;
   reset: () => void;
 }
 
@@ -32,6 +40,9 @@ export const useGameStore = create<GameState>((set) => ({
   showGameEnd: false,
   isMyTurn: false,
   serverDebug: null,
+  lastMarriageDeclared: null,
+  wykladanaData: null,
+  showWykladana: false,
 
   setGameState: (gameState) =>
     set({
@@ -62,6 +73,16 @@ export const useGameStore = create<GameState>((set) => ({
 
   setServerDebug: (serverDebug) => set({ serverDebug }),
 
+  setLastMarriageDeclared: (lastMarriageDeclared) => set({ lastMarriageDeclared }),
+
+  setWykladanaData: (wykladanaData) =>
+    set({
+      wykladanaData,
+      showWykladana: wykladanaData !== null,
+    }),
+
+  setShowWykladana: (showWykladana) => set({ showWykladana }),
+
   reset: () =>
     set({
       gameState: null,
@@ -72,5 +93,8 @@ export const useGameStore = create<GameState>((set) => ({
       showGameEnd: false,
       isMyTurn: false,
       serverDebug: null,
+      lastMarriageDeclared: null,
+      wykladanaData: null,
+      showWykladana: false,
     }),
 }));

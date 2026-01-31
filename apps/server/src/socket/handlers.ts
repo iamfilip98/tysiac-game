@@ -439,6 +439,40 @@ export function setupSocketHandlers(io: TypedServer) {
       });
     });
 
+    socket.on('game:playOrPass', (decision) => {
+      withRateLimit(socket, 'game:playOrPass', () => {
+        try {
+          if (decision !== 'play' && decision !== 'pass') {
+            socket.emit('game:error', { code: 'INVALID_INPUT', message: 'Invalid decision' });
+            return;
+          }
+
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
+
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
+
+          engine.handlePlayOrPass(playerId, decision);
+        } catch (error) {
+          console.error('Error handling play/pass decision:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to process decision' });
+        }
+      });
+    });
+
     socket.on('game:distributeTalon', (distribution) => {
       withRateLimit(socket, 'game:distributeTalon', () => {
         try {

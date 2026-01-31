@@ -5,6 +5,7 @@ import { getValidCards, getTrickWinner, validateBid, validateCardPlay, canDeclar
 import { calculateRoundScores, applyScores, createRoundResult } from './scoring.js';
 import { getClientGameState, getValidActions, getNextPlayer, isAIPlayer } from './stateManager.js';
 import { AIPlayer } from '../ai/index.js';
+import { detectWykladana } from './wykladana.js';
 
 export class GameEngine {
   private game: GameState;
@@ -410,6 +411,18 @@ export class GameEngine {
       }
     }
 
+    // Debug logging for bidding order investigation
+    console.log('[Bidding Advance]', {
+      currentBidder: this.currentBidder,
+      bidWinner: round.bidWinner,
+      finalBid: round.finalBid,
+      passedPlayers: this.passedPlayers,
+      biddingOrder,
+      activeBidders,
+      nextBidder,
+      currentIndex,
+    });
+
     if (nextBidder) {
       this.currentBidder = nextBidder;
       this.promptCurrentPlayer();
@@ -457,19 +470,85 @@ export class GameEngine {
     const allConfirmed = this.game.players.every(p => this.talonConfirmations.has(p.id));
 
     if (allConfirmed) {
-      // Add talon to bid winner's hand and proceed to distribution
       const round = this.game.currentRound!;
-      const bidWinnerId = round.bidWinner!;
-      round.players[bidWinnerId].hand.push(...round.talon);
-      round.cardsToDistribute = [...round.talon];
 
-      this.safeSetTimeout(() => {
-        if (this.isCleanedUp) return;
-        this.game.phase = 'talonDistribution';
+      // If bid was exactly 100, bidder needs to decide whether to play or pass
+      if (round.finalBid === 100) {
+        this.game.phase = 'playOrPassDecision';
         this.broadcastState();
-        this.promptCurrentPlayer();
-      }, 500);
+        this.promptPlayOrPassDecision();
+        return;
+      }
+
+      // Otherwise proceed directly to talon distribution
+      this.proceedToTalonDistribution();
     }
+  }
+
+  private promptPlayOrPassDecision(): void {
+    if (this.isCleanedUp) return;
+
+    const round = this.game.currentRound!;
+    const bidWinnerId = round.bidWinner!;
+
+    // Check if AI player - AI always chooses to play
+    if (isAIPlayer(this.game, bidWinnerId)) {
+      this.safeSetTimeout(() => {
+        this.handlePlayOrPass(bidWinnerId, 'play');
+      }, 800);
+      return;
+    }
+
+    // Notify human player
+    const socketId = this.getSocketId(bidWinnerId);
+    if (socketId) {
+      this.io.to(socketId).emit('game:yourTurn', {
+        validActions: [{ type: 'playOrPass' }],
+      });
+    }
+  }
+
+  handlePlayOrPass(playerId: string, decision: 'play' | 'pass'): void {
+    if (this.isCleanedUp) return;
+    if (this.game.phase !== 'playOrPassDecision') return;
+
+    const round = this.game.currentRound!;
+    if (playerId !== round.bidWinner) return;
+
+    if (decision === 'pass') {
+      // Player chose to pass - no points change, start new round
+      const player = this.game.players.find(p => p.id === playerId);
+      this.io.to(this.roomId).emit('game:playerPassedAt100', {
+        playerId,
+        playerName: player?.name || 'Unknown',
+      });
+
+      // Skip scoring and start a new round after a brief delay
+      this.safeSetTimeout(() => {
+        this.startNewRound();
+      }, 2000);
+    } else {
+      // Player chose to play - proceed to talon distribution
+      this.proceedToTalonDistribution();
+    }
+  }
+
+  private proceedToTalonDistribution(): void {
+    if (this.isCleanedUp) return;
+
+    const round = this.game.currentRound!;
+    const bidWinnerId = round.bidWinner!;
+
+    // Add talon to bid winner's hand
+    round.players[bidWinnerId].hand.push(...round.talon);
+    round.cardsToDistribute = [...round.talon];
+
+    this.safeSetTimeout(() => {
+      if (this.isCleanedUp) return;
+      this.game.phase = 'talonDistribution';
+      this.broadcastState();
+      this.promptCurrentPlayer();
+    }, 500);
   }
 
   handleDistributeTalon(playerId: string, distribution: { playerId: string; card: Card }[]): void {
@@ -534,6 +613,33 @@ export class GameEngine {
 
     const round = this.game.currentRound!;
 
+    // Check for WYKLADANA before starting tricks
+    const isWykladana = detectWykladana(this.game);
+
+    if (isWykladana) {
+      // Emit WYKLADANA celebration event
+      const bidWinner = this.game.players.find(p => p.id === round.bidWinner);
+      this.io.to(this.roomId).emit('game:wykladana', {
+        playerId: round.bidWinner!,
+        playerName: bidWinner?.name || 'Unknown',
+        bid: round.finalBid,
+      });
+
+      // Award all 120 trick points to bidder immediately
+      const bidderState = round.players[round.bidWinner!];
+      bidderState.pointsFromTricks = 120; // All trick points
+      bidderState.tricksWon = [[]]; // Mark as having won at least one trick for marriage points
+      round.completedTricks = 8;
+
+      // After delay for celebration (3.5 seconds), end the round
+      this.safeSetTimeout(() => {
+        if (this.isCleanedUp) return;
+        this.endRound();
+      }, 3500);
+      return;
+    }
+
+    // Normal trick playing setup
     round.currentTrick = {
       cards: [],
       leadSuit: null,
@@ -576,6 +682,9 @@ export class GameEngine {
     // Set trump
     round.trumpSuit = suit;
 
+    // Emit marriage declared event
+    this.io.to(this.roomId).emit('game:marriageDeclared', { playerId, suit });
+
     this.broadcastState();
 
     // Auto-play the Queen of the marriage suit
@@ -604,13 +713,28 @@ export class GameEngine {
     if (card.rank === 'Q' && trick.cards.length === 0) {
       const suit = card.suit;
       const declared = playerState.declaredMarriages;
+      const hasMarriageInSuit = hasMarriage(playerState.hand, suit);
+
+      // Debug logging for marriage auto-declaration investigation
+      console.log('[Marriage Check]', {
+        playerId,
+        cardRank: card.rank,
+        cardSuit: card.suit,
+        trickCardsLength: trick.cards.length,
+        hasMarriageResult: hasMarriageInSuit,
+        alreadyDeclared: declared,
+        hand: playerState.hand.map(c => `${c.rank}${c.suit}`),
+      });
 
       // Check if player has undeclared marriage in this suit
-      if (hasMarriage(playerState.hand, suit) && !declared.includes(suit)) {
+      if (hasMarriageInSuit && !declared.includes(suit)) {
         // Declare the marriage
         playerState.declaredMarriages.push(suit);
         playerState.marriagePoints += MARRIAGE_VALUES[suit];
         round.trumpSuit = suit;
+        // Emit marriage declared event
+        this.io.to(this.roomId).emit('game:marriageDeclared', { playerId, suit });
+        console.log('[Marriage Declared]', { suit, trumpSuit: round.trumpSuit, marriagePoints: playerState.marriagePoints });
       }
     }
 

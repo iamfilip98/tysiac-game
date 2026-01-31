@@ -25,6 +25,8 @@ export function useSocket() {
     setValidActions,
     setRoundResult,
     setShowGameEnd,
+    setLastMarriageDeclared,
+    setWykladanaData,
     reset: resetGame,
   } = useGameStore();
 
@@ -167,6 +169,22 @@ export function useSocket() {
       setError(message);
     });
 
+    socket.on('game:marriageDeclared', ({ playerId, suit }) => {
+      console.log('[game:marriageDeclared]', playerId, suit);
+      setLastMarriageDeclared({ playerId, suit });
+      // Clear the marriage indicator after a short delay (when trick completes)
+      setTimeout(() => setLastMarriageDeclared(null), 3000);
+    });
+
+    socket.on('game:wykladana', ({ playerId, playerName, bid }) => {
+      console.log('[game:wykladana] WYKLADANA!', playerName, bid);
+      setWykladanaData({ playerName, bid });
+    });
+
+    socket.on('game:playerPassedAt100', ({ playerId, playerName }) => {
+      console.log('[game:playerPassedAt100]', playerName, 'passed at 100');
+    });
+
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions, debug }) => {
       console.log('[connection:restored] RECEIVED!', {
@@ -217,6 +235,9 @@ export function useSocket() {
       socket.off('game:roundEnd');
       socket.off('game:ended');
       socket.off('game:error');
+      socket.off('game:marriageDeclared');
+      socket.off('game:wykladana');
+      socket.off('game:playerPassedAt100');
       socket.off('connection:restored');
     };
   }, []);
@@ -300,6 +321,12 @@ export function useSocket() {
     safeEmit('game:confirmTalon');
   }, [safeEmit]);
 
+  const playOrPass = useCallback((decision: 'play' | 'pass') => {
+    if (safeEmit('game:playOrPass', decision)) {
+      setValidActions([]);
+    }
+  }, [safeEmit, setValidActions]);
+
   const leaveGame = useCallback(() => {
     if (safeEmit('game:leave')) {
       clearSession();
@@ -322,6 +349,7 @@ export function useSocket() {
     bid,
     pass,
     confirmTalon,
+    playOrPass,
     distributeTalon,
     playCard,
     declareMarriage,

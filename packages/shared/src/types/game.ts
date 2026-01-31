@@ -76,6 +76,7 @@ export type GamePhase =
   | 'dealing'
   | 'bidding'
   | 'talonReveal'
+  | 'playOrPassDecision'  // When bid winner at 100 decides to play or pass
   | 'talonDistribution'
   | 'trickPlaying'
   | 'roundScoring'

@@ -37,6 +37,7 @@ export interface ClientToServerEvents {
   'game:bid': (amount: number) => void;
   'game:pass': () => void;
   'game:confirmTalon': () => void;
+  'game:playOrPass': (decision: 'play' | 'pass') => void;
   'game:distributeTalon': (distribution: { playerId: string; card: Card }[]) => void;
   'game:playCard': (card: Card) => void;
   'game:declareMarriage': (suit: Suit) => void;
@@ -63,6 +64,9 @@ export interface ServerToClientEvents {
   'game:yourTurn': (data: { validActions: ValidAction[] }) => void;
   'game:cardPlayed': (data: { playerId: string; card: Card }) => void;
   'game:trickWon': (data: { winnerId: string; cards: Card[]; points: number }) => void;
+  'game:marriageDeclared': (data: { playerId: string; suit: Suit }) => void;
+  'game:playerPassedAt100': (data: { playerId: string; playerName: string }) => void;
+  'game:wykladana': (data: { playerId: string; playerName: string; bid: number }) => void;
   'game:roundEnd': (data: RoundResult) => void;
   'game:ended': (data: { winnerId: string; finalScores: Record<string, number> }) => void;
   'game:playerReplacedByAI': (data: { playerId: string; playerName: string }) => void;
@@ -101,6 +105,7 @@ export interface ServerToClientEvents {
 export type ValidAction =
   | { type: 'bid'; minBid: number; maxBid: number }
   | { type: 'pass' }
+  | { type: 'playOrPass' }  // For 100 bid winner deciding to play or pass
   | { type: 'playCard'; validCards: Card[] }
   | { type: 'distributeTalon'; cardsToGive: number }
   | { type: 'declareMarriage'; suits: Suit[] };
