@@ -12,6 +12,7 @@ export class GameEngine {
   private roomId: string;
   private ai: AIPlayer;
   private onCleanup?: () => void;
+  private socketLookup: (playerId: string) => string | null;
 
   // Bidding state tracking
   private currentBidder: string = '';
@@ -25,12 +26,21 @@ export class GameEngine {
   private isCleanedUp: boolean = false;
   private isFirstRound: boolean = true;
 
-  constructor(game: GameState, io: Server, roomId: string, onCleanup?: () => void) {
+  constructor(
+    game: GameState,
+    io: Server,
+    roomId: string,
+    onCleanup?: () => void,
+    socketLookup?: (playerId: string) => string | null
+  ) {
     this.game = game;
     this.io = io;
     this.roomId = roomId;
     this.ai = new AIPlayer();
     this.onCleanup = onCleanup;
+    this.socketLookup = socketLookup || ((playerId) =>
+      playerId.startsWith('player-') ? playerId.replace('player-', '') : null
+    );
   }
 
   // Safe setTimeout that tracks timers for cleanup
@@ -545,12 +555,16 @@ export class GameEngine {
       this.isFirstRound = false;
     }
 
+    console.log(`[GameEngine] Broadcasting ${eventName} to players`);
+
     // Send personalized state to each player
     for (const player of this.game.players) {
       if (player.isAI) continue;
 
       const clientState = getClientGameState(this.game, player.id);
       const socketId = this.getSocketId(player.id);
+
+      console.log(`[GameEngine] Sending ${eventName} to player ${player.id}, socketId: ${socketId}`);
 
       if (socketId) {
         this.io.to(socketId).emit(eventName, clientState);
@@ -674,9 +688,7 @@ export class GameEngine {
   }
 
   private getSocketId(playerId: string): string | null {
-    // In a real implementation, this would look up the socket ID
-    // For now, we rely on the socket handlers mapping
-    return playerId.startsWith('player-') ? playerId.replace('player-', '') : null;
+    return this.socketLookup(playerId);
   }
 
   private sendError(playerId: string, message: string): void {

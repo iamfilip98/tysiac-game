@@ -307,10 +307,14 @@ export function setupSocketHandlers(io: TypedServer) {
           const game = gameService.createGame(room.id, players);
           roomService.setGameId(room.id, game.id);
 
-          // Create game engine with cleanup callback
-          const engine = new GameEngine(game, io, room.id, () => {
-            cleanupGame(game.id, room.id);
-          });
+          // Create game engine with cleanup callback and socket lookup
+          const engine = new GameEngine(
+            game,
+            io,
+            room.id,
+            () => cleanupGame(game.id, room.id),
+            (playerId: string) => playerToSocket.get(playerId) || null
+          );
           gameEngines.set(game.id, engine);
 
           // Start the game - engine will broadcast initial state to all players
@@ -318,6 +322,11 @@ export function setupSocketHandlers(io: TypedServer) {
 
           // Notify clients that room now has a gameId
           const updatedRoom = roomService.getRoom(room.id);
+          console.log('[room:startGame] Broadcasting room:updated', {
+            roomId: updatedRoom?.id,
+            gameId: updatedRoom?.gameId,
+            playerCount: updatedRoom?.players.length
+          });
           if (updatedRoom) {
             io.to(room.id).emit('room:updated', updatedRoom);
           }

@@ -70,16 +70,18 @@ export function useSocket() {
     });
 
     socket.on('room:updated', (room) => {
+      console.log('[room:updated] Received room:', room?.id, 'gameId:', room?.gameId);
       setRoom(room);
     });
 
-    socket.on('room:error', ({ message }) => {
+    socket.on('room:error', ({ code, message }) => {
+      console.log('[room:error] Error:', code, message);
       setError(message);
     });
 
     // Game events
     socket.on('game:started', (state) => {
-      setGameState(state);
+      console.log('[game:started] Received game state:', state);
       resetGame();
       setGameState(state);
     });
