@@ -29,6 +29,10 @@ function useIsMobile() {
   return isMobile;
 }
 
+// Simpler mobile transition
+const mobileTransition = { duration: 0.15, ease: 'easeOut' };
+const desktopTransition = { type: 'spring', stiffness: 300, damping: 25 };
+
 export function PlayerHand({
   cards,
   validActions,
@@ -108,10 +112,15 @@ export function PlayerHand({
           const baseSpread = isMobile ? 28 : 50;
           const xOffset = (index - (cardCount - 1) / 2) * baseSpread;
 
+          // Simpler transitions for mobile
+          const transition = isMobile
+            ? { duration: 0.2, ease: 'easeOut', delay: index * 0.03 }
+            : { type: 'spring', stiffness: 300, damping: 30, delay: index * 0.05 };
+
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
-              layout
+              layout={!isMobile}
               initial={{ opacity: 0, y: 50, scale: 0.8 }}
               animate={{
                 opacity: 1,
@@ -121,16 +130,13 @@ export function PlayerHand({
                 x: xOffset,
               }}
               exit={{ opacity: 0, y: 50, scale: 0.8 }}
-              transition={{
-                type: 'spring',
-                stiffness: 300,
-                damping: 30,
-                delay: index * 0.05,
-              }}
+              transition={transition}
               style={{
                 position: 'absolute',
                 transformOrigin: 'bottom center',
                 zIndex: selected ? 100 : index,
+                willChange: 'transform',
+                transform: 'translateZ(0)',
               }}
             >
               <Card
@@ -174,6 +180,8 @@ export function OpponentHand({
   playerName,
   isCurrentTurn = false,
 }: OpponentHandProps) {
+  const isMobile = useIsMobile();
+
   const positionClasses = {
     left: 'flex-col items-start',
     right: 'flex-col items-end',
@@ -222,11 +230,12 @@ export function OpponentHand({
             key={i}
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: i * 0.05 }}
+            transition={isMobile ? { ...mobileTransition, delay: i * 0.02 } : { ...desktopTransition, delay: i * 0.05 }}
             className={cn(
-              'w-7 h-10 sm:w-10 sm:h-14 rounded-md card-back',
+              'w-7 h-10 sm:w-10 sm:h-14 rounded-md card-back will-change-transform',
               cardDirection === 'vertical' && 'rotate-90'
             )}
+            style={{ transform: 'translateZ(0)' }}
           />
         ))}
       </div>

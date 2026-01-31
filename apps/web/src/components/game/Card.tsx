@@ -1,9 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
+
+// Hook to detect mobile for performance optimizations
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 interface CardProps {
   card: CardType;
@@ -34,6 +49,7 @@ export function Card({
   className,
   delay = 0,
 }: CardProps) {
+  const isMobile = useIsMobile();
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
   const cardDescription = getCardDescription(card);
@@ -45,18 +61,23 @@ export function Card({
     }
   };
 
+  // Simpler transitions for mobile
+  const transition = isMobile
+    ? { delay, duration: 0.2, ease: 'easeOut' }
+    : { delay, type: 'spring', stiffness: 300, damping: 25 };
+
   if (isFaceDown) {
     return (
       <motion.div
         initial={{ scale: 0.8, opacity: 0, y: -50 }}
         animate={{ scale: 1, opacity: 1, y: 0 }}
-        transition={{ delay, type: 'spring', stiffness: 300, damping: 25 }}
+        transition={transition}
         className={cn(
-          'playing-card card-back',
+          'playing-card card-back will-change-transform',
           sizeClasses[size],
           className
         )}
-        style={style}
+        style={{ ...style, transform: 'translateZ(0)' }}
         role="img"
         aria-label="Face-down card"
       />
@@ -73,14 +94,9 @@ export function Card({
         opacity: 1,
         y: isSelected ? -16 : 0,
       }}
-      whileHover={isPlayable ? { y: -8, scale: 1.02 } : undefined}
+      whileHover={isPlayable && !isMobile ? { y: -8, scale: 1.02 } : undefined}
       whileTap={isPlayable ? { scale: 0.98 } : undefined}
-      transition={{
-        delay,
-        type: 'spring',
-        stiffness: 300,
-        damping: 25,
-      }}
+      transition={transition}
       onClick={isInteractive ? onClick : undefined}
       onKeyDown={isInteractive ? handleKeyDown : undefined}
       role={isInteractive ? 'button' : 'img'}
@@ -88,7 +104,7 @@ export function Card({
       aria-label={`${cardDescription}${isSelected ? ', selected' : ''}${isPlayable ? '' : ', not playable'}`}
       aria-pressed={isInteractive ? isSelected : undefined}
       className={cn(
-        'playing-card',
+        'playing-card will-change-transform',
         color === 'red' ? 'red' : 'black',
         sizeClasses[size],
         isPlayable && 'cursor-pointer',
@@ -97,7 +113,7 @@ export function Card({
         isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
         className
       )}
-      style={style}
+      style={{ ...style, transform: 'translateZ(0)' }}
     >
       {/* Card content */}
       <div className="absolute inset-1 flex flex-col justify-between p-1" aria-hidden="true">

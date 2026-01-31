@@ -65,6 +65,11 @@ export function TrickPile({ cards, players, currentPlayerId }: TrickPileProps) {
           const position = getCardPosition(playerId);
           const player = players.find((p) => p.id === playerId);
 
+          // Simpler transitions for mobile
+          const transition = isMobile
+            ? { duration: 0.2, ease: 'easeOut' }
+            : { type: 'spring', stiffness: 300, damping: 25 };
+
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
@@ -86,13 +91,9 @@ export function TrickPile({ cards, players, currentPlayerId }: TrickPileProps) {
                 scale: 0.8,
                 y: -100,
               }}
-              transition={{
-                type: 'spring',
-                stiffness: 300,
-                damping: 25,
-              }}
-              className="absolute"
-              style={{ zIndex: index }}
+              transition={transition}
+              className="absolute will-change-transform"
+              style={{ zIndex: index, transform: 'translateZ(0)' }}
             >
               <Card card={card} size={isMobile ? 'sm' : 'md'} isPlayable={false} />
             </motion.div>
