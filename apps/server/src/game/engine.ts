@@ -83,30 +83,43 @@ export class GameEngine {
    * Returns the valid actions if it was the player's turn, null otherwise
    */
   public notifyPlayerIfTheirTurn(playerId: string): ValidAction[] | null {
+    console.log('[notifyPlayerIfTheirTurn] Called with playerId:', playerId);
+    console.log('[notifyPlayerIfTheirTurn] isCleanedUp:', this.isCleanedUp);
+
     if (this.isCleanedUp) return null;
 
     const round = this.game.currentRound;
+    console.log('[notifyPlayerIfTheirTurn] round exists:', !!round);
     if (!round) return null;
 
     let currentPlayerId: string;
 
+    console.log('[notifyPlayerIfTheirTurn] game.phase:', this.game.phase);
+
     if (this.game.phase === 'bidding') {
       currentPlayerId = this.currentBidder;
+      console.log('[notifyPlayerIfTheirTurn] bidding - currentBidder:', currentPlayerId);
     } else if (this.game.phase === 'talonDistribution') {
       currentPlayerId = round.bidWinner!;
+      console.log('[notifyPlayerIfTheirTurn] talonDistribution - bidWinner:', currentPlayerId);
     } else if (this.game.phase === 'trickPlaying') {
       currentPlayerId = round.currentTrick?.currentPlayer || '';
+      console.log('[notifyPlayerIfTheirTurn] trickPlaying - currentTrick?.currentPlayer:', round.currentTrick?.currentPlayer);
     } else {
+      console.log('[notifyPlayerIfTheirTurn] Unknown phase, returning null');
       return null;
     }
 
     // Only proceed if it's this player's turn
+    console.log('[notifyPlayerIfTheirTurn] Comparing currentPlayerId:', currentPlayerId, 'vs playerId:', playerId);
     if (currentPlayerId !== playerId) {
+      console.log('[notifyPlayerIfTheirTurn] NOT their turn, returning null');
       return null;
     }
 
     // Don't notify AI players through socket
     if (isAIPlayer(this.game, playerId)) {
+      console.log('[notifyPlayerIfTheirTurn] Is AI player, returning null');
       return null;
     }
 
@@ -115,11 +128,16 @@ export class GameEngine {
       currentBid: round.finalBid,
       passedPlayers: this.passedPlayers,
     });
+    console.log('[notifyPlayerIfTheirTurn] getValidActions returned:', actions.length, 'actions');
 
     // Emit game:yourTurn to this player
     const socketId = this.getSocketId(playerId);
+    console.log('[notifyPlayerIfTheirTurn] socketId for player:', socketId);
     if (socketId && actions.length > 0) {
+      console.log('[notifyPlayerIfTheirTurn] EMITTING game:yourTurn with', actions.length, 'actions');
       this.io.to(socketId).emit('game:yourTurn', { validActions: actions });
+    } else {
+      console.log('[notifyPlayerIfTheirTurn] NOT emitting - socketId:', !!socketId, 'actions:', actions.length);
     }
 
     return actions;
