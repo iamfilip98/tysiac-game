@@ -81,18 +81,20 @@ export function BiddingPanel({
         {/* Simple two-button layout: Pass or Bid +10 */}
         <div className="flex gap-3">
           {canPass && (
-            <Button
-              variant="secondary"
-              onClick={handlePass}
-              disabled={isPassing}
-              className="flex-1 py-3 text-lg"
-              aria-busy={isPassing}
-            >
-              {isPassing ? 'Passing...' : 'Pass'}
-            </Button>
+            <motion.div className="flex-1 basis-0" whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="secondary"
+                onClick={handlePass}
+                disabled={isPassing}
+                className="w-full py-3 text-lg"
+                aria-busy={isPassing}
+              >
+                {isPassing ? 'Passing...' : 'Pass'}
+              </Button>
+            </motion.div>
           )}
           {canBid && (
-            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
+            <motion.div className="flex-1 basis-0" whileTap={{ scale: 0.98 }}>
               <Button
                 variant="primary"
                 onClick={handleBid}
