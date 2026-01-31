@@ -40,6 +40,7 @@ export interface ClientToServerEvents {
   'game:distributeTalon': (distribution: { playerId: string; card: Card }[]) => void;
   'game:playCard': (card: Card) => void;
   'game:declareMarriage': (suit: Suit) => void;
+  'game:leave': () => void;
 
   // Connection events
   'player:reconnect': (data: { roomId: string; playerId: string; sessionToken: string }) => void;
@@ -64,6 +65,7 @@ export interface ServerToClientEvents {
   'game:trickWon': (data: { winnerId: string; cards: Card[]; points: number }) => void;
   'game:roundEnd': (data: RoundResult) => void;
   'game:ended': (data: { winnerId: string; finalScores: Record<string, number> }) => void;
+  'game:playerReplacedByAI': (data: { playerId: string; playerName: string }) => void;
   'game:error': (error: { code: string; message: string }) => void;
 
   // Connection events

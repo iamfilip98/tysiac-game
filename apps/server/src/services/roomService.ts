@@ -213,3 +213,31 @@ export function clearGameId(roomId: string): void {
     });
   }
 }
+
+export function replacePlayerWithAI(roomId: string, playerId: string): Room | null {
+  const room = rooms.get(roomId);
+  if (!room) return null;
+
+  const player = room.players.find(p => p.id === playerId);
+  if (!player) return null;
+
+  // Mark player as AI (keeping their name with [AI] suffix)
+  player.isAI = true;
+  player.name = `${player.name} [AI]`;
+  player.isReady = true;
+
+  // Remove from player rooms mapping (they're no longer connected)
+  playerRooms.delete(playerId);
+
+  // If they were host, transfer host to another human player
+  if (room.hostId === playerId) {
+    const newHost = room.players.find(p => !p.isAI);
+    if (newHost) {
+      room.hostId = newHost.id;
+      newHost.isHost = true;
+      player.isHost = false;
+    }
+  }
+
+  return room;
+}

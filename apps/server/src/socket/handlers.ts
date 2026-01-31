@@ -544,6 +544,62 @@ export function setupSocketHandlers(io: TypedServer) {
       });
     });
 
+    socket.on('game:leave', () => {
+      withRateLimit(socket, 'game:leave', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
+
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
+
+          // Get player name before replacing
+          const player = room.players.find(p => p.id === playerId);
+          const playerName = player?.name || 'Player';
+
+          // Replace player with AI in the game engine
+          engine.replacePlayerWithAI(playerId);
+
+          // Update room to mark player as AI
+          roomService.replacePlayerWithAI(room.id, playerId);
+
+          // Clean up player mappings
+          socketToPlayer.delete(socket.id);
+          playerToSocket.delete(playerId);
+          invalidatePlayerSession(playerId);
+
+          // Leave the socket room
+          socket.leave(room.id);
+
+          // Notify other players
+          io.to(room.id).emit('game:playerReplacedByAI', { playerId, playerName });
+
+          // Broadcast updated room
+          const updatedRoom = roomService.getRoom(room.id);
+          if (updatedRoom) {
+            io.to(room.id).emit('room:updated', updatedRoom);
+          }
+
+          console.log(`Player ${playerId} left game and was replaced by AI`);
+        } catch (error) {
+          console.error('Error leaving game:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to leave game' });
+        }
+      });
+    });
+
     // Reconnection with session validation
     socket.on('player:reconnect', (data) => {
       withRateLimit(socket, 'player:reconnect', () => {

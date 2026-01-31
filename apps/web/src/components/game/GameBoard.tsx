@@ -8,7 +8,7 @@ import { ScoreBoard } from './ScoreBoard';
 import { BiddingPanel } from './BiddingPanel';
 import { TalonDisplay, TalonDistributionPanel } from './TalonPanel';
 import { MarriagePanel, DeclaredMarriages } from './MarriagePanel';
-import { RoundResultModal, GameEndModal } from './RoundResultModal';
+import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultModal';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
@@ -59,6 +59,7 @@ export function GameBoard() {
     distributeTalon,
     confirmTalon,
     leaveRoom,
+    leaveGame,
     startGame,
   } = useSocket();
 
@@ -97,6 +98,9 @@ export function GameBoard() {
 
   // Track talon confirmation state
   const [hasConfirmedTalon, setHasConfirmedTalon] = useState(false);
+
+  // Track leave game modal
+  const [showLeaveModal, setShowLeaveModal] = useState(false);
 
   // Reset confirmation state when phase changes
   useEffect(() => {
@@ -148,6 +152,16 @@ export function GameBoard() {
     <div className="relative h-screen w-full overflow-hidden">
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
+
+      {/* Leave game button - top left */}
+      <div className="absolute top-4 left-4 z-30">
+        <button
+          onClick={() => setShowLeaveModal(true)}
+          className="px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
+        >
+          ← Leave
+        </button>
+      </div>
 
       {/* Score board - top center */}
       <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
@@ -432,6 +446,17 @@ export function GameBoard() {
           currentPlayerId={playerId}
           onPlayAgain={startGame}
           onLeave={leaveRoom}
+        />
+      )}
+
+      {/* Leave game confirmation modal */}
+      {showLeaveModal && (
+        <LeaveGameModal
+          onConfirm={() => {
+            setShowLeaveModal(false);
+            leaveGame();
+          }}
+          onCancel={() => setShowLeaveModal(false)}
         />
       )}
     </div>

@@ -265,6 +265,14 @@ export function useSocket() {
     safeEmit('game:confirmTalon');
   }, [safeEmit]);
 
+  const leaveGame = useCallback(() => {
+    if (safeEmit('game:leave')) {
+      clearSession();
+      resetRoom();
+      resetGame();
+    }
+  }, [safeEmit, resetRoom, resetGame]);
+
   return {
     // Room actions
     createRoom,
@@ -282,5 +290,6 @@ export function useSocket() {
     distributeTalon,
     playCard,
     declareMarriage,
+    leaveGame,
   };
 }

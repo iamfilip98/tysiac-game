@@ -789,4 +789,47 @@ export class GameEngine {
       passedPlayers: this.passedPlayers,
     });
   }
+
+  /**
+   * Replace a human player with AI (when they leave mid-game)
+   */
+  replacePlayerWithAI(playerId: string): void {
+    if (this.isCleanedUp) return;
+
+    // Find the player and mark as AI
+    const player = this.game.players.find(p => p.id === playerId);
+    if (!player) return;
+
+    player.isAI = true;
+    console.log(`[GameEngine] Replaced player ${playerId} (${player.name}) with AI`);
+
+    // Check if it's currently this player's turn and trigger AI
+    const round = this.game.currentRound;
+    if (!round) return;
+
+    let isThisPlayerTurn = false;
+
+    if (this.game.phase === 'bidding' && this.currentBidder === playerId) {
+      isThisPlayerTurn = true;
+    } else if (this.game.phase === 'talonDistribution' && round.bidWinner === playerId) {
+      isThisPlayerTurn = true;
+    } else if (this.game.phase === 'trickPlaying' && round.currentTrick?.currentPlayer === playerId) {
+      isThisPlayerTurn = true;
+    }
+
+    if (isThisPlayerTurn) {
+      // Get valid actions and trigger AI turn
+      const actions = getValidActions(this.game, playerId, {
+        currentBidder: this.currentBidder,
+        currentBid: round.finalBid,
+        passedPlayers: this.passedPlayers,
+      });
+
+      // Delay AI turn slightly so game state can update
+      this.safeSetTimeout(() => this.handleAITurn(playerId, actions), 500);
+    }
+
+    // Broadcast updated state to remaining players
+    this.broadcastState();
+  }
 }
