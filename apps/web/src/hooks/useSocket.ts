@@ -148,6 +148,10 @@ export function useSocket() {
     socket.on('game:stateUpdate', (state) => {
       console.log('[game:stateUpdate] Received update, phase:', state?.phase);
       setGameState(state);
+      // Clear wykladana modal when phase changes away from wykladana
+      if (state?.phase !== 'wykladana') {
+        setWykladanaData(null);
+      }
     });
 
     socket.on('game:yourTurn', ({ validActions }) => {
@@ -172,8 +176,12 @@ export function useSocket() {
     socket.on('game:marriageDeclared', ({ playerId, suit }) => {
       console.log('[game:marriageDeclared]', playerId, suit);
       setLastMarriageDeclared({ playerId, suit });
-      // Clear the marriage indicator after a short delay (when trick completes)
-      setTimeout(() => setLastMarriageDeclared(null), 3000);
+      // Marriage indicator will be cleared when trick completes (game:trickWon)
+    });
+
+    socket.on('game:trickWon', () => {
+      // Clear marriage indicator when trick completes
+      setLastMarriageDeclared(null);
     });
 
     socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number }) => {
@@ -222,6 +230,7 @@ export function useSocket() {
       socket.off('game:ended');
       socket.off('game:error');
       socket.off('game:marriageDeclared');
+      socket.off('game:trickWon');
       socket.off('game:wykladana');
       socket.off('game:playerPassedAt100');
       socket.off('connection:restored');
@@ -307,6 +316,10 @@ export function useSocket() {
     safeEmit('game:confirmTalon');
   }, [safeEmit]);
 
+  const confirmWykladana = useCallback(() => {
+    safeEmit('game:confirmWykladana');
+  }, [safeEmit]);
+
   const playOrPass = useCallback((decision: 'play' | 'pass') => {
     if (safeEmit('game:playOrPass', decision)) {
       setValidActions([]);
@@ -335,6 +348,7 @@ export function useSocket() {
     bid,
     pass,
     confirmTalon,
+    confirmWykladana,
     playOrPass,
     distributeTalon,
     playCard,

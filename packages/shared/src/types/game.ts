@@ -78,6 +78,7 @@ export type GamePhase =
   | 'talonReveal'
   | 'playOrPassDecision'  // When bid winner at 100 decides to play or pass
   | 'talonDistribution'
+  | 'wykladana'  // Celebration phase when bidder has perfect cards
   | 'trickPlaying'
   | 'roundScoring'
   | 'gameEnd';

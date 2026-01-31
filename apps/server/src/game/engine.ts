@@ -23,6 +23,9 @@ export class GameEngine {
   // Talon confirmation tracking
   private talonConfirmations: Set<string> = new Set();
 
+  // Wykladana confirmation tracking
+  private wykladanaConfirmations: Set<string> = new Set();
+
   // Track all timers for cleanup
   private activeTimers: Set<NodeJS.Timeout> = new Set();
   private isCleanedUp: boolean = false;
@@ -601,6 +604,59 @@ export class GameEngine {
     }
   }
 
+  handleConfirmWykladana(playerId: string): void {
+    if (this.isCleanedUp) return;
+    if (this.game.phase !== 'wykladana') {
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        playerId,
+        eventType: 'wykladana:confirm:rejected',
+        eventData: { reason: 'wrong_phase', currentPhase: this.game.phase },
+        result: 'rejected',
+      });
+      return;
+    }
+
+    this.wykladanaConfirmations.add(playerId);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      eventType: 'wykladana:confirm',
+      eventData: {
+        confirmations: Array.from(this.wykladanaConfirmations),
+        totalPlayers: this.game.players.length,
+      },
+      result: 'success',
+    });
+    this.checkWykladanaConfirmations();
+  }
+
+  private checkWykladanaConfirmations(): void {
+    if (this.isCleanedUp) return;
+
+    const playerIds = this.game.players.map(p => p.id);
+    const allConfirmed = playerIds.every(id => this.wykladanaConfirmations.has(id));
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'wykladana:checkConfirmations',
+      eventData: {
+        playerIds,
+        confirmedIds: Array.from(this.wykladanaConfirmations),
+        allConfirmed,
+      },
+      result: allConfirmed ? 'success' : 'rejected',
+    });
+
+    if (allConfirmed) {
+      // All players acknowledged, end the round
+      this.endRound();
+    }
+  }
+
   private promptPlayOrPassDecision(): void {
     if (this.isCleanedUp) return;
 
@@ -779,11 +835,19 @@ export class GameEngine {
         marriagePoints: bidderState.marriagePoints,
       });
 
-      // After delay for celebration (3.5 seconds), end the round
-      this.safeSetTimeout(() => {
-        if (this.isCleanedUp) return;
-        this.endRound();
-      }, 3500);
+      // Set phase to wykladana and wait for all players to confirm
+      this.game.phase = 'wykladana';
+      this.wykladanaConfirmations.clear();
+
+      // Auto-confirm for AI players
+      for (const player of this.game.players) {
+        if (player.isAI) {
+          this.wykladanaConfirmations.add(player.id);
+        }
+      }
+
+      this.broadcastState();
+      this.checkWykladanaConfirmations();
       return;
     }
 

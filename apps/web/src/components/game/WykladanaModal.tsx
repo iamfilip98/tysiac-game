@@ -56,91 +56,109 @@ function Confetti() {
 }
 
 export function WykladanaModal({ playerName, bid, marriagePoints = 0, onComplete }: WykladanaModalProps) {
-  const [show, setShow] = useState(true);
+  const [showButton, setShowButton] = useState(false);
+  const [hasConfirmed, setHasConfirmed] = useState(false);
 
+  // Show Continue button after a short delay
   useEffect(() => {
     const timer = setTimeout(() => {
-      setShow(false);
-      setTimeout(onComplete, 500); // Wait for exit animation
-    }, 3000);
+      setShowButton(true);
+    }, 1500);
 
     return () => clearTimeout(timer);
-  }, [onComplete]);
+  }, []);
+
+  const handleContinue = () => {
+    if (hasConfirmed) return;
+    setHasConfirmed(true);
+    onComplete();
+  };
 
   return (
-    <AnimatePresence>
-      {show && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
-        >
-          <Confetti />
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+    >
+      <Confetti />
 
-          <motion.div
-            initial={{ scale: 0, rotate: -10 }}
-            animate={{
-              scale: [0, 1.2, 1],
-              rotate: [-10, 5, 0],
-            }}
-            transition={{
-              duration: 0.6,
-              times: [0, 0.7, 1],
-              type: 'spring',
-              stiffness: 200,
-            }}
-            className="relative z-10"
-          >
-            <ElectricBorder active color="#fbbf24" speed={1}>
-              <div className="bg-gradient-to-b from-amber-900/90 to-amber-950/95 px-8 sm:px-16 py-8 sm:py-12 rounded-2xl text-center">
-                <motion.div
-                  animate={{
-                    scale: [1, 1.1, 1],
-                  }}
-                  transition={{
-                    duration: 0.8,
-                    repeat: Infinity,
-                  }}
-                  className="text-4xl sm:text-6xl font-bold text-gold-400 mb-4"
-                  style={{
-                    textShadow: '0 0 30px #fbbf24, 0 0 60px #fbbf24',
-                  }}
-                >
-                  WYKLADANA!
-                </motion.div>
+      <motion.div
+        initial={{ scale: 0, rotate: -10 }}
+        animate={{
+          scale: [0, 1.2, 1],
+          rotate: [-10, 5, 0],
+        }}
+        transition={{
+          duration: 0.6,
+          times: [0, 0.7, 1],
+          type: 'spring',
+          stiffness: 200,
+        }}
+        className="relative z-10"
+      >
+        <ElectricBorder active color="#fbbf24" speed={1}>
+          <div className="bg-gradient-to-b from-amber-900/90 to-amber-950/95 px-8 sm:px-16 py-8 sm:py-12 rounded-2xl text-center">
+            <motion.div
+              animate={{
+                scale: [1, 1.1, 1],
+              }}
+              transition={{
+                duration: 0.8,
+                repeat: Infinity,
+              }}
+              className="text-4xl sm:text-6xl font-bold text-gold-400 mb-4"
+              style={{
+                textShadow: '0 0 30px #fbbf24, 0 0 60px #fbbf24',
+              }}
+            >
+              WYKLADANA!
+            </motion.div>
 
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="text-xl sm:text-2xl text-white font-medium mb-2"
+            >
+              {playerName}
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="text-base sm:text-lg text-white/70"
+            >
+              Wins ALL 8 tricks with perfect cards!
+            </motion.p>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.7 }}
+              className="text-gold-300 mt-4"
+            >
+              120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}
+            </motion.p>
+
+            {/* Continue button */}
+            <AnimatePresence>
+              {showButton && (
+                <motion.button
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.3 }}
-                  className="text-xl sm:text-2xl text-white font-medium mb-2"
+                  exit={{ opacity: 0 }}
+                  onClick={handleContinue}
+                  disabled={hasConfirmed}
+                  className="mt-6 px-8 py-3 bg-gold-500 hover:bg-gold-400 disabled:bg-gold-500/50 text-black font-bold rounded-lg transition-colors shadow-lg disabled:cursor-not-allowed"
                 >
-                  {playerName}
-                </motion.p>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="text-base sm:text-lg text-white/70"
-                >
-                  Wins ALL 8 tricks with perfect cards!
-                </motion.p>
-
-                <motion.p
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.7 }}
-                  className="text-gold-300 mt-4"
-                >
-                  120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}
-                </motion.p>
-              </div>
-            </ElectricBorder>
-          </motion.div>
-        </motion.div>
-      )}
-    </AnimatePresence>
+                  {hasConfirmed ? 'Waiting for others...' : 'Continue'}
+                </motion.button>
+              )}
+            </AnimatePresence>
+          </div>
+        </ElectricBorder>
+      </motion.div>
+    </motion.div>
   );
 }

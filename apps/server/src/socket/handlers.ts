@@ -97,6 +97,8 @@ function cleanupGame(gameId: string, roomId: string): void {
     gameEngines.delete(gameId);
   }
   gameCreationLocks.delete(roomId);
+  // Clear gameId from room so "Play Again" works
+  roomService.clearGameId(roomId);
 }
 
 export function setupSocketHandlers(io: TypedServer) {
@@ -519,6 +521,44 @@ export function setupSocketHandlers(io: TypedServer) {
           console.error('Error confirming talon:', error);
           logEvent({ socketId: socket.id, eventType: 'game:confirmTalon', result: 'error', errorMessage: String(error) });
           socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to confirm talon' });
+        }
+      });
+    });
+
+    socket.on('game:confirmWykladana', () => {
+      withRateLimit(socket, 'game:confirmWykladana', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) {
+            logEvent({ socketId: socket.id, eventType: 'game:confirmWykladana', result: 'rejected', errorMessage: 'Not in room' });
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) {
+            logEvent({ socketId: socket.id, eventType: 'game:confirmWykladana', result: 'rejected', errorMessage: 'No active game' });
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
+
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) {
+            logEvent({ socketId: socket.id, eventType: 'game:confirmWykladana', result: 'rejected', errorMessage: 'Game engine not found' });
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
+
+          logEvent({
+            socketId: socket.id,
+            eventType: 'game:confirmWykladana',
+            result: 'success',
+          });
+          engine.handleConfirmWykladana(playerId);
+        } catch (error) {
+          console.error('Error confirming wykladana:', error);
+          logEvent({ socketId: socket.id, eventType: 'game:confirmWykladana', result: 'error', errorMessage: String(error) });
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to confirm wykladana' });
         }
       });
     });

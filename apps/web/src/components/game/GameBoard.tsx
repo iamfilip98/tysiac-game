@@ -55,6 +55,7 @@ export function GameBoard() {
     playCard,
     distributeTalon,
     confirmTalon,
+    confirmWykladana,
     playOrPass,
     leaveRoom,
     leaveGame,
@@ -399,7 +400,7 @@ export function GameBoard() {
           playerName={wykladanaData.playerName}
           bid={wykladanaData.bid}
           marriagePoints={wykladanaData.marriagePoints}
-          onComplete={() => setShowWykladana(false)}
+          onComplete={confirmWykladana}
         />
       )}
 
