@@ -149,7 +149,7 @@ export function useSocket() {
     });
 
     // Reconnection
-    socket.on('connection:restored', ({ room, gameState }) => {
+    socket.on('connection:restored', ({ room, gameState, validActions }) => {
       // Restore playerId from session
       const storedSession = loadSession();
       if (storedSession) {
@@ -159,6 +159,10 @@ export function useSocket() {
       setRoom(room);
       if (gameState) {
         setGameState(gameState);
+      }
+      // Set valid actions if provided (player's turn)
+      if (validActions && validActions.length > 0) {
+        setValidActions(validActions);
       }
       updateSessionTimestamp();
     });

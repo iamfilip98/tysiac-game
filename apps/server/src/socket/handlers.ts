@@ -676,15 +676,8 @@ export function setupSocketHandlers(io: TypedServer) {
             }
           }
 
-          socket.emit('connection:restored', { room, gameState });
-
-          // Send valid actions if it's this player's turn
-          if (validActions.length > 0) {
-            console.log('[player:reconnect] Sending game:yourTurn with', validActions.length, 'actions');
-            socket.emit('game:yourTurn', { validActions });
-          } else {
-            console.log('[player:reconnect] No valid actions to send');
-          }
+          // Send everything in one event to avoid race conditions
+          socket.emit('connection:restored', { room, gameState, validActions });
 
           socket.to(roomId).emit('player:reconnected', playerId);
         } catch (error) {

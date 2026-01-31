@@ -69,7 +69,7 @@ export interface ServerToClientEvents {
   'game:error': (error: { code: string; message: string }) => void;
 
   // Connection events
-  'connection:restored': (data: { room: Room; gameState: ClientGameState | null }) => void;
+  'connection:restored': (data: { room: Room; gameState: ClientGameState | null; validActions?: ValidAction[] }) => void;
   'player:disconnected': (playerId: string) => void;
   'player:reconnected': (playerId: string) => void;
 
