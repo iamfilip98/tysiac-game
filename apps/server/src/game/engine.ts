@@ -485,14 +485,22 @@ export class GameEngine {
 
     this.broadcastState();
 
-    // Auto-confirm for AI players and sitting-out dealer
+    // Auto-confirm for players who don't need to confirm:
+    // - AI players (they auto-confirm)
+    // - Sitting-out dealer in 4-player mode
+    // - Non-bid-winners when bid is exactly 100 (they can't see the talon)
+    const bidWasAt100 = round.finalBid === 100;
     for (const player of this.game.players) {
-      if (player.isAI || (round.isDealerSittingOut && player.id === round.dealer)) {
+      const isAI = player.isAI;
+      const isSittingOutDealer = round.isDealerSittingOut && player.id === round.dealer;
+      const cantSeeTalon = bidWasAt100 && player.id !== round.bidWinner;
+
+      if (isAI || isSittingOutDealer || cantSeeTalon) {
         this.talonConfirmations.add(player.id);
       }
     }
 
-    // Check if all human players already confirmed (all AI)
+    // Check if all confirmations are in
     this.checkTalonConfirmations();
   }
 
