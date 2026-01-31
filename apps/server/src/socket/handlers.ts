@@ -36,7 +36,7 @@ const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
 const DISCONNECT_GRACE_PERIOD = 60000; // 60 seconds for in-game
 const ROOM_GRACE_PERIOD = 300000; // 5 minutes for pre-game rooms
 
-// Helper to log debug events with full context
+// Helper to log debug events with full context (wrapped in try-catch to never break game flow)
 function logEvent(params: {
   socketId: string;
   eventType: string;
@@ -45,27 +45,32 @@ function logEvent(params: {
   errorMessage?: string;
   metadata?: unknown;
 }): void {
-  const playerId = socketToPlayer.get(params.socketId) || null;
-  const room = playerId ? roomService.getRoomByPlayerId(playerId) : null;
-  const game = room?.gameId ? gameService.getGame(room.gameId) : null;
+  try {
+    const playerId = socketToPlayer.get(params.socketId) || null;
+    const room = playerId ? roomService.getRoomByPlayerId(playerId) : null;
+    const game = room?.gameId ? gameService.getGame(room.gameId) : null;
 
-  debugService.logDebug({
-    gameId: room?.gameId || null,
-    roomId: room?.id || null,
-    playerId,
-    socketId: params.socketId,
-    eventType: params.eventType,
-    eventData: params.eventData,
-    gameState: game || null,
-    result: params.result,
-    errorMessage: params.errorMessage,
-    metadata: {
-      ...params.metadata as object,
-      playerName: room?.players.find(p => p.id === playerId)?.name,
-      roomCode: room?.code,
-      roomPlayerCount: room?.players.length,
-    },
-  });
+    debugService.logDebug({
+      gameId: room?.gameId || null,
+      roomId: room?.id || null,
+      playerId,
+      socketId: params.socketId,
+      eventType: params.eventType,
+      eventData: params.eventData,
+      gameState: game || null,
+      result: params.result,
+      errorMessage: params.errorMessage,
+      metadata: {
+        ...(params.metadata as object || {}),
+        playerName: room?.players.find(p => p.id === playerId)?.name,
+        roomCode: room?.code,
+        roomPlayerCount: room?.players.length,
+      },
+    });
+  } catch (err) {
+    // Never let debug logging break the game
+    console.error('[DebugLog] Error logging event:', err);
+  }
 }
 
 // Helper to wrap handlers with rate limiting and error handling

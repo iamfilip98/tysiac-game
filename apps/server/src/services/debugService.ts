@@ -1,5 +1,5 @@
 import { nanoid } from 'nanoid';
-import { db, debugLogs, games } from '../db/index.js';
+import { db, debugLogs } from '../db/index.js';
 import { desc, eq, inArray, sql } from 'drizzle-orm';
 import type { GameState } from '@tysiac/shared';
 
