@@ -660,10 +660,24 @@ export function setupSocketHandlers(io: TypedServer) {
           // Get game state if exists
           let gameState: ClientGameState | null = null;
           let validActions: ValidAction[] = [];
+          const debug: any = {
+            gameExists: false,
+            gamePhase: null,
+            roundExists: false,
+            trickExists: false,
+            trickPlayer: null,
+            receivedPlayerId: playerId,
+            playerMatch: false,
+            handSize: 0,
+            validCardsCount: 0,
+          };
+
           if (room.gameId) {
             const game = gameService.getGame(room.gameId);
+            debug.gameExists = !!game;
 
             if (game) {
+              debug.gamePhase = game.phase;
               gameState = getClientGameState(game, playerId);
 
               // Ensure engine exists for future actions
@@ -679,15 +693,22 @@ export function setupSocketHandlers(io: TypedServer) {
                 gameEngines.set(room.gameId, engine);
               }
 
-              // Calculate valid actions directly from game state (simple & reliable)
+              // Calculate valid actions directly from game state
               const round = game.currentRound;
+              debug.roundExists = !!round;
+              debug.trickExists = !!round?.currentTrick;
+              debug.trickPlayer = round?.currentTrick?.currentPlayer || null;
+              debug.playerMatch = round?.currentTrick?.currentPlayer === playerId;
+              debug.handSize = round?.players[playerId]?.hand?.length || 0;
+
               if (round && game.phase === 'trickPlaying' && round.currentTrick?.currentPlayer === playerId) {
                 const hand = round.players[playerId]?.hand || [];
                 const validCards = getValidCards(hand, round.currentTrick, round.trumpSuit, game);
+                debug.validCardsCount = validCards.length;
                 validActions = [{ type: 'playCard' as const, validCards }];
               } else if (round && game.phase === 'bidding') {
                 validActions = getValidActions(game, playerId, {
-                  currentBidder: playerId, // Assume it's their turn if we're here
+                  currentBidder: playerId,
                   currentBid: round.finalBid,
                   passedPlayers: [],
                 });
@@ -695,8 +716,7 @@ export function setupSocketHandlers(io: TypedServer) {
             }
           }
 
-          // Send everything in one event to avoid race conditions
-          socket.emit('connection:restored', { room, gameState, validActions });
+          socket.emit('connection:restored', { room, gameState, validActions, debug });
 
           socket.to(roomId).emit('player:reconnected', playerId);
           console.log('[RECONNECT] === Reconnect complete ===');

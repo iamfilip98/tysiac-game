@@ -69,7 +69,22 @@ export interface ServerToClientEvents {
   'game:error': (error: { code: string; message: string }) => void;
 
   // Connection events
-  'connection:restored': (data: { room: Room; gameState: ClientGameState | null; validActions?: ValidAction[] }) => void;
+  'connection:restored': (data: {
+    room: Room;
+    gameState: ClientGameState | null;
+    validActions?: ValidAction[];
+    debug?: {
+      gameExists: boolean;
+      gamePhase: string | null;
+      roundExists: boolean;
+      trickExists: boolean;
+      trickPlayer: string | null;
+      receivedPlayerId: string;
+      playerMatch: boolean;
+      handSize: number;
+      validCardsCount: number;
+    };
+  }) => void;
   'player:disconnected': (playerId: string) => void;
   'player:reconnected': (playerId: string) => void;
 
