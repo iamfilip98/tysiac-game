@@ -602,6 +602,8 @@ export function setupSocketHandlers(io: TypedServer) {
 
     // Reconnection with session validation
     socket.on('player:reconnect', (data) => {
+      console.log('!!!!!!! PLAYER RECONNECT RECEIVED !!!!!!!');
+      console.log('Data:', data);
       withRateLimit(socket, 'player:reconnect', () => {
         try {
           console.log('[RECONNECT] === Starting reconnect ===');
