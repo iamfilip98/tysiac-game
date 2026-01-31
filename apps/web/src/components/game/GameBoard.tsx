@@ -398,6 +398,7 @@ export function GameBoard() {
         <WykladanaModal
           playerName={wykladanaData.playerName}
           bid={wykladanaData.bid}
+          marriagePoints={wykladanaData.marriagePoints}
           onComplete={() => setShowWykladana(false)}
         />
       )}

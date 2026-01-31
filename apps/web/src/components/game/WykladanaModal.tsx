@@ -7,6 +7,7 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 interface WykladanaModalProps {
   playerName: string;
   bid: number;
+  marriagePoints?: number;
   onComplete: () => void;
 }
 
@@ -54,7 +55,7 @@ function Confetti() {
   );
 }
 
-export function WykladanaModal({ playerName, bid, onComplete }: WykladanaModalProps) {
+export function WykladanaModal({ playerName, bid, marriagePoints = 0, onComplete }: WykladanaModalProps) {
   const [show, setShow] = useState(true);
 
   useEffect(() => {
@@ -133,7 +134,7 @@ export function WykladanaModal({ playerName, bid, onComplete }: WykladanaModalPr
                   transition={{ delay: 0.7 }}
                   className="text-gold-300 mt-4"
                 >
-                  Bid: {bid} + 120 trick points
+                  120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}
                 </motion.p>
               </div>
             </ElectricBorder>

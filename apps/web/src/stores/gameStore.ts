@@ -13,7 +13,7 @@ interface GameState {
   // Marriage display state
   lastMarriageDeclared: { playerId: string; suit: Suit } | null;
   // WYKLADANA celebration state
-  wykladanaData: { playerName: string; bid: number } | null;
+  wykladanaData: { playerName: string; bid: number; marriagePoints?: number } | null;
   showWykladana: boolean;
 
   // Actions
@@ -26,7 +26,7 @@ interface GameState {
   setIsMyTurn: (isMyTurn: boolean) => void;
   setServerDebug: (debug: any) => void;
   setLastMarriageDeclared: (data: { playerId: string; suit: Suit } | null) => void;
-  setWykladanaData: (data: { playerName: string; bid: number } | null) => void;
+  setWykladanaData: (data: { playerName: string; bid: number; marriagePoints?: number } | null) => void;
   setShowWykladana: (show: boolean) => void;
   reset: () => void;
 }

@@ -617,19 +617,33 @@ export class GameEngine {
     const isWykladana = detectWykladana(this.game);
 
     if (isWykladana) {
+      // Award all 120 trick points to bidder immediately
+      const bidderState = round.players[round.bidWinner!];
+      bidderState.pointsFromTricks = 120; // All trick points
+      bidderState.tricksWon = [[]]; // Mark as having won at least one trick for marriage points
+      round.completedTricks = 8;
+
+      // Auto-declare all marriages in bidder's hand
+      const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+      for (const suit of suits) {
+        if (hasMarriage(bidderState.hand, suit)) {
+          bidderState.declaredMarriages.push(suit);
+          bidderState.marriagePoints += MARRIAGE_VALUES[suit];
+          // Set trump to highest value marriage (first one found in order)
+          if (!round.trumpSuit) {
+            round.trumpSuit = suit;
+          }
+        }
+      }
+
       // Emit WYKLADANA celebration event
       const bidWinner = this.game.players.find(p => p.id === round.bidWinner);
       this.io.to(this.roomId).emit('game:wykladana', {
         playerId: round.bidWinner!,
         playerName: bidWinner?.name || 'Unknown',
         bid: round.finalBid,
+        marriagePoints: bidderState.marriagePoints,
       });
-
-      // Award all 120 trick points to bidder immediately
-      const bidderState = round.players[round.bidWinner!];
-      bidderState.pointsFromTricks = 120; // All trick points
-      bidderState.tricksWon = [[]]; // Mark as having won at least one trick for marriage points
-      round.completedTricks = 8;
 
       // After delay for celebration (3.5 seconds), end the round
       this.safeSetTimeout(() => {

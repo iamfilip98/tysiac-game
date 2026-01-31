@@ -176,9 +176,9 @@ export function useSocket() {
       setTimeout(() => setLastMarriageDeclared(null), 3000);
     });
 
-    socket.on('game:wykladana', ({ playerId, playerName, bid }) => {
-      console.log('[game:wykladana] WYKLADANA!', playerName, bid);
-      setWykladanaData({ playerName, bid });
+    socket.on('game:wykladana', ({ playerId, playerName, bid, marriagePoints }) => {
+      console.log('[game:wykladana] WYKLADANA!', playerName, bid, marriagePoints);
+      setWykladanaData({ playerName, bid, marriagePoints });
     });
 
     socket.on('game:playerPassedAt100', ({ playerId, playerName }) => {

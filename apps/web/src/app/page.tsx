@@ -246,16 +246,16 @@ export default function HomePage() {
           </section>
 
           <section>
-            <h4 className="text-gold-400 font-semibold mb-2">Marriages (Meldy)</h4>
+            <h4 className="text-gold-400 font-semibold mb-2">Marriages (Meldunek)</h4>
             <p className="text-white/70 mb-2">
               A marriage is a King and Queen of the same suit. Declaring a marriage sets that suit as trump
               and awards bonus points:
             </p>
             <ul className="text-white/70 space-y-1">
-              <li>• Hearts (Kiery): 100 points</li>
-              <li>• Diamonds (Kara): 80 points</li>
-              <li>• Clubs (Trefle): 60 points</li>
-              <li>• Spades (Piki): 40 points</li>
+              <li>• Hearts (Serce): 100 points</li>
+              <li>• Diamonds (Dzwonek): 80 points</li>
+              <li>• Clubs (żołędź): 60 points</li>
+              <li>• Spades (wino): 40 points</li>
             </ul>
             <p className="text-white/50 text-xs mt-1">You can only declare a marriage when leading a trick.</p>
           </section>
@@ -282,9 +282,8 @@ export default function HomePage() {
           <section>
             <h4 className="text-gold-400 font-semibold mb-2">Special Rules</h4>
             <ul className="text-white/70 space-y-1">
-              <li>• <span className="text-gold-400">Wykładana:</span> All 4 nines in hand = instant 1000 points!</li>
-              <li>• <span className="text-gold-400">Bombing:</span> 3 failed bids in a row = -120 points</li>
-              <li>• <span className="text-gold-400">Barrel:</span> At 880+ points, you have 3 rounds to reach 1000</li>
+              <li>• <span className="text-gold-400">Wykładana:</span> If bidder's cards guarantee winning all tricks, round ends instantly</li>
+              <li>• <span className="text-gold-400">Barrel:</span> At 800+ points, you have 3 rounds to reach 1000</li>
             </ul>
           </section>
 

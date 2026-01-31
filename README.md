@@ -17,7 +17,7 @@ A modern, real-time multiplayer implementation of the classic Polish card game T
 | Bidding | Left of dealer auto-100, next starts 110, max = 120 + marriages |
 | Hidden talon | If winning at 100, don't reveal picked-up cards |
 | Following suit | 1st must follow & beat; 2nd free play; 3rd free unless 2nd couldn't follow |
-| Marriages | Declare with Q when leading (♣40/♦60/♥80/♠100) |
+| Marriages | Declare with Q when leading (♠40/♣60/♦80/♥100) |
 | Trump | Activates only when marriage declared |
 | Scoring | Bidder must hit exact bid; defenders round to 10 |
 | Win condition | First to 1000 wins instantly |
