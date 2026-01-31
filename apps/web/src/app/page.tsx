@@ -71,16 +71,16 @@ export default function HomePage() {
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-center mb-8"
+        className="text-center mb-4 sm:mb-8"
       >
-        <h1 className="text-5xl font-bold text-white mb-2">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-1 sm:mb-2">
           Tysi
           <span className="text-gold-400">ą</span>c
         </h1>
-        <p className="text-white/60">Polish Card Game • 1000</p>
+        <p className="text-white/60 text-sm sm:text-base">Polish Card Game • 1000</p>
 
         {/* Connection status */}
-        <div className="mt-4 flex items-center justify-center gap-2">
+        <div className="mt-2 sm:mt-4 flex items-center justify-center gap-2">
           <span
             className={cn(
               'w-2 h-2 rounded-full',
@@ -106,7 +106,7 @@ export default function HomePage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex gap-2 mb-6 bg-table-900/50 p-1 rounded-lg"
+        className="flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg"
       >
         <button
           onClick={() => setTab('create')}
@@ -137,7 +137,7 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="w-full max-w-sm min-h-[362px]"
+        className="w-full max-w-sm"
       >
         {tab === 'create' ? (
           <CreateRoomForm
@@ -163,12 +163,12 @@ export default function HomePage() {
         </motion.div>
       )}
 
-      {/* Rules summary */}
+      {/* Rules summary - hidden on small mobile screens */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.5 }}
-        className="mt-12 text-center max-w-md"
+        className="mt-6 sm:mt-12 text-center max-w-md hidden sm:block"
       >
         <div className="flex items-center justify-center gap-2 mb-3">
           <h3 className="text-white/60 font-medium">Quick Rules</h3>
@@ -187,6 +187,17 @@ export default function HomePage() {
           <li>• First to 1000 points wins!</li>
         </ul>
       </motion.div>
+
+      {/* Mobile rules link */}
+      <motion.button
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.5 }}
+        onClick={() => setShowRulesModal(true)}
+        className="mt-4 sm:hidden text-white/60 hover:text-white text-sm underline"
+      >
+        View Game Rules
+      </motion.button>
 
       {/* Full Rules Modal */}
       <Modal
