@@ -108,6 +108,9 @@ export function startNewRound(game: GameState): void {
     currentTrick: null,
     completedTricks: 0,
     cardsToDistribute: [],
+    isDealerSittingOut: false,
+    dealerMarriagePoints: 0,
+    talonMarriages: [],
   };
 
   game.phase = 'dealing';
