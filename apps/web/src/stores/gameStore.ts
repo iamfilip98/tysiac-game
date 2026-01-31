@@ -9,6 +9,7 @@ interface GameState {
   showRoundResult: boolean;
   showGameEnd: boolean;
   isMyTurn: boolean;
+  serverDebug: any | null;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -18,6 +19,7 @@ interface GameState {
   setShowRoundResult: (show: boolean) => void;
   setShowGameEnd: (show: boolean) => void;
   setIsMyTurn: (isMyTurn: boolean) => void;
+  setServerDebug: (debug: any) => void;
   reset: () => void;
 }
 
@@ -29,6 +31,7 @@ export const useGameStore = create<GameState>((set) => ({
   showRoundResult: false,
   showGameEnd: false,
   isMyTurn: false,
+  serverDebug: null,
 
   setGameState: (gameState) =>
     set({
@@ -57,6 +60,8 @@ export const useGameStore = create<GameState>((set) => ({
 
   setIsMyTurn: (isMyTurn) => set({ isMyTurn }),
 
+  setServerDebug: (serverDebug) => set({ serverDebug }),
+
   reset: () =>
     set({
       gameState: null,
@@ -66,5 +71,6 @@ export const useGameStore = create<GameState>((set) => ({
       showRoundResult: false,
       showGameEnd: false,
       isMyTurn: false,
+      serverDebug: null,
     }),
 }));

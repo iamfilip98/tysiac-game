@@ -78,6 +78,53 @@ export class GameEngine {
     }
   }
 
+  /**
+   * Notify a specific player if it's their turn (used after reconnection)
+   * Returns the valid actions if it was the player's turn, null otherwise
+   */
+  public notifyPlayerIfTheirTurn(playerId: string): ValidAction[] | null {
+    if (this.isCleanedUp) return null;
+
+    const round = this.game.currentRound;
+    if (!round) return null;
+
+    let currentPlayerId: string;
+
+    if (this.game.phase === 'bidding') {
+      currentPlayerId = this.currentBidder;
+    } else if (this.game.phase === 'talonDistribution') {
+      currentPlayerId = round.bidWinner!;
+    } else if (this.game.phase === 'trickPlaying') {
+      currentPlayerId = round.currentTrick?.currentPlayer || '';
+    } else {
+      return null;
+    }
+
+    // Only proceed if it's this player's turn
+    if (currentPlayerId !== playerId) {
+      return null;
+    }
+
+    // Don't notify AI players through socket
+    if (isAIPlayer(this.game, playerId)) {
+      return null;
+    }
+
+    const actions = getValidActions(this.game, currentPlayerId, {
+      currentBidder: this.currentBidder,
+      currentBid: round.finalBid,
+      passedPlayers: this.passedPlayers,
+    });
+
+    // Emit game:yourTurn to this player
+    const socketId = this.getSocketId(playerId);
+    if (socketId && actions.length > 0) {
+      this.io.to(socketId).emit('game:yourTurn', { validActions: actions });
+    }
+
+    return actions;
+  }
+
   // Safe setTimeout that tracks timers for cleanup
   private safeSetTimeout(callback: () => void, delay: number): NodeJS.Timeout | null {
     if (this.isCleanedUp) return null;

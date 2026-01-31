@@ -670,6 +670,8 @@ export function setupSocketHandlers(io: TypedServer) {
             playerMatch: false,
             handSize: 0,
             validCardsCount: 0,
+            playerKeys: [] as string[],
+            conditionDetails: '',
           };
 
           if (room.gameId) {
@@ -681,8 +683,9 @@ export function setupSocketHandlers(io: TypedServer) {
               gameState = getClientGameState(game, playerId);
 
               // Ensure engine exists for future actions
-              if (!gameEngines.get(room.gameId)) {
-                const engine = new GameEngine(
+              let engine = gameEngines.get(room.gameId);
+              if (!engine) {
+                engine = new GameEngine(
                   game,
                   io,
                   room.id,
@@ -700,6 +703,13 @@ export function setupSocketHandlers(io: TypedServer) {
               debug.trickPlayer = round?.currentTrick?.currentPlayer || null;
               debug.playerMatch = round?.currentTrick?.currentPlayer === playerId;
               debug.handSize = round?.players[playerId]?.hand?.length || 0;
+              debug.playerKeys = round ? Object.keys(round.players) : [];
+
+              // Detailed condition check
+              const cond1 = !!round;
+              const cond2 = game.phase === 'trickPlaying';
+              const cond3 = round?.currentTrick?.currentPlayer === playerId;
+              debug.conditionDetails = `round:${cond1} phase:${cond2}(${game.phase}) match:${cond3}`;
 
               if (round && game.phase === 'trickPlaying' && round.currentTrick?.currentPlayer === playerId) {
                 const hand = round.players[playerId]?.hand || [];
@@ -713,6 +723,26 @@ export function setupSocketHandlers(io: TypedServer) {
                   passedPlayers: [],
                 });
               }
+
+              // Also calculate valid actions via stateManager as fallback comparison
+              if (round && game.phase === 'trickPlaying') {
+                const stateManagerActions = getValidActions(game, playerId);
+                debug.stateManagerValidActions = stateManagerActions.length;
+              }
+
+              // Check what the engine would send (for debug purposes)
+              // We'll use this to verify the engine is working correctly
+              const engineWouldNotify = engine.notifyPlayerIfTheirTurn(playerId);
+              debug.engineNotified = engineWouldNotify !== null;
+              debug.engineActionsCount = engineWouldNotify?.length || 0;
+              console.log('[RECONNECT] Engine notification result:', engineWouldNotify?.length || 'not their turn');
+
+              // Send connection:restored with all debug info
+              socket.emit('connection:restored', { room, gameState, validActions, debug });
+
+              socket.to(roomId).emit('player:reconnected', playerId);
+              console.log('[RECONNECT] === Reconnect complete ===');
+              return;
             }
           }
 

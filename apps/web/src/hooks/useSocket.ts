@@ -150,9 +150,6 @@ export function useSocket() {
 
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions, debug }) => {
-      console.log('[DEBUG] === SERVER DEBUG INFO ===');
-      console.log('[DEBUG] Server debug:', JSON.stringify(debug, null, 2));
-
       // Restore playerId from session
       const storedSession = loadSession();
       if (storedSession) {
@@ -165,6 +162,10 @@ export function useSocket() {
       }
       if (validActions && validActions.length > 0) {
         setValidActions(validActions);
+      }
+      // Store server debug info for display
+      if (debug) {
+        useGameStore.getState().setServerDebug(debug);
       }
       updateSessionTimestamp();
     });

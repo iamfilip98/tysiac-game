@@ -83,6 +83,11 @@ export interface ServerToClientEvents {
       playerMatch: boolean;
       handSize: number;
       validCardsCount: number;
+      playerKeys?: string[];
+      conditionDetails?: string;
+      stateManagerValidActions?: number;
+      engineNotified?: boolean;
+      engineActionsCount?: number;
     };
   }) => void;
   'player:disconnected': (playerId: string) => void;

@@ -47,6 +47,7 @@ export function GameBoard() {
     showRoundResult,
     showGameEnd,
     isMyTurn,
+    serverDebug,
   } = useGameStore();
   const { selectCard } = useGameStore();
   const { setShowRoundResult, setShowGameEnd } = useGameStore();
@@ -461,13 +462,48 @@ export function GameBoard() {
       )}
 
       {/* DEBUG PANEL - Remove after fixing */}
-      <div className="fixed top-4 right-4 bg-black/95 text-white text-xs p-2 z-50 rounded max-w-[200px]">
-        <div className="font-bold text-yellow-400">DEBUG</div>
+      <div className="fixed top-4 right-4 bg-black/95 text-white text-xs p-2 z-50 rounded max-w-[300px] overflow-auto max-h-[500px]">
+        <div className="font-bold text-yellow-400">CLIENT DEBUG</div>
         <div>isMyTurn: <span className={isMyTurn ? 'text-green-400' : 'text-red-400'}>{String(isMyTurn)}</span></div>
         <div>validActions: {validActions.length}</div>
+        <div>playerId: {playerId}</div>
         <div>AmCurrent: {String(round?.currentTrick?.currentPlayer === playerId)}</div>
+        <div>currentPlayer: {round?.currentTrick?.currentPlayer}</div>
         {validActions.length === 0 && round?.currentTrick?.currentPlayer === playerId && (
           <div className="text-red-400 font-bold">BUG: No actions!</div>
+        )}
+        {serverDebug && (
+          <>
+            <div className="font-bold text-yellow-400 mt-2">SERVER DEBUG</div>
+            <div>gameExists: <span className={serverDebug.gameExists ? 'text-green-400' : 'text-red-400'}>{String(serverDebug.gameExists)}</span></div>
+            <div>phase: {serverDebug.gamePhase}</div>
+            <div>roundExists: <span className={serverDebug.roundExists ? 'text-green-400' : 'text-red-400'}>{String(serverDebug.roundExists)}</span></div>
+            <div>trickExists: <span className={serverDebug.trickExists ? 'text-green-400' : 'text-red-400'}>{String(serverDebug.trickExists)}</span></div>
+            <div>trickPlayer: {serverDebug.trickPlayer}</div>
+            <div>receivedId: {serverDebug.receivedPlayerId}</div>
+            <div>playerMatch: <span className={serverDebug.playerMatch ? 'text-green-400' : 'text-red-400'}>{String(serverDebug.playerMatch)}</span></div>
+            <div>handSize: {serverDebug.handSize}</div>
+            <div>validCards: {serverDebug.validCardsCount}</div>
+            {serverDebug.conditionDetails && (
+              <div className="text-cyan-400 mt-1">{serverDebug.conditionDetails}</div>
+            )}
+            {serverDebug.stateManagerValidActions !== undefined && (
+              <div>stateManager: {serverDebug.stateManagerValidActions}</div>
+            )}
+            {serverDebug.engineNotified !== undefined && (
+              <div className="mt-1">
+                engineNotified: <span className={serverDebug.engineNotified ? 'text-green-400' : 'text-red-400'}>{String(serverDebug.engineNotified)}</span>
+              </div>
+            )}
+            {serverDebug.engineActionsCount !== undefined && (
+              <div>engineActions: {serverDebug.engineActionsCount}</div>
+            )}
+            {serverDebug.playerKeys && (
+              <div className="text-xs opacity-70 mt-1">
+                playerKeys: {serverDebug.playerKeys.join(', ')}
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>
