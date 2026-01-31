@@ -38,21 +38,25 @@ export function ScoreBoard({
       {/* Header */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-table-600">
         <h3 className="text-sm font-semibold text-white/80">Scores</h3>
-        {trumpSuit && (
-          <div className="flex items-center gap-1 text-sm">
-            <span className="text-white/60">Trump:</span>
-            <span
-              className={cn(
-                'text-lg',
-                trumpSuit === 'hearts' || trumpSuit === 'diamonds'
-                  ? 'text-red-500'
-                  : 'text-white'
-              )}
-            >
-              {getSuitSymbol(trumpSuit)}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1 text-sm min-w-[70px] justify-end">
+          {trumpSuit ? (
+            <>
+              <span className="text-white/60">Trump:</span>
+              <span
+                className={cn(
+                  'text-lg',
+                  trumpSuit === 'hearts' || trumpSuit === 'diamonds'
+                    ? 'text-red-500'
+                    : 'text-white'
+                )}
+              >
+                {getSuitSymbol(trumpSuit)}
+              </span>
+            </>
+          ) : (
+            <span className="text-white/30 text-xs">No trump</span>
+          )}
+        </div>
       </div>
 
       {/* Players */}
@@ -74,15 +78,15 @@ export function ScoreBoard({
               )}
             >
               <div className="flex items-center gap-2">
-                {/* Dealer indicator */}
+                {/* Dealer indicator - poker chip style */}
                 {isDealer && (
                   <span
-                    className="text-sm"
+                    className="w-5 h-5 rounded-full bg-gradient-to-b from-white to-gray-200 border-2 border-red-600 flex items-center justify-center text-[10px] font-bold text-red-600 shadow-sm"
                     role="img"
                     aria-label="Dealer"
                     title="Dealer"
                   >
-                    🪙
+                    D
                   </span>
                 )}
 
