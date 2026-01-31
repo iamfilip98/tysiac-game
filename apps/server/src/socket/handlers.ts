@@ -4,6 +4,7 @@ import * as roomService from '../services/roomService.js';
 import * as gameService from '../services/gameService.js';
 import { GameEngine } from '../game/engine.js';
 import { getValidActions, getClientGameState } from '../game/stateManager.js';
+import { getValidCards } from '../game/validation.js';
 import { checkRateLimit, clearRateLimits } from '../security/rateLimit.js';
 import { createSession, validateSession, invalidatePlayerSession, getSessionToken } from '../security/session.js';
 import {
@@ -665,40 +666,31 @@ export function setupSocketHandlers(io: TypedServer) {
             if (game) {
               gameState = getClientGameState(game, playerId);
 
-              // Get or recreate game engine
-              let engine = gameEngines.get(room.gameId);
-
-              if (!engine) {
-                // Engine was lost (server restart?) - recreate it from game state
-                engine = new GameEngine(
+              // Ensure engine exists for future actions
+              if (!gameEngines.get(room.gameId)) {
+                const engine = new GameEngine(
                   game,
                   io,
                   room.id,
                   () => cleanupGame(game.id, room.id),
                   (pid: string) => playerToSocket.get(pid) || null,
-                  true // isRecreated = true
+                  true
                 );
                 gameEngines.set(room.gameId, engine);
               }
 
-              // Try engine first
-              validActions = engine.getValidActionsForPlayer(playerId);
-
-              // FALLBACK: If no actions but it looks like player's turn, calculate directly
-              if (validActions.length === 0 && game.phase === 'trickPlaying') {
-                const round = game.currentRound;
-                if (round?.currentTrick?.currentPlayer === playerId) {
-                  // It IS this player's turn - calculate valid cards directly
-                  const hand = round.players[playerId]?.hand || [];
-                  if (hand.length > 0) {
-                    // Use getValidActions directly with empty bidding state
-                    validActions = getValidActions(game, playerId, {
-                      currentBidder: '',
-                      currentBid: round.finalBid,
-                      passedPlayers: [],
-                    });
-                  }
-                }
+              // Calculate valid actions directly from game state (simple & reliable)
+              const round = game.currentRound;
+              if (round && game.phase === 'trickPlaying' && round.currentTrick?.currentPlayer === playerId) {
+                const hand = round.players[playerId]?.hand || [];
+                const validCards = getValidCards(hand, round.currentTrick, round.trumpSuit, game);
+                validActions = [{ type: 'playCard' as const, validCards }];
+              } else if (round && game.phase === 'bidding') {
+                validActions = getValidActions(game, playerId, {
+                  currentBidder: playerId, // Assume it's their turn if we're here
+                  currentBid: round.finalBid,
+                  passedPlayers: [],
+                });
               }
             }
           }
