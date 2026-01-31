@@ -12,6 +12,8 @@ export interface RoundScoreResult {
     newTotalScore: number;
     wasOnBarrel: boolean;
     fellOffBarrel: boolean;
+    isDealer?: boolean;
+    sittingOut?: boolean;
   }[];
   winner: string | null;
 }
@@ -41,14 +43,21 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
     const playerState = round.players[player.id];
     const currentScore = game.scores[player.id];
     const isBidder = player.id === bidWinnerId;
+    const isSittingOutDealer = round.isDealerSittingOut && player.id === round.dealer;
 
-    // Calculate trick points
-    const trickPoints = playerState.pointsFromTricks;
+    // Calculate trick points (0 for sitting-out dealer)
+    const trickPoints = isSittingOutDealer ? 0 : playerState.pointsFromTricks;
     const wonAtLeastOneTrick = playerState.tricksWon.length > 0;
 
-    // Marriage points only count if the player won at least one trick
-    // Both bidder and non-bidders can get marriage points if they won tricks
-    const marriagePoints = wonAtLeastOneTrick ? playerState.marriagePoints : 0;
+    // Marriage points:
+    // - For sitting-out dealer: gets points from talon marriages
+    // - For other players: only count if they won at least one trick
+    let marriagePoints: number;
+    if (isSittingOutDealer) {
+      marriagePoints = round.dealerMarriagePoints;
+    } else {
+      marriagePoints = wonAtLeastOneTrick ? playerState.marriagePoints : 0;
+    }
 
     // Total points earned this round
     const totalRoundPoints = trickPoints + marriagePoints;
@@ -97,11 +106,15 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
         newTotalScore = currentScore.totalScore + scoreChange;
       }
     } else {
-      // Non-bidder
+      // Non-bidder (or sitting-out dealer)
       if (wasOnBarrel) {
-        // On barrel: no points from defending
+        // On barrel: no points from defending (or spectating)
         scoreChange = 0;
         newTotalScore = currentScore.totalScore;
+      } else if (isSittingOutDealer) {
+        // Sitting-out dealer gets talon marriage points (rounded to nearest 10)
+        scoreChange = roundToTen(marriagePoints);
+        newTotalScore = currentScore.totalScore + scoreChange;
       } else {
         // Round to nearest 10 (6+ rounds up)
         // Non-bidders also get marriage points if they won tricks
@@ -128,6 +141,8 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
       newTotalScore,
       wasOnBarrel,
       fellOffBarrel,
+      isDealer: player.id === round.dealer,
+      sittingOut: isSittingOutDealer,
     });
   }
 
@@ -187,6 +202,8 @@ export function createRoundResult(
       newTotalScore: s.newTotalScore,
       wasOnBarrel: s.wasOnBarrel,
       fellOffBarrel: s.fellOffBarrel,
+      isDealer: s.isDealer,
+      sittingOut: s.sittingOut,
     })),
   };
 }

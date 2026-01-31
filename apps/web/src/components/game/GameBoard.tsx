@@ -64,15 +64,28 @@ export function GameBoard() {
 
   // Get current player info
   const myPlayer = gameState?.players.find((p) => p.id === playerId);
+  const isSpectating = gameState?.isSpectating || false;
+  const playerCount = gameState?.players.length || 3;
+
   // Order other players: left = next player (clockwise), right = previous player
+  // In 4-player mode, there are 3 other players (left, top, right)
   const otherPlayers = useMemo(() => {
     if (!gameState || !playerId) return [];
     const myIndex = gameState.players.findIndex((p) => p.id === playerId);
     if (myIndex === -1) return [];
-    // Player to the left plays after me (clockwise), player to the right plays before me
-    const leftPlayer = gameState.players[(myIndex + 1) % 3];
-    const rightPlayer = gameState.players[(myIndex + 2) % 3];
-    return [leftPlayer, rightPlayer];
+
+    if (gameState.players.length === 4) {
+      // 4-player layout: left, top, right
+      const leftPlayer = gameState.players[(myIndex + 1) % 4];
+      const topPlayer = gameState.players[(myIndex + 2) % 4];
+      const rightPlayer = gameState.players[(myIndex + 3) % 4];
+      return [leftPlayer, topPlayer, rightPlayer];
+    } else {
+      // 3-player layout: left, right
+      const leftPlayer = gameState.players[(myIndex + 1) % 3];
+      const rightPlayer = gameState.players[(myIndex + 2) % 3];
+      return [leftPlayer, rightPlayer];
+    }
   }, [gameState, playerId]);
 
   // Marriage action check
@@ -162,6 +175,18 @@ export function GameBoard() {
         )}
       </div>
 
+      {/* Spectating indicator */}
+      {isSpectating && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="absolute top-4 right-4 z-30 px-4 py-2 bg-purple-500/20 border border-purple-500/50 rounded-lg"
+        >
+          <span className="text-purple-400 font-medium">Spectating this round</span>
+          <p className="text-purple-300/70 text-xs mt-1">You are the dealer and sit out this round</p>
+        </motion.div>
+      )}
+
       {/* Opponents */}
       <div className={cn(
         'absolute z-10',
@@ -179,17 +204,35 @@ export function GameBoard() {
         )}
       </div>
 
+      {/* Top opponent (only in 4-player mode) */}
+      {playerCount === 4 && otherPlayers[1] && (
+        <div className={cn(
+          'absolute z-10 left-1/2 -translate-x-1/2',
+          isMobile ? 'top-32' : 'top-36'
+        )}>
+          <OpponentHand
+            cardCount={getOpponentHandSize(otherPlayers[1].id)}
+            position="left"
+            playerName={otherPlayers[1].name}
+            isCurrentTurn={
+              round?.currentTrick?.currentPlayer === otherPlayers[1].id
+            }
+          />
+        </div>
+      )}
+
       <div className={cn(
         'absolute z-10',
         isMobile ? 'top-20 right-2' : 'top-24 right-8'
       )}>
-        {otherPlayers[1] && (
+        {/* In 4-player mode, right player is otherPlayers[2], in 3-player it's otherPlayers[1] */}
+        {(playerCount === 4 ? otherPlayers[2] : otherPlayers[1]) && (
           <OpponentHand
-            cardCount={getOpponentHandSize(otherPlayers[1].id)}
+            cardCount={getOpponentHandSize(playerCount === 4 ? otherPlayers[2].id : otherPlayers[1].id)}
             position="right"
-            playerName={otherPlayers[1].name}
+            playerName={playerCount === 4 ? otherPlayers[2].name : otherPlayers[1].name}
             isCurrentTurn={
-              round?.currentTrick?.currentPlayer === otherPlayers[1].id
+              round?.currentTrick?.currentPlayer === (playerCount === 4 ? otherPlayers[2].id : otherPlayers[1].id)
             }
           />
         )}

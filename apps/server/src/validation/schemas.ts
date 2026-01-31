@@ -13,6 +13,7 @@ export const CreateRoomSchema = z.object({
   playerName: z.string().min(1).max(20).trim(),
   roomName: z.string().min(1).max(30).trim(),
   isPrivate: z.boolean(),
+  maxPlayers: z.union([z.literal(3), z.literal(4)]).optional().default(3),
 });
 
 export const JoinRoomSchema = z.object({

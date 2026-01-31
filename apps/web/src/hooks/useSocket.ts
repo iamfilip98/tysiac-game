@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { getSocket, connectSocket, TypedSocket } from '@/lib/socket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
+import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
 import type { Card, Suit } from '@tysiac/shared';
 
 export function useSocket() {
@@ -47,6 +48,17 @@ export function useSocket() {
     socket.on('connect', () => {
       setConnected(true);
       setError(null);
+
+      // Attempt auto-reconnect if session exists
+      const storedSession = loadSession();
+      if (storedSession) {
+        console.log('[auto-reconnect] Found stored session, attempting reconnect...');
+        socket.emit('player:reconnect', {
+          roomId: storedSession.roomId,
+          playerId: storedSession.playerId,
+          sessionToken: storedSession.sessionToken,
+        });
+      }
     });
 
     socket.on('disconnect', () => {
@@ -62,11 +74,28 @@ export function useSocket() {
     socket.on('room:created', (room) => {
       setRoom(room);
       setPlayerId(room.hostId);
+
+      // Save session to localStorage
+      saveSession({
+        playerId: room.hostId,
+        roomId: room.id,
+        sessionToken: room.sessionToken,
+        playerName: room.players[0]?.name || 'Player',
+      });
     });
 
-    socket.on('room:joined', ({ room, playerId }) => {
+    socket.on('room:joined', ({ room, playerId, sessionToken }) => {
       setRoom(room);
       setPlayerId(playerId);
+
+      // Save session to localStorage
+      const player = room.players.find(p => p.id === playerId);
+      saveSession({
+        playerId,
+        roomId: room.id,
+        sessionToken,
+        playerName: player?.name || 'Player',
+      });
     });
 
     socket.on('room:updated', (room) => {
@@ -111,6 +140,8 @@ export function useSocket() {
 
     socket.on('game:ended', ({ winnerId }) => {
       setShowGameEnd(true);
+      // Clear session when game ends
+      clearSession();
     });
 
     socket.on('game:error', ({ message }) => {
@@ -124,6 +155,8 @@ export function useSocket() {
       if (gameState) {
         setGameState(gameState);
       }
+      // Update session timestamp
+      updateSessionTimestamp();
     });
 
     connect();
@@ -161,8 +194,8 @@ export function useSocket() {
   }, [setError]);
 
   // Room actions
-  const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean) => {
-    safeEmit('room:create', { playerName, roomName, isPrivate });
+  const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3) => {
+    safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers });
   }, [safeEmit]);
 
   const joinRoom = useCallback((playerName: string, roomCode: string) => {
@@ -171,6 +204,7 @@ export function useSocket() {
 
   const leaveRoom = useCallback(() => {
     safeEmit('room:leave');
+    clearSession(); // Clear localStorage when intentionally leaving
     resetRoom();
     resetGame();
   }, [safeEmit, resetRoom, resetGame]);

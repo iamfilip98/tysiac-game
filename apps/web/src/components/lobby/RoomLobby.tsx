@@ -36,9 +36,9 @@ export function RoomLobby({
   const isHost = room.hostId === currentPlayerId;
   const currentPlayer = room.players.find((p) => p.id === currentPlayerId);
   const canStart =
-    room.players.length === 3 &&
+    room.players.length === room.maxPlayers &&
     room.players.filter((p) => !p.isAI).every((p) => p.isReady);
-  const canAddAI = room.players.length < 3;
+  const canAddAI = room.players.length < room.maxPlayers;
 
   const handleCopyCode = async () => {
     try {
@@ -71,10 +71,10 @@ export function RoomLobby({
     setTimeout(() => setIsAddingAI(false), 1000);
   };
 
-  // Build the 3-slot array: filled slots + empty slots
+  // Build the slot array: filled slots + empty slots
   const slots = [
     ...room.players,
-    ...Array(3 - room.players.length).fill(null),
+    ...Array(room.maxPlayers - room.players.length).fill(null),
   ];
 
   return (
@@ -143,10 +143,13 @@ export function RoomLobby({
             </p>
           </div>
 
-          {/* Players - Fixed height container for 3 slots */}
+          {/* Players - Fixed height container */}
           <div className="mb-6">
             <div className="text-sm text-white/60 mb-2" id="players-label">
-              Players ({room.players.length}/3)
+              Players ({room.players.length}/{room.maxPlayers})
+              {room.maxPlayers === 4 && (
+                <span className="ml-2 text-xs text-white/40">(dealer sits out each round)</span>
+              )}
             </div>
 
             <div className="space-y-3" aria-labelledby="players-label">
@@ -223,8 +226,8 @@ export function RoomLobby({
               role="status"
               aria-hidden={canStart}
             >
-              {room.players.length < 3
-                ? `Need ${3 - room.players.length} more player${3 - room.players.length > 1 ? 's' : ''} to start`
+              {room.players.length < room.maxPlayers
+                ? `Need ${room.maxPlayers - room.players.length} more player${room.maxPlayers - room.players.length > 1 ? 's' : ''} to start`
                 : 'You must click "Ready Up" before starting'}
             </div>
           )}

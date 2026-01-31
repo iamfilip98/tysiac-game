@@ -55,6 +55,10 @@ export interface RoundState {
   currentTrick: TrickState | null;
   completedTricks: number;
   cardsToDistribute: Card[]; // Cards bidder gives away
+  // 4-player mode fields
+  isDealerSittingOut: boolean;
+  dealerMarriagePoints: number;
+  talonMarriages: Suit[];
 }
 
 // Player scores

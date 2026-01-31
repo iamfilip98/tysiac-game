@@ -88,24 +88,46 @@ export class GameEngine {
     if (this.isCleanedUp) return;
 
     const roundNumber = this.game.currentRound ? this.game.currentRound.roundNumber + 1 : 1;
+    const playerCount = this.game.players.length;
+    const is4Player = playerCount === 4;
 
     // Dealer rotates each round
-    const dealerIndex = (roundNumber - 1) % 3;
+    const dealerIndex = (roundNumber - 1) % playerCount;
     const dealer = this.game.players[dealerIndex];
 
     // Create and shuffle deck
     const deck = shuffleDeck(createDeck());
 
-    // Deal cards: 7 to each player, 3 to talon
+    // In 4-player mode, dealer sits out - only deal to 3 active players
+    const activePlayers = is4Player
+      ? this.game.players.filter(p => p.id !== dealer.id)
+      : this.game.players;
+
+    // Deal cards: 7 to each active player, 3 to talon
     const hands: Card[][] = [[], [], []];
     for (let i = 0; i < 21; i++) {
       hands[i % 3].push(deck[i]);
     }
     const talon = deck.slice(21, 24);
 
+    // Detect talon marriages for dealer scoring (4-player mode)
+    const talonMarriages: Suit[] = [];
+    let dealerMarriagePoints = 0;
+    if (is4Player) {
+      const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+      for (const suit of suits) {
+        const hasQueen = talon.some(c => c.suit === suit && c.rank === 'Q');
+        const hasKing = talon.some(c => c.suit === suit && c.rank === 'K');
+        if (hasQueen && hasKing) {
+          talonMarriages.push(suit);
+          dealerMarriagePoints += MARRIAGE_VALUES[suit];
+        }
+      }
+    }
+
     // Create player round states
     const playerStates: Record<string, any> = {};
-    this.game.players.forEach((p, index) => {
+    activePlayers.forEach((p, index) => {
       playerStates[p.id] = {
         playerId: p.id,
         hand: hands[index],
@@ -115,6 +137,18 @@ export class GameEngine {
         marriagePoints: 0,
       };
     });
+
+    // In 4-player mode, create an empty state for the dealer (spectator)
+    if (is4Player) {
+      playerStates[dealer.id] = {
+        playerId: dealer.id,
+        hand: [],
+        tricksWon: [],
+        pointsFromTricks: 0,
+        declaredMarriages: [],
+        marriagePoints: 0,
+      };
+    }
 
     this.game.currentRound = {
       roundNumber,
@@ -128,6 +162,9 @@ export class GameEngine {
       currentTrick: null,
       completedTricks: 0,
       cardsToDistribute: [],
+      isDealerSittingOut: is4Player,
+      dealerMarriagePoints,
+      talonMarriages,
     };
 
     this.game.phase = 'dealing';
@@ -141,15 +178,33 @@ export class GameEngine {
     if (this.isCleanedUp) return;
 
     const round = this.game.currentRound!;
+    const playerCount = this.game.players.length;
+    const is4Player = playerCount === 4;
+
+    // Get active players (exclude dealer in 4-player mode)
+    const activePlayers = is4Player
+      ? this.game.players.filter(p => p.id !== round.dealer)
+      : this.game.players;
+
     const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
 
+    // Find first active player after dealer (left of dealer)
+    let leftOfDealerIndex = (dealerIndex + 1) % playerCount;
+    while (is4Player && this.game.players[leftOfDealerIndex].id === round.dealer) {
+      leftOfDealerIndex = (leftOfDealerIndex + 1) % playerCount;
+    }
+    const leftOfDealer = this.game.players[leftOfDealerIndex].id;
+
     // Left of dealer has auto-100
-    const leftOfDealer = this.game.players[(dealerIndex + 1) % 3].id;
     round.bidWinner = leftOfDealer;
     round.finalBid = 100;
 
-    // Next bidder starts at 110
-    this.currentBidder = this.game.players[(dealerIndex + 2) % 3].id;
+    // Find second active player after dealer (next bidder starts at 110)
+    let nextBidderIndex = (leftOfDealerIndex + 1) % playerCount;
+    while (is4Player && this.game.players[nextBidderIndex].id === round.dealer) {
+      nextBidderIndex = (nextBidderIndex + 1) % playerCount;
+    }
+    this.currentBidder = this.game.players[nextBidderIndex].id;
     this.passedPlayers = [];
 
     this.game.phase = 'bidding';
@@ -187,8 +242,16 @@ export class GameEngine {
     if (playerId !== this.currentBidder) return;
 
     const round = this.game.currentRound!;
+    const playerCount = this.game.players.length;
+    const is4Player = round.isDealerSittingOut;
     const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
-    const leftOfDealer = this.game.players[(dealerIndex + 1) % 3].id;
+
+    // Find left of dealer (skip dealer in 4-player mode)
+    let leftOfDealerIndex = (dealerIndex + 1) % playerCount;
+    while (is4Player && this.game.players[leftOfDealerIndex].id === round.dealer) {
+      leftOfDealerIndex = (leftOfDealerIndex + 1) % playerCount;
+    }
+    const leftOfDealer = this.game.players[leftOfDealerIndex].id;
 
     // Left of dealer can't pass if others have all passed
     if (playerId === leftOfDealer && this.passedPlayers.length === 2) {
@@ -205,6 +268,7 @@ export class GameEngine {
     if (this.isCleanedUp) return;
 
     const round = this.game.currentRound!;
+    const is4Player = round.isDealerSittingOut;
 
     // Check if bidding is complete (2 players passed)
     if (this.passedPlayers.length >= 2) {
@@ -212,13 +276,20 @@ export class GameEngine {
       return;
     }
 
-    // Find next bidder
+    // Get active players (exclude dealer in 4-player mode)
+    const activePlayers = is4Player
+      ? this.game.players.filter(p => p.id !== round.dealer)
+      : this.game.players;
+
+    // Build bidding order from active players starting left of dealer
     const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
-    const biddingOrder = [
-      this.game.players[(dealerIndex + 1) % 3].id,
-      this.game.players[(dealerIndex + 2) % 3].id,
-      round.dealer,
-    ];
+    const biddingOrder: string[] = [];
+    for (let i = 1; i <= this.game.players.length; i++) {
+      const player = this.game.players[(dealerIndex + i) % this.game.players.length];
+      if (!is4Player || player.id !== round.dealer) {
+        biddingOrder.push(player.id);
+      }
+    }
 
     // Get active bidders (excluding passed players and current highest bidder)
     const activeBidders = biddingOrder.filter(
@@ -234,8 +305,8 @@ export class GameEngine {
     const currentIndex = biddingOrder.indexOf(this.currentBidder);
     let nextBidder: string | null = null;
 
-    for (let i = 1; i <= 3; i++) {
-      const candidate = biddingOrder[(currentIndex + i) % 3];
+    for (let i = 1; i <= biddingOrder.length; i++) {
+      const candidate = biddingOrder[(currentIndex + i) % biddingOrder.length];
       if (activeBidders.includes(candidate)) {
         nextBidder = candidate;
         break;
@@ -262,9 +333,9 @@ export class GameEngine {
 
     this.broadcastState();
 
-    // Auto-confirm for AI players
+    // Auto-confirm for AI players and sitting-out dealer
     for (const player of this.game.players) {
-      if (player.isAI) {
+      if (player.isAI || (round.isDealerSittingOut && player.id === round.dealer)) {
         this.talonConfirmations.add(player.id);
       }
     }
@@ -317,7 +388,10 @@ export class GameEngine {
       return;
     }
 
-    const otherPlayers = this.game.players.filter(p => p.id !== playerId).map(p => p.id);
+    // Get other active players (exclude bidder and sitting-out dealer)
+    const otherPlayers = this.game.players
+      .filter(p => p.id !== playerId && !(round.isDealerSittingOut && p.id === round.dealer))
+      .map(p => p.id);
     const targetPlayers = distribution.map(d => d.playerId);
 
     // Each other player must receive exactly 1 card

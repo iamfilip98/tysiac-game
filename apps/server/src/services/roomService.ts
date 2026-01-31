@@ -28,7 +28,7 @@ function generateRoomCode(): string {
   return code;
 }
 
-export function createRoom(hostId: string, hostName: string, roomName: string, isPrivate: boolean): Room {
+export function createRoom(hostId: string, hostName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3): Room {
   const id = nanoid();
   let code = generateRoomCode();
 
@@ -51,7 +51,7 @@ export function createRoom(hostId: string, hostName: string, roomName: string, i
         isAI: false,
       },
     ],
-    maxPlayers: 3,
+    maxPlayers,
     isPrivate,
     gameId: null,
     createdAt: Date.now(),
@@ -77,13 +77,13 @@ export function getRoomByPlayerId(playerId: string): Room | undefined {
 }
 
 export function getPublicRooms(): Room[] {
-  return Array.from(rooms.values()).filter(r => !r.isPrivate && !r.gameId && r.players.length < 3);
+  return Array.from(rooms.values()).filter(r => !r.isPrivate && !r.gameId && r.players.length < r.maxPlayers);
 }
 
 export function joinRoom(roomId: string, playerId: string, playerName: string): Room | null {
   const room = rooms.get(roomId);
   if (!room) return null;
-  if (room.players.length >= 3) return null;
+  if (room.players.length >= room.maxPlayers) return null;
   if (room.gameId) return null; // Game already started
   if (room.players.some(p => p.id === playerId)) return room; // Already in room
 
@@ -151,7 +151,7 @@ export function setPlayerReady(playerId: string, isReady: boolean): Room | null 
 export function addAI(roomId: string): Room | null {
   const room = rooms.get(roomId);
   if (!room) return null;
-  if (room.players.length >= 3) return null;
+  if (room.players.length >= room.maxPlayers) return null;
 
   const aiId = `ai-${nanoid(8)}`;
 
@@ -188,7 +188,7 @@ export function removeAI(roomId: string, aiId: string): Room | null {
 }
 
 export function canStartGame(room: Room): boolean {
-  if (room.players.length !== 3) return false;
+  if (room.players.length !== room.maxPlayers) return false;
   if (room.gameId) return false;
 
   // All human players must be ready

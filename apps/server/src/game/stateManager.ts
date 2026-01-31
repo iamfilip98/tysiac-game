@@ -12,18 +12,22 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
   let talon: Card[] | null = null;
   let cardsToDistribute: Card[] | null = null;
   let roundInfo = null;
+  let isSpectating = false;
 
   if (round) {
-    // Get player's hand
-    myHand = round.players[playerId]?.hand || [];
+    // Check if player is spectating (sitting-out dealer in 4-player mode)
+    isSpectating = round.isDealerSittingOut && round.dealer === playerId;
+
+    // Get player's hand (empty if spectating)
+    myHand = isSpectating ? [] : (round.players[playerId]?.hand || []);
 
     // Talon visibility
     if (game.phase === 'talonReveal' || game.phase === 'talonDistribution') {
       const isBidWinner = round.bidWinner === playerId;
       const won100Hidden = round.finalBid === 100 && isBidWinner;
 
-      // If won at 100, talon is hidden from others
-      if (isBidWinner || !won100Hidden) {
+      // If won at 100, talon is hidden from others (but spectating dealer can see it)
+      if (isBidWinner || !won100Hidden || isSpectating) {
         talon = round.talon;
       }
     }
@@ -72,6 +76,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     ),
     round: roundInfo,
     myHand,
+    isSpectating,
     talon,
     cardsToDistribute,
     winner: game.winner,
@@ -95,6 +100,14 @@ export function getValidActions(
 
   if (!round) return actions;
 
+  // Spectating dealer has no valid actions
+  if (round.isDealerSittingOut && round.dealer === playerId) {
+    return actions;
+  }
+
+  const playerCount = game.players.length;
+  const is4Player = round.isDealerSittingOut;
+
   switch (game.phase) {
     case 'bidding': {
       if (!biddingState || biddingState.currentBidder !== playerId) break;
@@ -110,7 +123,13 @@ export function getValidActions(
 
       // Can always pass (unless forced)
       const dealerIndex = game.players.findIndex(p => p.id === round.dealer);
-      const leftOfDealer = game.players[(dealerIndex + 1) % 3].id;
+
+      // Find left of dealer (skip dealer in 4-player mode)
+      let leftOfDealerIndex = (dealerIndex + 1) % playerCount;
+      while (is4Player && game.players[leftOfDealerIndex].id === round.dealer) {
+        leftOfDealerIndex = (leftOfDealerIndex + 1) % playerCount;
+      }
+      const leftOfDealer = game.players[leftOfDealerIndex].id;
 
       // Left of dealer can't pass if others passed (they're forced)
       const othersPassed = biddingState.passedPlayers.length === 2;
@@ -159,11 +178,22 @@ export function getValidActions(
 }
 
 /**
- * Get the next player in turn order
+ * Get the next player in turn order (skips sitting-out dealer in 4-player mode)
  */
 export function getNextPlayer(game: GameState, currentPlayerId: string): string {
+  const round = game.currentRound;
+  const playerCount = game.players.length;
   const currentIndex = game.players.findIndex(p => p.id === currentPlayerId);
-  const nextIndex = (currentIndex + 1) % 3;
+
+  let nextIndex = (currentIndex + 1) % playerCount;
+
+  // Skip sitting-out dealer in 4-player mode
+  if (round?.isDealerSittingOut) {
+    while (game.players[nextIndex].id === round.dealer) {
+      nextIndex = (nextIndex + 1) % playerCount;
+    }
+  }
+
   return game.players[nextIndex].id;
 }
 

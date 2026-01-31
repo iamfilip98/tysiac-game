@@ -8,7 +8,7 @@ export interface Room {
   name: string;
   hostId: string;
   players: RoomPlayer[];
-  maxPlayers: 3;
+  maxPlayers: 3 | 4;
   isPrivate: boolean;
   gameId: string | null;
   createdAt: number;
@@ -25,7 +25,7 @@ export interface RoomPlayer {
 // Client -> Server events
 export interface ClientToServerEvents {
   // Room events
-  'room:create': (data: { playerName: string; roomName: string; isPrivate: boolean }) => void;
+  'room:create': (data: { playerName: string; roomName: string; isPrivate: boolean; maxPlayers?: 3 | 4 }) => void;
   'room:join': (data: { playerName: string; roomCode: string }) => void;
   'room:leave': () => void;
   'room:ready': (isReady: boolean) => void;
@@ -42,7 +42,7 @@ export interface ClientToServerEvents {
   'game:declareMarriage': (suit: Suit) => void;
 
   // Connection events
-  'player:reconnect': (data: { roomId: string; playerId: string }) => void;
+  'player:reconnect': (data: { roomId: string; playerId: string; sessionToken: string }) => void;
 }
 
 // Server -> Client events
@@ -112,6 +112,9 @@ export interface ClientGameState {
   // Player's own hand
   myHand: Card[];
 
+  // Whether player is spectating (dealer in 4-player mode)
+  isSpectating?: boolean;
+
   // Talon info (only visible during appropriate phases)
   talon: Card[] | null;
 
@@ -137,5 +140,7 @@ export interface RoundResult {
     newTotalScore: number;
     wasOnBarrel: boolean;
     fellOffBarrel: boolean;
+    isDealer?: boolean;
+    sittingOut?: boolean;
   }[];
 }

@@ -73,7 +73,7 @@ export function setupSocketHandlers(io: TypedServer) {
             return;
           }
 
-          const { playerName, roomName, isPrivate } = parsed.data;
+          const { playerName, roomName, isPrivate, maxPlayers } = parsed.data;
           const playerId = `player-${socket.id}`;
 
           // Clear any existing mappings for this socket
@@ -86,7 +86,7 @@ export function setupSocketHandlers(io: TypedServer) {
           socketToPlayer.set(socket.id, playerId);
           playerToSocket.set(playerId, socket.id);
 
-          const room = roomService.createRoom(playerId, playerName, roomName, isPrivate);
+          const room = roomService.createRoom(playerId, playerName, roomName, isPrivate, maxPlayers);
           const sessionToken = createSession(playerId, room.id);
 
           socket.join(room.id);
