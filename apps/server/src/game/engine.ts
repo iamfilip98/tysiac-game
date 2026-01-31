@@ -402,7 +402,8 @@ export class GameEngine {
     const biddingOrder: string[] = [];
     for (let i = 1; i <= this.game.players.length; i++) {
       const player = this.game.players[(dealerIndex + i) % this.game.players.length];
-      if (player.id !== round.dealer) {
+      // Only exclude dealer in 4-player mode (where dealer sits out)
+      if (!is4Player || player.id !== round.dealer) {
         biddingOrder.push(player.id);
       }
     }
