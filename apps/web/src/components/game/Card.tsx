@@ -90,21 +90,12 @@ export function Card({
 
   return (
     <div className="relative">
-      {/* Animated gold border for marriage cards */}
+      {/* Solid gold border for marriage cards */}
       {isMarriageCard && (
-        <motion.div
-          className="absolute -inset-1 rounded-xl bg-gradient-to-r from-gold-400 via-yellow-300 to-gold-400 opacity-75"
-          animate={{
-            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-          }}
-          transition={{
-            duration: 2,
-            repeat: Infinity,
-            ease: 'linear',
-          }}
+        <div
+          className="absolute -inset-[3px] rounded-xl bg-gradient-to-br from-yellow-400 via-gold-400 to-yellow-500"
           style={{
-            backgroundSize: '200% 200%',
-            filter: 'blur(3px)',
+            boxShadow: '0 0 12px 2px rgba(251, 191, 36, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.3)',
           }}
           aria-hidden="true"
         />

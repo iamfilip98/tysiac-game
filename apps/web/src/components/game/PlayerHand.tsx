@@ -84,10 +84,35 @@ export function PlayerHand({
     return marriageCards.has(`${card.suit}-${card.rank}`);
   };
 
-  // Sort cards by suit and rank
+  // Sort cards by suit and rank, ensuring red/black alternation when possible
   const sortedCards = useMemo(() => {
-    const suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
     const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
+    const isRedSuit = (suit: string) => suit === 'hearts' || suit === 'diamonds';
+
+    // Find unique suits in hand
+    const suitsInHand = [...new Set(cards.map(c => c.suit))];
+
+    // Determine optimal suit order to avoid same-color adjacency
+    let suitOrder: string[];
+    if (suitsInHand.length === 3) {
+      // With 3 suits, arrange to alternate colors
+      const redSuits = suitsInHand.filter(isRedSuit);
+      const blackSuits = suitsInHand.filter(s => !isRedSuit(s));
+
+      if (redSuits.length === 2) {
+        // 2 red, 1 black: red, black, red
+        suitOrder = [redSuits[0], blackSuits[0], redSuits[1]];
+      } else if (blackSuits.length === 2) {
+        // 2 black, 1 red: black, red, black
+        suitOrder = [blackSuits[0], redSuits[0], blackSuits[1]];
+      } else {
+        // Should not happen with standard suits, fallback
+        suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
+      }
+    } else {
+      // Default order for 4 suits (alternates red/black): hearts, clubs, diamonds, spades
+      suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
+    }
 
     return [...cards].sort((a, b) => {
       const suitDiff = suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);

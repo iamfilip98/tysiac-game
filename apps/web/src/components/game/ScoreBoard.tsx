@@ -34,7 +34,7 @@ export function ScoreBoard({
   phase,
 }: ScoreBoardProps) {
   return (
-    <div className="bg-table-900/90 backdrop-blur border border-table-600 rounded-xl p-4 min-w-[200px]">
+    <div className="bg-table-900/90 backdrop-blur border border-table-600 rounded-xl p-4 w-[220px]">
       {/* Header */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-table-600">
         <h3 className="text-sm font-semibold text-white/80">Scores</h3>
