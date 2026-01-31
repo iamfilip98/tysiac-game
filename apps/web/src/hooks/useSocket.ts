@@ -81,18 +81,23 @@ export function useSocket() {
 
     // Game events
     socket.on('game:started', (state) => {
-      console.log('[game:started] Received game state, gameId:', state.id);
+      console.log('[game:started] HANDLER CALLED, state:', JSON.stringify(state).slice(0, 200));
+      console.log('[game:started] state.id =', state?.id);
       resetGame();
       setGameState(state);
       // Also update room with gameId since room:updated might not arrive in time
       const currentRoom = useRoomStore.getState().room;
-      if (currentRoom && state.id) {
+      console.log('[game:started] currentRoom:', currentRoom?.id, 'state.id:', state?.id);
+      if (currentRoom && state?.id) {
         console.log('[game:started] Updating room gameId:', state.id);
         setRoom({ ...currentRoom, gameId: state.id });
+      } else {
+        console.log('[game:started] SKIPPED room update - currentRoom:', !!currentRoom, 'state.id:', state?.id);
       }
     });
 
     socket.on('game:stateUpdate', (state) => {
+      console.log('[game:stateUpdate] Received update, phase:', state?.phase);
       setGameState(state);
     });
 
@@ -114,6 +119,7 @@ export function useSocket() {
 
     // Reconnection
     socket.on('connection:restored', ({ room, gameState }) => {
+      console.log('[connection:restored] Received, hasGameState:', !!gameState);
       setRoom(room);
       if (gameState) {
         setGameState(gameState);
