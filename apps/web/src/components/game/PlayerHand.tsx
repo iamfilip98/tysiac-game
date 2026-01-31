@@ -54,7 +54,7 @@ export function PlayerHand({
 
   // Sort cards by suit and rank
   const sortedCards = useMemo(() => {
-    const suitOrder = ['spades', 'hearts', 'diamonds', 'clubs'];
+    const suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
     const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
 
     return [...cards].sort((a, b) => {
