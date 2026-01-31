@@ -145,35 +145,20 @@ export function GameBoard() {
           bidWinner={round?.bidWinner}
           finalBid={round?.finalBid}
           trumpSuit={round?.trumpSuit}
+          dealerId={round?.dealer}
+          roundNumber={round?.roundNumber}
+          completedTricks={round?.completedTricks}
+          phase={phase}
         />
 
-        {/* Round info */}
-        {round && (
-          <>
-            <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl px-3 py-1.5">
-              <div className="flex flex-wrap items-center justify-center gap-x-2 text-xs text-white/60">
-                <span>Round {round.roundNumber}</span>
-                <span className="text-white/30">•</span>
-                <span>Dealer: {gameState.players.find((p) => p.id === round.dealer)?.name}</span>
-                {phase === 'trickPlaying' && (
-                  <>
-                    <span className="text-white/30">•</span>
-                    <span>Trick {round.completedTricks + 1}/8</span>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* My marriages */}
-            {myDeclaredMarriages.length > 0 && (
-              <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-2">
-                <DeclaredMarriages
-                  marriages={myDeclaredMarriages}
-                  totalPoints={myMarriagePoints}
-                />
-              </div>
-            )}
-          </>
+        {/* My marriages */}
+        {round && myDeclaredMarriages.length > 0 && (
+          <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-2">
+            <DeclaredMarriages
+              marriages={myDeclaredMarriages}
+              totalPoints={myMarriagePoints}
+            />
+          </div>
         )}
       </div>
 

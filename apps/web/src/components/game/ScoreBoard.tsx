@@ -15,6 +15,10 @@ interface ScoreBoardProps {
   bidWinner?: string | null;
   finalBid?: number;
   trumpSuit?: Suit | null;
+  dealerId?: string | null;
+  roundNumber?: number;
+  completedTricks?: number;
+  phase?: string;
 }
 
 export function ScoreBoard({
@@ -24,6 +28,10 @@ export function ScoreBoard({
   bidWinner,
   finalBid,
   trumpSuit,
+  dealerId,
+  roundNumber,
+  completedTricks,
+  phase,
 }: ScoreBoardProps) {
   return (
     <div className="bg-table-900/90 backdrop-blur border border-table-600 rounded-xl p-4 min-w-[200px]">
@@ -53,6 +61,7 @@ export function ScoreBoard({
           const score = scores[player.id];
           const isMe = player.id === currentPlayerId;
           const isBidder = bidWinner === player.id;
+          const isDealer = dealerId === player.id;
 
           return (
             <motion.div
@@ -65,6 +74,18 @@ export function ScoreBoard({
               )}
             >
               <div className="flex items-center gap-2">
+                {/* Dealer indicator */}
+                {isDealer && (
+                  <span
+                    className="text-sm"
+                    role="img"
+                    aria-label="Dealer"
+                    title="Dealer"
+                  >
+                    🪙
+                  </span>
+                )}
+
                 {/* Player name */}
                 <span
                   className={cn(
@@ -118,10 +139,18 @@ export function ScoreBoard({
         })}
       </div>
 
-      {/* Goal reminder */}
-      <div className="mt-3 pt-2 border-t border-table-600 text-center text-xs text-white/60">
-        First to 1000 wins!
-      </div>
+      {/* Round info */}
+      {roundNumber && (
+        <div className="mt-3 pt-2 border-t border-table-600 flex items-center justify-center gap-2 text-xs text-white/60">
+          <span>Round {roundNumber}</span>
+          {phase === 'trickPlaying' && completedTricks !== undefined && (
+            <>
+              <span className="text-white/30">•</span>
+              <span>Trick {completedTricks + 1}/8</span>
+            </>
+          )}
+        </div>
+      )}
     </div>
   );
 }
