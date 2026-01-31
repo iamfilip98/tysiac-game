@@ -107,7 +107,7 @@ export function Card({
         'playing-card will-change-transform',
         color === 'red' ? 'red' : 'black',
         sizeClasses[size],
-        isPlayable && 'cursor-pointer',
+        isPlayable && 'cursor-pointer ring-2 ring-green-500',
         !isPlayable && 'opacity-50 cursor-not-allowed',
         isSelected && 'ring-2 ring-gold-400 shadow-glow',
         isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
@@ -116,23 +116,14 @@ export function Card({
       style={{ ...style, transform: 'translateZ(0)' }}
     >
       {/* Card content */}
-      <div className="absolute inset-1 flex flex-col justify-between p-1" aria-hidden="true">
-        {/* Top left */}
-        <div className={cn('flex flex-col items-center leading-none', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-          <span className="font-bold">{card.rank}</span>
-          <span>{suitSymbol}</span>
-        </div>
-
-        {/* Center suit */}
-        <div className={cn('absolute inset-0 flex items-center justify-center text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+      <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
+        {/* Center rank and suit */}
+        <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+          {card.rank}
+        </span>
+        <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
           {suitSymbol}
-        </div>
-
-        {/* Bottom right (rotated) */}
-        <div className={cn('flex flex-col items-center leading-none self-end rotate-180', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-          <span className="font-bold">{card.rank}</span>
-          <span>{suitSymbol}</span>
-        </div>
+        </span>
       </div>
     </motion.div>
   );

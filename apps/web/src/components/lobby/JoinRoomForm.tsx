@@ -50,6 +50,17 @@ export function JoinRoomForm({ onSubmit, isLoading }: JoinRoomFormProps) {
             required
           />
 
+          {/* Spacer to match CreateRoomForm height (matches number of players section) */}
+          <div aria-hidden="true">
+            <div className="block text-sm font-medium text-transparent mb-2">
+              Number of Players
+            </div>
+            <div className="flex gap-2">
+              <div className="flex-1 py-2 px-4 rounded-lg" />
+              <div className="flex-1 py-2 px-4 rounded-lg" />
+            </div>
+          </div>
+
           {/* Spacer to match CreateRoomForm height (matches private room toggle row) */}
           <div className="flex items-center gap-3" aria-hidden="true">
             <div className="w-12 h-6" />

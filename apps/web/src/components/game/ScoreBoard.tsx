@@ -38,22 +38,21 @@ export function ScoreBoard({
       {/* Header */}
       <div className="flex items-center justify-between mb-3 pb-2 border-b border-table-600">
         <h3 className="text-sm font-semibold text-white/80">Scores</h3>
-        <div className={cn(
-          "flex items-center gap-1 text-sm",
-          !trumpSuit && "invisible"
-        )}>
-          <span className="text-white/60">Trump:</span>
-          <span
-            className={cn(
-              'text-lg w-5 text-center',
-              trumpSuit === 'hearts' || trumpSuit === 'diamonds'
-                ? 'text-red-500'
-                : 'text-white'
-            )}
-          >
-            {trumpSuit ? getSuitSymbol(trumpSuit) : '♠'}
-          </span>
-        </div>
+        {trumpSuit && (
+          <div className="flex items-center gap-1 text-sm">
+            <span className="text-white/60">Marriage:</span>
+            <span
+              className={cn(
+                'text-lg w-5 text-center',
+                trumpSuit === 'hearts' || trumpSuit === 'diamonds'
+                  ? 'text-red-500'
+                  : 'text-white'
+              )}
+            >
+              {getSuitSymbol(trumpSuit)}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Players */}

@@ -83,11 +83,6 @@ export function CreateRoomForm({ onSubmit, isLoading }: CreateRoomFormProps) {
                 4 Players
               </button>
             </div>
-            {maxPlayers === 4 && (
-              <p className="text-xs text-white/50 mt-1">
-                In 4-player mode, the dealer sits out each round
-              </p>
-            )}
           </div>
 
           <div className="flex items-center gap-3">

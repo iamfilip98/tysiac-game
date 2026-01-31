@@ -65,9 +65,9 @@ export function TalonDistributionPanel({
 
   const [currentTarget, setCurrentTarget] = useState<string | null>(null);
 
-  // Sort hand for display
+  // Sort hand for display (same order as PlayerHand)
   const sortedHand = useMemo(() => {
-    const suitOrder = ['spades', 'hearts', 'diamonds', 'clubs'];
+    const suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
     const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
 
     return [...myHand].sort((a, b) => {
