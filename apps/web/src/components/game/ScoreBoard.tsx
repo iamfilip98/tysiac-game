@@ -5,6 +5,13 @@ import { cn } from '@/lib/utils';
 import { getSuitSymbol } from '@/lib/utils';
 import type { Suit } from '@tysiac/shared';
 
+const MAX_NAME_LENGTH = 8;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 interface ScoreBoardProps {
   players: { id: string; name: string; isAI: boolean }[];
   scores: Record<
@@ -33,17 +40,25 @@ export function ScoreBoard({
   completedTricks,
   phase,
 }: ScoreBoardProps) {
+  const isFourPlayer = players.length === 4;
+
   return (
-    <div className="bg-table-900/90 backdrop-blur border border-table-600 rounded-xl p-4 w-[220px]">
+    <div className={cn(
+      "bg-table-900/90 backdrop-blur border border-table-600 rounded-xl w-[220px]",
+      isFourPlayer ? "p-2" : "p-4"
+    )}>
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 pb-2 border-b border-table-600">
+      <div className={cn(
+        "flex items-center justify-between border-b border-table-600",
+        isFourPlayer ? "mb-1.5 pb-1" : "mb-3 pb-2"
+      )}>
         <h3 className="text-sm font-semibold text-white/80">Scores</h3>
         {trumpSuit && (
           <div className="flex items-center gap-1 text-sm">
-            <span className="text-white/60">Marriage:</span>
+            <span className="text-white/60 text-xs">Trump:</span>
             <span
               className={cn(
-                'text-lg w-5 text-center',
+                'text-base w-4 text-center',
                 trumpSuit === 'hearts' || trumpSuit === 'diamonds'
                   ? 'text-red-500'
                   : 'text-white'
@@ -56,7 +71,7 @@ export function ScoreBoard({
       </div>
 
       {/* Players */}
-      <div className="space-y-2">
+      <div className={isFourPlayer ? "space-y-0.5" : "space-y-2"}>
         {players.map((player) => {
           const score = scores[player.id];
           const isMe = player.id === currentPlayerId;
@@ -68,7 +83,8 @@ export function ScoreBoard({
               key={player.id}
               layout
               className={cn(
-                'flex items-center justify-between p-2 rounded-lg',
+                'flex items-center justify-between rounded-lg',
+                isFourPlayer ? 'p-1 px-1.5' : 'p-2',
                 isMe && 'bg-gold-500/10 ring-1 ring-gold-500/30',
                 isBidder && !isMe && 'bg-white/5'
               )}
@@ -92,8 +108,9 @@ export function ScoreBoard({
                     'text-sm font-medium',
                     isMe ? 'text-gold-400' : 'text-white'
                   )}
+                  title={player.name}
                 >
-                  {player.name}
+                  {truncateName(player.name)}
                   {player.isAI && (
                     <span className="ml-1 text-xs text-white/60">(AI)</span>
                   )}
@@ -141,7 +158,10 @@ export function ScoreBoard({
 
       {/* Round info */}
       {roundNumber && (
-        <div className="mt-3 pt-2 border-t border-table-600 flex items-center justify-center gap-2 text-xs text-white/60">
+        <div className={cn(
+          "border-t border-table-600 flex items-center justify-center gap-2 text-xs text-white/60",
+          isFourPlayer ? "mt-1.5 pt-1" : "mt-3 pt-2"
+        )}>
           <span>Round {roundNumber}</span>
           {phase === 'trickPlaying' && completedTricks !== undefined && (
             <>

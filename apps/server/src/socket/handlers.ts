@@ -163,7 +163,7 @@ export function setupSocketHandlers(io: TypedServer) {
             return;
           }
 
-          if (room.players.length >= 3) {
+          if (room.players.length >= room.maxPlayers) {
             logEvent({ socketId: socket.id, eventType: 'room:join', eventData: parsed.data, result: 'rejected', errorMessage: 'Room is full', metadata: { roomId: room.id } });
             socket.emit('room:error', { code: 'ROOM_FULL', message: 'Room is full' });
             return;

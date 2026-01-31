@@ -6,6 +6,13 @@ import { Card } from './Card';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, ValidAction, Suit } from '@tysiac/shared';
 
+const MAX_NAME_LENGTH = 10;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 interface PlayerHandProps {
   cards: CardType[];
   validActions: ValidAction[];
@@ -270,8 +277,9 @@ export function OpponentHand({
           'text-sm font-medium px-2 py-1 rounded-lg bg-table-800/80',
           isCurrentTurn ? 'text-gold-400 ring-2 ring-gold-400/50' : 'text-white/80'
         )}
+        title={playerName}
       >
-        {playerName}
+        {truncateName(playerName)}
         {isCurrentTurn && (
           <motion.span
             animate={{ opacity: [0.5, 1, 0.5] }}

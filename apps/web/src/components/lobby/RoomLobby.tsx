@@ -7,6 +7,13 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn } from '@/lib/utils';
 import type { Room, RoomPlayer } from '@tysiac/shared';
 
+const MAX_NAME_LENGTH = 12;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 interface RoomLobbyProps {
   room: Room;
   currentPlayerId: string;
@@ -403,11 +410,12 @@ function PlayerSlot({
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={cn(
-                'font-medium truncate',
+                'font-medium',
                 isCurrentPlayer ? 'text-gold-400' : 'text-white'
               )}
+              title={player.name}
             >
-              {player.name}
+              {truncateName(player.name)}
             </span>
             {isHost && (
               <span className="text-xs bg-gold-500/20 text-gold-400 px-1.5 py-0.5 rounded shrink-0">

@@ -102,6 +102,14 @@ export function GameBoard() {
     }
   }, [gameState?.phase]);
 
+  // Auto-confirm talon for spectating players (dealer in 4-player mode)
+  useEffect(() => {
+    if (isSpectating && gameState?.phase === 'talonReveal' && !hasConfirmedTalon) {
+      setHasConfirmedTalon(true);
+      confirmTalon();
+    }
+  }, [isSpectating, gameState?.phase, hasConfirmedTalon, confirmTalon]);
+
 
   if (!gameState || !playerId) {
     return (
@@ -166,17 +174,6 @@ export function GameBoard() {
 
       </div>
 
-      {/* Spectating indicator */}
-      {isSpectating && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute top-4 right-4 z-30 px-4 py-2 bg-purple-500/20 border border-purple-500/50 rounded-lg"
-        >
-          <span className="text-purple-400 font-medium">Spectating this round</span>
-          <p className="text-purple-300/70 text-xs mt-1">You are the dealer and sit out this round</p>
-        </motion.div>
-      )}
 
       {/* Opponents */}
       <div className={cn(
@@ -350,7 +347,9 @@ export function GameBoard() {
               >
                 <TalonDistributionPanel
                   myHand={myHand}
-                  otherPlayers={otherPlayers}
+                  otherPlayers={playerCount === 4
+                    ? otherPlayers.filter(p => p.id !== round?.dealer)
+                    : otherPlayers}
                   onDistribute={distributeTalon}
                 />
               </motion.div>
@@ -359,20 +358,35 @@ export function GameBoard() {
         </AnimatePresence>
       </div>
 
-      {/* Player's hand */}
+      {/* Player's hand or Spectating indicator */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
         isMobile ? 'bottom-2' : 'bottom-4'
       )}>
-        <PlayerHand
-          cards={myHand}
-          validActions={validActions}
-          selectedCard={selectedCard}
-          onSelectCard={selectCard}
-          onPlayCard={playCard}
-          isMyTurn={isMyTurn && phase === 'trickPlaying'}
-          declaredMarriages={round?.declaredMarriages?.[playerId] || []}
-        />
+        {isSpectating ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-table-900 border-2 border-purple-500 rounded-xl px-6 py-4 sm:px-8 sm:py-6 text-center shadow-lg"
+          >
+            <div className="text-purple-400 font-bold text-lg sm:text-xl mb-1">
+              Spectating This Round
+            </div>
+            <p className="text-white/70 text-sm sm:text-base">
+              You are the dealer and sit out this round
+            </p>
+          </motion.div>
+        ) : (
+          <PlayerHand
+            cards={myHand}
+            validActions={validActions}
+            selectedCard={selectedCard}
+            onSelectCard={selectCard}
+            onPlayCard={playCard}
+            isMyTurn={isMyTurn && phase === 'trickPlaying'}
+            declaredMarriages={round?.declaredMarriages?.[playerId] || []}
+          />
+        )}
       </div>
 
       {/* Turn indicator */}

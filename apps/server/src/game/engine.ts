@@ -26,6 +26,9 @@ export class GameEngine {
   // Wykladana confirmation tracking
   private wykladanaConfirmations: Set<string> = new Set();
 
+  // Safeguard timer for stuck phases
+  private stuckPhaseTimer: NodeJS.Timeout | null = null;
+
   // Track all timers for cleanup
   private activeTimers: Set<NodeJS.Timeout> = new Set();
   private isCleanedUp: boolean = false;
@@ -493,6 +496,8 @@ export class GameEngine {
     // - Sitting-out dealer in 4-player mode
     // - Non-bid-winners when bid is exactly 100 (they can't see the talon)
     const bidWasAt100 = round.finalBid === 100;
+    const autoConfirmDetails: { playerId: string; reason: string }[] = [];
+
     for (const player of this.game.players) {
       const isAI = player.isAI;
       const isSittingOutDealer = round.isDealerSittingOut && player.id === round.dealer;
@@ -500,11 +505,63 @@ export class GameEngine {
 
       if (isAI || isSittingOutDealer || cantSeeTalon) {
         this.talonConfirmations.add(player.id);
+        const reason = isAI ? 'isAI' : isSittingOutDealer ? 'sittingOutDealer' : 'cantSeeTalon';
+        autoConfirmDetails.push({ playerId: player.id, reason });
       }
     }
 
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'talon:autoConfirmSummary',
+      eventData: {
+        bidWasAt100,
+        bidWinner: round.bidWinner,
+        dealer: round.dealer,
+        isDealerSittingOut: round.isDealerSittingOut,
+        allPlayers: this.game.players.map(p => ({ id: p.id, name: p.name, isAI: p.isAI })),
+        autoConfirmed: autoConfirmDetails,
+        confirmationSet: Array.from(this.talonConfirmations),
+      },
+      result: 'success',
+    });
+
     // Check if all confirmations are in
     this.checkTalonConfirmations();
+
+    // Set up safeguard timer - if still in talonReveal after 30 seconds, force progress
+    this.clearStuckPhaseTimer();
+    this.stuckPhaseTimer = setTimeout(() => {
+      if (this.isCleanedUp) return;
+      if (this.game.phase === 'talonReveal') {
+        logDebug({
+          gameId: this.game.id,
+          roomId: this.roomId,
+          eventType: 'talon:safeguardTrigger',
+          eventData: {
+            reason: 'timeout_30s',
+            missingConfirmations: this.game.players
+              .filter(p => !this.talonConfirmations.has(p.id))
+              .map(p => ({ id: p.id, name: p.name, isAI: p.isAI })),
+          },
+          result: 'success',
+        });
+        // Force confirm everyone
+        for (const player of this.game.players) {
+          this.talonConfirmations.add(player.id);
+        }
+        this.checkTalonConfirmations();
+      }
+    }, 30000);
+    this.activeTimers.add(this.stuckPhaseTimer);
+  }
+
+  private clearStuckPhaseTimer(): void {
+    if (this.stuckPhaseTimer) {
+      clearTimeout(this.stuckPhaseTimer);
+      this.activeTimers.delete(this.stuckPhaseTimer);
+      this.stuckPhaseTimer = null;
+    }
   }
 
   handleConfirmTalon(playerId: string): void {
@@ -577,6 +634,9 @@ export class GameEngine {
     });
 
     if (allConfirmed) {
+      // Clear safeguard timer since we're proceeding
+      this.clearStuckPhaseTimer();
+
       const round = this.game.currentRound!;
 
       // If bid was exactly 100, bidder needs to decide whether to play or pass
@@ -695,6 +755,19 @@ export class GameEngine {
       this.io.to(socketId).emit('game:yourTurn', {
         validActions: [{ type: 'playOrPass' }],
       });
+    } else {
+      // No socket - player disconnected. Auto-play for them.
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        playerId: bidWinnerId,
+        eventType: 'playOrPass:autoPlay:disconnected',
+        eventData: { reason: 'no_socket' },
+        result: 'success',
+      });
+      this.safeSetTimeout(() => {
+        this.handlePlayOrPass(bidWinnerId, 'play');
+      }, 800);
     }
   }
 

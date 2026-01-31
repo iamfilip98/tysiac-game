@@ -8,6 +8,13 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
 
+const MAX_NAME_LENGTH = 10;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 function useIsMobile() {
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
@@ -183,8 +190,9 @@ export function TalonDistributionPanel({
                     : 'bg-table-800 text-white hover:bg-table-700',
                   assignedCard && !isSelected && 'ring-2 ring-green-500'
                 )}
+                title={player.name}
               >
-                <div className="font-medium">{player.name}</div>
+                <div className="font-medium">{truncateName(player.name)}</div>
                 {assignedCard && (
                   <div className="text-xs mt-1 opacity-80">
                     Gets: {assignedCard.rank}
@@ -216,8 +224,8 @@ export function TalonDistributionPanel({
                   onClick={() => handleCardSelect(card)}
                 />
                 {assignee && (
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap">
-                    → {assignee}
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap" title={assignee}>
+                    → {truncateName(assignee)}
                   </div>
                 )}
               </motion.div>
