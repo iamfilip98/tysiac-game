@@ -7,10 +7,9 @@ import { Input } from '@/components/ui/Input';
 interface JoinRoomFormProps {
   onSubmit: (playerName: string, roomCode: string) => void;
   isLoading?: boolean;
-  error?: string | null;
 }
 
-export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) {
+export function JoinRoomForm({ onSubmit, isLoading }: JoinRoomFormProps) {
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState('');
 
@@ -49,7 +48,6 @@ export function JoinRoomForm({ onSubmit, isLoading, error }: JoinRoomFormProps) 
             maxLength={6}
             className="font-mono tracking-widest text-center uppercase"
             required
-            error={error || undefined}
           />
 
           {/* Spacer to match CreateRoomForm height (matches private room toggle row) */}

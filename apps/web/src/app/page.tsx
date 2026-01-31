@@ -135,7 +135,7 @@ export default function HomePage() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm min-h-[362px]"
       >
         {tab === 'create' ? (
           <CreateRoomForm
@@ -146,13 +146,12 @@ export default function HomePage() {
           <JoinRoomForm
             onSubmit={joinRoom}
             isLoading={isConnecting}
-            error={error}
           />
         )}
       </motion.div>
 
       {/* Error display */}
-      {error && tab === 'create' && (
+      {error && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
