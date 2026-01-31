@@ -15,18 +15,23 @@ interface PlayerHandProps {
   isMyTurn: boolean;
 }
 
-// Hook to track screen size
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
+// Hook to track screen size and width
+function useScreenSize() {
+  const [screenSize, setScreenSize] = useState({ isMobile: false, width: 1024 });
 
   useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
+    const updateSize = () => {
+      setScreenSize({
+        isMobile: window.innerWidth < 640,
+        width: window.innerWidth,
+      });
+    };
+    updateSize();
+    window.addEventListener('resize', updateSize);
+    return () => window.removeEventListener('resize', updateSize);
   }, []);
 
-  return isMobile;
+  return screenSize;
 }
 
 // Simpler mobile transition
@@ -41,7 +46,7 @@ export function PlayerHand({
   onPlayCard,
   isMyTurn,
 }: PlayerHandProps) {
-  const isMobile = useIsMobile();
+  const { isMobile, width } = useScreenSize();
 
   // Get playable cards from valid actions
   const playableCards = useMemo(() => {
@@ -91,14 +96,38 @@ export function PlayerHand({
     }
   };
 
-  // Calculate fan layout - responsive spread
   const cardCount = sortedCards.length;
-  const fanAngle = isMobile ? Math.min(cardCount * 4, 30) : Math.min(cardCount * 5, 40);
+
+  // Card dimensions: sm=48px, md=64px, lg=80px
+  const cardWidth = isMobile ? 64 : 80;
+
+  // Calculate available width (screen width minus padding)
+  const availableWidth = isMobile ? width - 32 : Math.min(width - 64, 700);
+
+  // Calculate spread to fit all cards with minimum visibility
+  // Each card needs at least 28px visible (to show rank/suit corner)
+  const minVisibleWidth = isMobile ? 28 : 35;
+  const totalNeededWidth = (cardCount - 1) * minVisibleWidth + cardWidth;
+
+  // If cards fit with minimum visibility, use that; otherwise calculate tighter spread
+  const baseSpread = cardCount <= 1
+    ? 0
+    : Math.min(
+        (availableWidth - cardWidth) / (cardCount - 1),
+        isMobile ? 42 : 60 // Max spread for aesthetic reasons
+      );
+
+  // Fan angle - minimal on mobile for cleaner look, more on desktop
+  const fanAngle = isMobile ? 0 : Math.min(cardCount * 3, 24);
   const startAngle = -fanAngle / 2;
 
   return (
     <div
-      className="relative flex justify-center items-end h-28 sm:h-40"
+      className={cn(
+        "relative flex justify-center items-end",
+        isMobile ? "h-32" : "h-40"
+      )}
+      style={{ width: isMobile ? '100%' : 'auto' }}
       role="group"
       aria-label={`Your hand: ${cardCount} cards${isMyTurn ? '. Your turn to play.' : ''}`}
     >
@@ -107,15 +136,14 @@ export function PlayerHand({
           const playable = isCardPlayable(card);
           const selected = isCardSelected(card);
 
-          // Calculate position in fan - responsive spread
+          // Calculate position
           const angle = startAngle + (index / Math.max(cardCount - 1, 1)) * fanAngle;
-          const baseSpread = isMobile ? 28 : 50;
           const xOffset = (index - (cardCount - 1) / 2) * baseSpread;
 
           // Simpler transitions for mobile
           const transition = isMobile
-            ? { duration: 0.2, ease: 'easeOut', delay: index * 0.03 }
-            : { type: 'spring', stiffness: 300, damping: 30, delay: index * 0.05 };
+            ? { duration: 0.2, ease: 'easeOut', delay: index * 0.02 }
+            : { type: 'spring', stiffness: 300, damping: 30, delay: index * 0.03 };
 
           return (
             <motion.div
@@ -136,7 +164,6 @@ export function PlayerHand({
                 transformOrigin: 'bottom center',
                 zIndex: selected ? 100 : index,
                 willChange: 'transform',
-                transform: 'translateZ(0)',
               }}
             >
               <Card
@@ -180,7 +207,7 @@ export function OpponentHand({
   playerName,
   isCurrentTurn = false,
 }: OpponentHandProps) {
-  const isMobile = useIsMobile();
+  const { isMobile } = useScreenSize();
 
   const positionClasses = {
     left: 'flex-col items-start',
