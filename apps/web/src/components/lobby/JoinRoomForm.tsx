@@ -56,8 +56,8 @@ export function JoinRoomForm({ onSubmit, isLoading }: JoinRoomFormProps) {
               Number of Players
             </div>
             <div className="flex gap-2">
-              <div className="flex-1 py-2 px-4 rounded-lg" />
-              <div className="flex-1 py-2 px-4 rounded-lg" />
+              <div className="flex-1 py-2 px-4 rounded-lg font-medium text-transparent">3 Players</div>
+              <div className="flex-1 py-2 px-4 rounded-lg font-medium text-transparent">4 Players</div>
             </div>
           </div>
 
