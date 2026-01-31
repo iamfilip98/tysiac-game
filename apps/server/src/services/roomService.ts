@@ -1,6 +1,20 @@
 import { nanoid } from 'nanoid';
 import type { Room, RoomPlayer } from '@tysiac/shared';
 
+// AI player names pool
+const AI_NAMES = [
+  'Bartek',
+  'Kasia',
+  'Michał',
+  'Ania',
+  'Piotr',
+  'Magda',
+  'Janek',
+  'Zosia',
+  'Marek',
+  'Basia',
+];
+
 // In-memory room storage (for simplicity; can be backed by DB)
 const rooms = new Map<string, Room>();
 const playerRooms = new Map<string, string>(); // playerId -> roomId
@@ -140,11 +154,17 @@ export function addAI(roomId: string): Room | null {
   if (room.players.length >= 3) return null;
 
   const aiId = `ai-${nanoid(8)}`;
-  const aiNumber = room.players.filter(p => p.isAI).length + 1;
+
+  // Get names already used in this room
+  const usedNames = new Set(room.players.map(p => p.name));
+
+  // Filter available names and pick a random one
+  const availableNames = AI_NAMES.filter(name => !usedNames.has(name));
+  const randomName = availableNames[Math.floor(Math.random() * availableNames.length)] || 'AI';
 
   room.players.push({
     id: aiId,
-    name: `AI Player ${aiNumber}`,
+    name: randomName,
     isReady: true, // AI is always ready
     isHost: false,
     isAI: true,
