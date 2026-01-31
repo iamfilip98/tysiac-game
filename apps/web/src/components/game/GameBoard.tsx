@@ -367,12 +367,12 @@ export function GameBoard() {
           <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="bg-table-900 border-2 border-purple-500 rounded-xl px-6 py-4 sm:px-8 sm:py-6 text-center shadow-lg"
+            className="bg-table-900 border-2 border-purple-500 rounded-xl px-12 py-2 sm:px-20 sm:py-3 text-center shadow-lg min-w-[300px] sm:min-w-[500px]"
           >
-            <div className="text-purple-400 font-bold text-lg sm:text-xl mb-1">
+            <div className="text-purple-400 font-bold text-base sm:text-lg">
               Spectating This Round
             </div>
-            <p className="text-white/70 text-sm sm:text-base">
+            <p className="text-white/70 text-xs sm:text-sm">
               You are the dealer and sit out this round
             </p>
           </motion.div>
