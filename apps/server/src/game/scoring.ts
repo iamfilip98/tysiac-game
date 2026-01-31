@@ -21,7 +21,8 @@ export interface RoundScoreResult {
  *
  * Rules:
  * - Bidder must hit EXACT bid to score; otherwise loses bid amount
- * - Marriage points ONLY count for the bidder (not non-bidders)
+ * - Marriage points only count if the player won at least one trick
+ * - Non-bidders can get marriage points if they won tricks
  * - Non-bidders round to nearest 10 (6+ rounds up), but only if under 800
  * - Players at/above 800 (on barrel) get 0 unless they're bidder
  * - Barrel: must reach 1000 or stay. 3 failed attempts = fall back to 800
@@ -43,10 +44,11 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
 
     // Calculate trick points
     const trickPoints = playerState.pointsFromTricks;
+    const wonAtLeastOneTrick = playerState.tricksWon.length > 0;
 
-    // Marriage points ONLY count for the bidder
-    // Non-bidders do not get marriage bonus even if they declared
-    const marriagePoints = isBidder ? playerState.marriagePoints : 0;
+    // Marriage points only count if the player won at least one trick
+    // Both bidder and non-bidders can get marriage points if they won tricks
+    const marriagePoints = wonAtLeastOneTrick ? playerState.marriagePoints : 0;
 
     // Total points earned this round
     const totalRoundPoints = trickPoints + marriagePoints;
@@ -102,7 +104,8 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
         newTotalScore = currentScore.totalScore;
       } else {
         // Round to nearest 10 (6+ rounds up)
-        scoreChange = roundToTen(trickPoints); // Only trick points, no marriage
+        // Non-bidders also get marriage points if they won tricks
+        scoreChange = roundToTen(trickPoints + marriagePoints);
         newTotalScore = currentScore.totalScore + scoreChange;
       }
     }
