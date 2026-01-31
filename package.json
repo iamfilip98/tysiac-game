@@ -16,9 +16,11 @@
     "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
     "db:push": "pnpm --filter=@tysiac/server db:push"
   },
+  "dependencies": {
+    "next": "^14.1.0"
+  },
   "devDependencies": {
     "turbo": "^2.0.0",
-    "typescript": "^5.4.0",
-    "next": "^14.1.0"
+    "typescript": "^5.4.0"
   }
 }
