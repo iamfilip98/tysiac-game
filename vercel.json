@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "nextjs",
+  "framework": null,
   "installCommand": "npm install -g pnpm && pnpm install",
   "buildCommand": "pnpm build --filter=@tysiac/shared && pnpm build --filter=@tysiac/web",
   "outputDirectory": "apps/web/.next"
