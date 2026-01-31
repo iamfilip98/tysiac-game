@@ -30,6 +30,7 @@ export function RoomLobby({
   onLeave,
 }: RoomLobbyProps) {
   const [copied, setCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isAddingAI, setIsAddingAI] = useState(false);
 
@@ -54,6 +55,47 @@ export function RoomLobby({
       document.body.removeChild(textArea);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
+  const getShareUrl = () => {
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+    return `${baseUrl}/?room=${room.code}`;
+  };
+
+  const handleShare = async () => {
+    const shareUrl = getShareUrl();
+    const shareData = {
+      title: 'Join my Tysiąc game!',
+      text: `Join my room "${room.name}"`,
+      url: shareUrl,
+    };
+
+    // Try Web Share API first (works on mobile)
+    if (navigator.share && navigator.canShare?.(shareData)) {
+      try {
+        await navigator.share(shareData);
+        return;
+      } catch (err) {
+        // User cancelled or share failed, fall back to copy
+        if ((err as Error).name === 'AbortError') return;
+      }
+    }
+
+    // Fallback: copy link to clipboard
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch {
+      const textArea = document.createElement('textarea');
+      textArea.value = shareUrl;
+      document.body.appendChild(textArea);
+      textArea.select();
+      document.execCommand('copy');
+      document.body.removeChild(textArea);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
     }
   };
 
@@ -129,17 +171,54 @@ export function RoomLobby({
                   </svg>
                 )}
               </button>
+              <button
+                onClick={handleShare}
+                className="p-1 text-white/40 hover:text-white transition-colors rounded focus:outline-none focus:ring-2 focus:ring-gold-500"
+                aria-label={linkCopied ? 'Link copied!' : 'Share invite link'}
+              >
+                {linkCopied ? (
+                  <svg
+                    className="w-4 h-4 text-green-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"
+                    />
+                  </svg>
+                )}
+              </button>
             </div>
             {/* Reserve space for copy confirmation to prevent layout shift */}
             <p
               className={cn(
                 'text-sm text-green-400 mt-2 min-h-[20px] transition-opacity',
-                copied ? 'opacity-100' : 'opacity-0'
+                copied || linkCopied ? 'opacity-100' : 'opacity-0'
               )}
               role="status"
-              aria-hidden={!copied}
+              aria-hidden={!copied && !linkCopied}
             >
-              Copied to clipboard!
+              {linkCopied ? 'Link copied to clipboard!' : 'Code copied to clipboard!'}
             </p>
           </div>
 

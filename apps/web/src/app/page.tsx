@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CreateRoomForm } from '@/components/lobby/CreateRoomForm';
 import { JoinRoomForm } from '@/components/lobby/JoinRoomForm';
@@ -14,12 +15,24 @@ import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 
 export default function HomePage() {
-  const [tab, setTab] = useState<'create' | 'join'>('create');
+  const searchParams = useSearchParams();
+  const roomCodeFromUrl = searchParams.get('room')?.toUpperCase() || '';
+
+  const [tab, setTab] = useState<'create' | 'join'>(roomCodeFromUrl ? 'join' : 'create');
   const [showRulesModal, setShowRulesModal] = useState(false);
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
   const { room, playerId, isConnected, isConnecting, error } = useRoomStore();
+
+  // Clean up URL after reading room code (removes ?room= from URL)
+  useEffect(() => {
+    if (roomCodeFromUrl && typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('room');
+      window.history.replaceState({}, '', url.pathname);
+    }
+  }, [roomCodeFromUrl]);
 
   // Show toast when error changes
   useEffect(() => {
@@ -148,6 +161,7 @@ export default function HomePage() {
           <JoinRoomForm
             onSubmit={joinRoom}
             isLoading={isConnecting}
+            initialCode={roomCodeFromUrl}
           />
         )}
       </motion.div>

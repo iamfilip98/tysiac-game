@@ -7,11 +7,12 @@ import { Input } from '@/components/ui/Input';
 interface JoinRoomFormProps {
   onSubmit: (playerName: string, roomCode: string) => void;
   isLoading?: boolean;
+  initialCode?: string;
 }
 
-export function JoinRoomForm({ onSubmit, isLoading }: JoinRoomFormProps) {
+export function JoinRoomForm({ onSubmit, isLoading, initialCode = '' }: JoinRoomFormProps) {
   const [playerName, setPlayerName] = useState('');
-  const [roomCode, setRoomCode] = useState('');
+  const [roomCode, setRoomCode] = useState(initialCode);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
