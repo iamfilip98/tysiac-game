@@ -151,6 +151,13 @@ export function useSocket() {
     // Reconnection
     socket.on('connection:restored', ({ room, gameState }) => {
       console.log('[connection:restored] Received, hasGameState:', !!gameState);
+
+      // Restore playerId from session
+      const storedSession = loadSession();
+      if (storedSession) {
+        setPlayerId(storedSession.playerId);
+      }
+
       setRoom(room);
       if (gameState) {
         setGameState(gameState);
