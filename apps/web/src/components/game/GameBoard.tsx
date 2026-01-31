@@ -138,17 +138,18 @@ export function GameBoard() {
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
 
       {/* Leave game button - top left */}
-      <div className="absolute top-4 left-4 z-30">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 z-30">
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
+          className="px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
         >
-          ← Leave
+          <span className="sm:hidden">←</span>
+          <span className="hidden sm:inline">← Leave</span>
         </button>
       </div>
 
       {/* Score board - top center */}
-      <div className="absolute top-4 left-1/2 -translate-x-1/2 z-20">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-20">
         <ScoreBoard
           players={gameState.players}
           scores={scores}

@@ -24,10 +24,10 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     // Talon visibility
     if (game.phase === 'talonReveal' || game.phase === 'talonDistribution') {
       const isBidWinner = round.bidWinner === playerId;
-      const won100Hidden = round.finalBid === 100 && isBidWinner;
+      const bidWasAt100 = round.finalBid === 100;
 
-      // If won at 100, talon is hidden from others (but spectating dealer can see it)
-      if (isBidWinner || !won100Hidden || isSpectating) {
+      // Show talon to bid winner, spectating dealer, or when bid > 100
+      if (isBidWinner || isSpectating || !bidWasAt100) {
         talon = round.talon;
       }
     }

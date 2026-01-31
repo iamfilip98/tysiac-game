@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { Button } from '@/components/ui/Button';
@@ -8,24 +8,37 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
 
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  return isMobile;
+}
+
 interface TalonDisplayProps {
   talon: CardType[];
   isRevealed: boolean;
 }
 
 export function TalonDisplay({ talon, isRevealed }: TalonDisplayProps) {
+  const isMobile = useIsMobile();
+
   return (
     <div className="flex items-center justify-center gap-2">
       <AnimatePresence mode="wait">
         {isRevealed ? (
-          // Revealed talon cards
+          // Revealed talon cards - simpler animation on mobile (no 3D)
           talon.map((card, i) => (
             <motion.div
               key={`${card.suit}-${card.rank}`}
-              initial={{ rotateY: 180, opacity: 0 }}
-              animate={{ rotateY: 0, opacity: 1 }}
+              initial={isMobile ? { opacity: 0, scale: 0.8 } : { rotateY: 180, opacity: 0 }}
+              animate={isMobile ? { opacity: 1, scale: 1 } : { rotateY: 0, opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ delay: i * 0.2, duration: 0.5 }}
+              transition={{ delay: i * 0.15, duration: isMobile ? 0.2 : 0.5 }}
             >
               <Card card={card} size="md" isPlayable={false} />
             </motion.div>
