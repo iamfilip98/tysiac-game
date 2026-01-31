@@ -31,14 +31,19 @@ export function TalonDisplay({ talon, isRevealed }: TalonDisplayProps) {
     <div className="flex items-center justify-center gap-2">
       <AnimatePresence mode="wait">
         {isRevealed ? (
-          // Revealed talon cards - simpler animation on mobile (no 3D)
+          // Revealed talon cards - simple fade/scale animation (no 3D transforms)
           talon.map((card, i) => (
             <motion.div
               key={`${card.suit}-${card.rank}`}
-              initial={isMobile ? { opacity: 0, scale: 0.8 } : { rotateY: 180, opacity: 0 }}
-              animate={isMobile ? { opacity: 1, scale: 1 } : { rotateY: 0, opacity: 1 }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ delay: i * 0.15, duration: isMobile ? 0.2 : 0.5 }}
+              transition={{
+                delay: i * 0.1,
+                duration: 0.25,
+                ease: 'easeOut'
+              }}
+              style={{ willChange: 'opacity, transform' }}
             >
               <Card card={card} size="md" isPlayable={false} />
             </motion.div>
@@ -48,11 +53,16 @@ export function TalonDisplay({ talon, isRevealed }: TalonDisplayProps) {
           Array.from({ length: 3 }).map((_, i) => (
             <motion.div
               key={i}
-              initial={{ opacity: 0, y: -20 }}
+              initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ rotateY: 180, opacity: 0 }}
-              transition={{ delay: i * 0.1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                delay: i * 0.08,
+                duration: 0.2,
+                ease: 'easeOut'
+              }}
               className="w-16 h-24 rounded-lg card-back"
+              style={{ willChange: 'opacity, transform' }}
             />
           ))
         )}

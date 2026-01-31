@@ -63,23 +63,23 @@ export function Card({
     }
   };
 
-  // Simpler transitions for mobile
+  // Simpler, smoother transitions - avoid springs on mobile for better performance
   const transition = isMobile
-    ? { delay, duration: 0.2, ease: 'easeOut' }
-    : { delay, type: 'spring', stiffness: 300, damping: 25 };
+    ? { delay, duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }
+    : { delay, duration: 0.3, ease: [0.25, 0.1, 0.25, 1] };
 
   if (isFaceDown) {
     return (
       <motion.div
-        initial={{ scale: 0.8, opacity: 0, y: -50 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
         transition={transition}
         className={cn(
-          'playing-card card-back will-change-transform',
+          'playing-card card-back',
           sizeClasses[size],
           className
         )}
-        style={{ ...style, transform: 'translateZ(0)' }}
+        style={{ ...style, willChange: 'opacity, transform' }}
         role="img"
         aria-label="Face-down card"
       />
@@ -101,14 +101,14 @@ export function Card({
         />
       )}
       <motion.div
-        initial={{ scale: 0.8, opacity: 0, y: -50 }}
+        initial={{ scale: 0.95, opacity: 0 }}
         animate={{
           scale: 1,
           opacity: 1,
           y: isSelected ? -16 : 0,
         }}
-        whileHover={isPlayable && !isMobile ? { y: -8, scale: 1.02 } : undefined}
-        whileTap={isPlayable ? { scale: 0.98 } : undefined}
+        whileHover={isPlayable && !isMobile ? { y: -8 } : undefined}
+        whileTap={isPlayable ? { scale: 0.97 } : undefined}
         transition={transition}
         onClick={isInteractive ? onClick : undefined}
         onKeyDown={isInteractive ? handleKeyDown : undefined}
@@ -117,7 +117,7 @@ export function Card({
         aria-label={`${cardDescription}${isSelected ? ', selected' : ''}${isPlayable ? '' : ', not playable'}${isMarriageCard ? ', marriage available' : ''}`}
         aria-pressed={isInteractive ? isSelected : undefined}
         className={cn(
-          'playing-card will-change-transform relative',
+          'playing-card relative',
           color === 'red' ? 'red' : 'black',
           sizeClasses[size],
           isPlayable && 'cursor-pointer ring-2 ring-green-500',
@@ -126,7 +126,7 @@ export function Card({
           isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
           className
         )}
-        style={{ ...style, transform: 'translateZ(0)' }}
+        style={{ ...style, willChange: 'opacity, transform' }}
       >
         {/* Card content */}
         <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">

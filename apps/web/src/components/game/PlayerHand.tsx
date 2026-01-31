@@ -35,9 +35,8 @@ function useScreenSize() {
   return screenSize;
 }
 
-// Simpler mobile transition
-const mobileTransition = { duration: 0.15, ease: 'easeOut' };
-const desktopTransition = { type: 'spring', stiffness: 300, damping: 25 };
+// Smooth easing for all devices (no springs)
+const smoothTransition = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] };
 
 export function PlayerHand({
   cards,
@@ -192,30 +191,30 @@ export function PlayerHand({
           const angle = startAngle + (index / Math.max(cardCount - 1, 1)) * fanAngle;
           const xOffset = (index - (cardCount - 1) / 2) * baseSpread;
 
-          // Simpler transitions for mobile
-          const transition = isMobile
-            ? { duration: 0.2, ease: 'easeOut', delay: index * 0.02 }
-            : { type: 'spring', stiffness: 300, damping: 30, delay: index * 0.03 };
+          // Smooth easing transitions (no springs to avoid jitter)
+          const transition = {
+            duration: isMobile ? 0.2 : 0.25,
+            ease: [0.25, 0.1, 0.25, 1],
+            delay: index * 0.02
+          };
 
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
-              layout={!isMobile}
-              initial={{ opacity: 0, y: 50, scale: 0.8 }}
+              initial={{ opacity: 0, y: 20 }}
               animate={{
                 opacity: 1,
                 y: 0,
-                scale: 1,
                 rotate: angle,
                 x: xOffset,
               }}
-              exit={{ opacity: 0, y: 50, scale: 0.8 }}
+              exit={{ opacity: 0 }}
               transition={transition}
               style={{
                 position: 'absolute',
                 transformOrigin: 'bottom center',
                 zIndex: selected ? 100 : index,
-                willChange: 'transform',
+                willChange: 'opacity, transform',
               }}
             >
               <Card
@@ -297,14 +296,14 @@ export function OpponentHand({
         {Array.from({ length: cardCount }).map((_, i) => (
           <motion.div
             key={i}
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={isMobile ? { ...mobileTransition, delay: i * 0.02 } : { ...desktopTransition, delay: i * 0.05 }}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ ...smoothTransition, delay: i * 0.02 }}
             className={cn(
-              'w-7 h-10 sm:w-10 sm:h-14 rounded-md card-back will-change-transform',
+              'w-7 h-10 sm:w-10 sm:h-14 rounded-md card-back',
               cardDirection === 'vertical' && 'rotate-90'
             )}
-            style={{ transform: 'translateZ(0)' }}
+            style={{ willChange: 'opacity' }}
           />
         ))}
       </div>
