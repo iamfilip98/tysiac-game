@@ -753,6 +753,7 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
   if (!playerId) return;
 
   const room = roomService.getRoomByPlayerId(playerId);
+  console.log(`[handlePlayerLeave] playerId: ${playerId}, immediate: ${immediate}, room: ${room?.id}, gameId: ${room?.gameId}`);
 
   // Clean up socket mappings
   socketToPlayer.delete(socket.id);
@@ -789,9 +790,11 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
 
       if (!room.gameId && !immediate) {
         // Pre-game room: give grace period for reconnection (e.g., copying room code)
+        console.log(`[handlePlayerLeave] Setting ${ROOM_GRACE_PERIOD/1000}s grace period for pre-game room`);
         socket.to(room.id).emit('player:disconnected', playerId);
 
         const timeout = setTimeout(() => {
+          console.log(`[handlePlayerLeave] Grace period expired for ${playerId}`);
           disconnectTimeouts.delete(playerId);
 
           // Check if player reconnected
