@@ -22,7 +22,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     myHand = isSpectating ? [] : (round.players[playerId]?.hand || []);
 
     // Talon visibility
-    if (game.phase === 'talonReveal' || game.phase === 'talonDistribution') {
+    if (game.phase === 'talonReveal' || game.phase === 'talonDistribution' || game.phase === 'playOrPassDecision') {
       const isBidWinner = round.bidWinner === playerId;
       const bidWasAt100 = round.finalBid === 100;
 

@@ -493,6 +493,7 @@ export class GameEngine {
 
       // If bid was exactly 100, bidder needs to decide whether to play or pass
       if (round.finalBid === 100) {
+        console.log(`[GameEngine] All talon confirmations received, bid was 100. Transitioning to playOrPassDecision. BidWinner: ${round.bidWinner}`);
         this.game.phase = 'playOrPassDecision';
         this.broadcastState();
         this.promptPlayOrPassDecision();
@@ -512,6 +513,7 @@ export class GameEngine {
 
     // Check if AI player - AI always chooses to play
     if (isAIPlayer(this.game, bidWinnerId)) {
+      console.log(`[GameEngine] promptPlayOrPassDecision: AI player ${bidWinnerId}, auto-playing`);
       this.safeSetTimeout(() => {
         this.handlePlayOrPass(bidWinnerId, 'play');
       }, 800);
@@ -520,10 +522,13 @@ export class GameEngine {
 
     // Notify human player
     const socketId = this.getSocketId(bidWinnerId);
+    console.log(`[GameEngine] promptPlayOrPassDecision: Human player ${bidWinnerId}, socketId: ${socketId || 'NULL'}`);
     if (socketId) {
       this.io.to(socketId).emit('game:yourTurn', {
         validActions: [{ type: 'playOrPass' }],
       });
+    } else {
+      console.warn(`[GameEngine] WARNING: No socket found for bid winner ${bidWinnerId} during playOrPass prompt!`);
     }
   }
 
