@@ -71,7 +71,7 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
     if (isBidder) {
       // Bidder must hit exact bid
       if (totalRoundPoints >= finalBid) {
-        scoreChange = finalBid; // Score exactly the bid amount
+        scoreChange = roundToTen(totalRoundPoints); // Score what you earned
       } else {
         scoreChange = -finalBid; // Lose the bid amount
       }
