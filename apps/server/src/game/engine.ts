@@ -41,6 +41,9 @@ export class GameEngine {
     this.socketLookup = socketLookup || ((playerId) =>
       playerId.startsWith('player-') ? playerId.replace('player-', '') : null
     );
+    // Explicitly set to ensure first broadcast is game:started
+    this.isFirstRound = true;
+    console.log('[GameEngine] Created new engine, isFirstRound:', this.isFirstRound);
   }
 
   // Safe setTimeout that tracks timers for cleanup
@@ -550,6 +553,7 @@ export class GameEngine {
   private broadcastState(): void {
     if (this.isCleanedUp) return;
 
+    console.log(`[GameEngine] broadcastState called, isFirstRound: ${this.isFirstRound}`);
     const eventName = this.isFirstRound ? 'game:started' : 'game:stateUpdate';
     if (this.isFirstRound) {
       this.isFirstRound = false;
