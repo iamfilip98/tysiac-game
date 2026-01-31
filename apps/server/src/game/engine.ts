@@ -600,6 +600,20 @@ export class GameEngine {
       return;
     }
 
+    // Auto-declare marriage when playing Q while leading
+    if (card.rank === 'Q' && trick.cards.length === 0) {
+      const suit = card.suit;
+      const declared = playerState.declaredMarriages;
+
+      // Check if player has undeclared marriage in this suit
+      if (hasMarriage(playerState.hand, suit) && !declared.includes(suit)) {
+        // Declare the marriage
+        playerState.declaredMarriages.push(suit);
+        playerState.marriagePoints += MARRIAGE_VALUES[suit];
+        round.trumpSuit = suit;
+      }
+    }
+
     // Play card
     trick.cards.push({ playerId, card });
     if (trick.cards.length === 1) {

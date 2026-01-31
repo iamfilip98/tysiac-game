@@ -7,13 +7,12 @@ import { TrickPile } from './TrickPile';
 import { ScoreBoard } from './ScoreBoard';
 import { BiddingPanel } from './BiddingPanel';
 import { TalonDisplay, TalonDistributionPanel } from './TalonPanel';
-import { MarriagePanel, DeclaredMarriages } from './MarriagePanel';
 import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultModal';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
 import { cn } from '@/lib/utils';
-import type { Card as CardType, Suit } from '@tysiac/shared';
+import type { Card as CardType } from '@tysiac/shared';
 
 // Hook to track screen size
 function useIsMobile() {
@@ -29,12 +28,6 @@ function useIsMobile() {
   return isMobile;
 }
 
-const MARRIAGE_VALUES: Record<Suit, number> = {
-  spades: 40,
-  clubs: 60,
-  diamonds: 80,
-  hearts: 100,
-};
 
 export function GameBoard() {
   const isMobile = useIsMobile();
@@ -56,7 +49,6 @@ export function GameBoard() {
     bid,
     pass,
     playCard,
-    declareMarriage,
     distributeTalon,
     confirmTalon,
     leaveRoom,
@@ -90,12 +82,6 @@ export function GameBoard() {
     }
   }, [gameState, playerId]);
 
-  // Marriage action check
-  const marriageAction = validActions.find((a) => a.type === 'declareMarriage');
-  const showMarriagePanel =
-    marriageAction &&
-    marriageAction.type === 'declareMarriage' &&
-    gameState?.round?.currentTrick?.cards.length === 0;
 
   // Track talon confirmation state
   const [hasConfirmedTalon, setHasConfirmedTalon] = useState(false);
@@ -110,14 +96,6 @@ export function GameBoard() {
     }
   }, [gameState?.phase]);
 
-  // Get my declared marriages
-  const myDeclaredMarriages = playerId
-    ? gameState?.round?.declaredMarriages?.[playerId] || []
-    : [];
-  const myMarriagePoints = myDeclaredMarriages.reduce(
-    (sum, suit) => sum + MARRIAGE_VALUES[suit],
-    0
-  );
 
   if (!gameState || !playerId) {
     return (
@@ -179,15 +157,6 @@ export function GameBoard() {
           phase={phase}
         />
 
-        {/* My marriages */}
-        {round && myDeclaredMarriages.length > 0 && (
-          <div className="mt-2 bg-table-900/80 backdrop-blur border border-table-600 rounded-xl p-2">
-            <DeclaredMarriages
-              marriages={myDeclaredMarriages}
-              totalPoints={myMarriagePoints}
-            />
-          </div>
-        )}
       </div>
 
       {/* Spectating indicator */}
@@ -363,33 +332,6 @@ export function GameBoard() {
               </motion.div>
             )}
 
-          {/* Marriage declaration */}
-          {showMarriagePanel && marriageAction.type === 'declareMarriage' && (
-            <motion.div
-              key="marriage"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <MarriagePanel
-                availableSuits={marriageAction.suits}
-                onDeclare={declareMarriage}
-                onSkip={() => {
-                  // Play the selected card if any, or first valid card
-                  const playAction = validActions.find(
-                    (a) => a.type === 'playCard'
-                  );
-                  if (
-                    playAction &&
-                    playAction.type === 'playCard' &&
-                    selectedCard
-                  ) {
-                    playCard(selectedCard);
-                  }
-                }}
-              />
-            </motion.div>
-          )}
         </AnimatePresence>
       </div>
 
@@ -405,11 +347,12 @@ export function GameBoard() {
           onSelectCard={selectCard}
           onPlayCard={playCard}
           isMyTurn={isMyTurn && phase === 'trickPlaying'}
+          declaredMarriages={round?.declaredMarriages?.[playerId] || []}
         />
       </div>
 
       {/* Turn indicator */}
-      {isMyTurn && phase === 'trickPlaying' && !showMarriagePanel && (
+      {isMyTurn && phase === 'trickPlaying' && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: [0.5, 1, 0.5] }}

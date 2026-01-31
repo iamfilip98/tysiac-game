@@ -25,6 +25,7 @@ interface CardProps {
   isSelected?: boolean;
   isPlayable?: boolean;
   isFaceDown?: boolean;
+  isMarriageCard?: boolean;
   size?: 'sm' | 'md' | 'lg';
   onClick?: () => void;
   style?: React.CSSProperties;
@@ -43,6 +44,7 @@ export function Card({
   isSelected = false,
   isPlayable = true,
   isFaceDown = false,
+  isMarriageCard = false,
   size = 'md',
   onClick,
   style,
@@ -87,45 +89,66 @@ export function Card({
   const isInteractive = isPlayable && onClick;
 
   return (
-    <motion.div
-      initial={{ scale: 0.8, opacity: 0, y: -50 }}
-      animate={{
-        scale: 1,
-        opacity: 1,
-        y: isSelected ? -16 : 0,
-      }}
-      whileHover={isPlayable && !isMobile ? { y: -8, scale: 1.02 } : undefined}
-      whileTap={isPlayable ? { scale: 0.98 } : undefined}
-      transition={transition}
-      onClick={isInteractive ? onClick : undefined}
-      onKeyDown={isInteractive ? handleKeyDown : undefined}
-      role={isInteractive ? 'button' : 'img'}
-      tabIndex={isInteractive ? 0 : -1}
-      aria-label={`${cardDescription}${isSelected ? ', selected' : ''}${isPlayable ? '' : ', not playable'}`}
-      aria-pressed={isInteractive ? isSelected : undefined}
-      className={cn(
-        'playing-card will-change-transform',
-        color === 'red' ? 'red' : 'black',
-        sizeClasses[size],
-        isPlayable && 'cursor-pointer ring-2 ring-green-500',
-        !isPlayable && 'opacity-50 cursor-not-allowed',
-        isSelected && 'ring-2 ring-gold-400 shadow-glow',
-        isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
-        className
+    <div className="relative">
+      {/* Animated gold border for marriage cards */}
+      {isMarriageCard && (
+        <motion.div
+          className="absolute -inset-1 rounded-xl bg-gradient-to-r from-gold-400 via-yellow-300 to-gold-400 opacity-75"
+          animate={{
+            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
+          }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            ease: 'linear',
+          }}
+          style={{
+            backgroundSize: '200% 200%',
+            filter: 'blur(3px)',
+          }}
+          aria-hidden="true"
+        />
       )}
-      style={{ ...style, transform: 'translateZ(0)' }}
-    >
-      {/* Card content */}
-      <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
-        {/* Center rank and suit */}
-        <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-          {card.rank}
-        </span>
-        <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-          {suitSymbol}
-        </span>
-      </div>
-    </motion.div>
+      <motion.div
+        initial={{ scale: 0.8, opacity: 0, y: -50 }}
+        animate={{
+          scale: 1,
+          opacity: 1,
+          y: isSelected ? -16 : 0,
+        }}
+        whileHover={isPlayable && !isMobile ? { y: -8, scale: 1.02 } : undefined}
+        whileTap={isPlayable ? { scale: 0.98 } : undefined}
+        transition={transition}
+        onClick={isInteractive ? onClick : undefined}
+        onKeyDown={isInteractive ? handleKeyDown : undefined}
+        role={isInteractive ? 'button' : 'img'}
+        tabIndex={isInteractive ? 0 : -1}
+        aria-label={`${cardDescription}${isSelected ? ', selected' : ''}${isPlayable ? '' : ', not playable'}${isMarriageCard ? ', marriage available' : ''}`}
+        aria-pressed={isInteractive ? isSelected : undefined}
+        className={cn(
+          'playing-card will-change-transform relative',
+          color === 'red' ? 'red' : 'black',
+          sizeClasses[size],
+          isPlayable && 'cursor-pointer ring-2 ring-green-500',
+          !isPlayable && 'opacity-50 cursor-not-allowed',
+          isSelected && 'ring-2 ring-gold-400 shadow-glow',
+          isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
+          className
+        )}
+        style={{ ...style, transform: 'translateZ(0)' }}
+      >
+        {/* Card content */}
+        <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
+          {/* Center rank and suit */}
+          <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+            {card.rank}
+          </span>
+          <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+            {suitSymbol}
+          </span>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 

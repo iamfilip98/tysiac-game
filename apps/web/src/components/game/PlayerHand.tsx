@@ -4,7 +4,7 @@ import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
-import type { Card as CardType, ValidAction } from '@tysiac/shared';
+import type { Card as CardType, ValidAction, Suit } from '@tysiac/shared';
 
 interface PlayerHandProps {
   cards: CardType[];
@@ -13,6 +13,7 @@ interface PlayerHandProps {
   onSelectCard: (card: CardType) => void;
   onPlayCard: (card: CardType) => void;
   isMyTurn: boolean;
+  declaredMarriages?: Suit[];
 }
 
 // Hook to track screen size and width
@@ -45,6 +46,7 @@ export function PlayerHand({
   onSelectCard,
   onPlayCard,
   isMyTurn,
+  declaredMarriages = [],
 }: PlayerHandProps) {
   const { isMobile, width } = useScreenSize();
 
@@ -56,6 +58,31 @@ export function PlayerHand({
     }
     return [];
   }, [validActions]);
+
+  // Detect undeclared marriages (K and Q of same suit that haven't been declared)
+  const marriageCards = useMemo(() => {
+    const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const marriageCardSet = new Set<string>();
+
+    for (const suit of suits) {
+      // Skip already declared marriages
+      if (declaredMarriages.includes(suit)) continue;
+
+      const hasKing = cards.some(c => c.suit === suit && c.rank === 'K');
+      const hasQueen = cards.some(c => c.suit === suit && c.rank === 'Q');
+
+      if (hasKing && hasQueen) {
+        marriageCardSet.add(`${suit}-K`);
+        marriageCardSet.add(`${suit}-Q`);
+      }
+    }
+
+    return marriageCardSet;
+  }, [cards, declaredMarriages]);
+
+  const isMarriageCard = (card: CardType): boolean => {
+    return marriageCards.has(`${card.suit}-${card.rank}`);
+  };
 
   // Sort cards by suit and rank
   const sortedCards = useMemo(() => {
@@ -170,6 +197,7 @@ export function PlayerHand({
                 card={card}
                 isSelected={selected}
                 isPlayable={playable && isMyTurn}
+                isMarriageCard={isMarriageCard(card)}
                 onClick={() => handleCardClick(card)}
                 size={isMobile ? 'md' : 'lg'}
               />
@@ -178,17 +206,6 @@ export function PlayerHand({
         })}
       </AnimatePresence>
 
-      {/* Play hint */}
-      {selectedCard && isCardPlayable(selectedCard) && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="absolute -bottom-8 text-sm text-gold-400"
-          aria-live="polite"
-        >
-          Click again to play
-        </motion.div>
-      )}
     </div>
   );
 }

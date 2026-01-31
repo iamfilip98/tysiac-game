@@ -9,6 +9,7 @@ import type { Card, Suit } from '@tysiac/shared';
 
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
+  const isAutoReconnectingRef = useRef(false);
 
   const {
     setRoom,
@@ -53,6 +54,7 @@ export function useSocket() {
       const storedSession = loadSession();
       if (storedSession) {
         console.log('[auto-reconnect] Found stored session, attempting reconnect...');
+        isAutoReconnectingRef.current = true;
         socket.emit('player:reconnect', {
           roomId: storedSession.roomId,
           playerId: storedSession.playerId,
@@ -105,6 +107,22 @@ export function useSocket() {
 
     socket.on('room:error', ({ code, message }) => {
       console.log('[room:error] Error:', code, message);
+
+      // If INVALID_SESSION during auto-reconnect on page load (no active game), fail silently
+      if (code === 'INVALID_SESSION' && isAutoReconnectingRef.current) {
+        const hasActiveGame = useGameStore.getState().gameState !== null;
+        const hasActiveRoom = useRoomStore.getState().room !== null;
+
+        // Only fail silently if user wasn't actively in a game/room
+        if (!hasActiveGame && !hasActiveRoom) {
+          console.log('[room:error] Stale session detected on page load, clearing silently');
+          isAutoReconnectingRef.current = false;
+          clearSession();
+          return;
+        }
+      }
+
+      isAutoReconnectingRef.current = false;
       setError(message);
     });
 
@@ -158,6 +176,9 @@ export function useSocket() {
         hasDebug: !!debug,
         debug: debug
       });
+
+      // Clear auto-reconnect flag on successful restore
+      isAutoReconnectingRef.current = false;
 
       // Restore playerId from session
       const storedSession = loadSession();
