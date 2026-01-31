@@ -81,9 +81,15 @@ export function useSocket() {
 
     // Game events
     socket.on('game:started', (state) => {
-      console.log('[game:started] Received game state:', state);
+      console.log('[game:started] Received game state, gameId:', state.id);
       resetGame();
       setGameState(state);
+      // Also update room with gameId since room:updated might not arrive in time
+      const currentRoom = useRoomStore.getState().room;
+      if (currentRoom && state.id) {
+        console.log('[game:started] Updating room gameId:', state.id);
+        setRoom({ ...currentRoom, gameId: state.id });
+      }
     });
 
     socket.on('game:stateUpdate', (state) => {
