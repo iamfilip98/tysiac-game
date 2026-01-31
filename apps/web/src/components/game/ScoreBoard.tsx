@@ -75,15 +75,15 @@ export function ScoreBoard({
               )}
             >
               <div className="flex items-center gap-2">
-                {/* Dealer indicator - poker chip style */}
+                {/* Dealer indicator */}
                 {isDealer && (
                   <span
-                    className="w-5 h-5 rounded-full bg-gradient-to-b from-white to-gray-200 border-2 border-red-600 flex items-center justify-center text-[10px] font-bold text-red-600 shadow-sm"
+                    className="text-sm"
                     role="img"
                     aria-label="Dealer"
                     title="Dealer"
                   >
-                    D
+                    🎱
                   </span>
                 )}
 
