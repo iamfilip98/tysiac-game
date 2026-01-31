@@ -153,16 +153,11 @@ export function validateBid(
   hand: Card[],
   isFirstBid: boolean
 ): ValidationResult {
-  // First bid after auto-100 must be at least 110
-  const minBid = isFirstBid ? 110 : currentBid + 10;
+  // Bids must increase by exactly 10 each time
+  const requiredBid = currentBid + 10;
 
-  if (amount < minBid) {
-    return { isValid: false, reason: `Bid must be at least ${minBid}` };
-  }
-
-  // Bid must be in increments of 10
-  if (amount % 10 !== 0) {
-    return { isValid: false, reason: 'Bid must be in increments of 10' };
+  if (amount !== requiredBid) {
+    return { isValid: false, reason: `Bid must be exactly ${requiredBid} (current bid + 10)` };
   }
 
   // Max bid is 120 + marriage value in hand
