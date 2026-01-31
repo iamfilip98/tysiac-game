@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { CreateRoomForm } from '@/components/lobby/CreateRoomForm';
@@ -14,9 +14,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 
-export default function HomePage() {
-  const searchParams = useSearchParams();
-  const roomCodeFromUrl = searchParams.get('room')?.toUpperCase() || '';
+function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   const [tab, setTab] = useState<'create' | 'join'>(roomCodeFromUrl ? 'join' : 'create');
   const [showRulesModal, setShowRulesModal] = useState(false);
@@ -313,5 +311,23 @@ export default function HomePage() {
         </ModalBody>
       </Modal>
     </main>
+  );
+}
+
+function HomePageWithSearchParams() {
+  const searchParams = useSearchParams();
+  const roomCodeFromUrl = searchParams.get('room')?.toUpperCase() || '';
+  return <HomePageContent roomCodeFromUrl={roomCodeFromUrl} />;
+}
+
+export default function HomePage() {
+  return (
+    <Suspense fallback={
+      <div className="h-full flex items-center justify-center">
+        <div className="text-white/60">Loading...</div>
+      </div>
+    }>
+      <HomePageWithSearchParams />
+    </Suspense>
   );
 }
