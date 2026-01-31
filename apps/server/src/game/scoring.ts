@@ -71,22 +71,30 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
 
     if (isBidder) {
       // Bidder must hit exact bid
-      if (totalRoundPoints >= finalBid) {
+      const madeBid = totalRoundPoints >= finalBid;
+      if (madeBid) {
         scoreChange = roundToTen(totalRoundPoints); // Score what you earned
       } else {
-        scoreChange = -finalBid; // Lose the bid amount
+        scoreChange = -finalBid; // Lose the bid amount (always, even on barrel)
       }
 
       // Handle barrel rules for bidder
       if (wasOnBarrel) {
         const tentativeScore = currentScore.totalScore + scoreChange;
 
-        if (tentativeScore >= WINNING_SCORE) {
+        if (madeBid && tentativeScore >= WINNING_SCORE) {
           // Reached 1000, wins!
           newTotalScore = tentativeScore;
           currentScore.barrelAttempts = 0;
+        } else if (!madeBid) {
+          // Failed to make bid while on barrel - lose the bid amount
+          newTotalScore = currentScore.totalScore + scoreChange;
+          // Reset barrel attempts since they fell off (score dropped below 800)
+          if (newTotalScore < BARREL_THRESHOLD) {
+            currentScore.barrelAttempts = 0;
+          }
         } else {
-          // Failed to reach 1000 while on barrel
+          // Made bid but didn't reach 1000 while on barrel
           const newAttempts = currentScore.barrelAttempts + 1;
 
           if (newAttempts >= 3) {
