@@ -42,14 +42,6 @@ export default function HomePage() {
     startGame,
   } = useSocket();
 
-  // Debug logging
-  console.log('[HomePage] State check:', {
-    hasGameState: !!gameState,
-    roomId: room?.id,
-    gameId: room?.gameId,
-    shouldShowGame: !!(gameState && room?.gameId)
-  });
-
   // If there's an active game, show the game board
   if (gameState && room?.gameId) {
     return <GameBoard />;

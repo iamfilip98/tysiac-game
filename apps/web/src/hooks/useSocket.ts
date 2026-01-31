@@ -176,25 +176,16 @@ export function useSocket() {
       setTimeout(() => setLastMarriageDeclared(null), 3000);
     });
 
-    socket.on('game:wykladana', ({ playerId, playerName, bid, marriagePoints }) => {
-      console.log('[game:wykladana] WYKLADANA!', playerName, bid, marriagePoints);
-      setWykladanaData({ playerName, bid, marriagePoints });
+    socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number }) => {
+      setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints });
     });
 
-    socket.on('game:playerPassedAt100', ({ playerId, playerName }) => {
-      console.log('[game:playerPassedAt100]', playerName, 'passed at 100');
+    socket.on('game:playerPassedAt100', () => {
+      // Player passed at 100 - UI update handled via state update
     });
 
     // Reconnection
-    socket.on('connection:restored', ({ room, gameState, validActions, debug }) => {
-      console.log('[connection:restored] RECEIVED!', {
-        hasRoom: !!room,
-        hasGameState: !!gameState,
-        validActionsLen: validActions?.length,
-        hasDebug: !!debug,
-        debug: debug
-      });
-
+    socket.on('connection:restored', ({ room, gameState, validActions }) => {
       // Clear auto-reconnect flag on successful restore
       isAutoReconnectingRef.current = false;
 
@@ -210,11 +201,6 @@ export function useSocket() {
       }
       if (validActions && validActions.length > 0) {
         setValidActions(validActions);
-      }
-      // Store server debug info for display
-      if (debug) {
-        console.log('[connection:restored] Setting serverDebug:', debug);
-        useGameStore.getState().setServerDebug(debug);
       }
       updateSessionTimestamp();
     });

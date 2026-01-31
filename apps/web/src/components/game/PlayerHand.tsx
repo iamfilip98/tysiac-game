@@ -90,7 +90,7 @@ export function PlayerHand({
     const isRedSuit = (suit: string) => suit === 'hearts' || suit === 'diamonds';
 
     // Find unique suits in hand
-    const suitsInHand = [...new Set(cards.map(c => c.suit))];
+    const suitsInHand = Array.from(new Set(cards.map(c => c.suit)));
 
     // Determine optimal suit order to avoid same-color adjacency
     let suitOrder: string[];

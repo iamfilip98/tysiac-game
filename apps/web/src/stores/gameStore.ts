@@ -9,7 +9,6 @@ interface GameState {
   showRoundResult: boolean;
   showGameEnd: boolean;
   isMyTurn: boolean;
-  serverDebug: any | null;
   // Marriage display state
   lastMarriageDeclared: { playerId: string; suit: Suit } | null;
   // WYKLADANA celebration state
@@ -24,7 +23,6 @@ interface GameState {
   setShowRoundResult: (show: boolean) => void;
   setShowGameEnd: (show: boolean) => void;
   setIsMyTurn: (isMyTurn: boolean) => void;
-  setServerDebug: (debug: any) => void;
   setLastMarriageDeclared: (data: { playerId: string; suit: Suit } | null) => void;
   setWykladanaData: (data: { playerName: string; bid: number; marriagePoints?: number } | null) => void;
   setShowWykladana: (show: boolean) => void;
@@ -39,7 +37,6 @@ export const useGameStore = create<GameState>((set) => ({
   showRoundResult: false,
   showGameEnd: false,
   isMyTurn: false,
-  serverDebug: null,
   lastMarriageDeclared: null,
   wykladanaData: null,
   showWykladana: false,
@@ -71,8 +68,6 @@ export const useGameStore = create<GameState>((set) => ({
 
   setIsMyTurn: (isMyTurn) => set({ isMyTurn }),
 
-  setServerDebug: (serverDebug) => set({ serverDebug }),
-
   setLastMarriageDeclared: (lastMarriageDeclared) => set({ lastMarriageDeclared }),
 
   setWykladanaData: (wykladanaData) =>
@@ -92,7 +87,6 @@ export const useGameStore = create<GameState>((set) => ({
       showRoundResult: false,
       showGameEnd: false,
       isMyTurn: false,
-      serverDebug: null,
       lastMarriageDeclared: null,
       wykladanaData: null,
       showWykladana: false,

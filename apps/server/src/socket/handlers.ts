@@ -636,41 +636,29 @@ export function setupSocketHandlers(io: TypedServer) {
 
     // Reconnection with session validation
     socket.on('player:reconnect', (data) => {
-      console.log('!!!!!!! PLAYER RECONNECT RECEIVED !!!!!!!');
-      console.log('Data:', data);
       withRateLimit(socket, 'player:reconnect', () => {
         try {
-          console.log('[RECONNECT] === Starting reconnect ===');
-          console.log('[RECONNECT] Data received:', JSON.stringify(data));
-
           const parsed = ReconnectSchema.safeParse(data);
           if (!parsed.success) {
-            console.log('[RECONNECT] Parse failed:', parsed.error);
             socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid reconnect data' });
             return;
           }
 
           const { roomId, playerId, sessionToken } = parsed.data;
-          console.log('[RECONNECT] Parsed - roomId:', roomId, 'playerId:', playerId);
 
           // Validate session token
           if (!validateSession(sessionToken, playerId)) {
-            console.log('[RECONNECT] Session validation failed');
             socket.emit('room:error', { code: 'INVALID_SESSION', message: 'Invalid or expired session' });
             return;
           }
-          console.log('[RECONNECT] Session valid');
 
           const room = roomService.getRoom(roomId);
           if (!room) {
-            console.log('[RECONNECT] Room not found:', roomId);
             socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
             return;
           }
-          console.log('[RECONNECT] Room found, gameId:', room.gameId);
 
           if (!room.players.some(p => p.id === playerId)) {
-            console.log('[RECONNECT] Player not in room');
             socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'Player not in room' });
             return;
           }
@@ -696,26 +684,11 @@ export function setupSocketHandlers(io: TypedServer) {
           // Get game state if exists
           let gameState: ClientGameState | null = null;
           let validActions: ValidAction[] = [];
-          const debug: any = {
-            gameExists: false,
-            gamePhase: null,
-            roundExists: false,
-            trickExists: false,
-            trickPlayer: null,
-            receivedPlayerId: playerId,
-            playerMatch: false,
-            handSize: 0,
-            validCardsCount: 0,
-            playerKeys: [] as string[],
-            conditionDetails: '',
-          };
 
           if (room.gameId) {
             const game = gameService.getGame(room.gameId);
-            debug.gameExists = !!game;
 
             if (game) {
-              debug.gamePhase = game.phase;
               gameState = getClientGameState(game, playerId);
 
               // Ensure engine exists for future actions
@@ -734,23 +707,10 @@ export function setupSocketHandlers(io: TypedServer) {
 
               // Calculate valid actions directly from game state
               const round = game.currentRound;
-              debug.roundExists = !!round;
-              debug.trickExists = !!round?.currentTrick;
-              debug.trickPlayer = round?.currentTrick?.currentPlayer || null;
-              debug.playerMatch = round?.currentTrick?.currentPlayer === playerId;
-              debug.handSize = round?.players[playerId]?.hand?.length || 0;
-              debug.playerKeys = round ? Object.keys(round.players) : [];
-
-              // Detailed condition check
-              const cond1 = !!round;
-              const cond2 = game.phase === 'trickPlaying';
-              const cond3 = round?.currentTrick?.currentPlayer === playerId;
-              debug.conditionDetails = `round:${cond1} phase:${cond2}(${game.phase}) match:${cond3}`;
 
               if (round && game.phase === 'trickPlaying' && round.currentTrick?.currentPlayer === playerId) {
                 const hand = round.players[playerId]?.hand || [];
                 const validCards = getValidCards(hand, round.currentTrick, round.trumpSuit, game);
-                debug.validCardsCount = validCards.length;
                 validActions = [{ type: 'playCard' as const, validCards }];
               } else if (round && game.phase === 'bidding') {
                 validActions = getValidActions(game, playerId, {
@@ -760,34 +720,17 @@ export function setupSocketHandlers(io: TypedServer) {
                 });
               }
 
-              // Also calculate valid actions via stateManager as fallback comparison
-              if (round && game.phase === 'trickPlaying') {
-                const stateManagerActions = getValidActions(game, playerId);
-                debug.stateManagerValidActions = stateManagerActions.length;
-              }
+              // Notify player if it's their turn
+              engine.notifyPlayerIfTheirTurn(playerId);
 
-              // Check what the engine would send (for debug purposes)
-              // We'll use this to verify the engine is working correctly
-              const engineWouldNotify = engine.notifyPlayerIfTheirTurn(playerId);
-              debug.engineNotified = engineWouldNotify !== null;
-              debug.engineActionsCount = engineWouldNotify?.length || 0;
-              console.log('[RECONNECT] Engine notification result:', engineWouldNotify?.length || 'not their turn');
-
-              // Send connection:restored with all debug info
-              console.log('[RECONNECT] Sending connection:restored with debug:', JSON.stringify(debug));
-              console.log('[RECONNECT] validActions being sent:', validActions?.length);
-              socket.emit('connection:restored', { room, gameState, validActions, debug });
-
+              socket.emit('connection:restored', { room, gameState, validActions });
               socket.to(roomId).emit('player:reconnected', playerId);
-              console.log('[RECONNECT] === Reconnect complete ===');
               return;
             }
           }
 
-          socket.emit('connection:restored', { room, gameState, validActions, debug });
-
+          socket.emit('connection:restored', { room, gameState, validActions });
           socket.to(roomId).emit('player:reconnected', playerId);
-          console.log('[RECONNECT] === Reconnect complete ===');
         } catch (error) {
           console.error('[RECONNECT] Error:', error);
           socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to reconnect' });

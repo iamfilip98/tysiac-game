@@ -1,6 +1,6 @@
 import { Server } from 'socket.io';
 import type { GameState, Card, Suit, ClientGameState, ValidAction, RoundResult } from '@tysiac/shared';
-import { createDeck, shuffleDeck, getTotalMarriageValue, hasMarriage, MARRIAGE_VALUES } from '@tysiac/shared';
+import { createDeck, shuffleDeck, getTotalMarriageValue, hasMarriage, MARRIAGE_VALUES, CARD_POINTS, SUITS } from '@tysiac/shared';
 import { getValidCards, getTrickWinner, validateBid, validateCardPlay, canDeclareMarriage } from './validation.js';
 import { calculateRoundScores, applyScores, createRoundResult } from './scoring.js';
 import { getClientGameState, getValidActions, getNextPlayer, isAIPlayer } from './stateManager.js';
@@ -193,20 +193,38 @@ export class GameEngine {
     const dealerIndex = (roundNumber - 1) % playerCount;
     const dealer = this.game.players[dealerIndex];
 
-    // Create and shuffle deck
-    const deck = shuffleDeck(createDeck());
-
     // In 4-player mode, dealer sits out - only deal to 3 active players
     const activePlayers = is4Player
       ? this.game.players.filter(p => p.id !== dealer.id)
       : this.game.players;
 
-    // Deal cards: 7 to each active player, 3 to talon
-    const hands: Card[][] = [[], [], []];
-    for (let i = 0; i < 21; i++) {
-      hands[i % 3].push(deck[i]);
+    // Helper: check if a hand is valid (18+ points OR has a marriage)
+    const isHandValid = (hand: Card[]): boolean => {
+      const handValue = hand.reduce((sum, card) => sum + CARD_POINTS[card.rank], 0);
+      if (handValue >= 18) return true;
+      // Check for any marriage (King + Queen of same suit)
+      for (const suit of SUITS) {
+        if (hasMarriage(hand, suit)) return true;
+      }
+      return false;
+    };
+
+    // Deal cards until all hands are valid (18+ points OR has marriage)
+    let hands: Card[][] = [[], [], []];
+    let talon: Card[] = [];
+    let validDeal = false;
+
+    while (!validDeal) {
+      const deck = shuffleDeck(createDeck());
+      hands = [[], [], []];
+      for (let i = 0; i < 21; i++) {
+        hands[i % 3].push(deck[i]);
+      }
+      talon = deck.slice(21, 24);
+
+      // Check all hands are valid
+      validDeal = hands.every(hand => isHandValid(hand));
     }
-    const talon = deck.slice(21, 24);
 
     // Detect talon marriages for dealer scoring (4-player mode)
     const talonMarriages: Suit[] = [];

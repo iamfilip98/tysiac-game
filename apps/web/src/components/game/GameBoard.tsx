@@ -42,7 +42,6 @@ export function GameBoard() {
     showRoundResult,
     showGameEnd,
     isMyTurn,
-    serverDebug,
     lastMarriageDeclared,
     wykladanaData,
     showWykladana,
