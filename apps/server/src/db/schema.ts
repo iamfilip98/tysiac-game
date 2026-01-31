@@ -69,6 +69,23 @@ export const rounds = pgTable('rounds', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Debug logs table - tracks all game actions for last 10 games (internal debugging only)
+export const debugLogs = pgTable('debug_logs', {
+  id: text('id').primaryKey(),
+  gameId: text('game_id').references(() => games.id, { onDelete: 'cascade' }),
+  roomId: text('room_id'),
+  sessionId: text('session_id'), // Groups logs for a game session even before gameId exists
+  playerId: text('player_id'),
+  socketId: text('socket_id'),
+  eventType: text('event_type').notNull(), // e.g., 'room:create', 'game:bid', 'game:playCard'
+  eventData: jsonb('event_data'), // Full event payload
+  gameState: jsonb('game_state'), // Snapshot of relevant game state at time of action
+  result: text('result'), // 'success', 'error', 'rejected'
+  errorMessage: text('error_message'),
+  metadata: jsonb('metadata'), // Additional context (e.g., validActions, playerHand)
+  timestamp: timestamp('timestamp').defaultNow().notNull(),
+});
+
 // Type exports for Drizzle
 export type Player = typeof players.$inferSelect;
 export type NewPlayer = typeof players.$inferInsert;
@@ -78,3 +95,5 @@ export type RoomPlayer = typeof roomPlayers.$inferSelect;
 export type Game = typeof games.$inferSelect;
 export type GameScore = typeof gameScores.$inferSelect;
 export type Round = typeof rounds.$inferSelect;
+export type DebugLog = typeof debugLogs.$inferSelect;
+export type NewDebugLog = typeof debugLogs.$inferInsert;
