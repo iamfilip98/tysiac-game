@@ -347,15 +347,16 @@ function PlayerSlot({
       </div>
 
       <div className="flex items-center gap-2 shrink-0">
-        {/* Ready status */}
-        {player.isReady ? (
-          <motion.span
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            className="text-green-400 text-sm flex items-center gap-1"
-            role="status"
-            aria-label={`${player.name} is ready`}
-          >
+        {/* Ready status - fixed width to prevent layout shift */}
+        <span
+          className={cn(
+            'text-sm flex items-center gap-1 w-[75px] justify-end',
+            player.isReady ? 'text-green-400' : 'text-white/40'
+          )}
+          role="status"
+          aria-label={`${player.name} is ${player.isReady ? 'ready' : 'not ready'}`}
+        >
+          {player.isReady && (
             <svg
               className="w-4 h-4"
               fill="none"
@@ -370,13 +371,9 @@ function PlayerSlot({
                 d="M5 13l4 4L19 7"
               />
             </svg>
-            Ready
-          </motion.span>
-        ) : (
-          <span className="text-white/40 text-sm" aria-label={`${player.name} is not ready`}>
-            Not ready
-          </span>
-        )}
+          )}
+          {player.isReady ? 'Ready' : 'Not ready'}
+        </span>
 
         {/* Remove AI button */}
         {canRemove && (
