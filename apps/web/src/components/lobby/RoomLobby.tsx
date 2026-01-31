@@ -130,17 +130,17 @@ export function RoomLobby({
                 )}
               </button>
             </div>
-            {copied && (
-              <motion.p
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="text-sm text-green-400 mt-2"
-                role="status"
-              >
-                Copied to clipboard!
-              </motion.p>
-            )}
+            {/* Reserve space for copy confirmation to prevent layout shift */}
+            <p
+              className={cn(
+                'text-sm text-green-400 mt-2 min-h-[20px] transition-opacity',
+                copied ? 'opacity-100' : 'opacity-0'
+              )}
+              role="status"
+              aria-hidden={!copied}
+            >
+              Copied to clipboard!
+            </p>
           </div>
 
           {/* Players - Fixed height container for 3 slots */}
@@ -180,38 +180,33 @@ export function RoomLobby({
               <Button
                 variant={currentPlayer?.isReady ? 'danger' : 'secondary'}
                 onClick={() => onReady(!currentPlayer?.isReady)}
-                className="w-full py-3"
+                className="w-full py-3 min-w-[140px]"
                 aria-pressed={currentPlayer?.isReady}
               >
-                {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
+                <span className="inline-block w-[100px] text-center">
+                  {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
+                </span>
               </Button>
             )}
 
             {/* Host actions - Start Game is now a separate prominent button */}
             {isHost && (
-              <>
-                {/* Start Game - prominent, separate button with extra top margin */}
-                <motion.div
-                  className="mt-4 pt-4 border-t border-table-600"
-                  animate={canStart ? { scale: [1, 1.02, 1] } : {}}
-                  transition={{ duration: 1.5, repeat: canStart ? Infinity : 0 }}
+              <div className="mt-4 pt-4 border-t border-table-600">
+                <Button
+                  variant="primary"
+                  onClick={handleStart}
+                  disabled={!canStart || isStarting}
+                  className={cn(
+                    'w-full py-4 text-lg font-bold',
+                    !canStart && 'opacity-50 cursor-not-allowed'
+                  )}
+                  glow={canStart && !isStarting}
+                  aria-busy={isStarting}
+                  aria-disabled={!canStart}
                 >
-                  <Button
-                    variant="primary"
-                    onClick={handleStart}
-                    disabled={!canStart || isStarting}
-                    className={cn(
-                      'w-full py-4 text-lg font-bold',
-                      !canStart && 'opacity-50 cursor-not-allowed'
-                    )}
-                    glow={canStart && !isStarting}
-                    aria-busy={isStarting}
-                    aria-disabled={!canStart}
-                  >
-                    {isStarting ? 'Starting Game...' : 'Start Game'}
-                  </Button>
-                </motion.div>
-              </>
+                  {isStarting ? 'Starting Game...' : 'Start Game'}
+                </Button>
+              </div>
             )}
 
             {/* Leave button */}
@@ -220,9 +215,16 @@ export function RoomLobby({
             </Button>
           </div>
 
-          {/* Start hint - show requirements */}
-          {isHost && !canStart && (
-            <div className="mt-4 text-center text-sm text-white/40" role="status">
+          {/* Start hint - show requirements (always reserve space to prevent layout shift) */}
+          {isHost && (
+            <div
+              className={cn(
+                'mt-4 text-center text-sm text-white/40 min-h-[20px]',
+                canStart && 'invisible'
+              )}
+              role="status"
+              aria-hidden={canStart}
+            >
               {room.players.length < 3
                 ? `Need ${3 - room.players.length} more player${3 - room.players.length > 1 ? 's' : ''} to start`
                 : 'You must click "Ready Up" before starting'}
