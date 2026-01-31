@@ -180,12 +180,10 @@ export function RoomLobby({
               <Button
                 variant={currentPlayer?.isReady ? 'danger' : 'secondary'}
                 onClick={() => onReady(!currentPlayer?.isReady)}
-                className="w-full py-3 min-w-[140px]"
+                className="w-full py-3 whitespace-nowrap"
                 aria-pressed={currentPlayer?.isReady}
               >
-                <span className="inline-block w-[100px] text-center">
-                  {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
-                </span>
+                {currentPlayer?.isReady ? 'Cancel Ready' : 'Ready Up'}
               </Button>
             )}
 
