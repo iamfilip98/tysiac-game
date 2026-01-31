@@ -603,27 +603,37 @@ export function setupSocketHandlers(io: TypedServer) {
     socket.on('player:reconnect', (data) => {
       withRateLimit(socket, 'player:reconnect', () => {
         try {
+          console.log('[RECONNECT] === Starting reconnect ===');
+          console.log('[RECONNECT] Data received:', JSON.stringify(data));
+
           const parsed = ReconnectSchema.safeParse(data);
           if (!parsed.success) {
+            console.log('[RECONNECT] Parse failed:', parsed.error);
             socket.emit('room:error', { code: 'INVALID_INPUT', message: 'Invalid reconnect data' });
             return;
           }
 
           const { roomId, playerId, sessionToken } = parsed.data;
+          console.log('[RECONNECT] Parsed - roomId:', roomId, 'playerId:', playerId);
 
           // Validate session token
           if (!validateSession(sessionToken, playerId)) {
+            console.log('[RECONNECT] Session validation failed');
             socket.emit('room:error', { code: 'INVALID_SESSION', message: 'Invalid or expired session' });
             return;
           }
+          console.log('[RECONNECT] Session valid');
 
           const room = roomService.getRoom(roomId);
           if (!room) {
+            console.log('[RECONNECT] Room not found:', roomId);
             socket.emit('room:error', { code: 'ROOM_NOT_FOUND', message: 'Room not found' });
             return;
           }
+          console.log('[RECONNECT] Room found, gameId:', room.gameId);
 
           if (!room.players.some(p => p.id === playerId)) {
+            console.log('[RECONNECT] Player not in room');
             socket.emit('room:error', { code: 'NOT_IN_ROOM', message: 'Player not in room' });
             return;
           }
@@ -650,17 +660,29 @@ export function setupSocketHandlers(io: TypedServer) {
           let gameState: ClientGameState | null = null;
           let validActions: ValidAction[] = [];
           if (room.gameId) {
+            console.log('[RECONNECT] Looking up game:', room.gameId);
             const game = gameService.getGame(room.gameId);
+            console.log('[RECONNECT] Game found:', !!game);
 
             if (game) {
+              console.log('[RECONNECT] Game phase:', game.phase);
+              console.log('[RECONNECT] Current round:', !!game.currentRound);
+              if (game.currentRound) {
+                console.log('[RECONNECT] Current trick:', !!game.currentRound.currentTrick);
+                console.log('[RECONNECT] Current trick player:', game.currentRound.currentTrick?.currentPlayer);
+                console.log('[RECONNECT] Player hand size:', game.currentRound.players[playerId]?.hand?.length);
+              }
+
               gameState = getClientGameState(game, playerId);
+              console.log('[RECONNECT] Client game state created, myHand size:', gameState.myHand?.length);
 
               // Get or recreate game engine
               let engine = gameEngines.get(room.gameId);
+              console.log('[RECONNECT] Existing engine:', !!engine);
 
               if (!engine) {
                 // Engine was lost (server restart?) - recreate it from game state
-                console.log('[player:reconnect] Recreating engine for game:', room.gameId);
+                console.log('[RECONNECT] Recreating engine for game:', room.gameId);
                 engine = new GameEngine(
                   game,
                   io,
@@ -670,18 +692,26 @@ export function setupSocketHandlers(io: TypedServer) {
                   true // isRecreated = true
                 );
                 gameEngines.set(room.gameId, engine);
+                console.log('[RECONNECT] Engine recreated');
               }
 
               validActions = engine.getValidActionsForPlayer(playerId);
+              console.log('[RECONNECT] Valid actions count:', validActions.length);
+              console.log('[RECONNECT] Valid actions:', JSON.stringify(validActions));
             }
           }
+
+          console.log('[RECONNECT] Sending connection:restored with:');
+          console.log('[RECONNECT]   - gameState:', !!gameState);
+          console.log('[RECONNECT]   - validActions count:', validActions.length);
 
           // Send everything in one event to avoid race conditions
           socket.emit('connection:restored', { room, gameState, validActions });
 
           socket.to(roomId).emit('player:reconnected', playerId);
+          console.log('[RECONNECT] === Reconnect complete ===');
         } catch (error) {
-          console.error('Error reconnecting:', error);
+          console.error('[RECONNECT] Error:', error);
           socket.emit('room:error', { code: 'SERVER_ERROR', message: 'Failed to reconnect' });
         }
       });

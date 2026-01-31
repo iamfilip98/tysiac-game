@@ -150,9 +150,20 @@ export function useSocket() {
 
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions }) => {
+      console.log('[DEBUG] === connection:restored received ===');
+      console.log('[DEBUG] room:', room?.id);
+      console.log('[DEBUG] gameState:', !!gameState);
+      console.log('[DEBUG] gameState.phase:', gameState?.phase);
+      console.log('[DEBUG] gameState.myHand length:', gameState?.myHand?.length);
+      console.log('[DEBUG] gameState.round:', !!gameState?.round);
+      console.log('[DEBUG] currentTrick player:', gameState?.round?.currentTrick?.currentPlayer);
+      console.log('[DEBUG] validActions:', validActions);
+      console.log('[DEBUG] validActions length:', validActions?.length);
+
       // Restore playerId from session
       const storedSession = loadSession();
       if (storedSession) {
+        console.log('[DEBUG] Restoring playerId:', storedSession.playerId);
         setPlayerId(storedSession.playerId);
       }
 
@@ -162,9 +173,21 @@ export function useSocket() {
       }
       // Set valid actions if provided (player's turn)
       if (validActions && validActions.length > 0) {
+        console.log('[DEBUG] Setting validActions, count:', validActions.length);
         setValidActions(validActions);
+      } else {
+        console.log('[DEBUG] No validActions to set');
       }
       updateSessionTimestamp();
+
+      // Log final store state
+      setTimeout(() => {
+        const storeState = useGameStore.getState();
+        console.log('[DEBUG] === Final store state ===');
+        console.log('[DEBUG] isMyTurn:', storeState.isMyTurn);
+        console.log('[DEBUG] validActions in store:', storeState.validActions);
+        console.log('[DEBUG] gameState in store:', !!storeState.gameState);
+      }, 100);
     });
 
     connect();

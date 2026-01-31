@@ -459,6 +459,21 @@ export function GameBoard() {
           onCancel={() => setShowLeaveModal(false)}
         />
       )}
+
+      {/* DEBUG PANEL - Remove after fixing */}
+      <div className="fixed bottom-0 left-0 right-0 bg-black/90 text-white text-xs p-2 z-50 max-h-40 overflow-auto">
+        <div className="font-bold text-yellow-400 mb-1">DEBUG INFO:</div>
+        <div>Phase: {phase}</div>
+        <div>isMyTurn (store): {String(isMyTurn)}</div>
+        <div>isMyTurn (passed to hand): {String(isMyTurn && phase === 'trickPlaying')}</div>
+        <div>validActions count: {validActions.length}</div>
+        <div>validActions types: {validActions.map(a => a.type).join(', ') || 'none'}</div>
+        <div>playCard action: {JSON.stringify(validActions.find(a => a.type === 'playCard'))}</div>
+        <div>myHand count: {myHand?.length}</div>
+        <div>playerId: {playerId}</div>
+        <div>currentTrick player: {round?.currentTrick?.currentPlayer}</div>
+        <div>Am I current player: {String(round?.currentTrick?.currentPlayer === playerId)}</div>
+      </div>
     </div>
   );
 }
