@@ -64,6 +64,17 @@ export function logDebug(params: {
     timestamp: new Date(),
   };
 
+  // Also log to console for immediate visibility in Railway logs
+  const logPrefix = `[${params.eventType}]`;
+  const logData = {
+    gameId: params.gameId,
+    playerId: params.playerId,
+    ...(params.eventData as object || {}),
+    ...(params.result ? { result: params.result } : {}),
+    ...(params.errorMessage ? { error: params.errorMessage } : {}),
+  };
+  console.log(logPrefix, JSON.stringify(logData));
+
   // Add to in-memory logs
   inMemoryLogs.push(entry);
   if (inMemoryLogs.length > MAX_IN_MEMORY_LOGS) {
