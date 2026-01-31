@@ -593,14 +593,27 @@ export function setupSocketHandlers(io: TypedServer) {
 
           // Get game state if exists
           let gameState: ClientGameState | null = null;
+          let validActions: ValidAction[] = [];
           if (room.gameId) {
             const game = gameService.getGame(room.gameId);
             if (game) {
               gameState = getClientGameState(game, playerId);
+
+              // Get valid actions from the game engine
+              const engine = gameEngines.get(room.gameId);
+              if (engine) {
+                validActions = engine.getValidActionsForPlayer(playerId);
+              }
             }
           }
 
           socket.emit('connection:restored', { room, gameState });
+
+          // Send valid actions if it's this player's turn
+          if (validActions.length > 0) {
+            socket.emit('game:yourTurn', { validActions });
+          }
+
           socket.to(roomId).emit('player:reconnected', playerId);
         } catch (error) {
           console.error('Error reconnecting:', error);

@@ -775,4 +775,18 @@ export class GameEngine {
       this.io.to(socketId).emit('game:error', { code: 'INVALID_ACTION', message });
     }
   }
+
+  /**
+   * Get valid actions for a player (used for reconnection)
+   */
+  getValidActionsForPlayer(playerId: string): ValidAction[] {
+    const round = this.game.currentRound;
+    if (!round) return [];
+
+    return getValidActions(this.game, playerId, {
+      currentBidder: this.currentBidder,
+      currentBid: round.finalBid,
+      passedPlayers: this.passedPlayers,
+    });
+  }
 }
