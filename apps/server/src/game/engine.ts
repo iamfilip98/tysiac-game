@@ -31,7 +31,8 @@ export class GameEngine {
     io: Server,
     roomId: string,
     onCleanup?: () => void,
-    socketLookup?: (playerId: string) => string | null
+    socketLookup?: (playerId: string) => string | null,
+    isRecreated: boolean = false
   ) {
     this.game = game;
     this.io = io;
@@ -41,9 +42,40 @@ export class GameEngine {
     this.socketLookup = socketLookup || ((playerId) =>
       playerId.startsWith('player-') ? playerId.replace('player-', '') : null
     );
-    // Explicitly set to ensure first broadcast is game:started
-    this.isFirstRound = true;
-    console.log('[GameEngine] Created new engine, isFirstRound:', this.isFirstRound);
+
+    if (isRecreated) {
+      // Engine is being recreated from existing game state (e.g., after server restart)
+      this.isFirstRound = false;
+      // Restore bidding state from game if in bidding phase
+      this.restoreStateFromGame();
+      console.log('[GameEngine] Recreated engine from existing game state');
+    } else {
+      this.isFirstRound = true;
+      console.log('[GameEngine] Created new engine, isFirstRound:', this.isFirstRound);
+    }
+  }
+
+  /**
+   * Restore engine internal state from game state (used when recreating engine)
+   */
+  private restoreStateFromGame(): void {
+    const round = this.game.currentRound;
+    if (!round) return;
+
+    // For bidding phase, we need to determine current bidder
+    if (this.game.phase === 'bidding') {
+      // If there's a bid winner, the next bidder would be someone else
+      // This is an approximation - in practice, bidding state is complex
+      // For simplicity, if we're in bidding, let the current highest bidder continue
+      if (round.bidWinner) {
+        this.currentBidder = round.bidWinner;
+      }
+    }
+
+    // For trick playing, the current player is stored in the trick
+    if (this.game.phase === 'trickPlaying' && round.currentTrick) {
+      // Nothing special needed - currentTrick.currentPlayer is already in game state
+    }
   }
 
   // Safe setTimeout that tracks timers for cleanup
@@ -781,32 +813,13 @@ export class GameEngine {
    */
   getValidActionsForPlayer(playerId: string): ValidAction[] {
     const round = this.game.currentRound;
-    if (!round) {
-      console.log('[getValidActionsForPlayer] No round, returning empty');
-      return [];
-    }
+    if (!round) return [];
 
-    console.log('[getValidActionsForPlayer] Getting actions for', playerId);
-    console.log('[getValidActionsForPlayer] Phase:', this.game.phase);
-    console.log('[getValidActionsForPlayer] CurrentBidder:', this.currentBidder);
-    console.log('[getValidActionsForPlayer] CurrentTrickPlayer:', round.currentTrick?.currentPlayer);
-
-    const actions = getValidActions(this.game, playerId, {
+    return getValidActions(this.game, playerId, {
       currentBidder: this.currentBidder,
       currentBid: round.finalBid,
       passedPlayers: this.passedPlayers,
     });
-
-    console.log('[getValidActionsForPlayer] Returning', actions.length, 'actions');
-    if (actions.length > 0) {
-      console.log('[getValidActionsForPlayer] Action types:', actions.map(a => a.type));
-      const playCardAction = actions.find(a => a.type === 'playCard');
-      if (playCardAction && playCardAction.type === 'playCard') {
-        console.log('[getValidActionsForPlayer] Valid cards count:', playCardAction.validCards.length);
-      }
-    }
-
-    return actions;
   }
 
   /**

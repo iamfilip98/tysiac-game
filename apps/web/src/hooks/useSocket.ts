@@ -131,13 +131,6 @@ export function useSocket() {
     });
 
     socket.on('game:yourTurn', ({ validActions }) => {
-      console.log('[game:yourTurn] Received validActions:', validActions.length, 'actions');
-      validActions.forEach((action, i) => {
-        console.log(`[game:yourTurn] Action ${i}:`, action.type);
-        if (action.type === 'playCard') {
-          console.log('[game:yourTurn] Valid cards count:', action.validCards.length);
-        }
-      });
       setValidActions(validActions);
     });
 
@@ -157,15 +150,9 @@ export function useSocket() {
 
     // Reconnection
     socket.on('connection:restored', ({ room, gameState }) => {
-      console.log('[connection:restored] Received, hasGameState:', !!gameState);
-      console.log('[connection:restored] Game phase:', gameState?.phase);
-      console.log('[connection:restored] Current trick player:', gameState?.round?.currentTrick?.currentPlayer);
-      console.log('[connection:restored] My hand size:', gameState?.myHand?.length);
-
       // Restore playerId from session
       const storedSession = loadSession();
       if (storedSession) {
-        console.log('[connection:restored] Restoring playerId:', storedSession.playerId);
         setPlayerId(storedSession.playerId);
       }
 
@@ -173,7 +160,6 @@ export function useSocket() {
       if (gameState) {
         setGameState(gameState);
       }
-      // Update session timestamp
       updateSessionTimestamp();
     });
 

@@ -61,7 +61,6 @@ function cleanupGame(gameId: string, roomId: string): void {
 
 export function setupSocketHandlers(io: TypedServer) {
   io.on('connection', (socket: TypedSocket) => {
-    console.log(`Client connected: ${socket.id}`);
 
     // Room events
     socket.on('room:create', (data) => {
@@ -652,18 +651,28 @@ export function setupSocketHandlers(io: TypedServer) {
           let validActions: ValidAction[] = [];
           if (room.gameId) {
             const game = gameService.getGame(room.gameId);
+
             if (game) {
               gameState = getClientGameState(game, playerId);
 
-              // Get valid actions from the game engine
-              const engine = gameEngines.get(room.gameId);
-              if (engine) {
-                validActions = engine.getValidActionsForPlayer(playerId);
-                console.log('[player:reconnect] Valid actions for player:', playerId, JSON.stringify(validActions));
-                console.log('[player:reconnect] Game phase:', game.phase);
-                console.log('[player:reconnect] Current trick player:', game.currentRound?.currentTrick?.currentPlayer);
-                console.log('[player:reconnect] Player hand size:', game.currentRound?.players[playerId]?.hand?.length);
+              // Get or recreate game engine
+              let engine = gameEngines.get(room.gameId);
+
+              if (!engine) {
+                // Engine was lost (server restart?) - recreate it from game state
+                console.log('[player:reconnect] Recreating engine for game:', room.gameId);
+                engine = new GameEngine(
+                  game,
+                  io,
+                  room.id,
+                  () => cleanupGame(game.id, room.id),
+                  (pid: string) => playerToSocket.get(pid) || null,
+                  true // isRecreated = true
+                );
+                gameEngines.set(room.gameId, engine);
               }
+
+              validActions = engine.getValidActionsForPlayer(playerId);
             }
           }
 
