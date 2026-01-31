@@ -384,7 +384,7 @@ export class GameEngine {
     const biddingOrder: string[] = [];
     for (let i = 1; i <= this.game.players.length; i++) {
       const player = this.game.players[(dealerIndex + i) % this.game.players.length];
-      if (!is4Player || player.id !== round.dealer) {
+      if (player.id !== round.dealer) {
         biddingOrder.push(player.id);
       }
     }
