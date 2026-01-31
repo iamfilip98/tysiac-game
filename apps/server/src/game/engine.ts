@@ -489,6 +489,16 @@ export class GameEngine {
   private checkTalonConfirmations(): void {
     if (this.isCleanedUp) return;
 
+    // Auto-confirm disconnected players (no socket = disconnected)
+    for (const player of this.game.players) {
+      if (player.isAI) continue; // AI already auto-confirmed
+      const socketId = this.getSocketId(player.id);
+      if (!socketId && !this.talonConfirmations.has(player.id)) {
+        console.log(`[GameEngine] Auto-confirming disconnected player: ${player.id}`);
+        this.talonConfirmations.add(player.id);
+      }
+    }
+
     // Check if all players have confirmed
     const playerIds = this.game.players.map(p => p.id);
     const confirmedIds = Array.from(this.talonConfirmations);
@@ -1075,6 +1085,21 @@ export class GameEngine {
   }
 
   /**
+   * Called when a player disconnects - re-check any pending confirmations
+   */
+  handlePlayerDisconnect(playerId: string): void {
+    if (this.isCleanedUp) return;
+
+    console.log(`[GameEngine] handlePlayerDisconnect: ${playerId}, phase: ${this.game.phase}`);
+
+    // If we're in talon reveal phase, re-check confirmations
+    // This will auto-confirm the disconnected player since they no longer have a socket
+    if (this.game.phase === 'talonReveal') {
+      this.checkTalonConfirmations();
+    }
+  }
+
+  /**
    * Replace a human player with AI (when they leave mid-game)
    */
   replacePlayerWithAI(playerId: string): void {
@@ -1111,6 +1136,21 @@ export class GameEngine {
 
       // Delay AI turn slightly so game state can update
       this.safeSetTimeout(() => this.handleAITurn(playerId, actions), 500);
+    }
+
+    // Handle talonReveal phase - auto-confirm for AI player
+    if (this.game.phase === 'talonReveal' && !this.talonConfirmations.has(playerId)) {
+      console.log(`[GameEngine] Auto-confirming talon for replaced AI player: ${playerId}`);
+      this.talonConfirmations.add(playerId);
+      this.checkTalonConfirmations();
+    }
+
+    // Handle playOrPassDecision phase - AI always plays
+    if (this.game.phase === 'playOrPassDecision' && round.bidWinner === playerId) {
+      console.log(`[GameEngine] AI player ${playerId} auto-playing at 100`);
+      this.safeSetTimeout(() => {
+        this.handlePlayOrPass(playerId, 'play');
+      }, 500);
     }
 
     // Broadcast updated state to remaining players

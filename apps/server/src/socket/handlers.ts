@@ -888,6 +888,14 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
   if (room) {
     socket.leave(room.id);
 
+    // If game is in progress, notify the engine about the disconnect
+    if (room.gameId) {
+      const engine = gameEngines.get(room.gameId);
+      if (engine) {
+        engine.handlePlayerDisconnect(playerId);
+      }
+    }
+
     // If game is in progress, use grace period for reconnection
     if (room.gameId && !immediate) {
       socket.to(room.id).emit('player:disconnected', playerId);
