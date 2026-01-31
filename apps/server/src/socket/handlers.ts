@@ -738,6 +738,8 @@ export function setupSocketHandlers(io: TypedServer) {
               console.log('[RECONNECT] Engine notification result:', engineWouldNotify?.length || 'not their turn');
 
               // Send connection:restored with all debug info
+              console.log('[RECONNECT] Sending connection:restored with debug:', JSON.stringify(debug));
+              console.log('[RECONNECT] validActions being sent:', validActions?.length);
               socket.emit('connection:restored', { room, gameState, validActions, debug });
 
               socket.to(roomId).emit('player:reconnected', playerId);

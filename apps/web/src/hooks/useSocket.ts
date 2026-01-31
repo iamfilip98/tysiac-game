@@ -131,6 +131,7 @@ export function useSocket() {
     });
 
     socket.on('game:yourTurn', ({ validActions }) => {
+      console.log('[game:yourTurn] RECEIVED! validActions:', validActions?.length, validActions);
       setValidActions(validActions);
     });
 
@@ -150,6 +151,14 @@ export function useSocket() {
 
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions, debug }) => {
+      console.log('[connection:restored] RECEIVED!', {
+        hasRoom: !!room,
+        hasGameState: !!gameState,
+        validActionsLen: validActions?.length,
+        hasDebug: !!debug,
+        debug: debug
+      });
+
       // Restore playerId from session
       const storedSession = loadSession();
       if (storedSession) {
@@ -165,6 +174,7 @@ export function useSocket() {
       }
       // Store server debug info for display
       if (debug) {
+        console.log('[connection:restored] Setting serverDebug:', debug);
         useGameStore.getState().setServerDebug(debug);
       }
       updateSessionTimestamp();
