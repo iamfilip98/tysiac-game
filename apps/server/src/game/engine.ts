@@ -6,6 +6,7 @@ import { calculateRoundScores, applyScores, createRoundResult } from './scoring.
 import { getClientGameState, getValidActions, getNextPlayer, isAIPlayer } from './stateManager.js';
 import { AIPlayer } from '../ai/index.js';
 import { detectWykladana } from './wykladana.js';
+import { logDebug } from '../services/debugService.js';
 
 export class GameEngine {
   private game: GameState;
@@ -49,10 +50,22 @@ export class GameEngine {
       this.isFirstRound = false;
       // Restore bidding state from game if in bidding phase
       this.restoreStateFromGame();
-      console.log('[GameEngine] Recreated engine from existing game state');
+      logDebug({
+        gameId: game.id,
+        roomId,
+        eventType: 'engine:recreated',
+        eventData: { phase: game.phase },
+        result: 'success',
+      });
     } else {
       this.isFirstRound = true;
-      console.log('[GameEngine] Created new engine, isFirstRound:', this.isFirstRound);
+      logDebug({
+        gameId: game.id,
+        roomId,
+        eventType: 'engine:created',
+        eventData: { isFirstRound: true },
+        result: 'success',
+      });
     }
   }
 
@@ -84,43 +97,30 @@ export class GameEngine {
    * Returns the valid actions if it was the player's turn, null otherwise
    */
   public notifyPlayerIfTheirTurn(playerId: string): ValidAction[] | null {
-    console.log('[notifyPlayerIfTheirTurn] Called with playerId:', playerId);
-    console.log('[notifyPlayerIfTheirTurn] isCleanedUp:', this.isCleanedUp);
-
     if (this.isCleanedUp) return null;
 
     const round = this.game.currentRound;
-    console.log('[notifyPlayerIfTheirTurn] round exists:', !!round);
     if (!round) return null;
 
     let currentPlayerId: string;
 
-    console.log('[notifyPlayerIfTheirTurn] game.phase:', this.game.phase);
-
     if (this.game.phase === 'bidding') {
       currentPlayerId = this.currentBidder;
-      console.log('[notifyPlayerIfTheirTurn] bidding - currentBidder:', currentPlayerId);
     } else if (this.game.phase === 'talonDistribution') {
       currentPlayerId = round.bidWinner!;
-      console.log('[notifyPlayerIfTheirTurn] talonDistribution - bidWinner:', currentPlayerId);
     } else if (this.game.phase === 'trickPlaying') {
       currentPlayerId = round.currentTrick?.currentPlayer || '';
-      console.log('[notifyPlayerIfTheirTurn] trickPlaying - currentTrick?.currentPlayer:', round.currentTrick?.currentPlayer);
     } else {
-      console.log('[notifyPlayerIfTheirTurn] Unknown phase, returning null');
       return null;
     }
 
     // Only proceed if it's this player's turn
-    console.log('[notifyPlayerIfTheirTurn] Comparing currentPlayerId:', currentPlayerId, 'vs playerId:', playerId);
     if (currentPlayerId !== playerId) {
-      console.log('[notifyPlayerIfTheirTurn] NOT their turn, returning null');
       return null;
     }
 
     // Don't notify AI players through socket
     if (isAIPlayer(this.game, playerId)) {
-      console.log('[notifyPlayerIfTheirTurn] Is AI player, returning null');
       return null;
     }
 
@@ -129,17 +129,30 @@ export class GameEngine {
       currentBid: round.finalBid,
       passedPlayers: this.passedPlayers,
     });
-    console.log('[notifyPlayerIfTheirTurn] getValidActions returned:', actions.length, 'actions');
 
     // Emit game:yourTurn to this player
     const socketId = this.getSocketId(playerId);
-    console.log('[notifyPlayerIfTheirTurn] socketId for player:', socketId);
-    if (socketId && actions.length > 0) {
-      console.log('[notifyPlayerIfTheirTurn] EMITTING game:yourTurn with', actions.length, 'actions');
-      this.io.to(socketId).emit('game:yourTurn', { validActions: actions });
-    } else {
-      console.log('[notifyPlayerIfTheirTurn] NOT emitting - socketId:', !!socketId, 'actions:', actions.length);
+    const emitted = !!(socketId && actions.length > 0);
+
+    if (emitted) {
+      this.io.to(socketId!).emit('game:yourTurn', { validActions: actions });
     }
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      socketId: socketId || undefined,
+      eventType: 'notify:playerTurn',
+      eventData: {
+        phase: this.game.phase,
+        currentPlayerId,
+        isTheirTurn: true,
+        actionsCount: actions.length,
+        emitted,
+      },
+      result: emitted ? 'success' : 'rejected',
+    });
 
     return actions;
   }
@@ -174,7 +187,12 @@ export class GameEngine {
     }
     this.activeTimers.clear();
 
-    console.log(`GameEngine cleaned up for room ${this.roomId}`);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'engine:cleanup',
+      result: 'success',
+    });
   }
 
   startGame(): void {
@@ -430,16 +448,21 @@ export class GameEngine {
       }
     }
 
-    // Debug logging for bidding order investigation
-    console.log('[Bidding Advance]', {
-      currentBidder: this.currentBidder,
-      bidWinner: round.bidWinner,
-      finalBid: round.finalBid,
-      passedPlayers: this.passedPlayers,
-      biddingOrder,
-      activeBidders,
-      nextBidder,
-      currentIndex,
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'bidding:advance',
+      eventData: {
+        currentBidder: this.currentBidder,
+        bidWinner: round.bidWinner,
+        finalBid: round.finalBid,
+        passedPlayers: this.passedPlayers,
+        biddingOrder,
+        activeBidders,
+        nextBidder,
+        currentIndex,
+      },
+      result: 'success',
     });
 
     if (nextBidder) {
@@ -476,13 +499,30 @@ export class GameEngine {
   handleConfirmTalon(playerId: string): void {
     if (this.isCleanedUp) return;
     if (this.game.phase !== 'talonReveal') {
-      console.log(`[GameEngine] handleConfirmTalon: Rejected - phase is ${this.game.phase}, not talonReveal. Player: ${playerId}`);
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        playerId,
+        eventType: 'talon:confirm:rejected',
+        eventData: { reason: 'wrong_phase', currentPhase: this.game.phase },
+        result: 'rejected',
+      });
       return;
     }
 
     // Add player confirmation
     this.talonConfirmations.add(playerId);
-    console.log(`[GameEngine] handleConfirmTalon: Player ${playerId} confirmed. Confirmations: ${Array.from(this.talonConfirmations).join(', ')}. Total players: ${this.game.players.length}`);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      eventType: 'talon:confirm',
+      eventData: {
+        confirmations: Array.from(this.talonConfirmations),
+        totalPlayers: this.game.players.length,
+      },
+      result: 'success',
+    });
     this.checkTalonConfirmations();
   }
 
@@ -494,7 +534,14 @@ export class GameEngine {
       if (player.isAI) continue; // AI already auto-confirmed
       const socketId = this.getSocketId(player.id);
       if (!socketId && !this.talonConfirmations.has(player.id)) {
-        console.log(`[GameEngine] Auto-confirming disconnected player: ${player.id}`);
+        logDebug({
+          gameId: this.game.id,
+          roomId: this.roomId,
+          playerId: player.id,
+          eventType: 'talon:autoconfirm:disconnected',
+          eventData: { reason: 'no_socket' },
+          result: 'success',
+        });
         this.talonConfirmations.add(player.id);
       }
     }
@@ -505,14 +552,36 @@ export class GameEngine {
     const missingConfirmations = playerIds.filter(id => !this.talonConfirmations.has(id));
     const allConfirmed = missingConfirmations.length === 0;
 
-    console.log(`[GameEngine] checkTalonConfirmations: Players: [${playerIds.join(', ')}], Confirmed: [${confirmedIds.join(', ')}], Missing: [${missingConfirmations.join(', ')}], AllConfirmed: ${allConfirmed}`);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'talon:checkConfirmations',
+      eventData: {
+        playerIds,
+        confirmedIds,
+        missingConfirmations,
+        allConfirmed,
+      },
+      result: allConfirmed ? 'success' : 'rejected',
+    });
 
     if (allConfirmed) {
       const round = this.game.currentRound!;
 
       // If bid was exactly 100, bidder needs to decide whether to play or pass
       if (round.finalBid === 100) {
-        console.log(`[GameEngine] All talon confirmations received, bid was 100. Transitioning to playOrPassDecision. BidWinner: ${round.bidWinner}`);
+        logDebug({
+          gameId: this.game.id,
+          roomId: this.roomId,
+          eventType: 'phase:transition',
+          eventData: {
+            from: 'talonReveal',
+            to: 'playOrPassDecision',
+            bidWinner: round.bidWinner,
+            finalBid: round.finalBid,
+          },
+          result: 'success',
+        });
         this.game.phase = 'playOrPassDecision';
         this.broadcastState();
         this.promptPlayOrPassDecision();
@@ -532,7 +601,14 @@ export class GameEngine {
 
     // Check if AI player - AI always chooses to play
     if (isAIPlayer(this.game, bidWinnerId)) {
-      console.log(`[GameEngine] promptPlayOrPassDecision: AI player ${bidWinnerId}, auto-playing`);
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        playerId: bidWinnerId,
+        eventType: 'playOrPass:prompt:ai',
+        eventData: { decision: 'auto_play' },
+        result: 'success',
+      });
       this.safeSetTimeout(() => {
         this.handlePlayOrPass(bidWinnerId, 'play');
       }, 800);
@@ -541,13 +617,20 @@ export class GameEngine {
 
     // Notify human player
     const socketId = this.getSocketId(bidWinnerId);
-    console.log(`[GameEngine] promptPlayOrPassDecision: Human player ${bidWinnerId}, socketId: ${socketId || 'NULL'}`);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId: bidWinnerId,
+      socketId: socketId || undefined,
+      eventType: 'playOrPass:prompt:human',
+      eventData: { hasSocket: !!socketId },
+      result: socketId ? 'success' : 'error',
+      errorMessage: socketId ? undefined : 'No socket found for bid winner',
+    });
     if (socketId) {
       this.io.to(socketId).emit('game:yourTurn', {
         validActions: [{ type: 'playOrPass' }],
       });
-    } else {
-      console.warn(`[GameEngine] WARNING: No socket found for bid winner ${bidWinnerId} during playOrPass prompt!`);
     }
   }
 
@@ -772,15 +855,20 @@ export class GameEngine {
       const declared = playerState.declaredMarriages;
       const hasMarriageInSuit = hasMarriage(playerState.hand, suit);
 
-      // Debug logging for marriage auto-declaration investigation
-      console.log('[Marriage Check]', {
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
         playerId,
-        cardRank: card.rank,
-        cardSuit: card.suit,
-        trickCardsLength: trick.cards.length,
-        hasMarriageResult: hasMarriageInSuit,
-        alreadyDeclared: declared,
-        hand: playerState.hand.map(c => `${c.rank}${c.suit}`),
+        eventType: 'marriage:check',
+        eventData: {
+          cardRank: card.rank,
+          cardSuit: card.suit,
+          trickCardsLength: trick.cards.length,
+          hasMarriageResult: hasMarriageInSuit,
+          alreadyDeclared: declared,
+          handSummary: playerState.hand.map(c => `${c.rank}${c.suit}`),
+        },
+        result: 'success',
       });
 
       // Check if player has undeclared marriage in this suit
@@ -791,7 +879,14 @@ export class GameEngine {
         round.trumpSuit = suit;
         // Emit marriage declared event
         this.io.to(this.roomId).emit('game:marriageDeclared', { playerId, suit });
-        console.log('[Marriage Declared]', { suit, trumpSuit: round.trumpSuit, marriagePoints: playerState.marriagePoints });
+        logDebug({
+          gameId: this.game.id,
+          roomId: this.roomId,
+          playerId,
+          eventType: 'marriage:declared',
+          eventData: { suit, trumpSuit: round.trumpSuit, marriagePoints: playerState.marriagePoints },
+          result: 'success',
+        });
       }
     }
 
@@ -919,13 +1014,12 @@ export class GameEngine {
   private broadcastState(): void {
     if (this.isCleanedUp) return;
 
-    console.log(`[GameEngine] broadcastState called, phase: ${this.game.phase}, isFirstRound: ${this.isFirstRound}`);
     const eventName = this.isFirstRound ? 'game:started' : 'game:stateUpdate';
     if (this.isFirstRound) {
       this.isFirstRound = false;
     }
 
-    console.log(`[GameEngine] Broadcasting ${eventName} to players, phase: ${this.game.phase}`);
+    const playerSocketStatus: Record<string, boolean> = {};
 
     // Send personalized state to each player
     for (const player of this.game.players) {
@@ -933,15 +1027,25 @@ export class GameEngine {
 
       const clientState = getClientGameState(this.game, player.id);
       const socketId = this.getSocketId(player.id);
-
-      console.log(`[GameEngine] Sending ${eventName} to player ${player.id}, socketId: ${socketId}, phase in state: ${clientState.phase}`);
+      playerSocketStatus[player.id] = !!socketId;
 
       if (socketId) {
         this.io.to(socketId).emit(eventName, clientState);
-      } else {
-        console.warn(`[GameEngine] WARNING: No socket for player ${player.id} during broadcast!`);
       }
     }
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'broadcast:state',
+      eventData: {
+        eventName,
+        phase: this.game.phase,
+        playerSocketStatus,
+      },
+      gameState: this.game,
+      result: 'success',
+    });
   }
 
   private promptCurrentPlayer(): void {
@@ -1090,7 +1194,14 @@ export class GameEngine {
   handlePlayerDisconnect(playerId: string): void {
     if (this.isCleanedUp) return;
 
-    console.log(`[GameEngine] handlePlayerDisconnect: ${playerId}, phase: ${this.game.phase}`);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      eventType: 'player:disconnect',
+      eventData: { phase: this.game.phase },
+      result: 'success',
+    });
 
     // If we're in talon reveal phase, re-check confirmations
     // This will auto-confirm the disconnected player since they no longer have a socket
@@ -1110,7 +1221,14 @@ export class GameEngine {
     if (!player) return;
 
     player.isAI = true;
-    console.log(`[GameEngine] Replaced player ${playerId} (${player.name}) with AI`);
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      eventType: 'player:replacedWithAI',
+      eventData: { playerName: player.name, phase: this.game.phase },
+      result: 'success',
+    });
 
     // Check if it's currently this player's turn and trigger AI
     const round = this.game.currentRound;
@@ -1140,14 +1258,26 @@ export class GameEngine {
 
     // Handle talonReveal phase - auto-confirm for AI player
     if (this.game.phase === 'talonReveal' && !this.talonConfirmations.has(playerId)) {
-      console.log(`[GameEngine] Auto-confirming talon for replaced AI player: ${playerId}`);
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        playerId,
+        eventType: 'talon:autoconfirm:aiReplacement',
+        result: 'success',
+      });
       this.talonConfirmations.add(playerId);
       this.checkTalonConfirmations();
     }
 
     // Handle playOrPassDecision phase - AI always plays
     if (this.game.phase === 'playOrPassDecision' && round.bidWinner === playerId) {
-      console.log(`[GameEngine] AI player ${playerId} auto-playing at 100`);
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        playerId,
+        eventType: 'playOrPass:aiAutoPlay',
+        result: 'success',
+      });
       this.safeSetTimeout(() => {
         this.handlePlayOrPass(playerId, 'play');
       }, 500);
