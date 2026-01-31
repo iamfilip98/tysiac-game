@@ -50,7 +50,7 @@ export default function HomePage() {
   // If in a room, show the lobby
   if (room && playerId) {
     return (
-      <main className="min-h-screen flex items-center justify-center p-4">
+      <main className="h-full flex items-center justify-center p-4 overflow-auto">
         <RoomLobby
           room={room}
           currentPlayerId={playerId}
@@ -66,7 +66,7 @@ export default function HomePage() {
 
   // Show landing / create or join
   return (
-    <main className="min-h-screen flex flex-col items-center justify-center p-4">
+    <main className="h-full flex flex-col items-center justify-center p-4 overflow-auto">
       {/* Logo / Title */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}

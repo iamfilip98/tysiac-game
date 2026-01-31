@@ -17,10 +17,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
-      <body className={`${inter.variable} font-sans`}>
+    <html lang="en" className="h-full">
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+      </head>
+      <body className={`${inter.variable} font-sans h-full overflow-hidden`}>
         <ToastProvider>
-          <div className="felt-texture min-h-screen">
+          <div className="felt-texture h-full overflow-auto">
             {children}
           </div>
         </ToastProvider>

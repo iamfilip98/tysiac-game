@@ -49,9 +49,8 @@ export class AIPlayer {
     );
 
     if (targetBid >= minBid) {
-      // Don't bid too much higher than necessary
-      const bidAmount = Math.max(minBid, Math.min(targetBid, minBid + 20));
-      return { shouldBid: true, amount: bidAmount };
+      // Bid only the minimum required (bids must increase by exactly 10)
+      return { shouldBid: true, amount: minBid };
     }
 
     // With a strong hand, might bid anyway

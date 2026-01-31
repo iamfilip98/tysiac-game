@@ -58,28 +58,7 @@ function getCardsFollowingStandardRules(
     return cardsInSuit;
   }
 
-  // Can't follow suit
-  if (trumpSuit && trumpSuit !== leadSuit && trumpCards.length > 0) {
-    // Must trump if possible
-    const isTrumpPlayed = highestCard.suit === trumpSuit;
-
-    if (isTrumpPlayed) {
-      // Must beat with higher trump if possible
-      const beatingTrumps = trumpCards.filter(c =>
-        RANK_STRENGTH[c.rank] > RANK_STRENGTH[highestCard.rank]
-      );
-      if (beatingTrumps.length > 0) {
-        return beatingTrumps;
-      }
-      // Must play any trump
-      return trumpCards;
-    }
-
-    // Highest is not trump, any trump beats it
-    return trumpCards;
-  }
-
-  // Can't follow suit or trump, any card is valid
+  // Can't follow suit - player can play any card (no trump obligation)
   return [...hand];
 }
 

@@ -157,8 +157,8 @@ export function PlayerHand({
   const availableWidth = isMobile ? width - 32 : Math.min(width - 64, 700);
 
   // Calculate spread to fit all cards with minimum visibility
-  // Each card needs at least 28px visible (to show rank/suit corner)
-  const minVisibleWidth = isMobile ? 28 : 35;
+  // Each card needs at least 35px visible (to show rank/suit corner)
+  const minVisibleWidth = isMobile ? 35 : 45;
   const totalNeededWidth = (cardCount - 1) * minVisibleWidth + cardWidth;
 
   // If cards fit with minimum visibility, use that; otherwise calculate tighter spread
@@ -166,7 +166,7 @@ export function PlayerHand({
     ? 0
     : Math.min(
         (availableWidth - cardWidth) / (cardCount - 1),
-        isMobile ? 42 : 60 // Max spread for aesthetic reasons
+        isMobile ? 52 : 70 // Max spread for aesthetic reasons
       );
 
   // Fan angle - minimal on mobile for cleaner look, more on desktop

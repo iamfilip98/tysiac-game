@@ -32,7 +32,8 @@ const gameCreationLocks = new Set<string>();
 
 // Disconnect timeout tracking for graceful reconnection
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
-const DISCONNECT_GRACE_PERIOD = 60000; // 60 seconds
+const DISCONNECT_GRACE_PERIOD = 60000; // 60 seconds for in-game
+const ROOM_GRACE_PERIOD = 300000; // 5 minutes for pre-game rooms
 
 // Helper to wrap handlers with rate limiting and error handling
 function withRateLimit<T>(
@@ -779,25 +780,52 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
 
       disconnectTimeouts.set(playerId, timeout);
     } else {
-      // Immediate leave or no game in progress
-      playerToSocket.delete(playerId);
-      invalidatePlayerSession(playerId);
-
       // Clear any existing timeout
-      const timeout = disconnectTimeouts.get(playerId);
-      if (timeout) {
-        clearTimeout(timeout);
+      const existingTimeout = disconnectTimeouts.get(playerId);
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
         disconnectTimeouts.delete(playerId);
       }
 
-      if (!room.gameId) {
-        const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
+      if (!room.gameId && !immediate) {
+        // Pre-game room: give grace period for reconnection (e.g., copying room code)
+        socket.to(room.id).emit('player:disconnected', playerId);
 
-        if (!wasDeleted && updatedRoom) {
-          io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+        const timeout = setTimeout(() => {
+          disconnectTimeouts.delete(playerId);
+
+          // Check if player reconnected
+          const currentSocketId = playerToSocket.get(playerId);
+          if (!currentSocketId) {
+            playerToSocket.delete(playerId);
+            invalidatePlayerSession(playerId);
+
+            const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
+
+            if (!wasDeleted && updatedRoom) {
+              io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+            }
+
+            broadcastRoomList(io);
+            console.log(`Player ${playerId} did not reconnect to room within grace period`);
+          }
+        }, ROOM_GRACE_PERIOD);
+
+        disconnectTimeouts.set(playerId, timeout);
+      } else {
+        // Immediate leave requested
+        playerToSocket.delete(playerId);
+        invalidatePlayerSession(playerId);
+
+        if (!room.gameId) {
+          const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
+
+          if (!wasDeleted && updatedRoom) {
+            io.to(updatedRoom.id).emit('room:updated', updatedRoom);
+          }
+
+          broadcastRoomList(io);
         }
-
-        broadcastRoomList(io);
       }
     }
   } else {

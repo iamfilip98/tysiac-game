@@ -133,7 +133,7 @@ export function GameBoard() {
   };
 
   return (
-    <div className="relative h-screen w-full overflow-hidden">
+    <div className="relative h-full w-full overflow-hidden" style={{ height: '100dvh' }}>
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
 
