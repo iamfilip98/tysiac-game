@@ -79,32 +79,28 @@ export function BiddingPanel({
         </div>
 
         {/* Simple two-button layout: Pass or Bid +10 */}
-        <div className="flex gap-3">
-          {canPass && (
+        <div className="grid grid-cols-2 gap-3">
+          <Button
+            variant="secondary"
+            onClick={handlePass}
+            disabled={isPassing || !canPass}
+            className="py-3 text-lg"
+            aria-busy={isPassing}
+          >
+            {isPassing ? 'Passing...' : 'Pass'}
+          </Button>
+          <motion.div whileTap={{ scale: 0.98 }}>
             <Button
-              variant="secondary"
-              onClick={handlePass}
-              disabled={isPassing}
-              className="flex-1 py-3 text-lg"
-              aria-busy={isPassing}
+              variant="primary"
+              onClick={handleBid}
+              disabled={isBidding || !canBid}
+              className="w-full py-3 text-lg"
+              glow={!isBidding && canBid}
+              aria-busy={isBidding}
             >
-              {isPassing ? 'Passing...' : 'Pass'}
+              {isBidding ? 'Bidding...' : `Bid ${nextBid}`}
             </Button>
-          )}
-          {canBid && (
-            <motion.div className="flex-1" whileTap={{ scale: 0.98 }}>
-              <Button
-                variant="primary"
-                onClick={handleBid}
-                disabled={isBidding}
-                className="w-full py-3 text-lg"
-                glow={!isBidding}
-                aria-busy={isBidding}
-              >
-                {isBidding ? 'Bidding...' : `Bid ${nextBid}`}
-              </Button>
-            </motion.div>
-          )}
+          </motion.div>
         </div>
 
         {/* Show max bid info */}
