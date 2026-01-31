@@ -475,10 +475,14 @@ export class GameEngine {
 
   handleConfirmTalon(playerId: string): void {
     if (this.isCleanedUp) return;
-    if (this.game.phase !== 'talonReveal') return;
+    if (this.game.phase !== 'talonReveal') {
+      console.log(`[GameEngine] handleConfirmTalon: Rejected - phase is ${this.game.phase}, not talonReveal. Player: ${playerId}`);
+      return;
+    }
 
     // Add player confirmation
     this.talonConfirmations.add(playerId);
+    console.log(`[GameEngine] handleConfirmTalon: Player ${playerId} confirmed. Confirmations: ${Array.from(this.talonConfirmations).join(', ')}. Total players: ${this.game.players.length}`);
     this.checkTalonConfirmations();
   }
 
@@ -486,7 +490,12 @@ export class GameEngine {
     if (this.isCleanedUp) return;
 
     // Check if all players have confirmed
-    const allConfirmed = this.game.players.every(p => this.talonConfirmations.has(p.id));
+    const playerIds = this.game.players.map(p => p.id);
+    const confirmedIds = Array.from(this.talonConfirmations);
+    const missingConfirmations = playerIds.filter(id => !this.talonConfirmations.has(id));
+    const allConfirmed = missingConfirmations.length === 0;
+
+    console.log(`[GameEngine] checkTalonConfirmations: Players: [${playerIds.join(', ')}], Confirmed: [${confirmedIds.join(', ')}], Missing: [${missingConfirmations.join(', ')}], AllConfirmed: ${allConfirmed}`);
 
     if (allConfirmed) {
       const round = this.game.currentRound!;
@@ -900,13 +909,13 @@ export class GameEngine {
   private broadcastState(): void {
     if (this.isCleanedUp) return;
 
-    console.log(`[GameEngine] broadcastState called, isFirstRound: ${this.isFirstRound}`);
+    console.log(`[GameEngine] broadcastState called, phase: ${this.game.phase}, isFirstRound: ${this.isFirstRound}`);
     const eventName = this.isFirstRound ? 'game:started' : 'game:stateUpdate';
     if (this.isFirstRound) {
       this.isFirstRound = false;
     }
 
-    console.log(`[GameEngine] Broadcasting ${eventName} to players`);
+    console.log(`[GameEngine] Broadcasting ${eventName} to players, phase: ${this.game.phase}`);
 
     // Send personalized state to each player
     for (const player of this.game.players) {
@@ -915,10 +924,12 @@ export class GameEngine {
       const clientState = getClientGameState(this.game, player.id);
       const socketId = this.getSocketId(player.id);
 
-      console.log(`[GameEngine] Sending ${eventName} to player ${player.id}, socketId: ${socketId}`);
+      console.log(`[GameEngine] Sending ${eventName} to player ${player.id}, socketId: ${socketId}, phase in state: ${clientState.phase}`);
 
       if (socketId) {
         this.io.to(socketId).emit(eventName, clientState);
+      } else {
+        console.warn(`[GameEngine] WARNING: No socket for player ${player.id} during broadcast!`);
       }
     }
   }
