@@ -33,7 +33,7 @@ const gameCreationLocks = new Set<string>();
 
 // Disconnect timeout tracking for graceful reconnection
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
-const DISCONNECT_GRACE_PERIOD = 60000; // 60 seconds for in-game
+const DISCONNECT_GRACE_PERIOD = 300000; // 5 minutes for in-game (matches pre-game)
 const ROOM_GRACE_PERIOD = 300000; // 5 minutes for pre-game rooms
 
 // Helper to log debug events with full context (wrapped in try-catch to never break game flow)
