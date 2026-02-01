@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import { db, sessions } from '../db/index.js';
-import { eq, lt } from 'drizzle-orm';
+import { eq, lt, sql } from 'drizzle-orm';
 
 interface Session {
   playerId: string;
@@ -26,6 +26,18 @@ export async function initializeSessions(): Promise<void> {
   }
 
   try {
+    // Create sessions table if it doesn't exist
+    await db.execute(sql`
+      CREATE TABLE IF NOT EXISTS sessions (
+        token text PRIMARY KEY NOT NULL,
+        player_id text NOT NULL UNIQUE,
+        room_id text NOT NULL,
+        created_at timestamp DEFAULT now() NOT NULL,
+        last_activity timestamp DEFAULT now() NOT NULL
+      )
+    `);
+    console.log('[Sessions] Ensured sessions table exists');
+
     // Clean up expired sessions first
     const expirationTime = new Date(Date.now() - SESSION_TIMEOUT);
     await db.delete(sessions).where(lt(sessions.lastActivity, expirationTime));
