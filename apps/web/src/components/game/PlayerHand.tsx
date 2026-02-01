@@ -13,6 +13,13 @@ function truncateName(name: string): string {
   return name.slice(0, MAX_NAME_LENGTH) + '…';
 }
 
+interface DistributionState {
+  currentTarget: string | null;
+  selectedCards: Map<string, CardType>;
+  targetNames: Map<string, string>; // playerId -> playerName
+  onCardSelect: (card: CardType) => void;
+}
+
 interface PlayerHandProps {
   cards: CardType[];
   validActions: ValidAction[];
@@ -21,6 +28,7 @@ interface PlayerHandProps {
   onPlayCard: (card: CardType) => void;
   isMyTurn: boolean;
   declaredMarriages?: Suit[];
+  distributionState?: DistributionState;
 }
 
 // Hook to track screen size and width
@@ -53,6 +61,7 @@ export function PlayerHand({
   onPlayCard,
   isMyTurn,
   declaredMarriages = [],
+  distributionState,
 }: PlayerHandProps) {
   const { isMobile, width } = useScreenSize();
 
@@ -88,6 +97,29 @@ export function PlayerHand({
 
   const isMarriageCard = (card: CardType): boolean => {
     return marriageCards.has(`${card.suit}-${card.rank}`);
+  };
+
+  // Distribution mode helpers
+  const getCardAssignee = (card: CardType): string | null => {
+    if (!distributionState) return null;
+    let assignee: string | null = null;
+    distributionState.selectedCards.forEach((selectedCard, playerId) => {
+      if (selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
+        assignee = distributionState.targetNames.get(playerId) || null;
+      }
+    });
+    return assignee;
+  };
+
+  const isDistributionSelected = (card: CardType): boolean => {
+    if (!distributionState) return false;
+    let found = false;
+    distributionState.selectedCards.forEach((selectedCard) => {
+      if (selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
+        found = true;
+      }
+    });
+    return found;
   };
 
   // Sort cards by suit and rank, ensuring red/black alternation when possible
@@ -142,6 +174,14 @@ export function PlayerHand({
   };
 
   const handleCardClick = (card: CardType) => {
+    // Handle distribution mode
+    if (distributionState) {
+      if (distributionState.currentTarget) {
+        distributionState.onCardSelect(card);
+      }
+      return;
+    }
+
     if (!isMyTurn) return;
 
     if (isCardSelected(card)) {
@@ -193,6 +233,8 @@ export function PlayerHand({
         {sortedCards.map((card, index) => {
           const playable = isCardPlayable(card);
           const selected = isCardSelected(card);
+          const distributionAssignee = getCardAssignee(card);
+          const isDistSelected = isDistributionSelected(card);
 
           // Calculate position
           const angle = startAngle + (index / Math.max(cardCount - 1, 1)) * fanAngle;
@@ -204,6 +246,11 @@ export function PlayerHand({
             ease: [0.25, 0.1, 0.25, 1],
             delay: index * 0.02
           };
+
+          // Determine if card is playable/selectable
+          const isPlayableNow = distributionState
+            ? !!distributionState.currentTarget
+            : playable && isMyTurn;
 
           return (
             <motion.div
@@ -220,18 +267,27 @@ export function PlayerHand({
               style={{
                 position: 'absolute',
                 transformOrigin: 'bottom center',
-                zIndex: selected ? 100 : index,
+                zIndex: (distributionState ? isDistSelected : selected) ? 100 : index,
                 willChange: 'opacity, transform',
               }}
+              className="relative"
             >
               <Card
                 card={card}
-                isSelected={selected}
-                isPlayable={playable && isMyTurn}
+                isSelected={distributionState ? isDistSelected : selected}
+                isPlayable={isPlayableNow}
                 isMarriageCard={isMarriageCard(card)}
                 onClick={() => handleCardClick(card)}
                 size={isMobile ? 'md' : 'lg'}
               />
+              {distributionAssignee && (
+                <div
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
+                  title={distributionAssignee}
+                >
+                  → {truncateName(distributionAssignee)}
+                </div>
+              )}
             </motion.div>
           );
         })}

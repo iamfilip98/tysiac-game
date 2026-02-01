@@ -102,12 +102,55 @@ export function GameBoard() {
   // Track leave game modal
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
+  // Talon distribution state
+  const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
+  const [distributionCards, setDistributionCards] = useState<Map<string, CardType>>(new Map());
+
   // Reset confirmation state when phase changes
   useEffect(() => {
     if (gameState?.phase !== 'talonReveal') {
       setHasConfirmedTalon(false);
     }
   }, [gameState?.phase]);
+
+  // Reset distribution state when phase changes
+  useEffect(() => {
+    if (gameState?.phase !== 'talonDistribution') {
+      setDistributionTarget(null);
+      setDistributionCards(new Map());
+    }
+  }, [gameState?.phase]);
+
+  // Distribution card selection handler
+  const handleDistributionCardSelect = (card: CardType) => {
+    if (!distributionTarget) return;
+
+    const newSelected = new Map(distributionCards);
+
+    // Check if card is already selected for someone else
+    newSelected.forEach((selectedCard, pId) => {
+      if (selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
+        newSelected.delete(pId);
+      }
+    });
+
+    // Assign to current target
+    newSelected.set(distributionTarget, card);
+    setDistributionCards(newSelected);
+
+    // Auto-switch to next player without a card
+    const nextPlayer = otherPlayers.slice(0, 2).find((p) => !newSelected.has(p.id));
+    setDistributionTarget(nextPlayer?.id || null);
+  };
+
+  // Handle distribution submit
+  const handleDistributeSubmit = () => {
+    const distribution: { playerId: string; card: CardType }[] = [];
+    distributionCards.forEach((card, pId) => {
+      distribution.push({ playerId: pId, card });
+    });
+    distributeTalon(distribution);
+  };
 
   // Auto-confirm talon for spectating players (dealer in 4-player mode)
   useEffect(() => {
@@ -342,9 +385,11 @@ export function GameBoard() {
                 exit={{ opacity: 0, y: -20 }}
               >
                 <TalonDistributionPanel
-                  myHand={myHand}
                   otherPlayers={otherPlayers.slice(0, 2)}
-                  onDistribute={distributeTalon}
+                  selectedCards={distributionCards}
+                  currentTarget={distributionTarget}
+                  onSelectTarget={setDistributionTarget}
+                  onDistribute={handleDistributeSubmit}
                 />
               </motion.div>
             )}
@@ -392,6 +437,16 @@ export function GameBoard() {
             onPlayCard={playCard}
             isMyTurn={isMyTurn && phase === 'trickPlaying'}
             declaredMarriages={round?.declaredMarriages?.[playerId] || []}
+            distributionState={
+              phase === 'talonDistribution' && round?.bidWinner === playerId
+                ? {
+                    currentTarget: distributionTarget,
+                    selectedCards: distributionCards,
+                    targetNames: new Map(otherPlayers.slice(0, 2).map(p => [p.id, p.name])),
+                    onCardSelect: handleDistributionCardSelect,
+                  }
+                : undefined
+            }
           />
         )}
       </div>
