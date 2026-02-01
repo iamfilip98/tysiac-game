@@ -153,6 +153,28 @@
   animation: shimmer 2s linear infinite;
 }
 
+/* Gold shimmer animation for marriage cards */
+@keyframes goldShimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Sparkle animation for marriage card particles */
+@keyframes sparkle {
+  0%, 100% {
+    opacity: 0;
+    transform: scale(0);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
 /* Score display */
 .score-positive {
   @apply text-green-400;
@@ -215,5 +237,19 @@
 
   .playing-card:hover {
     transform: none;
+  }
+
+  /* Disable marriage card animations */
+  @keyframes goldShimmer {
+    0%, 100% {
+      background-position: 0 0;
+    }
+  }
+
+  @keyframes sparkle {
+    0%, 100% {
+      opacity: 0.5;
+      transform: scale(0.5);
+    }
   }
 }

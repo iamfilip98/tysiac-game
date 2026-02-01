@@ -93,9 +93,10 @@ export function Card({
       {/* Outer glow for marriage cards */}
       {isMarriageCard && (
         <div
-          className="absolute -inset-[3px] rounded-xl"
+          className="absolute -inset-[4px] rounded-xl"
           style={{
-            boxShadow: '0 0 12px 2px rgba(251, 191, 36, 0.6)',
+            boxShadow: '0 0 20px 4px rgba(212, 175, 55, 0.7), 0 0 40px 8px rgba(245, 231, 163, 0.3)',
+            border: '1px solid rgba(245, 231, 163, 0.5)',
           }}
           aria-hidden="true"
         />
@@ -128,12 +129,65 @@ export function Card({
         )}
         style={{ ...style, willChange: 'opacity, transform' }}
       >
-        {/* Full gold overlay for marriage cards */}
+        {/* Premium gold effect for marriage cards */}
         {isMarriageCard && (
-          <div
-            className="absolute inset-0 rounded-lg bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 opacity-85"
-            aria-hidden="true"
-          />
+          <>
+            {/* Base metallic gold gradient */}
+            <div
+              className="absolute inset-0 rounded-lg"
+              style={{
+                background: `linear-gradient(
+                  135deg,
+                  #d4af37 0%,
+                  #f5e7a3 15%,
+                  #d4af37 30%,
+                  #b8941f 45%,
+                  #d4af37 60%,
+                  #f5e7a3 75%,
+                  #d4af37 100%
+                )`,
+                opacity: 0.92,
+              }}
+              aria-hidden="true"
+            />
+            {/* Animated shimmer overlay */}
+            <div
+              className="absolute inset-0 rounded-lg overflow-hidden"
+              aria-hidden="true"
+            >
+              <div
+                className="absolute inset-0"
+                style={{
+                  background: `linear-gradient(
+                    110deg,
+                    transparent 20%,
+                    rgba(255, 255, 255, 0.4) 40%,
+                    rgba(255, 255, 255, 0.6) 50%,
+                    rgba(255, 255, 255, 0.4) 60%,
+                    transparent 80%
+                  )`,
+                  backgroundSize: '200% 100%',
+                  animation: 'goldShimmer 2.5s ease-in-out infinite',
+                }}
+              />
+            </div>
+            {/* Sparkle particles */}
+            <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className="absolute w-1 h-1 rounded-full bg-white"
+                  style={{
+                    top: `${15 + (i * 15)}%`,
+                    left: `${10 + (i * 16) % 80}%`,
+                    boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
+                    animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.2}s`,
+                  }}
+                />
+              ))}
+            </div>
+          </>
         )}
         {/* Card content */}
         <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
