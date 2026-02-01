@@ -476,7 +476,7 @@ export function GameBoard() {
           role="status"
           aria-live="assertive"
         >
-          <div className="px-4 py-2 bg-gold-500/20 border border-gold-500/50 rounded-full text-gold-400 text-sm font-medium">
+          <div className="px-4 py-2 bg-gold-500/20 border border-gold-500/50 rounded-lg text-gold-400 text-sm font-medium">
             Your turn - select a card to play
           </div>
         </motion.div>
