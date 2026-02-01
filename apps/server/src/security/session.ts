@@ -85,26 +85,24 @@ export async function createSession(playerId: string, roomId: string): Promise<s
   sessionMap.set(token, session);
   playerToSession.set(playerId, token);
 
-  // Persist to database (fire-and-forget with conflict handling)
+  // Persist to database (truly fire-and-forget - don't block room creation)
   if (db) {
-    try {
-      await db.insert(sessions).values({
+    db.insert(sessions).values({
+      token,
+      playerId,
+      roomId,
+      createdAt: new Date(now),
+      lastActivity: new Date(now),
+    }).onConflictDoUpdate({
+      target: sessions.playerId,
+      set: {
         token,
-        playerId,
         roomId,
-        createdAt: new Date(now),
         lastActivity: new Date(now),
-      }).onConflictDoUpdate({
-        target: sessions.playerId,
-        set: {
-          token,
-          roomId,
-          lastActivity: new Date(now),
-        },
-      });
-    } catch (error) {
+      },
+    }).catch((error) => {
       console.error('[Sessions] Failed to persist session to database:', error);
-    }
+    });
   }
 
   return token;
