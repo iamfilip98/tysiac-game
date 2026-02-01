@@ -28,6 +28,7 @@ export function useSocket() {
     setLastMarriageDeclared,
     setWykladanaData,
     setGameStatistics,
+    setPassedAt100Notification,
     reset: resetGame,
   } = useGameStore();
 
@@ -192,8 +193,8 @@ export function useSocket() {
       setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints, cards: data.cards });
     });
 
-    socket.on('game:playerPassedAt100', () => {
-      // Player passed at 100 - UI update handled via state update
+    socket.on('game:playerPassedAt100', (data: { playerId: string; playerName: string }) => {
+      setPassedAt100Notification({ playerName: data.playerName });
     });
 
     // Reconnection

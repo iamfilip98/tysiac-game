@@ -16,6 +16,8 @@ interface GameState {
   showWykladana: boolean;
   // Game end statistics
   gameStatistics: GameStatistics | null;
+  // Notification for player passed at 100
+  passedAt100Notification: { playerName: string } | null;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -29,6 +31,7 @@ interface GameState {
   setWykladanaData: (data: { playerName: string; bid: number; marriagePoints?: number; cards: Card[] } | null) => void;
   setShowWykladana: (show: boolean) => void;
   setGameStatistics: (statistics: GameStatistics | null) => void;
+  setPassedAt100Notification: (data: { playerName: string } | null) => void;
   reset: () => void;
 }
 
@@ -44,6 +47,7 @@ export const useGameStore = create<GameState>((set) => ({
   wykladanaData: null,
   showWykladana: false,
   gameStatistics: null,
+  passedAt100Notification: null,
 
   setGameState: (gameState) =>
     set({
@@ -84,6 +88,8 @@ export const useGameStore = create<GameState>((set) => ({
 
   setGameStatistics: (gameStatistics) => set({ gameStatistics }),
 
+  setPassedAt100Notification: (passedAt100Notification) => set({ passedAt100Notification }),
+
   reset: () =>
     set({
       gameState: null,
@@ -97,5 +103,6 @@ export const useGameStore = create<GameState>((set) => ({
       wykladanaData: null,
       showWykladana: false,
       gameStatistics: null,
+      passedAt100Notification: null,
     }),
 }));

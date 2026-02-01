@@ -22,7 +22,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 
     const variants = {
       primary: disabled
-        ? 'bg-gray-600 text-gray-400 border border-transparent'
+        ? 'bg-table-900 text-white/30 border border-table-700'
         : 'bg-gradient-to-r from-gold-500 to-gold-600 text-table-950 hover:from-gold-400 hover:to-gold-500 focus:ring-gold-500 shadow-lg hover:shadow-glow border border-transparent',
       secondary: disabled
         ? 'bg-table-900 text-white/30 border border-table-700'

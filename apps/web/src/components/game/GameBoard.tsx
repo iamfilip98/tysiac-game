@@ -13,6 +13,7 @@ import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultMod
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
+import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
 
@@ -33,6 +34,7 @@ function useIsMobile() {
 
 export function GameBoard() {
   const isMobile = useIsMobile();
+  const { showToast } = useToast();
   const { playerId } = useRoomStore();
   const {
     gameState,
@@ -46,8 +48,9 @@ export function GameBoard() {
     wykladanaData,
     showWykladana,
     gameStatistics,
+    passedAt100Notification,
   } = useGameStore();
-  const { selectCard, setShowWykladana } = useGameStore();
+  const { selectCard, setShowWykladana, setPassedAt100Notification } = useGameStore();
   const { setShowRoundResult, setShowGameEnd } = useGameStore();
 
   const {
@@ -121,6 +124,14 @@ export function GameBoard() {
       setDistributionCards(new Map());
     }
   }, [gameState?.phase]);
+
+  // Show toast when player passes at 100
+  useEffect(() => {
+    if (passedAt100Notification) {
+      showToast(`${passedAt100Notification.playerName} passed at 100 - starting new round`, 'info');
+      setPassedAt100Notification(null);
+    }
+  }, [passedAt100Notification, showToast, setPassedAt100Notification]);
 
   // Distribution card selection handler
   const handleDistributionCardSelect = (card: CardType) => {
