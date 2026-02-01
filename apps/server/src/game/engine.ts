@@ -668,23 +668,6 @@ export class GameEngine {
         this.broadcastState();
         this.promptPlayOrPassDecision();
 
-        // Add safeguard timer for playOrPassDecision phase - auto-play if stuck for 30 seconds
-        this.clearPlayOrPassTimer();
-        this.playOrPassTimer = this.safeSetTimeout(() => {
-          if (this.game.phase === 'playOrPassDecision') {
-            const currentRound = this.game.currentRound!;
-            logDebug({
-              gameId: this.game.id,
-              roomId: this.roomId,
-              playerId: currentRound.bidWinner,
-              eventType: 'playOrPass:safeguardTrigger',
-              eventData: { reason: 'timeout_30s', bidWinner: currentRound.bidWinner },
-              result: 'success',
-            });
-            this.handlePlayOrPass(currentRound.bidWinner!, 'play');
-          }
-        }, 30000);
-
         return;
       }
 

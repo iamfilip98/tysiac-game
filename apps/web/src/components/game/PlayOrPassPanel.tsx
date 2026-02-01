@@ -45,7 +45,7 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn }: PlayOrPassPanelPro
             onClick={onPass}
             className="px-8"
           >
-            Pass (No Risk)
+            Pass
           </Button>
           <Button
             variant="primary"
