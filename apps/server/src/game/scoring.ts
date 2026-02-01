@@ -92,6 +92,7 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
           // Reset barrel attempts since they fell off (score dropped below 800)
           if (newTotalScore < BARREL_THRESHOLD) {
             currentScore.barrelAttempts = 0;
+            fellOffBarrel = true;
           }
         } else {
           // Made bid but didn't reach 1000 while on barrel

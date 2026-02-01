@@ -106,7 +106,7 @@ export function RoundResultModal({
                 {pr.wasOnBarrel && (
                   <div className="mt-1 text-xs text-amber-400">
                     {pr.fellOffBarrel
-                      ? '🛢️ Fell off the barrel! Score reset to 800'
+                      ? '🛢️ Fell off the barrel!'
                       : '🛢️ Still on the barrel'}
                   </div>
                 )}
