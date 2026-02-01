@@ -68,18 +68,25 @@ export function GameBoard() {
   const playerCount = gameState?.players.length || 3;
 
   // Order other players: left = next player (clockwise), right = previous player
-  // In 4-player mode, there are 3 other players (left, top, right)
+  // In 4-player mode, only 3 players are active (dealer sits out), so use same layout as 3-player
   const otherPlayers = useMemo(() => {
     if (!gameState || !playerId) return [];
     const myIndex = gameState.players.findIndex((p) => p.id === playerId);
     if (myIndex === -1) return [];
 
     if (gameState.players.length === 4) {
-      // 4-player layout: left, top, right
-      const leftPlayer = gameState.players[(myIndex + 1) % 4];
-      const topPlayer = gameState.players[(myIndex + 2) % 4];
-      const rightPlayer = gameState.players[(myIndex + 3) % 4];
-      return [leftPlayer, topPlayer, rightPlayer];
+      const dealerId = gameState.round?.dealer;
+
+      // Collect other players in clockwise order, excluding dealer
+      const otherActive: typeof gameState.players = [];
+      for (let i = 1; i <= 3; i++) {
+        const player = gameState.players[(myIndex + i) % 4];
+        if (player.id !== dealerId) {
+          otherActive.push(player);
+        }
+      }
+      // Returns 2 players for active player, 3 players for spectating dealer
+      return otherActive;
     } else {
       // 3-player layout: left, right
       const leftPlayer = gameState.players[(myIndex + 1) % 3];
@@ -192,35 +199,17 @@ export function GameBoard() {
         )}
       </div>
 
-      {/* Top opponent (only in 4-player mode) */}
-      {playerCount === 4 && otherPlayers[1] && (
-        <div className={cn(
-          'absolute z-10 left-1/2 -translate-x-1/2',
-          isMobile ? 'top-32' : 'top-36'
-        )}>
-          <OpponentHand
-            cardCount={getOpponentHandSize(otherPlayers[1].id)}
-            position="left"
-            playerName={otherPlayers[1].name}
-            isCurrentTurn={
-              round?.currentTrick?.currentPlayer === otherPlayers[1].id
-            }
-          />
-        </div>
-      )}
-
       <div className={cn(
         'absolute z-10',
         isMobile ? 'top-20 right-2' : 'top-24 right-8'
       )}>
-        {/* In 4-player mode, right player is otherPlayers[2], in 3-player it's otherPlayers[1] */}
-        {(playerCount === 4 ? otherPlayers[2] : otherPlayers[1]) && (
+        {otherPlayers[1] && (
           <OpponentHand
-            cardCount={getOpponentHandSize(playerCount === 4 ? otherPlayers[2].id : otherPlayers[1].id)}
+            cardCount={getOpponentHandSize(otherPlayers[1].id)}
             position="right"
-            playerName={playerCount === 4 ? otherPlayers[2].name : otherPlayers[1].name}
+            playerName={otherPlayers[1].name}
             isCurrentTurn={
-              round?.currentTrick?.currentPlayer === (playerCount === 4 ? otherPlayers[2].id : otherPlayers[1].id)
+              round?.currentTrick?.currentPlayer === otherPlayers[1].id
             }
           />
         )}
@@ -286,8 +275,12 @@ export function GameBoard() {
             >
               <TrickPile
                 cards={round.currentTrick.cards}
-                players={gameState.players}
-                currentPlayerId={playerId}
+                players={
+                  playerCount === 4
+                    ? gameState.players.filter(p => p.id !== round?.dealer)
+                    : gameState.players
+                }
+                currentPlayerId={isSpectating ? otherPlayers[0]?.id : playerId}
                 marriageCard={lastMarriageDeclared ? { suit: lastMarriageDeclared.suit } : null}
               />
             </motion.div>
@@ -347,9 +340,7 @@ export function GameBoard() {
               >
                 <TalonDistributionPanel
                   myHand={myHand}
-                  otherPlayers={playerCount === 4
-                    ? otherPlayers.filter(p => p.id !== round?.dealer)
-                    : otherPlayers}
+                  otherPlayers={otherPlayers.slice(0, 2)}
                   onDistribute={distributeTalon}
                 />
               </motion.div>
@@ -358,24 +349,21 @@ export function GameBoard() {
         </AnimatePresence>
       </div>
 
-      {/* Player's hand or Spectating indicator */}
+      {/* Player's hand or Third active player (when spectating) */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
         isMobile ? 'bottom-2' : 'bottom-4'
       )}>
         {isSpectating ? (
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-table-900 border-2 border-purple-500 rounded-xl px-12 py-2 sm:px-20 sm:py-3 text-center shadow-lg min-w-[300px] sm:min-w-[500px]"
-          >
-            <div className="text-purple-400 font-bold text-base sm:text-lg">
-              Spectating This Round
-            </div>
-            <p className="text-white/70 text-xs sm:text-sm">
-              You are the dealer and sit out this round
-            </p>
-          </motion.div>
+          // Show third active player at bottom center when spectating
+          otherPlayers[2] && (
+            <OpponentHand
+              cardCount={getOpponentHandSize(otherPlayers[2].id)}
+              position="left"
+              playerName={otherPlayers[2].name}
+              isCurrentTurn={round?.currentTrick?.currentPlayer === otherPlayers[2].id}
+            />
+          )
         ) : (
           <PlayerHand
             cards={myHand}

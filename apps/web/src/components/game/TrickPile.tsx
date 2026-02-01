@@ -32,7 +32,13 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard }: Tri
 
   // Position cards based on who played them relative to current player
   const getCardPosition = (playerId: string) => {
-    const currentIndex = players.findIndex((p) => p.id === currentPlayerId);
+    let currentIndex = players.findIndex((p) => p.id === currentPlayerId);
+
+    // If viewer not in players (spectating), use first player as reference
+    if (currentIndex === -1) {
+      currentIndex = 0;
+    }
+
     const playerIndex = players.findIndex((p) => p.id === playerId);
     const relativePosition = (playerIndex - currentIndex + 3) % 3;
 
