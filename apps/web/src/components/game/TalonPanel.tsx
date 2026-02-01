@@ -139,6 +139,7 @@ export function TalonDistributionPanel({
             disabled={!canSubmit}
             glow={canSubmit}
             size="md"
+            className="min-w-[90px] sm:min-w-[100px]"
           >
             Confirm
           </Button>
