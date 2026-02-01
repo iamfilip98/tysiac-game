@@ -90,12 +90,12 @@ export function Card({
 
   return (
     <div className="relative">
-      {/* Solid gold border for marriage cards */}
+      {/* Outer glow for marriage cards */}
       {isMarriageCard && (
         <div
-          className="absolute -inset-[3px] rounded-xl bg-gradient-to-br from-yellow-400 via-gold-400 to-yellow-500"
+          className="absolute -inset-[3px] rounded-xl"
           style={{
-            boxShadow: '0 0 12px 2px rgba(251, 191, 36, 0.6), inset 0 0 4px rgba(255, 255, 255, 0.3)',
+            boxShadow: '0 0 12px 2px rgba(251, 191, 36, 0.6)',
           }}
           aria-hidden="true"
         />
@@ -117,7 +117,7 @@ export function Card({
         aria-label={`${cardDescription}${isSelected ? ', selected' : ''}${isPlayable ? '' : ', not playable'}${isMarriageCard ? ', marriage available' : ''}`}
         aria-pressed={isInteractive ? isSelected : undefined}
         className={cn(
-          'playing-card relative',
+          'playing-card relative overflow-hidden',
           color === 'red' ? 'red' : 'black',
           sizeClasses[size],
           isPlayable && 'cursor-pointer ring-2 ring-green-500',
@@ -128,6 +128,13 @@ export function Card({
         )}
         style={{ ...style, willChange: 'opacity, transform' }}
       >
+        {/* Full gold overlay for marriage cards */}
+        {isMarriageCard && (
+          <div
+            className="absolute inset-0 rounded-lg bg-gradient-to-br from-yellow-300 via-amber-400 to-yellow-500 opacity-85"
+            aria-hidden="true"
+          />
+        )}
         {/* Card content */}
         <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
           {/* Center rank and suit */}

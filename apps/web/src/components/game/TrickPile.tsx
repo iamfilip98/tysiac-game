@@ -87,6 +87,27 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full bg-table-800/50 border border-table-600/30" />
 
+      {/* Gold sparkle effect when marriage declared */}
+      {marriageCard && (
+        <motion.div
+          className="absolute inset-4 rounded-full pointer-events-none"
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{
+            scale: [1, 1.15, 1],
+            opacity: [0.7, 0.3, 0.7],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+          style={{
+            background: 'radial-gradient(circle, rgba(251,191,36,0.4) 0%, transparent 70%)',
+            boxShadow: '0 0 25px 8px rgba(251,191,36,0.5)',
+          }}
+        />
+      )}
+
       {/* Cards */}
       <AnimatePresence>
         {cards.map(({ playerId, card }, index) => {
