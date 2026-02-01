@@ -21,8 +21,8 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     // Get player's hand (empty if spectating)
     myHand = isSpectating ? [] : (round.players[playerId]?.hand || []);
 
-    // Talon visibility
-    if (game.phase === 'talonReveal' || game.phase === 'talonDistribution' || game.phase === 'playOrPassDecision') {
+    // Talon visibility (not during playOrPassDecision - cards are in hand then)
+    if (game.phase === 'talonReveal' || game.phase === 'talonDistribution') {
       const isBidWinner = round.bidWinner === playerId;
       const bidWasAt100 = round.finalBid === 100;
 

@@ -652,6 +652,11 @@ export class GameEngine {
 
       // If bid was exactly 100, bidder needs to decide whether to play or pass
       if (round.finalBid === 100) {
+        // Give talon to bid winner before the decision so they can see it in their hand
+        const bidWinnerId = round.bidWinner!;
+        round.players[bidWinnerId].hand.push(...round.talon);
+        round.cardsToDistribute = [...round.talon];
+
         logDebug({
           gameId: this.game.id,
           roomId: this.roomId,
@@ -661,6 +666,7 @@ export class GameEngine {
             to: 'playOrPassDecision',
             bidWinner: round.bidWinner,
             finalBid: round.finalBid,
+            talonAddedToHand: true,
           },
           result: 'success',
         });
@@ -817,9 +823,12 @@ export class GameEngine {
     const round = this.game.currentRound!;
     const bidWinnerId = round.bidWinner!;
 
-    // Add talon to bid winner's hand
-    round.players[bidWinnerId].hand.push(...round.talon);
-    round.cardsToDistribute = [...round.talon];
+    // Only add talon if not already added (i.e., bid was > 100)
+    // When bid is exactly 100, talon was already added in checkTalonConfirmations
+    if (round.cardsToDistribute.length === 0) {
+      round.players[bidWinnerId].hand.push(...round.talon);
+      round.cardsToDistribute = [...round.talon];
+    }
 
     this.safeSetTimeout(() => {
       if (this.isCleanedUp) return;

@@ -273,8 +273,8 @@ export function GameBoard() {
             </motion.div>
           )}
 
-          {/* Talon reveal or during play/pass decision */}
-          {(phase === 'talonReveal' || phase === 'playOrPassDecision') && talon && (
+          {/* Talon reveal (not during playOrPassDecision - cards are in hand then) */}
+          {phase === 'talonReveal' && talon && (
             <motion.div
               key="talon-reveal"
               initial={{ opacity: 0 }}

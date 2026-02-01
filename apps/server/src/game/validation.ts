@@ -25,36 +25,43 @@ export function getValidCards(
   }
 
   const leadSuit = trick.leadSuit!;
+  const leadCard = trick.cards[0].card;
 
   // Get highest card played so far
   const highestCard = getHighestCardInTrick(trick.cards.map(c => c.card), leadSuit, trumpSuit);
 
-  // All players must follow standard rules: follow suit if possible, beat if possible
-  return getCardsFollowingStandardRules(hand, leadSuit, trumpSuit, highestCard);
+  // Check if lead card is still winning
+  const leadIsWinning =
+    highestCard.suit === leadCard.suit &&
+    highestCard.rank === leadCard.rank;
+
+  // Only beat the lead if it's currently winning; otherwise just follow suit
+  const cardToBeat = leadIsWinning ? leadCard : null;
+
+  return getCardsFollowingStandardRules(hand, leadSuit, trumpSuit, cardToBeat);
 }
 
 function getCardsFollowingStandardRules(
   hand: Card[],
   leadSuit: Suit,
   trumpSuit: Suit | null,
-  highestCard: Card
+  cardToBeat: Card | null  // null = just follow suit (lead already beaten)
 ): Card[] {
   const cardsInSuit = hand.filter(c => c.suit === leadSuit);
-  const trumpCards = trumpSuit && trumpSuit !== leadSuit
-    ? hand.filter(c => c.suit === trumpSuit)
-    : [];
 
   // Must follow suit if possible
   if (cardsInSuit.length > 0) {
-    // Must beat if possible
-    const beatingCards = cardsInSuit.filter(c =>
-      canBeat(c, highestCard, leadSuit, trumpSuit)
-    );
+    // Only need to beat if there's a card to beat (lead is still winning)
+    if (cardToBeat) {
+      const beatingCards = cardsInSuit.filter(c =>
+        canBeat(c, cardToBeat, leadSuit, trumpSuit)
+      );
 
-    if (beatingCards.length > 0) {
-      return beatingCards;
+      if (beatingCards.length > 0) {
+        return beatingCards;
+      }
     }
-    // Can't beat, must still follow suit
+    // No card to beat OR can't beat - just follow suit
     return cardsInSuit;
   }
 
