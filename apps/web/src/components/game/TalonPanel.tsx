@@ -8,7 +8,7 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn } from '@/lib/utils';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
 
-const MAX_NAME_LENGTH = 10;
+const MAX_NAME_LENGTH = 7;
 
 function truncateName(name: string): string {
   if (name.length <= MAX_NAME_LENGTH) return name;

@@ -7,6 +7,13 @@ import { cn } from '@/lib/utils';
 import type { RoundResult, GameStatistics } from '@tysiac/shared';
 import { AwardCard } from './AwardCard';
 
+const MAX_NAME_LENGTH = 7;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 interface RoundResultModalProps {
   result: RoundResult;
   players: { id: string; name: string }[];
@@ -40,7 +47,7 @@ export function RoundResultModal({
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-white/60">Bid Winner</div>
-              <div className="text-lg font-bold text-white">{bidderName}</div>
+              <div className="text-lg font-bold text-white" title={bidderName}>{truncateName(bidderName)}</div>
             </div>
             <div className="text-right">
               <div className="text-sm text-white/60">Bid</div>
@@ -75,8 +82,8 @@ export function RoundResultModal({
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-white">
-                    {player?.name || 'Unknown'}
+                  <span className="font-medium text-white" title={player?.name}>
+                    {truncateName(player?.name || 'Unknown')}
                     {isBidder && (
                       <span className="ml-2 text-xs text-gold-400">(Bidder)</span>
                     )}
@@ -242,8 +249,9 @@ export function GameEndModal({
                       'font-medium',
                       isMe ? 'text-gold-400' : 'text-white'
                     )}
+                    title={player.name}
                   >
-                    {player.name}
+                    {truncateName(player.name)}
                     {isMe && ' (You)'}
                   </span>
                 </div>
@@ -276,7 +284,7 @@ export function GameEndModal({
                 <AwardCard
                   key={award.id}
                   award={award}
-                  playerName={getPlayerName(award.playerId)}
+                  playerName={truncateName(getPlayerName(award.playerId))}
                   index={index}
                 />
               ))}

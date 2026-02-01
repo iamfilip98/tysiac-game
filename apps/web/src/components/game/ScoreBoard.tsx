@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { getSuitSymbol } from '@/lib/utils';
 import type { Suit } from '@tysiac/shared';
 
-const MAX_NAME_LENGTH = 8;
+const MAX_NAME_LENGTH = 7;
 
 function truncateName(name: string): string {
   if (name.length <= MAX_NAME_LENGTH) return name;

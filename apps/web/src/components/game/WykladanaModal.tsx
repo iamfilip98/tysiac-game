@@ -6,6 +6,13 @@ import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { Card } from './Card';
 import type { Card as CardType } from '@tysiac/shared';
 
+const MAX_NAME_LENGTH = 7;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 interface WykladanaModalProps {
   playerName: string;
   bid: number;
@@ -122,8 +129,9 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
               className="text-xl sm:text-2xl text-white font-medium mb-4"
+              title={playerName}
             >
-              {playerName}
+              {truncateName(playerName)}
             </motion.p>
 
             {/* Cards display */}
