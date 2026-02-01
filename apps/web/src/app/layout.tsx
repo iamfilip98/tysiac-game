@@ -9,6 +9,15 @@ export const metadata: Metadata = {
   title: 'Tysiąc - Polish Card Game',
   description: 'Play the classic Polish card game Tysiąc (1000) online with friends or AI opponents',
   keywords: ['card game', 'Polish', 'Tysiąc', '1000', 'multiplayer', 'online'],
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Tysiąc',
+  },
+  icons: {
+    icon: '/icon.svg',
+    apple: '/apple-icon.png',
+  },
 };
 
 export default function RootLayout({
