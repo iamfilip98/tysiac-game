@@ -221,6 +221,53 @@ export function PlayerHand({
   const fanAngle = isMobile ? 0 : Math.min(cardCount * 3, 24);
   const startAngle = -fanAngle / 2;
 
+  // Mobile distribution mode: horizontal scroll layout for easier card selection
+  if (distributionState && isMobile) {
+    return (
+      <div
+        className="overflow-x-auto flex gap-2 pb-4 px-4 snap-x snap-mandatory"
+        style={{
+          width: '100vw',
+          marginLeft: '-16px',
+          scrollbarWidth: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+        role="group"
+        aria-label={`Your hand: ${cardCount} cards. Select cards to distribute.`}
+      >
+        {sortedCards.map((card) => {
+          const distributionAssignee = getCardAssignee(card);
+          const isDistSelected = isDistributionSelected(card);
+          const isSelectableNow = !!distributionState.currentTarget;
+
+          return (
+            <div
+              key={`${card.suit}-${card.rank}`}
+              className="flex-shrink-0 snap-center relative"
+            >
+              <Card
+                card={card}
+                isSelected={isDistSelected}
+                isPlayable={isSelectableNow}
+                isMarriageCard={isMarriageCard(card)}
+                onClick={() => handleCardClick(card)}
+                size="md"
+              />
+              {distributionAssignee && (
+                <div
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
+                  title={distributionAssignee}
+                >
+                  → {truncateName(distributionAssignee)}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(

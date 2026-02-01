@@ -109,7 +109,7 @@ export function Card({
           y: isSelected ? -16 : 0,
         }}
         whileHover={isPlayable && !isMobile ? { y: -8 } : undefined}
-        whileTap={isPlayable ? { scale: 0.97 } : undefined}
+        whileTap={isPlayable && !isMobile ? { scale: 0.97 } : undefined}
         transition={transition}
         onClick={isInteractive ? onClick : undefined}
         onKeyDown={isInteractive ? handleKeyDown : undefined}
@@ -125,6 +125,7 @@ export function Card({
           !isPlayable && 'opacity-50 cursor-not-allowed',
           isSelected && 'ring-2 ring-gold-400 shadow-glow',
           isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
+          isMobile && isPlayable && 'active:scale-[0.97]',
           className
         )}
         style={{ ...style, willChange: 'opacity, transform' }}
@@ -150,43 +151,47 @@ export function Card({
               }}
               aria-hidden="true"
             />
-            {/* Animated shimmer overlay */}
-            <div
-              className="absolute inset-0 rounded-lg overflow-hidden"
-              aria-hidden="true"
-            >
+            {/* Animated shimmer overlay - disabled on mobile for performance */}
+            {!isMobile && (
               <div
-                className="absolute inset-0"
-                style={{
-                  background: `linear-gradient(
-                    110deg,
-                    transparent 20%,
-                    rgba(255, 255, 255, 0.4) 40%,
-                    rgba(255, 255, 255, 0.6) 50%,
-                    rgba(255, 255, 255, 0.4) 60%,
-                    transparent 80%
-                  )`,
-                  backgroundSize: '200% 100%',
-                  animation: 'goldShimmer 2.5s ease-in-out infinite',
-                }}
-              />
-            </div>
-            {/* Sparkle particles */}
-            <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
-              {[...Array(6)].map((_, i) => (
+                className="absolute inset-0 rounded-lg overflow-hidden"
+                aria-hidden="true"
+              >
                 <div
-                  key={i}
-                  className="absolute w-1 h-1 rounded-full bg-white"
+                  className="absolute inset-0"
                   style={{
-                    top: `${15 + (i * 15)}%`,
-                    left: `${10 + (i * 16) % 80}%`,
-                    boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
-                    animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
-                    animationDelay: `${i * 0.2}s`,
+                    background: `linear-gradient(
+                      110deg,
+                      transparent 20%,
+                      rgba(255, 255, 255, 0.4) 40%,
+                      rgba(255, 255, 255, 0.6) 50%,
+                      rgba(255, 255, 255, 0.4) 60%,
+                      transparent 80%
+                    )`,
+                    backgroundSize: '200% 100%',
+                    animation: 'goldShimmer 2.5s ease-in-out infinite',
                   }}
                 />
-              ))}
-            </div>
+              </div>
+            )}
+            {/* Sparkle particles - disabled on mobile for performance */}
+            {!isMobile && (
+              <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
+                {[...Array(6)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-white"
+                    style={{
+                      top: `${15 + (i * 15)}%`,
+                      left: `${10 + (i * 16) % 80}%`,
+                      boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
+                      animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </>
         )}
         {/* Card content */}
