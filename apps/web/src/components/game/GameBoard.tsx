@@ -352,6 +352,20 @@ export function GameBoard() {
         </AnimatePresence>
       </div>
 
+      {/* Spectating indicator for dealer in 4-player mode */}
+      {isSpectating && (
+        <div className={cn(
+          'absolute left-1/2 -translate-x-1/2 z-20',
+          isMobile ? 'bottom-32' : 'bottom-36'
+        )}>
+          <div className="px-4 py-2 bg-table-800/90 border border-amber-500/50 rounded-lg text-center">
+            <div className="text-amber-400 text-sm font-medium">
+              You are the dealer — spectating this round
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Player's hand or Third active player (when spectating) */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
