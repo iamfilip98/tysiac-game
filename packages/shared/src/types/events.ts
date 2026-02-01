@@ -12,6 +12,7 @@ export interface Room {
   isPrivate: boolean;
   gameId: string | null;
   createdAt: number;
+  previousWinner?: string | null;
 }
 
 export interface RoomPlayer {

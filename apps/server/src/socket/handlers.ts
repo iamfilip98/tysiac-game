@@ -91,6 +91,13 @@ function withRateLimit<T>(
 }
 
 function cleanupGame(gameId: string, roomId: string): void {
+  const game = gameService.getGame(gameId);
+
+  // Save winner for next game (so they get left-of-dealer position)
+  if (game?.winner) {
+    roomService.setPreviousWinner(roomId, game.winner);
+  }
+
   const engine = gameEngines.get(gameId);
   if (engine) {
     engine.cleanup();
@@ -362,8 +369,24 @@ export function setupSocketHandlers(io: TypedServer) {
           // Set lock
           gameCreationLocks.add(room.id);
 
+          // Reorder players if there's a previous winner still in the room
+          let players = room.players.map(p => ({ id: p.id, name: p.name, isAI: p.isAI }));
+
+          if (room.previousWinner) {
+            const winnerIndex = players.findIndex(p => p.id === room.previousWinner);
+
+            if (winnerIndex !== -1) {
+              // Rotate array so winner ends up at index 1 (left of dealer)
+              const n = players.length;
+              const rotation = (winnerIndex - 1 + n) % n;
+              players = [...players.slice(rotation), ...players.slice(0, rotation)];
+              console.log('[room:startGame] Reordered players for previous winner', { previousWinner: room.previousWinner, newOrder: players.map(p => p.id) });
+            }
+
+            roomService.clearPreviousWinner(room.id);
+          }
+
           // Create game
-          const players = room.players.map(p => ({ id: p.id, name: p.name, isAI: p.isAI }));
           const game = gameService.createGame(room.id, players);
           roomService.setGameId(room.id, game.id);
 

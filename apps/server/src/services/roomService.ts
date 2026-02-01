@@ -214,6 +214,20 @@ export function clearGameId(roomId: string): void {
   }
 }
 
+export function setPreviousWinner(roomId: string, winnerId: string): void {
+  const room = rooms.get(roomId);
+  if (room) {
+    room.previousWinner = winnerId;
+  }
+}
+
+export function clearPreviousWinner(roomId: string): void {
+  const room = rooms.get(roomId);
+  if (room) {
+    room.previousWinner = null;
+  }
+}
+
 export function replacePlayerWithAI(roomId: string, playerId: string): Room | null {
   const room = rooms.get(roomId);
   if (!room) return null;
