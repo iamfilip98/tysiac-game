@@ -207,9 +207,10 @@ export function clearGameId(roomId: string): void {
   const room = rooms.get(roomId);
   if (room) {
     room.gameId = null;
-    // Reset ready state
+    // Keep human players ready for immediate "Play Again"
+    // AI players are always ready
     room.players.forEach(p => {
-      if (!p.isAI) p.isReady = false;
+      if (!p.isAI) p.isReady = true;
     });
   }
 }

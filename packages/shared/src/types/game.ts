@@ -59,6 +59,7 @@ export interface RoundState {
   isDealerSittingOut: boolean;
   dealerMarriagePoints: number;
   talonMarriages: Suit[];
+  talonAces?: number; // Number of aces in talon (for 4-player dealer scoring)
 }
 
 // Player scores
@@ -94,6 +95,10 @@ export interface GameState {
   winner: string | null; // Player ID of winner
   createdAt: number;
   updatedAt: number;
+  // Pause state
+  isPaused?: boolean;
+  pausedAt?: number;
+  pausedBy?: string;
 }
 
 // Initial player score

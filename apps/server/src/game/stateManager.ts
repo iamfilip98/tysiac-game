@@ -80,6 +80,10 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     talon,
     cardsToDistribute,
     winner: game.winner,
+    // Pause state
+    isPaused: game.isPaused,
+    pausedAt: game.pausedAt,
+    pausedBy: game.pausedBy,
   };
 }
 

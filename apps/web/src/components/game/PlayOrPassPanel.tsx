@@ -8,9 +8,11 @@ interface PlayOrPassPanelProps {
   onPlay: () => void;
   onPass: () => void;
   isMyTurn: boolean;
+  bidAmount?: number;
+  playerCount?: number;
 }
 
-export function PlayOrPassPanel({ onPlay, onPass, isMyTurn }: PlayOrPassPanelProps) {
+export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, playerCount = 3 }: PlayOrPassPanelProps) {
   if (!isMyTurn) {
     return (
       <motion.div
@@ -23,6 +25,11 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn }: PlayOrPassPanelPro
     );
   }
 
+  const isNoPenalty = bidAmount === 100;
+  // Calculate points per player: 120 distributed among active players minus bidder
+  // In 4-player mode, dealer sits out, so 2 active opponents. In 3-player, 2 opponents.
+  const pointsPerOpponent = playerCount === 4 ? 60 : 60;
+
   return (
     <ElectricBorder active color="#fbbf24">
       <motion.div
@@ -31,13 +38,15 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn }: PlayOrPassPanelPro
         className="p-6 bg-table-900/90 rounded-xl"
       >
         <h3 className="text-xl font-bold text-gold-400 text-center mb-2">
-          You won the bid at 100
+          You won the bid at {bidAmount}
         </h3>
         <p className="text-white/70 text-center mb-4">
           You've seen the talon. Do you want to play this round?
         </p>
         <p className="text-white/50 text-sm text-center mb-6">
-          Passing means no points lost or gained, moving to the next round.
+          {isNoPenalty
+            ? 'Throwing means no points lost or gained, moving to the next round.'
+            : `Throwing: you lose ${bidAmount} points, others gain +${pointsPerOpponent} each.`}
         </p>
         <div className="flex gap-4 justify-center">
           <Button
@@ -45,7 +54,7 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn }: PlayOrPassPanelPro
             onClick={onPass}
             className="px-8"
           >
-            Pass
+            {isNoPenalty ? 'Throw' : `Throw (-${bidAmount})`}
           </Button>
           <Button
             variant="primary"

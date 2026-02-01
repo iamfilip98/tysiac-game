@@ -263,9 +263,10 @@ export class GameEngine {
       validDeal = hands.every(hand => isHandValid(hand));
     }
 
-    // Detect talon marriages for dealer scoring (4-player mode)
+    // Detect talon marriages and aces for dealer scoring (4-player mode)
     const talonMarriages: Suit[] = [];
     let dealerMarriagePoints = 0;
+    let talonAces = 0;
     if (is4Player) {
       const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
       for (const suit of suits) {
@@ -276,6 +277,9 @@ export class GameEngine {
           dealerMarriagePoints += MARRIAGE_VALUES[suit];
         }
       }
+      // Count aces in talon - each ace gives dealer 50 points
+      talonAces = talon.filter(c => c.rank === 'A').length;
+      dealerMarriagePoints += talonAces * 50;
     }
 
     // Create player round states
@@ -318,6 +322,7 @@ export class GameEngine {
       isDealerSittingOut: is4Player,
       dealerMarriagePoints,
       talonMarriages,
+      talonAces: is4Player ? talonAces : undefined,
     };
 
     this.game.phase = 'dealing';
@@ -666,35 +671,28 @@ export class GameEngine {
 
       const round = this.game.currentRound!;
 
-      // If bid was exactly 100, bidder needs to decide whether to play or pass
-      if (round.finalBid === 100) {
-        // Give talon to bid winner before the decision so they can see it in their hand
-        const bidWinnerId = round.bidWinner!;
-        round.players[bidWinnerId].hand.push(...round.talon);
-        round.cardsToDistribute = [...round.talon];
+      // Bidder always gets the option to play or throw (pass)
+      // Give talon to bid winner before the decision so they can see it in their hand
+      const bidWinnerId = round.bidWinner!;
+      round.players[bidWinnerId].hand.push(...round.talon);
+      round.cardsToDistribute = [...round.talon];
 
-        logDebug({
-          gameId: this.game.id,
-          roomId: this.roomId,
-          eventType: 'phase:transition',
-          eventData: {
-            from: 'talonReveal',
-            to: 'playOrPassDecision',
-            bidWinner: round.bidWinner,
-            finalBid: round.finalBid,
-            talonAddedToHand: true,
-          },
-          result: 'success',
-        });
-        this.game.phase = 'playOrPassDecision';
-        this.broadcastState();
-        this.promptPlayOrPassDecision();
-
-        return;
-      }
-
-      // Otherwise proceed directly to talon distribution
-      this.proceedToTalonDistribution();
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        eventType: 'phase:transition',
+        eventData: {
+          from: 'talonReveal',
+          to: 'playOrPassDecision',
+          bidWinner: round.bidWinner,
+          finalBid: round.finalBid,
+          talonAddedToHand: true,
+        },
+        result: 'success',
+      });
+      this.game.phase = 'playOrPassDecision';
+      this.broadcastState();
+      this.promptPlayOrPassDecision();
     }
   }
 
@@ -816,12 +814,64 @@ export class GameEngine {
     if (playerId !== round.bidWinner) return;
 
     if (decision === 'pass') {
-      // Player chose to pass - no points change, start new round
       const player = this.game.players.find(p => p.id === playerId);
-      this.io.to(this.roomId).emit('game:playerPassedAt100', {
-        playerId,
-        playerName: player?.name || 'Unknown',
-      });
+      const bidAmount = round.finalBid;
+
+      if (bidAmount === 100) {
+        // At 100: no penalty, just emit passed event
+        this.io.to(this.roomId).emit('game:playerPassedAt100', {
+          playerId,
+          playerName: player?.name || 'Unknown',
+        });
+      } else {
+        // At >100: bidder loses bid amount, 120 points distributed to others
+        // Deduct bid amount from bidder
+        this.game.scores[playerId].totalScore -= bidAmount;
+        this.game.scores[playerId].roundScores.push(-bidAmount);
+
+        // Get active players (exclude dealer in 4-player mode)
+        const activePlayers = round.isDealerSittingOut
+          ? this.game.players.filter(p => p.id !== round.dealer)
+          : this.game.players;
+
+        // Other active players (exclude the bidder)
+        const otherActivePlayers = activePlayers.filter(p => p.id !== playerId);
+        const pointsPerPlayer = Math.floor(120 / otherActivePlayers.length);
+
+        // Track score changes for the event
+        const scoreChanges: Record<string, number> = {};
+        scoreChanges[playerId] = -bidAmount;
+
+        // Distribute 120 points evenly to other players
+        for (const otherPlayer of otherActivePlayers) {
+          this.game.scores[otherPlayer.id].totalScore += pointsPerPlayer;
+          this.game.scores[otherPlayer.id].roundScores.push(pointsPerPlayer);
+          scoreChanges[otherPlayer.id] = pointsPerPlayer;
+        }
+
+        // Emit the threw event with score changes
+        this.io.to(this.roomId).emit('game:playerThrew', {
+          playerId,
+          playerName: player?.name || 'Unknown',
+          bidAmount,
+          scoreChanges,
+        });
+
+        logDebug({
+          gameId: this.game.id,
+          roomId: this.roomId,
+          playerId,
+          eventType: 'player:threw',
+          eventData: {
+            bidAmount,
+            scoreChanges,
+            newScores: Object.fromEntries(
+              Object.entries(this.game.scores).map(([id, s]) => [id, s.totalScore])
+            ),
+          },
+          result: 'success',
+        });
+      }
 
       // Skip scoring and start a new round after a brief delay
       this.safeSetTimeout(() => {
@@ -1546,5 +1596,120 @@ export class GameEngine {
 
     // Broadcast updated state to remaining players
     this.broadcastState();
+  }
+
+  /**
+   * Pause the game - any player can pause
+   */
+  pauseGame(playerId: string): boolean {
+    if (this.isCleanedUp) return false;
+    if (this.game.isPaused) return false;
+    if (this.game.phase === 'gameEnd') return false;
+
+    const player = this.game.players.find(p => p.id === playerId);
+    if (!player) return false;
+
+    // Set pause state
+    this.game.isPaused = true;
+    this.game.pausedAt = Date.now();
+    this.game.pausedBy = playerId;
+
+    // Clear all active timers
+    for (const timer of this.activeTimers) {
+      clearTimeout(timer);
+    }
+    this.activeTimers.clear();
+    this.clearStuckPhaseTimer();
+    this.clearPlayOrPassTimer();
+
+    // Calculate expiry (1 hour)
+    const expiresAt = this.game.pausedAt + 60 * 60 * 1000;
+
+    // Emit paused event
+    this.io.to(this.roomId).emit('game:paused', {
+      pausedBy: playerId,
+      pausedByName: player.name,
+      pausedAt: this.game.pausedAt,
+      expiresAt,
+    });
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      eventType: 'game:paused',
+      eventData: { phase: this.game.phase, expiresAt },
+      result: 'success',
+    });
+
+    this.broadcastState();
+    return true;
+  }
+
+  /**
+   * Resume the game - any player can resume
+   */
+  resumeGame(playerId: string): boolean {
+    if (this.isCleanedUp) return false;
+    if (!this.game.isPaused) return false;
+
+    const player = this.game.players.find(p => p.id === playerId);
+    if (!player) return false;
+
+    // Check if pause has expired (1 hour)
+    const pausedAt = this.game.pausedAt || 0;
+    const elapsed = Date.now() - pausedAt;
+    const oneHour = 60 * 60 * 1000;
+
+    if (elapsed > oneHour) {
+      // Pause expired - end the game
+      this.io.to(this.roomId).emit('game:pauseExpired');
+      this.game.isPaused = false;
+      this.game.pausedAt = undefined;
+      this.game.pausedBy = undefined;
+      // End the game without a winner
+      this.game.phase = 'gameEnd';
+      this.broadcastState();
+      if (this.onCleanup) {
+        this.onCleanup();
+      }
+      return false;
+    }
+
+    // Clear pause state
+    this.game.isPaused = false;
+    this.game.pausedAt = undefined;
+    this.game.pausedBy = undefined;
+
+    // Emit resumed event
+    this.io.to(this.roomId).emit('game:resumed', {
+      resumedBy: playerId,
+      resumedByName: player.name,
+    });
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId,
+      eventType: 'game:resumed',
+      eventData: { phase: this.game.phase },
+      result: 'success',
+    });
+
+    this.broadcastState();
+
+    // Re-prompt current player if in an active phase
+    if (['bidding', 'talonDistribution', 'trickPlaying'].includes(this.game.phase)) {
+      this.promptCurrentPlayer();
+    }
+
+    return true;
+  }
+
+  /**
+   * Check if game is paused
+   */
+  isPaused(): boolean {
+    return this.game.isPaused === true;
   }
 }

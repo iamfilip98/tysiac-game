@@ -18,6 +18,10 @@ interface GameState {
   gameStatistics: GameStatistics | null;
   // Notification for player passed at 100
   passedAt100Notification: { playerName: string } | null;
+  // Notification for player threw (at >100)
+  threwNotification: { playerName: string; bidAmount: number; scoreChanges: Record<string, number> } | null;
+  // Pause state notification
+  pauseData: { pausedByName: string; pausedAt: number; expiresAt: number } | null;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -32,6 +36,8 @@ interface GameState {
   setShowWykladana: (show: boolean) => void;
   setGameStatistics: (statistics: GameStatistics | null) => void;
   setPassedAt100Notification: (data: { playerName: string } | null) => void;
+  setThrewNotification: (data: { playerName: string; bidAmount: number; scoreChanges: Record<string, number> } | null) => void;
+  setPauseData: (data: { pausedByName: string; pausedAt: number; expiresAt: number } | null) => void;
   reset: () => void;
 }
 
@@ -48,6 +54,8 @@ export const useGameStore = create<GameState>((set) => ({
   showWykladana: false,
   gameStatistics: null,
   passedAt100Notification: null,
+  threwNotification: null,
+  pauseData: null,
 
   setGameState: (gameState) =>
     set({
@@ -90,6 +98,10 @@ export const useGameStore = create<GameState>((set) => ({
 
   setPassedAt100Notification: (passedAt100Notification) => set({ passedAt100Notification }),
 
+  setThrewNotification: (threwNotification) => set({ threwNotification }),
+
+  setPauseData: (pauseData) => set({ pauseData }),
+
   reset: () =>
     set({
       gameState: null,
@@ -104,5 +116,7 @@ export const useGameStore = create<GameState>((set) => ({
       showWykladana: false,
       gameStatistics: null,
       passedAt100Notification: null,
+      threwNotification: null,
+      pauseData: null,
     }),
 }));

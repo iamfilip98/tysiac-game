@@ -29,6 +29,8 @@ export function useSocket() {
     setWykladanaData,
     setGameStatistics,
     setPassedAt100Notification,
+    setThrewNotification,
+    setPauseData,
     reset: resetGame,
   } = useGameStore();
 
@@ -197,6 +199,23 @@ export function useSocket() {
       setPassedAt100Notification({ playerName: data.playerName });
     });
 
+    socket.on('game:playerThrew', (data: { playerId: string; playerName: string; bidAmount: number; scoreChanges: Record<string, number> }) => {
+      setThrewNotification({ playerName: data.playerName, bidAmount: data.bidAmount, scoreChanges: data.scoreChanges });
+    });
+
+    socket.on('game:paused', (data: { pausedBy: string; pausedByName: string; pausedAt: number; expiresAt: number }) => {
+      setPauseData({ pausedByName: data.pausedByName, pausedAt: data.pausedAt, expiresAt: data.expiresAt });
+    });
+
+    socket.on('game:resumed', () => {
+      setPauseData(null);
+    });
+
+    socket.on('game:pauseExpired', () => {
+      setPauseData(null);
+      // The game will end and be handled through normal game end flow
+    });
+
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions }) => {
       // Clear auto-reconnect flag on successful restore
@@ -238,6 +257,10 @@ export function useSocket() {
       socket.off('game:trickWon');
       socket.off('game:wykladana');
       socket.off('game:playerPassedAt100');
+      socket.off('game:playerThrew');
+      socket.off('game:paused');
+      socket.off('game:resumed');
+      socket.off('game:pauseExpired');
       socket.off('connection:restored');
     };
   }, []);
@@ -339,6 +362,14 @@ export function useSocket() {
     }
   }, [safeEmit, resetRoom, resetGame]);
 
+  const pauseGame = useCallback(() => {
+    safeEmit('game:pause');
+  }, [safeEmit]);
+
+  const resumeGame = useCallback(() => {
+    safeEmit('game:resume');
+  }, [safeEmit]);
+
   return {
     // Room actions
     createRoom,
@@ -359,5 +390,7 @@ export function useSocket() {
     playCard,
     declareMarriage,
     leaveGame,
+    pauseGame,
+    resumeGame,
   };
 }

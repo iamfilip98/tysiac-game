@@ -11,6 +11,8 @@ import { PlayOrPassPanel } from './PlayOrPassPanel';
 import { WykladanaModal } from './WykladanaModal';
 import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultModal';
 import { PassedAt100Announcement } from './PassedAt100Announcement';
+import { ThrewAnnouncement } from './ThrewAnnouncement';
+import { PauseOverlay } from './PauseOverlay';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
@@ -48,8 +50,10 @@ export function GameBoard() {
     showWykladana,
     gameStatistics,
     passedAt100Notification,
+    threwNotification,
+    pauseData,
   } = useGameStore();
-  const { selectCard, setShowWykladana, setPassedAt100Notification } = useGameStore();
+  const { selectCard, setShowWykladana, setPassedAt100Notification, setThrewNotification } = useGameStore();
   const { setShowRoundResult, setShowGameEnd } = useGameStore();
 
   const {
@@ -63,6 +67,8 @@ export function GameBoard() {
     leaveRoom,
     leaveGame,
     startGame,
+    pauseGame,
+    resumeGame,
   } = useSocket();
 
   // Get current player info
@@ -201,7 +207,7 @@ export function GameBoard() {
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
 
       {/* Leave game button - top left */}
-      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 z-30">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 z-30 flex gap-2">
         <button
           onClick={() => setShowLeaveModal(true)}
           className="px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
@@ -209,6 +215,16 @@ export function GameBoard() {
           <span className="sm:hidden">←</span>
           <span className="hidden sm:inline">← Leave</span>
         </button>
+        {phase !== 'gameEnd' && !gameState.isPaused && (
+          <button
+            onClick={pauseGame}
+            className="px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-amber-700/50 border border-table-600 rounded-lg text-white/70 hover:text-amber-400 text-sm transition-colors"
+            title="Pause game"
+          >
+            <span className="sm:hidden">||</span>
+            <span className="hidden sm:inline">|| Pause</span>
+          </button>
+        )}
       </div>
 
       {/* Score board - top center */}
@@ -362,7 +378,7 @@ export function GameBoard() {
             </motion.div>
           )}
 
-          {/* Play or Pass decision (when bid is 100) */}
+          {/* Play or Pass decision */}
           {phase === 'playOrPassDecision' && (
             <motion.div
               key="playOrPass"
@@ -374,6 +390,8 @@ export function GameBoard() {
                 onPlay={() => playOrPass('play')}
                 onPass={() => playOrPass('pass')}
                 isMyTurn={(isMyTurn || validActions.some(a => a.type === 'playOrPass')) && round?.bidWinner === playerId}
+                bidAmount={round?.finalBid || 100}
+                playerCount={playerCount}
               />
             </motion.div>
           )}
@@ -525,6 +543,22 @@ export function GameBoard() {
         playerName={passedAt100Notification?.playerName || null}
         onComplete={() => setPassedAt100Notification(null)}
       />
+
+      {/* Threw announcement (for bids > 100) */}
+      <ThrewAnnouncement
+        data={threwNotification}
+        players={gameState.players}
+        onComplete={() => setThrewNotification(null)}
+      />
+
+      {/* Pause overlay */}
+      {(gameState.isPaused || pauseData) && pauseData && (
+        <PauseOverlay
+          pausedByName={pauseData.pausedByName}
+          pausedAt={pauseData.pausedAt}
+          onResume={resumeGame}
+        />
+      )}
 
     </div>
   );

@@ -819,6 +819,70 @@ export function setupSocketHandlers(io: TypedServer) {
       });
     });
 
+    socket.on('game:pause', () => {
+      withRateLimit(socket, 'game:pause', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
+
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
+
+          const success = engine.pauseGame(playerId);
+          if (!success) {
+            socket.emit('game:error', { code: 'CANNOT_PAUSE', message: 'Cannot pause game at this time' });
+          }
+        } catch (error) {
+          console.error('Error pausing game:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to pause game' });
+        }
+      });
+    });
+
+    socket.on('game:resume', () => {
+      withRateLimit(socket, 'game:resume', () => {
+        try {
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) {
+            socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+            return;
+          }
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room || !room.gameId) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+            return;
+          }
+
+          const engine = gameEngines.get(room.gameId);
+          if (!engine) {
+            socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+            return;
+          }
+
+          const success = engine.resumeGame(playerId);
+          if (!success) {
+            socket.emit('game:error', { code: 'CANNOT_RESUME', message: 'Cannot resume game - pause may have expired' });
+          }
+        } catch (error) {
+          console.error('Error resuming game:', error);
+          socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to resume game' });
+        }
+      });
+    });
+
     // Reconnection with session validation
     socket.on('player:reconnect', (data) => {
       withRateLimit(socket, 'player:reconnect', () => {

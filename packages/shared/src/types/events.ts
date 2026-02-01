@@ -44,6 +44,8 @@ export interface ClientToServerEvents {
   'game:playCard': (card: Card) => void;
   'game:declareMarriage': (suit: Suit) => void;
   'game:leave': () => void;
+  'game:pause': () => void;
+  'game:resume': () => void;
 
   // Connection events
   'player:reconnect': (data: { roomId: string; playerId: string; sessionToken: string }) => void;
@@ -68,6 +70,10 @@ export interface ServerToClientEvents {
   'game:trickWon': (data: { winnerId: string; cards: Card[]; points: number }) => void;
   'game:marriageDeclared': (data: { playerId: string; suit: Suit }) => void;
   'game:playerPassedAt100': (data: { playerId: string; playerName: string }) => void;
+  'game:playerThrew': (data: { playerId: string; playerName: string; bidAmount: number; scoreChanges: Record<string, number> }) => void;
+  'game:paused': (data: { pausedBy: string; pausedByName: string; pausedAt: number; expiresAt: number }) => void;
+  'game:resumed': (data: { resumedBy: string; resumedByName: string }) => void;
+  'game:pauseExpired': () => void;
   'game:wykladana': (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number; cards: Card[] }) => void;
   'game:roundEnd': (data: RoundResult) => void;
   'game:ended': (data: { winnerId: string; finalScores: Record<string, number>; statistics?: GameStatistics }) => void;
@@ -152,6 +158,11 @@ export interface ClientGameState {
 
   // Winner (if game ended)
   winner: string | null;
+
+  // Pause state
+  isPaused?: boolean;
+  pausedAt?: number;
+  pausedBy?: string;
 }
 
 // Round result for scoring display
@@ -185,8 +196,38 @@ export interface GameAward {
   description: string;
 }
 
+// Detailed per-player statistics
+export interface DetailedPlayerStats {
+  playerId: string;
+  bidSuccessRate: number; // percentage
+  totalBidsWon: number;
+  totalBidsFailed: number;
+  avgBidAmount: number;
+  totalMarriages: number;
+  highestSingleRound: number;
+  lowestScore: number;
+  highestScore: number;
+}
+
+// Round-by-round score data for graphing
+export interface RoundByRoundData {
+  roundNumber: number;
+  scores: Record<string, number>; // playerId -> score after this round
+}
+
+// What-if scenario for fun analysis
+export interface WhatIfScenario {
+  description: string;
+  hypotheticalOutcome: string;
+}
+
 export interface GameStatistics {
   awards: GameAward[];
   totalRounds: number;
   victoryMargin: number;
+  // Enhanced stats
+  playerDetails?: DetailedPlayerStats[];
+  roundByRound?: RoundByRoundData[];
+  closeCalls?: string[];
+  whatIf?: WhatIfScenario[];
 }
