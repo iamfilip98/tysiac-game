@@ -129,11 +129,6 @@ export function TalonDistributionPanel({
                 title={player.name}
               >
                 <div className="font-medium text-sm">{truncateName(player.name)}</div>
-                {assignedCard && (
-                  <div className="text-xs mt-0.5 opacity-80">
-                    {assignedCard.rank}{assignedCard.suit[0].toUpperCase()}
-                  </div>
-                )}
               </motion.button>
             );
           })}
