@@ -25,25 +25,29 @@ interface TrickPileProps {
   players: { id: string; name: string; seatIndex: number }[];
   currentPlayerId: string; // The viewing player
   marriageCard?: { suit: Suit } | null; // If a marriage was just declared, show Q as gold
+  isSpectating?: boolean; // Whether the viewer is spectating (dealer in 4-player mode)
 }
 
-export function TrickPile({ cards, players, currentPlayerId, marriageCard }: TrickPileProps) {
+export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating }: TrickPileProps) {
   const isMobile = useIsMobile();
 
   // Position cards based on who played them relative to current player
   const getCardPosition = (playerId: string) => {
-    let currentIndex = players.findIndex((p) => p.id === currentPlayerId);
+    // Responsive positions: 0 = left, 1 = right, 2 = bottom (for spectating)
+    // or 0 = self (bottom), 1 = left, 2 = right (for active player)
+    const spectatorPositions = isMobile
+      ? [
+          { x: -40, y: -15, rotate: -10 }, // Position 0 = left
+          { x: 40, y: -15, rotate: 10 },   // Position 1 = right
+          { x: 0, y: 30, rotate: 0 },      // Position 2 = bottom
+        ]
+      : [
+          { x: -60, y: -20, rotate: -15 }, // Position 0 = left
+          { x: 60, y: -20, rotate: 15 },   // Position 1 = right
+          { x: 0, y: 40, rotate: 0 },      // Position 2 = bottom
+        ];
 
-    // If viewer not in players (spectating), use first player as reference
-    if (currentIndex === -1) {
-      currentIndex = 0;
-    }
-
-    const playerIndex = players.findIndex((p) => p.id === playerId);
-    const relativePosition = (playerIndex - currentIndex + 3) % 3;
-
-    // Responsive positions: 0 = self (bottom), 1 = left, 2 = right
-    const positions = isMobile
+    const activePositions = isMobile
       ? [
           { x: 0, y: 30, rotate: 0 },     // Self (bottom)
           { x: -40, y: -15, rotate: -10 }, // Left
@@ -55,7 +59,24 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard }: Tri
           { x: 60, y: -20, rotate: 15 },   // Right
         ];
 
-    return positions[relativePosition];
+    // When spectating, use fixed position mapping based on player index in the players array
+    // players[0] = left, players[1] = right, players[2] = bottom (matches GameBoard otherPlayers layout)
+    if (isSpectating) {
+      const playerIndex = players.findIndex((p) => p.id === playerId);
+      if (playerIndex === -1) return spectatorPositions[0];
+      return spectatorPositions[playerIndex];
+    }
+
+    // For active players, use relative position calculation
+    let currentIndex = players.findIndex((p) => p.id === currentPlayerId);
+    if (currentIndex === -1) {
+      currentIndex = 0;
+    }
+
+    const playerIndex = players.findIndex((p) => p.id === playerId);
+    const relativePosition = (playerIndex - currentIndex + 3) % 3;
+
+    return activePositions[relativePosition];
   };
 
   return (

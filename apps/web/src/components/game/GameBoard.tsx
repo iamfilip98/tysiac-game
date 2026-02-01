@@ -276,12 +276,15 @@ export function GameBoard() {
               <TrickPile
                 cards={round.currentTrick.cards}
                 players={
-                  playerCount === 4
-                    ? gameState.players.filter(p => p.id !== round?.dealer)
-                    : gameState.players
+                  isSpectating
+                    ? otherPlayers
+                    : playerCount === 4
+                      ? gameState.players.filter(p => p.id !== round?.dealer)
+                      : gameState.players
                 }
                 currentPlayerId={isSpectating ? otherPlayers[0]?.id : playerId}
                 marriageCard={lastMarriageDeclared ? { suit: lastMarriageDeclared.suit } : null}
+                isSpectating={isSpectating}
               />
             </motion.div>
           )}
@@ -323,7 +326,7 @@ export function GameBoard() {
               <PlayOrPassPanel
                 onPlay={() => playOrPass('play')}
                 onPass={() => playOrPass('pass')}
-                isMyTurn={isMyTurn && round?.bidWinner === playerId}
+                isMyTurn={(isMyTurn || validActions.some(a => a.type === 'playOrPass')) && round?.bidWinner === playerId}
               />
             </motion.div>
           )}

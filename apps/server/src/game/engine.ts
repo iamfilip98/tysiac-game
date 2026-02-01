@@ -29,6 +29,9 @@ export class GameEngine {
   // Safeguard timer for stuck phases
   private stuckPhaseTimer: NodeJS.Timeout | null = null;
 
+  // Safeguard timer for playOrPass decision
+  private playOrPassTimer: NodeJS.Timeout | null = null;
+
   // Track all timers for cleanup
   private activeTimers: Set<NodeJS.Timeout> = new Set();
   private isCleanedUp: boolean = false;
@@ -564,6 +567,14 @@ export class GameEngine {
     }
   }
 
+  private clearPlayOrPassTimer(): void {
+    if (this.playOrPassTimer) {
+      clearTimeout(this.playOrPassTimer);
+      this.activeTimers.delete(this.playOrPassTimer);
+      this.playOrPassTimer = null;
+    }
+  }
+
   handleConfirmTalon(playerId: string): void {
     if (this.isCleanedUp) return;
     if (this.game.phase !== 'talonReveal') {
@@ -656,6 +667,24 @@ export class GameEngine {
         this.game.phase = 'playOrPassDecision';
         this.broadcastState();
         this.promptPlayOrPassDecision();
+
+        // Add safeguard timer for playOrPassDecision phase - auto-play if stuck for 30 seconds
+        this.clearPlayOrPassTimer();
+        this.playOrPassTimer = this.safeSetTimeout(() => {
+          if (this.game.phase === 'playOrPassDecision') {
+            const currentRound = this.game.currentRound!;
+            logDebug({
+              gameId: this.game.id,
+              roomId: this.roomId,
+              playerId: currentRound.bidWinner,
+              eventType: 'playOrPass:safeguardTrigger',
+              eventData: { reason: 'timeout_30s', bidWinner: currentRound.bidWinner },
+              result: 'success',
+            });
+            this.handlePlayOrPass(currentRound.bidWinner!, 'play');
+          }
+        }, 30000);
+
         return;
       }
 
@@ -774,6 +803,9 @@ export class GameEngine {
   handlePlayOrPass(playerId: string, decision: 'play' | 'pass'): void {
     if (this.isCleanedUp) return;
     if (this.game.phase !== 'playOrPassDecision') return;
+
+    // Clear the safeguard timer since we're handling the decision
+    this.clearPlayOrPassTimer();
 
     const round = this.game.currentRound!;
     if (playerId !== round.bidWinner) return;
