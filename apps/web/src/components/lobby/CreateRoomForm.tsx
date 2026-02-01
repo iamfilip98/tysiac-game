@@ -9,9 +9,10 @@ import { cn } from '@/lib/utils';
 interface CreateRoomFormProps {
   onSubmit: (playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4) => void;
   isLoading?: boolean;
+  isConnected?: boolean;
 }
 
-export function CreateRoomForm({ onSubmit, isLoading }: CreateRoomFormProps) {
+export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: CreateRoomFormProps) {
   const [playerName, setPlayerName] = useState('');
   const [roomName, setRoomName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
@@ -107,10 +108,10 @@ export function CreateRoomForm({ onSubmit, isLoading }: CreateRoomFormProps) {
           type="submit"
           variant="primary"
           className="w-full mt-6"
-          disabled={isLoading || !playerName.trim() || !roomName.trim()}
+          disabled={!isConnected || isLoading || !playerName.trim() || !roomName.trim()}
           glow
         >
-          {isLoading ? 'Creating...' : 'Create Room'}
+          {isLoading ? 'Connecting...' : !isConnected ? 'Waiting for connection...' : 'Create Room'}
         </Button>
       </form>
     </div>

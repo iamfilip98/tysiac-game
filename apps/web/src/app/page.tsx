@@ -154,11 +154,13 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           <CreateRoomForm
             onSubmit={createRoom}
             isLoading={isConnecting}
+            isConnected={isConnected}
           />
         ) : (
           <JoinRoomForm
             onSubmit={joinRoom}
             isLoading={isConnecting}
+            isConnected={isConnected}
             initialCode={roomCodeFromUrl}
           />
         )}
