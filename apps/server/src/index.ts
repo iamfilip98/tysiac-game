@@ -5,6 +5,7 @@ import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@tysiac/shared';
 import { setupSocketHandlers } from './socket/handlers.js';
 import * as debugService from './services/debugService.js';
+import { initializeSessions, startSessionCleanup, stopSessionCleanup } from './security/session.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
@@ -164,12 +165,17 @@ async function main() {
   // Set up socket handlers
   setupSocketHandlers(io);
 
+  // Initialize sessions from database
+  await initializeSessions();
+  startSessionCleanup();
+
   // Start periodic cleanup for debug logs (every hour)
   debugService.startPeriodicCleanup(3600000);
 
   // Graceful shutdown handler
   const shutdown = async () => {
     console.log('Shutting down gracefully...');
+    stopSessionCleanup();
     debugService.stopPeriodicCleanup();
     await debugService.forceFlush();
     await fastify.close();

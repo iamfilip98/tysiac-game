@@ -69,6 +69,15 @@ export const rounds = pgTable('rounds', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Sessions table - stores player sessions for reconnection
+export const sessions = pgTable('sessions', {
+  token: text('token').primaryKey(),
+  playerId: text('player_id').unique().notNull(),
+  roomId: text('room_id').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastActivity: timestamp('last_activity').defaultNow().notNull(),
+});
+
 // Debug logs table - tracks all game actions for last 10 games (internal debugging only)
 export const debugLogs = pgTable('debug_logs', {
   id: text('id').primaryKey(),
@@ -97,3 +106,5 @@ export type GameScore = typeof gameScores.$inferSelect;
 export type Round = typeof rounds.$inferSelect;
 export type DebugLog = typeof debugLogs.$inferSelect;
 export type NewDebugLog = typeof debugLogs.$inferInsert;
+export type Session = typeof sessions.$inferSelect;
+export type NewSession = typeof sessions.$inferInsert;

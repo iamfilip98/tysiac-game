@@ -113,7 +113,7 @@ export function setupSocketHandlers(io: TypedServer) {
 
     // Room events
     socket.on('room:create', (data) => {
-      withRateLimit(socket, 'room:create', () => {
+      withRateLimit(socket, 'room:create', async () => {
         try {
           const parsed = CreateRoomSchema.safeParse(data);
           if (!parsed.success) {
@@ -129,14 +129,14 @@ export function setupSocketHandlers(io: TypedServer) {
           const existingPlayer = socketToPlayer.get(socket.id);
           if (existingPlayer) {
             playerToSocket.delete(existingPlayer);
-            invalidatePlayerSession(existingPlayer);
+            await invalidatePlayerSession(existingPlayer);
           }
 
           socketToPlayer.set(socket.id, playerId);
           playerToSocket.set(playerId, socket.id);
 
           const room = roomService.createRoom(playerId, playerName, roomName, isPrivate, maxPlayers);
-          const sessionToken = createSession(playerId, room.id);
+          const sessionToken = await createSession(playerId, room.id);
 
           socket.join(room.id);
           socket.emit('room:created', { ...room, sessionToken });
@@ -152,7 +152,7 @@ export function setupSocketHandlers(io: TypedServer) {
     });
 
     socket.on('room:join', (data) => {
-      withRateLimit(socket, 'room:join', () => {
+      withRateLimit(socket, 'room:join', async () => {
         try {
           const parsed = JoinRoomSchema.safeParse(data);
           if (!parsed.success) {
@@ -188,7 +188,7 @@ export function setupSocketHandlers(io: TypedServer) {
           const existingPlayer = socketToPlayer.get(socket.id);
           if (existingPlayer) {
             playerToSocket.delete(existingPlayer);
-            invalidatePlayerSession(existingPlayer);
+            await invalidatePlayerSession(existingPlayer);
           }
 
           socketToPlayer.set(socket.id, playerId);
@@ -201,7 +201,7 @@ export function setupSocketHandlers(io: TypedServer) {
             return;
           }
 
-          const sessionToken = createSession(playerId, updatedRoom.id);
+          const sessionToken = await createSession(playerId, updatedRoom.id);
 
           socket.join(updatedRoom.id);
           socket.emit('room:joined', { room: updatedRoom, playerId, sessionToken });
@@ -764,7 +764,7 @@ export function setupSocketHandlers(io: TypedServer) {
     });
 
     socket.on('game:leave', () => {
-      withRateLimit(socket, 'game:leave', () => {
+      withRateLimit(socket, 'game:leave', async () => {
         try {
           const playerId = socketToPlayer.get(socket.id);
           if (!playerId) {
@@ -797,7 +797,7 @@ export function setupSocketHandlers(io: TypedServer) {
           // Clean up player mappings
           socketToPlayer.delete(socket.id);
           playerToSocket.delete(playerId);
-          invalidatePlayerSession(playerId);
+          await invalidatePlayerSession(playerId);
 
           // Leave the socket room
           socket.leave(room.id);
@@ -964,10 +964,10 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
       socket.to(room.id).emit('player:disconnected', playerId);
 
       // Set timeout for cleanup
-      const timeout = setTimeout(() => {
+      const timeout = setTimeout(async () => {
         disconnectTimeouts.delete(playerId);
         playerToSocket.delete(playerId);
-        invalidatePlayerSession(playerId);
+        await invalidatePlayerSession(playerId);
 
         // If still disconnected after grace period, handle as leave
         const currentSocketId = playerToSocket.get(playerId);
@@ -991,7 +991,7 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
         console.log(`[handlePlayerLeave] Setting ${ROOM_GRACE_PERIOD/1000}s grace period for pre-game room`);
         socket.to(room.id).emit('player:disconnected', playerId);
 
-        const timeout = setTimeout(() => {
+        const timeout = setTimeout(async () => {
           console.log(`[handlePlayerLeave] Grace period expired for ${playerId}`);
           disconnectTimeouts.delete(playerId);
 
@@ -999,7 +999,7 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
           const currentSocketId = playerToSocket.get(playerId);
           if (!currentSocketId) {
             playerToSocket.delete(playerId);
-            invalidatePlayerSession(playerId);
+            await invalidatePlayerSession(playerId);
 
             const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
 
@@ -1016,7 +1016,7 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
       } else {
         // Immediate leave requested
         playerToSocket.delete(playerId);
-        invalidatePlayerSession(playerId);
+        void invalidatePlayerSession(playerId);
 
         if (!room.gameId) {
           const { room: updatedRoom, wasDeleted } = roomService.leaveRoom(playerId);
@@ -1031,7 +1031,7 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
     }
   } else {
     playerToSocket.delete(playerId);
-    invalidatePlayerSession(playerId);
+    void invalidatePlayerSession(playerId);
   }
 }
 
