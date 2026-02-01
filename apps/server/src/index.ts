@@ -165,13 +165,6 @@ async function main() {
   // Set up socket handlers
   setupSocketHandlers(io);
 
-  // Initialize sessions from database
-  await initializeSessions();
-  startSessionCleanup();
-
-  // Start periodic cleanup for debug logs (every hour)
-  debugService.startPeriodicCleanup(3600000);
-
   // Graceful shutdown handler
   const shutdown = async () => {
     console.log('Shutting down gracefully...');
@@ -185,7 +178,7 @@ async function main() {
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
 
-  // Start server
+  // Start server FIRST so health checks pass immediately
   try {
     await fastify.listen({ port: PORT, host: '0.0.0.0' });
     console.log(`Server running on port ${PORT}`);
@@ -195,6 +188,19 @@ async function main() {
     fastify.log.error(err);
     process.exit(1);
   }
+
+  // Initialize sessions from database AFTER server is listening
+  // This prevents health check failures if DB connection is slow
+  initializeSessions().then(() => {
+    console.log('Sessions initialized from database');
+    startSessionCleanup();
+  }).catch((err) => {
+    console.error('Failed to initialize sessions (continuing with in-memory):', err);
+    startSessionCleanup(); // Still start cleanup for in-memory sessions
+  });
+
+  // Start periodic cleanup for debug logs (every hour)
+  debugService.startPeriodicCleanup(3600000);
 }
 
 main();
