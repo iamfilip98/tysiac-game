@@ -356,7 +356,7 @@ export function GameBoard() {
       {isSpectating && (
         <div className={cn(
           'absolute left-1/2 -translate-x-1/2 z-20',
-          isMobile ? 'bottom-32' : 'bottom-36'
+          isMobile ? 'bottom-2' : 'bottom-4'
         )}>
           <div className="px-4 py-2 bg-table-800/90 border border-amber-500/50 rounded-lg text-center">
             <div className="text-amber-400 text-sm font-medium">
@@ -369,14 +369,16 @@ export function GameBoard() {
       {/* Player's hand or Third active player (when spectating) */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
-        isMobile ? 'bottom-2' : 'bottom-4'
+        isSpectating
+          ? (isMobile ? 'bottom-16' : 'bottom-20')
+          : (isMobile ? 'bottom-2' : 'bottom-4')
       )}>
         {isSpectating ? (
-          // Show third active player at bottom center when spectating
+          // Show third active player at bottom center when spectating (horizontal layout)
           otherPlayers[2] && (
             <OpponentHand
               cardCount={getOpponentHandSize(otherPlayers[2].id)}
-              position="left"
+              position="top"
               playerName={otherPlayers[2].name}
               isCurrentTurn={round?.currentTrick?.currentPlayer === otherPlayers[2].id}
             />
