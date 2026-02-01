@@ -921,6 +921,7 @@ export class GameEngine {
         playerName: bidWinner?.name || 'Unknown',
         bid: round.finalBid,
         marriagePoints: bidderState.marriagePoints,
+        cards: bidderState.hand,
       });
 
       // Set phase to wykladana and wait for all players to confirm

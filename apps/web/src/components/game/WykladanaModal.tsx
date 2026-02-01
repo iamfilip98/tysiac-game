@@ -3,11 +3,14 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
+import { Card } from './Card';
+import type { Card as CardType } from '@tysiac/shared';
 
 interface WykladanaModalProps {
   playerName: string;
   bid: number;
   marriagePoints?: number;
+  cards: CardType[];
   onComplete: () => void;
 }
 
@@ -55,7 +58,7 @@ function Confetti() {
   );
 }
 
-export function WykladanaModal({ playerName, bid, marriagePoints = 0, onComplete }: WykladanaModalProps) {
+export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onComplete }: WykladanaModalProps) {
   const [showButton, setShowButton] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
 
@@ -94,7 +97,7 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, onComplete
           type: 'spring',
           stiffness: 200,
         }}
-        className="relative z-10"
+        className="relative z-10 max-w-md sm:max-w-lg"
       >
         <ElectricBorder active color="#fbbf24" speed={1}>
           <div className="bg-gradient-to-b from-amber-900/90 to-amber-950/95 px-8 sm:px-16 py-8 sm:py-12 rounded-2xl text-center">
@@ -111,32 +114,42 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, onComplete
                 textShadow: '0 0 30px #fbbf24, 0 0 60px #fbbf24',
               }}
             >
-              WYKLADANA!
+              WYKŁADANA!
             </motion.div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 }}
-              className="text-xl sm:text-2xl text-white font-medium mb-2"
+              className="text-xl sm:text-2xl text-white font-medium mb-4"
             >
               {playerName}
             </motion.p>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+            {/* Cards display */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.5 }}
-              className="text-base sm:text-lg text-white/70"
+              className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4"
             >
-              Wins ALL 8 tricks with perfect cards!
-            </motion.p>
+              {cards.map((card, index) => (
+                <motion.div
+                  key={`${card.suit}-${card.rank}`}
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ delay: 0.5 + index * 0.08 }}
+                >
+                  <Card card={card} size="sm" isPlayable={false} />
+                </motion.div>
+              ))}
+            </motion.div>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-              className="text-gold-300 mt-4"
+              transition={{ delay: 0.7 + cards.length * 0.08 }}
+              className="text-gold-300"
             >
               120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}
             </motion.p>

@@ -476,6 +476,7 @@ export function GameBoard() {
           playerName={wykladanaData.playerName}
           bid={wykladanaData.bid}
           marriagePoints={wykladanaData.marriagePoints}
+          cards={wykladanaData.cards}
           onComplete={confirmWykladana}
         />
       )}

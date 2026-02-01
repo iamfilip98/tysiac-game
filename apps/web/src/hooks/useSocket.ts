@@ -184,8 +184,8 @@ export function useSocket() {
       setLastMarriageDeclared(null);
     });
 
-    socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number }) => {
-      setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints });
+    socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number; cards: Card[] }) => {
+      setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints, cards: data.cards });
     });
 
     socket.on('game:playerPassedAt100', () => {
