@@ -1202,6 +1202,12 @@ export class GameEngine {
         stats.minScore = Math.min(stats.minScore, playerResult.newTotalScore);
         stats.maxScore = Math.max(stats.maxScore, playerResult.newTotalScore);
 
+        // Track Grunwald (exactly 410 points)
+        if (playerResult.newTotalScore === 410 && !stats.reachedGrunwald) {
+          stats.reachedGrunwald = true;
+          stats.grunwaldRound = round.roundNumber;
+        }
+
         // Track highest round points (for bidder only, since they're the ones achieving big rounds)
         if (playerResult.playerId === round.bidWinner && scoreResult.bidderMadeBid) {
           stats.highestRoundPoints = Math.max(stats.highestRoundPoints, playerResult.totalRoundPoints);

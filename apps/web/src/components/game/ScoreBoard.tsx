@@ -138,6 +138,18 @@ export function ScoreBoard({
                     <span className="sr-only">On barrel</span>
                   </motion.span>
                 )}
+                {score?.totalScore === 410 && (
+                  <motion.span
+                    animate={{ opacity: [0.5, 1, 0.5] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="text-xs text-emerald-400 flex items-center gap-1"
+                    role="img"
+                    aria-label="Grunwald (410 points)"
+                  >
+                    <span aria-hidden="true">🏰</span>
+                    <span className="sr-only">Grunwald</span>
+                  </motion.span>
+                )}
                 <span
                   className={cn(
                     'font-mono font-bold',

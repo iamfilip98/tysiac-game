@@ -11,6 +11,8 @@ export interface PlayerGameStats {
   minScore: number;
   maxScore: number;
   highestRoundPoints: number;
+  reachedGrunwald: boolean;
+  grunwaldRound: number | null;
 }
 
 // Round history for statistics calculation
@@ -73,6 +75,12 @@ const AWARDS = {
     titlePl: 'Burza',
     emoji: '⚡',
   },
+  grunwald: {
+    id: 'grunwald',
+    titleEn: 'Battle of Grunwald',
+    titlePl: 'Grunwald',
+    emoji: '🏰',
+  },
 } as const;
 
 /**
@@ -117,6 +125,10 @@ export function calculateGameStatistics(
   // 7. Perfect Storm - Won a round with 150+ total points
   const perfectStormAward = calculatePerfectStormAward(playerStats, playerNames);
   if (perfectStormAward) potentialAwards.push(perfectStormAward);
+
+  // 8. Grunwald - Reached exactly 410 points
+  const grunwaldAward = calculateGrunwaldAward(playerStats, playerNames);
+  if (grunwaldAward) potentialAwards.push(grunwaldAward);
 
   // Select 3-4 best awards, prioritizing variety
   const selectedAwards = selectBestAwards(potentialAwards);
@@ -305,6 +317,30 @@ function calculatePerfectStormAward(
   };
 }
 
+function calculateGrunwaldAward(
+  playerStats: Map<string, PlayerGameStats>,
+  playerNames: Map<string, string>
+): GameAward | null {
+  let winnerId = '';
+  let earliestRound = Infinity;
+
+  for (const [playerId, stats] of playerStats) {
+    if (stats.reachedGrunwald && stats.grunwaldRound !== null && stats.grunwaldRound < earliestRound) {
+      earliestRound = stats.grunwaldRound;
+      winnerId = playerId;
+    }
+  }
+
+  if (!winnerId) return null;
+
+  return {
+    ...AWARDS.grunwald,
+    playerId: winnerId,
+    value: 410,
+    description: `Reached 410 points in round ${earliestRound}`,
+  };
+}
+
 /**
  * Select the best 3-4 awards, prioritizing variety (different players)
  */
@@ -315,6 +351,7 @@ function selectBestAwards(awards: GameAward[]): GameAward[] {
   const priorityOrder = [
     'consistent',      // Rare and impressive
     'perfectStorm',    // Big achievement
+    'grunwald',        // Rare milestone
     'comebackKing',    // Dramatic
     'marriageCounselor', // Interesting
     'barrelRider',     // Fun
@@ -368,5 +405,7 @@ export function createInitialPlayerStats(): PlayerGameStats {
     minScore: 0,
     maxScore: 0,
     highestRoundPoints: 0,
+    reachedGrunwald: false,
+    grunwaldRound: null,
   };
 }

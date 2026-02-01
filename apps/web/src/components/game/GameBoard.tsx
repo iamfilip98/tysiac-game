@@ -10,10 +10,10 @@ import { TalonDisplay, TalonDistributionPanel } from './TalonPanel';
 import { PlayOrPassPanel } from './PlayOrPassPanel';
 import { WykladanaModal } from './WykladanaModal';
 import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultModal';
+import { PassedAt100Announcement } from './PassedAt100Announcement';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
-import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
 
@@ -34,7 +34,6 @@ function useIsMobile() {
 
 export function GameBoard() {
   const isMobile = useIsMobile();
-  const { showToast } = useToast();
   const { playerId } = useRoomStore();
   const {
     gameState,
@@ -125,13 +124,6 @@ export function GameBoard() {
     }
   }, [gameState?.phase]);
 
-  // Show toast when player passes at 100
-  useEffect(() => {
-    if (passedAt100Notification) {
-      showToast(`${passedAt100Notification.playerName} passed at 100 - starting new round`, 'info');
-      setPassedAt100Notification(null);
-    }
-  }, [passedAt100Notification, showToast, setPassedAt100Notification]);
 
   // Distribution card selection handler
   const handleDistributionCardSelect = (card: CardType) => {
@@ -527,6 +519,12 @@ export function GameBoard() {
           onCancel={() => setShowLeaveModal(false)}
         />
       )}
+
+      {/* Passed at 100 announcement */}
+      <PassedAt100Announcement
+        playerName={passedAt100Notification?.playerName || null}
+        onComplete={() => setPassedAt100Notification(null)}
+      />
 
     </div>
   );
