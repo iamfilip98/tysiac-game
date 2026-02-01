@@ -126,6 +126,7 @@ export function PlayerHand({
   const sortedCards = useMemo(() => {
     const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
     const isRedSuit = (suit: string) => suit === 'hearts' || suit === 'diamonds';
+    const suitValue: Record<string, number> = { hearts: 100, diamonds: 80, clubs: 60, spades: 40 };
 
     // Find unique suits in hand
     const suitsInHand = Array.from(new Set(cards.map(c => c.suit)));
@@ -134,8 +135,9 @@ export function PlayerHand({
     let suitOrder: string[];
     if (suitsInHand.length === 3) {
       // With 3 suits, arrange to alternate colors
-      const redSuits = suitsInHand.filter(isRedSuit);
-      const blackSuits = suitsInHand.filter(s => !isRedSuit(s));
+      // Sort by marriage value (descending) so higher-value suits appear first (on left)
+      const redSuits = suitsInHand.filter(isRedSuit).sort((a, b) => suitValue[b] - suitValue[a]);
+      const blackSuits = suitsInHand.filter(s => !isRedSuit(s)).sort((a, b) => suitValue[b] - suitValue[a]);
 
       if (redSuits.length === 2) {
         // 2 red, 1 black: red, black, red
