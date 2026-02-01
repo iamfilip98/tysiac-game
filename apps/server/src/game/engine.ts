@@ -7,6 +7,7 @@ import { getClientGameState, getValidActions, getNextPlayer, isAIPlayer } from '
 import { AIPlayer } from '../ai/index.js';
 import { detectWykladana } from './wykladana.js';
 import { logDebug } from '../services/debugService.js';
+import { calculateGameStatistics, createInitialPlayerStats, type PlayerGameStats, type RoundHistory } from './statistics.js';
 
 export class GameEngine {
   private game: GameState;
@@ -37,6 +38,10 @@ export class GameEngine {
   private isCleanedUp: boolean = false;
   private isFirstRound: boolean = true;
 
+  // Statistics tracking
+  private playerStats: Map<string, PlayerGameStats> = new Map();
+  private roundHistory: RoundHistory[] = [];
+
   constructor(
     game: GameState,
     io: Server,
@@ -53,6 +58,11 @@ export class GameEngine {
     this.socketLookup = socketLookup || ((playerId) =>
       playerId.startsWith('player-') ? playerId.replace('player-', '') : null
     );
+
+    // Initialize player stats for statistics tracking
+    for (const player of game.players) {
+      this.playerStats.set(player.id, createInitialPlayerStats());
+    }
 
     if (isRecreated) {
       // Engine is being recreated from existing game state (e.g., after server restart)
@@ -374,6 +384,12 @@ export class GameEngine {
     // Update bid
     round.finalBid = amount;
     round.bidWinner = playerId;
+
+    // Track bid for statistics
+    const stats = this.playerStats.get(playerId);
+    if (stats) {
+      stats.totalBidAmount += amount;
+    }
 
     this.broadcastState();
     this.advanceBidding();
@@ -989,6 +1005,12 @@ export class GameEngine {
     playerState.declaredMarriages.push(suit);
     playerState.marriagePoints += MARRIAGE_VALUES[suit];
 
+    // Track marriage for statistics
+    const stats = this.playerStats.get(playerId);
+    if (stats) {
+      stats.marriageCount++;
+    }
+
     // Set trump
     round.trumpSuit = suit;
 
@@ -1047,6 +1069,11 @@ export class GameEngine {
         playerState.declaredMarriages.push(suit);
         playerState.marriagePoints += MARRIAGE_VALUES[suit];
         round.trumpSuit = suit;
+        // Track marriage for statistics
+        const stats = this.playerStats.get(playerId);
+        if (stats) {
+          stats.marriageCount++;
+        }
         // Emit marriage declared event
         this.io.to(this.roomId).emit('game:marriageDeclared', { playerId, suit });
         logDebug({
@@ -1138,10 +1165,60 @@ export class GameEngine {
 
     this.game.phase = 'roundScoring';
 
+    const round = this.game.currentRound!;
     const scoreResult = calculateRoundScores(this.game);
     applyScores(this.game, scoreResult);
 
     const roundResult = createRoundResult(this.game, scoreResult);
+
+    // Track statistics for this round
+    const roundHistoryEntry: RoundHistory = {
+      roundNumber: round.roundNumber,
+      bidWinner: round.bidWinner!,
+      bid: round.finalBid,
+      bidderMadeBid: scoreResult.bidderMadeBid,
+      playerScores: {},
+    };
+
+    for (const playerResult of scoreResult.playerScores) {
+      const stats = this.playerStats.get(playerResult.playerId);
+      if (stats) {
+        // Track bid success/failure for the bidder
+        if (playerResult.playerId === round.bidWinner) {
+          stats.bidCount++;
+          if (scoreResult.bidderMadeBid) {
+            stats.successfulBidCount++;
+          } else {
+            stats.failedBidCount++;
+          }
+        }
+
+        // Track barrel status
+        if (playerResult.wasOnBarrel) {
+          stats.roundsOnBarrel++;
+        }
+
+        // Track min/max scores
+        stats.minScore = Math.min(stats.minScore, playerResult.newTotalScore);
+        stats.maxScore = Math.max(stats.maxScore, playerResult.newTotalScore);
+
+        // Track highest round points (for bidder only, since they're the ones achieving big rounds)
+        if (playerResult.playerId === round.bidWinner && scoreResult.bidderMadeBid) {
+          stats.highestRoundPoints = Math.max(stats.highestRoundPoints, playerResult.totalRoundPoints);
+        }
+      }
+
+      roundHistoryEntry.playerScores[playerResult.playerId] = {
+        trickPoints: playerResult.trickPoints,
+        marriagePoints: playerResult.marriagePoints,
+        totalRoundPoints: playerResult.totalRoundPoints,
+        scoreChange: playerResult.scoreChange,
+        newTotalScore: playerResult.newTotalScore,
+        wasOnBarrel: playerResult.wasOnBarrel,
+      };
+    }
+
+    this.roundHistory.push(roundHistoryEntry);
 
     this.io.to(this.roomId).emit('game:roundEnd', roundResult);
     this.broadcastState();
@@ -1164,9 +1241,13 @@ export class GameEngine {
       finalScores[playerId] = score.totalScore;
     }
 
+    // Calculate game statistics
+    const statistics = calculateGameStatistics(this.game, this.roundHistory, this.playerStats);
+
     this.io.to(this.roomId).emit('game:ended', {
       winnerId: this.game.winner!,
       finalScores,
+      statistics,
     });
 
     this.broadcastState();

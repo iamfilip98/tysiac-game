@@ -27,6 +27,7 @@ export function useSocket() {
     setShowGameEnd,
     setLastMarriageDeclared,
     setWykladanaData,
+    setGameStatistics,
     reset: resetGame,
   } = useGameStore();
 
@@ -163,8 +164,11 @@ export function useSocket() {
       setRoundResult(result);
     });
 
-    socket.on('game:ended', ({ winnerId }) => {
+    socket.on('game:ended', ({ winnerId, statistics }) => {
       setShowGameEnd(true);
+      if (statistics) {
+        setGameStatistics(statistics);
+      }
       // Clear session when game ends
       clearSession();
     });

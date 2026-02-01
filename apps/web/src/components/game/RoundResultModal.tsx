@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import type { RoundResult } from '@tysiac/shared';
+import type { RoundResult, GameStatistics } from '@tysiac/shared';
+import { AwardCard } from './AwardCard';
 
 interface RoundResultModalProps {
   result: RoundResult;
@@ -162,6 +163,7 @@ interface GameEndModalProps {
   players: { id: string; name: string }[];
   scores: Record<string, number>;
   currentPlayerId: string;
+  statistics?: GameStatistics | null;
   onPlayAgain: () => void;
   onLeave: () => void;
 }
@@ -171,6 +173,7 @@ export function GameEndModal({
   players,
   scores,
   currentPlayerId,
+  statistics,
   onPlayAgain,
   onLeave,
 }: GameEndModalProps) {
@@ -181,8 +184,13 @@ export function GameEndModal({
     (a, b) => (scores[b.id] || 0) - (scores[a.id] || 0)
   );
 
+  // Helper to get player name by ID
+  const getPlayerName = (playerId: string) => {
+    return players.find((p) => p.id === playerId)?.name || 'Unknown';
+  };
+
   return (
-    <Modal isOpen={true} className="max-w-md">
+    <Modal isOpen={true} className="max-w-2xl">
       <div className="text-center">
         {/* Victory/defeat header */}
         <motion.div
@@ -251,6 +259,41 @@ export function GameEndModal({
             );
           })}
         </div>
+
+        {/* Game Awards */}
+        {statistics && statistics.awards.length > 0 && (
+          <div className="mb-6">
+            <motion.h3
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="text-lg font-bold text-gold-400 mb-4"
+            >
+              Game Awards
+            </motion.h3>
+            <div className="grid grid-cols-2 gap-3">
+              {statistics.awards.map((award, index) => (
+                <AwardCard
+                  key={award.id}
+                  award={award}
+                  playerName={getPlayerName(award.playerId)}
+                  index={index}
+                />
+              ))}
+            </div>
+            {statistics.totalRounds > 0 && (
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.8 }}
+                className="text-sm text-white/50 mt-3"
+              >
+                Game completed in {statistics.totalRounds} round{statistics.totalRounds !== 1 ? 's' : ''}
+                {statistics.victoryMargin > 0 && ` with a ${statistics.victoryMargin} point lead`}
+              </motion.p>
+            )}
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-3">

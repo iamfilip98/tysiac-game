@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import type { ClientGameState, ValidAction, Card, Suit, RoundResult } from '@tysiac/shared';
+import type { ClientGameState, ValidAction, Card, Suit, RoundResult, GameStatistics } from '@tysiac/shared';
 
 interface GameState {
   gameState: ClientGameState | null;
@@ -14,6 +14,8 @@ interface GameState {
   // WYKLADANA celebration state
   wykladanaData: { playerName: string; bid: number; marriagePoints?: number; cards: Card[] } | null;
   showWykladana: boolean;
+  // Game end statistics
+  gameStatistics: GameStatistics | null;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -26,6 +28,7 @@ interface GameState {
   setLastMarriageDeclared: (data: { playerId: string; suit: Suit } | null) => void;
   setWykladanaData: (data: { playerName: string; bid: number; marriagePoints?: number; cards: Card[] } | null) => void;
   setShowWykladana: (show: boolean) => void;
+  setGameStatistics: (statistics: GameStatistics | null) => void;
   reset: () => void;
 }
 
@@ -40,6 +43,7 @@ export const useGameStore = create<GameState>((set) => ({
   lastMarriageDeclared: null,
   wykladanaData: null,
   showWykladana: false,
+  gameStatistics: null,
 
   setGameState: (gameState) =>
     set({
@@ -78,6 +82,8 @@ export const useGameStore = create<GameState>((set) => ({
 
   setShowWykladana: (showWykladana) => set({ showWykladana }),
 
+  setGameStatistics: (gameStatistics) => set({ gameStatistics }),
+
   reset: () =>
     set({
       gameState: null,
@@ -90,5 +96,6 @@ export const useGameStore = create<GameState>((set) => ({
       lastMarriageDeclared: null,
       wykladanaData: null,
       showWykladana: false,
+      gameStatistics: null,
     }),
 }));

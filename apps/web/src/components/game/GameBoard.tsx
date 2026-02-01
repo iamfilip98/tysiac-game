@@ -45,6 +45,7 @@ export function GameBoard() {
     lastMarriageDeclared,
     wykladanaData,
     showWykladana,
+    gameStatistics,
   } = useGameStore();
   const { selectCard, setShowWykladana } = useGameStore();
   const { setShowRoundResult, setShowGameEnd } = useGameStore();
@@ -499,6 +500,7 @@ export function GameBoard() {
             Object.entries(scores).map(([id, s]) => [id, s.totalScore])
           )}
           currentPlayerId={playerId}
+          statistics={gameStatistics}
           onPlayAgain={startGame}
           onLeave={leaveRoom}
         />

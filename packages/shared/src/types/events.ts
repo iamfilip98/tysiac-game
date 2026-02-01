@@ -69,7 +69,7 @@ export interface ServerToClientEvents {
   'game:playerPassedAt100': (data: { playerId: string; playerName: string }) => void;
   'game:wykladana': (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number; cards: Card[] }) => void;
   'game:roundEnd': (data: RoundResult) => void;
-  'game:ended': (data: { winnerId: string; finalScores: Record<string, number> }) => void;
+  'game:ended': (data: { winnerId: string; finalScores: Record<string, number>; statistics?: GameStatistics }) => void;
   'game:playerReplacedByAI': (data: { playerId: string; playerName: string }) => void;
   'game:error': (error: { code: string; message: string }) => void;
 
@@ -171,4 +171,21 @@ export interface RoundResult {
     isDealer?: boolean;
     sittingOut?: boolean;
   }[];
+}
+
+// Game awards for post-game statistics
+export interface GameAward {
+  id: string;
+  titleEn: string;
+  titlePl: string;
+  emoji: string;
+  playerId: string;
+  value: number;
+  description: string;
+}
+
+export interface GameStatistics {
+  awards: GameAward[];
+  totalRounds: number;
+  victoryMargin: number;
 }
