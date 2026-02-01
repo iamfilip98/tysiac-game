@@ -7,10 +7,11 @@ import { Input } from '@/components/ui/Input';
 interface JoinRoomFormProps {
   onSubmit: (playerName: string, roomCode: string) => void;
   isLoading?: boolean;
+  isConnected?: boolean;
   initialCode?: string;
 }
 
-export function JoinRoomForm({ onSubmit, isLoading, initialCode = '' }: JoinRoomFormProps) {
+export function JoinRoomForm({ onSubmit, isLoading, isConnected = false, initialCode = '' }: JoinRoomFormProps) {
   const [playerName, setPlayerName] = useState('');
   const [roomCode, setRoomCode] = useState(initialCode);
 
@@ -73,9 +74,9 @@ export function JoinRoomForm({ onSubmit, isLoading, initialCode = '' }: JoinRoom
           type="submit"
           variant="secondary"
           className="w-full mt-6"
-          disabled={isLoading || !playerName.trim() || roomCode.length !== 6}
+          disabled={!isConnected || isLoading || !playerName.trim() || roomCode.length !== 6}
         >
-          {isLoading ? 'Joining...' : 'Join Room'}
+          {isLoading ? 'Connecting...' : !isConnected ? 'Waiting for connection...' : 'Join Room'}
         </Button>
       </form>
     </div>
