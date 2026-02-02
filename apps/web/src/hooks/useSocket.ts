@@ -172,8 +172,8 @@ export function useSocket() {
       if (statistics) {
         setGameStatistics(statistics);
       }
-      // Clear session when game ends
-      clearSession();
+      // Don't clear session here - player may want to click "Play Again"
+      // Session is cleared when player explicitly leaves via leaveRoom or leaveGame
     });
 
     socket.on('game:error', ({ message }) => {

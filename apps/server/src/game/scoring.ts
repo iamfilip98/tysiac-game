@@ -106,9 +106,9 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
             // Actual score change reflects the fall
             scoreChange = BARREL_THRESHOLD - currentScore.totalScore;
           } else {
-            // Stay on barrel, score doesn't change
-            newTotalScore = currentScore.totalScore;
-            scoreChange = 0; // No actual change when staying on barrel
+            // Stay on barrel but still receive the points earned
+            newTotalScore = currentScore.totalScore + scoreChange;
+            // scoreChange already set correctly from roundToTen(totalRoundPoints)
             currentScore.barrelAttempts = newAttempts;
           }
         }

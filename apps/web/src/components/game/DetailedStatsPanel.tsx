@@ -38,9 +38,9 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
 
             <div className="grid grid-cols-2 gap-3 text-sm">
               {/* Bid stats */}
-              <div className="bg-table-900/50 rounded p-2">
+              <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
                 <div className="text-white/50 text-xs mb-1">Bid Success Rate</div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 mt-auto">
                   <div className="flex-1 h-2 bg-table-700 rounded-full overflow-hidden">
                     <motion.div
                       initial={{ width: 0 }}
@@ -59,25 +59,25 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
               </div>
 
               {/* Avg bid */}
-              <div className="bg-table-900/50 rounded p-2">
+              <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
                 <div className="text-white/50 text-xs mb-1">Avg Bid Amount</div>
-                <div className="text-lg font-bold text-gold-400">
+                <div className="text-lg font-bold text-gold-400 mt-auto">
                   {detail.avgBidAmount}
                 </div>
               </div>
 
               {/* Marriages */}
-              <div className="bg-table-900/50 rounded p-2">
+              <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
                 <div className="text-white/50 text-xs mb-1">Marriages Declared</div>
-                <div className="text-lg font-bold text-purple-400">
+                <div className="text-lg font-bold text-purple-400 mt-auto">
                   {detail.totalMarriages}
                 </div>
               </div>
 
               {/* Best round */}
-              <div className="bg-table-900/50 rounded p-2">
+              <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
                 <div className="text-white/50 text-xs mb-1">Best Round</div>
-                <div className="text-lg font-bold text-cyan-400">
+                <div className="text-lg font-bold text-cyan-400 mt-auto">
                   {detail.highestSingleRound > 0 ? `+${detail.highestSingleRound}` : '-'}
                 </div>
               </div>

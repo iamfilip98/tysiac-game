@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { Card } from './Card';
@@ -68,6 +68,46 @@ function Confetti() {
 export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onComplete }: WykladanaModalProps) {
   const [showButton, setShowButton] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
+
+  // Sort cards by suit and rank, ensuring red/black alternation when possible
+  // Same logic as PlayerHand.tsx for consistency
+  const sortedCards = useMemo(() => {
+    const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
+    const isRedSuit = (suit: string) => suit === 'hearts' || suit === 'diamonds';
+    const suitValue: Record<string, number> = { hearts: 100, diamonds: 80, clubs: 60, spades: 40 };
+
+    // Find unique suits in hand
+    const suitsInHand = Array.from(new Set(cards.map(c => c.suit)));
+
+    // Determine optimal suit order to avoid same-color adjacency
+    let suitOrder: string[];
+    if (suitsInHand.length === 3) {
+      // With 3 suits, arrange to alternate colors
+      // Sort by marriage value (descending) so higher-value suits appear first (on left)
+      const redSuits = suitsInHand.filter(isRedSuit).sort((a, b) => suitValue[b] - suitValue[a]);
+      const blackSuits = suitsInHand.filter(s => !isRedSuit(s)).sort((a, b) => suitValue[b] - suitValue[a]);
+
+      if (redSuits.length === 2) {
+        // 2 red, 1 black: red, black, red
+        suitOrder = [redSuits[0], blackSuits[0], redSuits[1]];
+      } else if (blackSuits.length === 2) {
+        // 2 black, 1 red: black, red, black
+        suitOrder = [blackSuits[0], redSuits[0], blackSuits[1]];
+      } else {
+        // Fallback
+        suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
+      }
+    } else {
+      // Default order for 4 suits (alternates red/black): hearts, clubs, diamonds, spades
+      suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
+    }
+
+    return [...cards].sort((a, b) => {
+      const suitDiff = suitOrder.indexOf(a.suit) - suitOrder.indexOf(b.suit);
+      if (suitDiff !== 0) return suitDiff;
+      return rankOrder.indexOf(a.rank) - rankOrder.indexOf(b.rank);
+    });
+  }, [cards]);
 
   // Show Continue button after a short delay
   useEffect(() => {
@@ -141,7 +181,7 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
               transition={{ delay: 0.5 }}
               className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4"
             >
-              {cards.map((card, index) => (
+              {sortedCards.map((card, index) => (
                 <motion.div
                   key={`${card.suit}-${card.rank}`}
                   initial={{ opacity: 0, scale: 0.8, y: 20 }}
@@ -156,7 +196,7 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
             <motion.p
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 + cards.length * 0.08 }}
+              transition={{ delay: 0.7 + sortedCards.length * 0.08 }}
               className="text-gold-300"
             >
               120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}

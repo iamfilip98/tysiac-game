@@ -390,12 +390,6 @@ export class GameEngine {
     round.finalBid = amount;
     round.bidWinner = playerId;
 
-    // Track bid for statistics
-    const stats = this.playerStats.get(playerId);
-    if (stats) {
-      stats.totalBidAmount += amount;
-    }
-
     this.broadcastState();
     this.advanceBidding();
   }
@@ -1236,6 +1230,7 @@ export class GameEngine {
         // Track bid success/failure for the bidder
         if (playerResult.playerId === round.bidWinner) {
           stats.bidCount++;
+          stats.totalBidAmount += round.finalBid; // Track the final winning bid amount
           if (scoreResult.bidderMadeBid) {
             stats.successfulBidCount++;
           } else {
