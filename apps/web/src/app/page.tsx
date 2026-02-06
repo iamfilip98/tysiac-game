@@ -8,6 +8,7 @@ import { JoinRoomForm } from '@/components/lobby/JoinRoomForm';
 import { RoomLobby } from '@/components/lobby/RoomLobby';
 import { GameBoard } from '@/components/game/GameBoard';
 import { Modal, ModalHeader, ModalBody } from '@/components/ui/Modal';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { useSocket } from '@/hooks/useSocket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
@@ -55,7 +56,11 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   // If there's an active game, show the game board
   if (gameState && room?.gameId) {
-    return <GameBoard />;
+    return (
+      <ErrorBoundary>
+        <GameBoard />
+      </ErrorBoundary>
+    );
   }
 
   // If in a room, show the lobby
@@ -250,7 +255,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
               <li>• Jack: 2 points</li>
               <li>• Nine: 0 points</li>
             </ul>
-            <p className="text-white/50 text-xs mt-1">Total: 120 points per round</p>
+            <p className="text-white/70 text-xs mt-1">Total: 120 points per round</p>
           </section>
 
           <section>
@@ -274,7 +279,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
               <li>• Clubs (żołędź): 60 points</li>
               <li>• Spades (wino): 40 points</li>
             </ul>
-            <p className="text-white/50 text-xs mt-1">You can only declare a marriage when leading a trick.</p>
+            <p className="text-white/70 text-xs mt-1">You can only declare a marriage when leading a trick.</p>
           </section>
 
           <section>

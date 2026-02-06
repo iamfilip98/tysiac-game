@@ -105,7 +105,7 @@ export function BiddingPanel({
 
         {/* Show max bid info */}
         {bidAction && bidAction.type === 'bid' && (
-          <div className="mt-3 text-center text-xs text-white/50">
+          <div className="mt-3 text-center text-xs text-white/70">
             You can bid up to {bidAction.maxBid} based on your marriages
           </div>
         )}

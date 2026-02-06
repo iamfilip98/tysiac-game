@@ -93,7 +93,7 @@ export function PhaseIndicator({ phase, roundNumber, trickNumber }: PhaseIndicat
   return (
     <div className="text-center">
       {roundNumber && (
-        <div className="text-xs text-white/40 mb-1">Round {roundNumber}</div>
+        <div className="text-xs text-white/70 mb-1">Round {roundNumber}</div>
       )}
       <div className="text-sm font-medium text-white/80">{getPhaseDisplay()}</div>
     </div>

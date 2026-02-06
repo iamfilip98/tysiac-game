@@ -35,8 +35,8 @@ export function ScoreBoard({
   const isFourPlayer = players.length === 4;
 
   return (
-    <div className={cn(
-      "bg-table-900/90 backdrop-blur border border-table-600 rounded-xl w-[220px]",
+    <div aria-live="polite" aria-label="Game scores" className={cn(
+      "bg-table-900/90 backdrop-blur border border-table-600 rounded-xl w-[180px] sm:w-[220px]",
       isFourPlayer ? "p-2" : "p-4"
     )}>
       {/* Header */}
@@ -97,7 +97,7 @@ export function ScoreBoard({
                 {/* Player name */}
                 <span
                   className={cn(
-                    'text-sm font-medium',
+                    'text-xs sm:text-sm font-medium',
                     isMe ? 'text-gold-400' : 'text-white'
                   )}
                   title={player.name}

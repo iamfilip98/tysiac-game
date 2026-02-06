@@ -63,7 +63,7 @@ export function ThrewAnnouncement({ data, players, onComplete }: ThrewAnnounceme
                 </div>
               ))}
             </div>
-            <div className="text-white/50 text-xs mt-4">
+            <div className="text-white/70 text-xs mt-4">
               Starting new round...
             </div>
           </div>

@@ -43,7 +43,7 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, pla
         <p className="text-white/70 text-center mb-4">
           You've seen the talon. Do you want to play this round?
         </p>
-        <p className="text-white/50 text-sm text-center mb-6">
+        <p className="text-white/70 text-sm text-center mb-6">
           {isNoPenalty
             ? 'Throwing means no points lost or gained, moving to the next round.'
             : `Throwing: you lose ${bidAmount} points, others gain +${pointsPerOpponent} each.`}

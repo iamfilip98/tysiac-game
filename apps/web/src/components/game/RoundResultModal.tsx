@@ -281,7 +281,7 @@ export function GameEndModal({
               'flex-1 py-2 text-sm font-medium transition-colors',
               activeTab === 'awards'
                 ? 'text-gold-400 border-b-2 border-gold-400'
-                : 'text-white/50 hover:text-white/70'
+                : 'text-white/70 hover:text-white'
             )}
           >
             Awards
@@ -292,7 +292,7 @@ export function GameEndModal({
               'flex-1 py-2 text-sm font-medium transition-colors',
               activeTab === 'stats'
                 ? 'text-gold-400 border-b-2 border-gold-400'
-                : 'text-white/50 hover:text-white/70'
+                : 'text-white/70 hover:text-white'
             )}
           >
             Stats
@@ -303,7 +303,7 @@ export function GameEndModal({
               'flex-1 py-2 text-sm font-medium transition-colors',
               activeTab === 'history'
                 ? 'text-gold-400 border-b-2 border-gold-400'
-                : 'text-white/50 hover:text-white/70'
+                : 'text-white/70 hover:text-white'
             )}
           >
             History
@@ -331,7 +331,7 @@ export function GameEndModal({
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.8 }}
-                className="text-sm text-white/50 mt-3 text-center"
+                className="text-sm text-white/70 mt-3 text-center"
               >
                 Game completed in {statistics.totalRounds} round{statistics.totalRounds !== 1 ? 's' : ''}
                 {statistics.victoryMargin > 0 && ` with a ${statistics.victoryMargin} point lead`}
