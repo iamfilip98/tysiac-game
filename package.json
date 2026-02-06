@@ -9,6 +9,9 @@
     "test": "turbo test",
     "dev:web": "turbo dev --filter=@tysiac/web",
     "dev:server": "turbo dev --filter=@tysiac/server",
+    "dev:mobile": "pnpm --filter=@tysiac/mobile start",
+    "build:mobile:ios": "pnpm --filter=@tysiac/mobile build:ios",
+    "build:mobile:android": "pnpm --filter=@tysiac/mobile build:android",
     "db:generate": "pnpm --filter=@tysiac/server db:generate",
     "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
     "db:push": "pnpm --filter=@tysiac/server db:push"
