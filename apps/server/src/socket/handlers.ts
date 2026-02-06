@@ -4,8 +4,7 @@ import * as roomService from '../services/roomService.js';
 import * as gameService from '../services/gameService.js';
 import * as debugService from '../services/debugService.js';
 import { GameEngine } from '../game/engine.js';
-import { getValidActions, getClientGameState } from '../game/stateManager.js';
-import { getValidCards } from '../game/validation.js';
+import { getClientGameState } from '../game/stateManager.js';
 import { checkRateLimit, clearRateLimits } from '../security/rateLimit.js';
 import { createSession, validateSession, invalidatePlayerSession, getSessionToken } from '../security/session.js';
 import {
@@ -956,22 +955,8 @@ export function setupSocketHandlers(io: TypedServer) {
                 gameEngines.set(room.gameId, engine);
               }
 
-              // Calculate valid actions directly from game state
-              const round = game.currentRound;
-
-              if (round && game.phase === 'trickPlaying' && round.currentTrick?.currentPlayer === playerId) {
-                const hand = round.players[playerId]?.hand || [];
-                const validCards = getValidCards(hand, round.currentTrick, round.trumpSuit, game);
-                validActions = [{ type: 'playCard' as const, validCards }];
-              } else if (round && game.phase === 'bidding') {
-                validActions = getValidActions(game, playerId, {
-                  currentBidder: playerId,
-                  currentBid: round.finalBid,
-                  passedPlayers: [],
-                });
-              }
-
-              // Notify player if it's their turn
+              // Let the engine handle turn notification with correct internal state
+              // This replaces manual action calculation which had incorrect bidding state
               engine.notifyPlayerIfTheirTurn(playerId);
 
               logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'success', metadata: { hasActiveGame: true, phase: game?.phase } });
@@ -1030,15 +1015,18 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
       // Set timeout for cleanup
       const timeout = setTimeout(async () => {
         disconnectTimeouts.delete(playerId);
+
+        // Check if player reconnected before cleaning up
+        const currentSocketId = playerToSocket.get(playerId);
+        if (currentSocketId) {
+          // Player reconnected, skip cleanup
+          return;
+        }
+
+        // Player didn't reconnect, clean up
         playerToSocket.delete(playerId);
         await invalidatePlayerSession(playerId);
-
-        // If still disconnected after grace period, handle as leave
-        const currentSocketId = playerToSocket.get(playerId);
-        if (!currentSocketId) {
-          // Player didn't reconnect, handle game state accordingly
-          console.log(`Player ${playerId} did not reconnect within grace period`);
-        }
+        console.log(`Player ${playerId} did not reconnect within grace period`);
       }, DISCONNECT_GRACE_PERIOD);
 
       disconnectTimeouts.set(playerId, timeout);

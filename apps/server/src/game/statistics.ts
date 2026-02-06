@@ -21,6 +21,7 @@ export interface RoundHistory {
   bidWinner: string;
   bid: number;
   bidderMadeBid: boolean;
+  wasPassed?: boolean;
   playerScores: Record<string, {
     trickPoints: number;
     marriagePoints: number;
@@ -534,8 +535,8 @@ function generateWhatIfScenarios(
 ): WhatIfScenario[] {
   const scenarios: WhatIfScenario[] = [];
 
-  // Find rounds where bidder failed
-  const failedBids = roundHistory.filter(r => !r.bidderMadeBid);
+  // Find rounds where bidder failed (exclude passed rounds)
+  const failedBids = roundHistory.filter(r => !r.bidderMadeBid && !r.wasPassed);
 
   if (failedBids.length > 0) {
     const lastFailed = failedBids[failedBids.length - 1];

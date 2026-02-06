@@ -27,9 +27,6 @@ export class GameEngine {
   // Wykladana confirmation tracking
   private wykladanaConfirmations: Set<string> = new Set();
 
-  // Safeguard timer for stuck phases
-  private stuckPhaseTimer: NodeJS.Timeout | null = null;
-
   // Safeguard timer for playOrPass decision
   private playOrPassTimer: NodeJS.Timeout | null = null;
 
@@ -37,6 +34,9 @@ export class GameEngine {
   private activeTimers: Set<NodeJS.Timeout> = new Set();
   private isCleanedUp: boolean = false;
   private isFirstRound: boolean = true;
+
+  // Prevent talon from being added to hand twice
+  private talonAddedToHand: boolean = false;
 
   // Statistics tracking
   private playerStats: Map<string, PlayerGameStats> = new Map();
@@ -325,6 +325,7 @@ export class GameEngine {
       talonAces: is4Player ? talonAces : undefined,
     };
 
+    this.talonAddedToHand = false;
     this.game.phase = 'dealing';
     this.broadcastState();
 
@@ -546,40 +547,6 @@ export class GameEngine {
 
     // Check if all confirmations are in
     this.checkTalonConfirmations();
-
-    // Set up safeguard timer - if still in talonReveal after 30 seconds, force progress
-    this.clearStuckPhaseTimer();
-    this.stuckPhaseTimer = setTimeout(() => {
-      if (this.isCleanedUp) return;
-      if (this.game.phase === 'talonReveal') {
-        logDebug({
-          gameId: this.game.id,
-          roomId: this.roomId,
-          eventType: 'talon:safeguardTrigger',
-          eventData: {
-            reason: 'timeout_30s',
-            missingConfirmations: this.game.players
-              .filter(p => !this.talonConfirmations.has(p.id))
-              .map(p => ({ id: p.id, name: p.name, isAI: p.isAI })),
-          },
-          result: 'success',
-        });
-        // Force confirm everyone
-        for (const player of this.game.players) {
-          this.talonConfirmations.add(player.id);
-        }
-        this.checkTalonConfirmations();
-      }
-    }, 30000);
-    this.activeTimers.add(this.stuckPhaseTimer);
-  }
-
-  private clearStuckPhaseTimer(): void {
-    if (this.stuckPhaseTimer) {
-      clearTimeout(this.stuckPhaseTimer);
-      this.activeTimers.delete(this.stuckPhaseTimer);
-      this.stuckPhaseTimer = null;
-    }
   }
 
   private clearPlayOrPassTimer(): void {
@@ -660,16 +627,16 @@ export class GameEngine {
     });
 
     if (allConfirmed) {
-      // Clear safeguard timer since we're proceeding
-      this.clearStuckPhaseTimer();
-
       const round = this.game.currentRound!;
 
       // Bidder always gets the option to play or throw (pass)
       // Give talon to bid winner before the decision so they can see it in their hand
       const bidWinnerId = round.bidWinner!;
-      round.players[bidWinnerId].hand.push(...round.talon);
-      round.cardsToDistribute = [...round.talon];
+      if (!this.talonAddedToHand) {
+        round.players[bidWinnerId].hand.push(...round.talon);
+        round.cardsToDistribute = [...round.talon];
+        this.talonAddedToHand = true;
+      }
 
       logDebug({
         gameId: this.game.id,
@@ -867,6 +834,32 @@ export class GameEngine {
         });
       }
 
+      // Record the passed round in history
+      const passedRoundHistory: RoundHistory = {
+        roundNumber: round.roundNumber,
+        bidWinner: playerId,
+        bid: bidAmount,
+        bidderMadeBid: false,
+        wasPassed: true,
+        playerScores: {},
+      };
+      for (const p of this.game.players) {
+        const scoreChange = p.id === playerId
+          ? (bidAmount === 100 ? 0 : -bidAmount)
+          : (bidAmount === 100 ? 0 : Math.floor(120 / (round.isDealerSittingOut
+              ? this.game.players.filter(pl => pl.id !== round.dealer && pl.id !== playerId).length
+              : this.game.players.filter(pl => pl.id !== playerId).length)));
+        passedRoundHistory.playerScores[p.id] = {
+          trickPoints: 0,
+          marriagePoints: 0,
+          totalRoundPoints: 0,
+          scoreChange,
+          newTotalScore: this.game.scores[p.id].totalScore,
+          wasOnBarrel: this.game.scores[p.id].isOnBarrel,
+        };
+      }
+      this.roundHistory.push(passedRoundHistory);
+
       // Skip scoring and start a new round after a brief delay
       this.safeSetTimeout(() => {
         this.startNewRound();
@@ -883,11 +876,11 @@ export class GameEngine {
     const round = this.game.currentRound!;
     const bidWinnerId = round.bidWinner!;
 
-    // Only add talon if not already added (i.e., bid was > 100)
-    // When bid is exactly 100, talon was already added in checkTalonConfirmations
-    if (round.cardsToDistribute.length === 0) {
+    // Only add talon if not already added
+    if (!this.talonAddedToHand) {
       round.players[bidWinnerId].hand.push(...round.talon);
       round.cardsToDistribute = [...round.talon];
+      this.talonAddedToHand = true;
     }
 
     this.safeSetTimeout(() => {
@@ -1481,6 +1474,17 @@ export class GameEngine {
   }
 
   /**
+   * Get current bidding state (used for reconnection)
+   */
+  getBiddingState(): { currentBidder: string; currentBid: number; passedPlayers: string[] } {
+    return {
+      currentBidder: this.currentBidder,
+      currentBid: this.game.currentRound?.finalBid || 0,
+      passedPlayers: [...this.passedPlayers],
+    };
+  }
+
+  /**
    * Get valid actions for a player (used for reconnection)
    */
   getValidActionsForPlayer(playerId: string): ValidAction[] {
@@ -1614,7 +1618,6 @@ export class GameEngine {
       clearTimeout(timer);
     }
     this.activeTimers.clear();
-    this.clearStuckPhaseTimer();
     this.clearPlayOrPassTimer();
 
     // Calculate expiry (1 hour)
@@ -1693,9 +1696,21 @@ export class GameEngine {
 
     this.broadcastState();
 
-    // Re-prompt current player if in an active phase
+    // Re-prompt/restore based on current phase
     if (['bidding', 'talonDistribution', 'trickPlaying'].includes(this.game.phase)) {
       this.promptCurrentPlayer();
+    } else if (this.game.phase === 'talonReveal') {
+      // Re-check talon confirmations (some may have been missed during pause)
+      this.checkTalonConfirmations();
+    } else if (this.game.phase === 'playOrPassDecision') {
+      // Re-prompt the bid winner for their play/pass decision
+      this.promptPlayOrPassDecision();
+    } else if (this.game.phase === 'wykladana') {
+      // Re-check wykladana confirmations
+      this.checkWykladanaConfirmations();
+    } else if (this.game.phase === 'roundScoring') {
+      // Re-broadcast state so clients can see scoring
+      this.broadcastState();
     }
 
     return true;
