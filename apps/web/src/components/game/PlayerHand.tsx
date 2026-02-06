@@ -80,7 +80,7 @@ function DraggableCard({
       dragElastic={0.5}
       dragSnapToOrigin
       onDragEnd={handleDragEnd}
-      style={{ y, scale, opacity, touchAction: 'none' }}
+      style={{ y, scale, opacity, touchAction: 'pan-x' }}
     >
       {children}
     </motion.div>

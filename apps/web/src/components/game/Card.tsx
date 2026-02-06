@@ -207,14 +207,14 @@ export function Card({
           )}
         </div>
         {/* Corner pips - top left */}
-        <div className={cn('absolute top-0.5 left-0.5 flex flex-col items-center leading-none text-[8px]', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
+        <div className={cn('absolute top-0.5 left-1 flex flex-col items-center leading-none text-[11px]', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
           <span className="font-bold">{card.rank}</span>
-          <span className="-mt-0.5">{suitSymbol}</span>
+          <span className="-mt-0.5 text-[10px]">{suitSymbol}</span>
         </div>
         {/* Corner pips - bottom right (inverted) */}
-        <div className={cn('absolute bottom-0.5 right-0.5 flex flex-col items-center leading-none text-[8px] rotate-180', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
+        <div className={cn('absolute bottom-0.5 right-1 flex flex-col items-center leading-none text-[11px] rotate-180', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
           <span className="font-bold">{card.rank}</span>
-          <span className="-mt-0.5">{suitSymbol}</span>
+          <span className="-mt-0.5 text-[10px]">{suitSymbol}</span>
         </div>
       </motion.div>
     </div>
