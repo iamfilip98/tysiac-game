@@ -5,6 +5,7 @@ import { getSocket, connectSocket, TypedSocket } from '@/lib/socket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
 import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
+import { soundManager } from '@/lib/sounds';
 import type { Card, Suit, EmoteType } from '@tysiac/shared';
 
 export function useSocket() {
@@ -164,10 +165,12 @@ export function useSocket() {
     });
 
     socket.on('game:roundEnd', (result) => {
+      soundManager.playRoundWin();
       setRoundResult(result);
     });
 
     socket.on('game:ended', ({ winnerId, statistics }) => {
+      soundManager.playGameWin();
       setShowGameEnd(true);
       if (statistics) {
         setGameStatistics(statistics);
@@ -177,6 +180,7 @@ export function useSocket() {
     });
 
     socket.on('game:error', ({ message }) => {
+      soundManager.playError();
       setError(message);
     });
 
@@ -187,6 +191,7 @@ export function useSocket() {
     });
 
     socket.on('game:trickWon', () => {
+      soundManager.playTrickWin();
       // Clear marriage indicator when trick completes
       setLastMarriageDeclared(null);
     });
@@ -321,12 +326,14 @@ export function useSocket() {
   // Game actions
   const bid = useCallback((amount: number) => {
     if (safeEmit('game:bid', amount)) {
+      soundManager.playBid();
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
 
   const pass = useCallback(() => {
     if (safeEmit('game:pass')) {
+      soundManager.playPass();
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
@@ -339,6 +346,7 @@ export function useSocket() {
 
   const playCard = useCallback((card: Card) => {
     if (safeEmit('game:playCard', card)) {
+      soundManager.playCardPlace();
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);

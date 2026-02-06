@@ -145,7 +145,7 @@ describe('getValidCards', () => {
       expect(valid.every(c => c.suit === 'hearts')).toBe(true);
     });
 
-    it('returns all hand cards when player cannot follow suit', () => {
+    it('returns all hand cards when player cannot follow suit and no trump', () => {
       const hand = [card('clubs', 'A'), card('diamonds', '9')];
       const trick = mockTrick(
         [{ playerId: 'p1', card: card('hearts', 'K') }],
@@ -202,12 +202,12 @@ describe('getValidCards', () => {
     });
   });
 
-  describe('lead card already beaten by another player', () => {
-    it('allows any in-suit card (no need to beat) when lead is not winning', () => {
-      // p1 leads hearts Q, p2 already played hearts A (beats Q), now p3 plays
+  describe('must beat highest card of lead suit', () => {
+    it('must beat highest lead-suit card even when lead is not winning', () => {
+      // p1 leads hearts Q, p2 played hearts A, now p3 must beat A if possible
       const hand = [
-        card('hearts', '9'),  // lower than A but should still be valid
-        card('hearts', 'J'),
+        card('hearts', '9'),  // can't beat A
+        card('hearts', 'J'),  // can't beat A
         card('clubs', 'K'),
       ];
       const trick = mockTrick(
@@ -221,14 +221,38 @@ describe('getValidCards', () => {
 
       const valid = getValidCards(hand, trick, null, game);
 
-      // Lead (Q) is no longer winning (A is higher), so p3 just follows suit
+      // Can't beat A, so just follow suit with all hearts
       expect(valid).toHaveLength(2);
       expect(valid.every(c => c.suit === 'hearts')).toBe(true);
+    });
+
+    it('only returns cards that beat the highest lead-suit card', () => {
+      // p1 leads hearts 9, p2 played hearts J, p3 has hearts Q, K, and clubs A
+      const hand = [
+        card('hearts', 'Q'),  // beats J (strength 2 > 1)
+        card('hearts', 'K'),  // beats J (strength 3 > 1)
+        card('clubs', 'A'),
+      ];
+      const trick = mockTrick(
+        [
+          { playerId: 'p1', card: card('hearts', '9') },
+          { playerId: 'p2', card: card('hearts', 'J') },
+        ],
+        'hearts',
+        'p3',
+      );
+
+      const valid = getValidCards(hand, trick, null, game);
+
+      // Must beat J; both Q and K can
+      expect(valid).toHaveLength(2);
+      expect(containsCard(valid, 'hearts', 'Q')).toBe(true);
+      expect(containsCard(valid, 'hearts', 'K')).toBe(true);
     });
   });
 
   describe('trump interactions', () => {
-    it('allows any card when player cannot follow suit (no trump obligation)', () => {
+    it('forces trump play when player cannot follow suit and has trump', () => {
       const hand = [
         card('clubs', 'A'),
         card('diamonds', '9'),
@@ -242,8 +266,26 @@ describe('getValidCards', () => {
 
       const valid = getValidCards(hand, trick, 'hearts', game);
 
-      // Player has no spades, so any card is valid (no trump obligation)
-      expect(valid).toHaveLength(3);
+      // Player has no spades, must play trump (hearts K)
+      expect(valid).toHaveLength(1);
+      expect(containsCard(valid, 'hearts', 'K')).toBe(true);
+    });
+
+    it('allows any card when player cannot follow suit and has no trump', () => {
+      const hand = [
+        card('clubs', 'A'),
+        card('diamonds', '9'),
+      ];
+      const trick = mockTrick(
+        [{ playerId: 'p1', card: card('spades', 'Q') }],
+        'spades',
+        'p2',
+      );
+
+      const valid = getValidCards(hand, trick, 'hearts', game);
+
+      // No spades and no trump — any card is valid
+      expect(valid).toHaveLength(2);
     });
 
     it('does not force trump play when player has lead suit cards', () => {
@@ -264,8 +306,8 @@ describe('getValidCards', () => {
       expect(valid[0]).toEqual(card('spades', '9'));
     });
 
-    it('considers trump when lead is beaten by trump (lead no longer winning)', () => {
-      // p1 leads clubs K, p2 plays hearts 9 (trump) -- clubs K is no longer winning
+    it('must follow suit even when trick is trumped', () => {
+      // p1 leads clubs K, p2 plays hearts 9 (trump) — p3 has clubs, must follow
       const hand = [
         card('clubs', '9'),
         card('clubs', 'J'),
@@ -281,9 +323,57 @@ describe('getValidCards', () => {
 
       const valid = getValidCards(hand, trick, 'hearts', game);
 
-      // Lead is no longer winning (trumped), so p3 just follows suit
+      // Must follow clubs; J strength=1 and 9 strength=0, neither beats K (strength=3)
+      // So all clubs are valid
       expect(valid).toHaveLength(2);
       expect(valid.every(c => c.suit === 'clubs')).toBe(true);
+    });
+
+    it('must beat existing trump when trumping and able to', () => {
+      // p1 leads clubs K, p2 trumps with hearts 9 — p3 has no clubs, has hearts A
+      const hand = [
+        card('diamonds', '10'),
+        card('hearts', 'A'), // trump, can beat hearts 9
+        card('hearts', 'J'), // trump, can't beat hearts 9
+      ];
+      const trick = mockTrick(
+        [
+          { playerId: 'p1', card: card('clubs', 'K') },
+          { playerId: 'p2', card: card('hearts', '9') }, // trump
+        ],
+        'clubs',
+        'p3',
+      );
+
+      const valid = getValidCards(hand, trick, 'hearts', game);
+
+      // No clubs, must trump. Must beat hearts 9 (strength 0).
+      // J strength=1 > 0, A strength=5 > 0, so both beat it
+      expect(valid).toHaveLength(2);
+      expect(containsCard(valid, 'hearts', 'A')).toBe(true);
+      expect(containsCard(valid, 'hearts', 'J')).toBe(true);
+    });
+
+    it('plays any trump when can\'t beat existing trump', () => {
+      // p1 leads clubs K, p2 trumps with hearts A — p3 has no clubs, has hearts 9
+      const hand = [
+        card('diamonds', '10'),
+        card('hearts', '9'), // trump, can't beat hearts A
+      ];
+      const trick = mockTrick(
+        [
+          { playerId: 'p1', card: card('clubs', 'K') },
+          { playerId: 'p2', card: card('hearts', 'A') }, // trump
+        ],
+        'clubs',
+        'p3',
+      );
+
+      const valid = getValidCards(hand, trick, 'hearts', game);
+
+      // No clubs, must trump. Can't beat hearts A, so any trump is valid
+      expect(valid).toHaveLength(1);
+      expect(containsCard(valid, 'hearts', '9')).toBe(true);
     });
   });
 });
@@ -523,7 +613,7 @@ describe('validateCardPlay', () => {
     expect(result.reason).toContain('Invalid card');
   });
 
-  it('accepts an off-suit card when player cannot follow suit', () => {
+  it('accepts an off-suit card when player cannot follow suit and no trump', () => {
     const hand = [card('clubs', '9'), card('diamonds', 'K')];
     const trick = mockTrick(
       [{ playerId: 'p1', card: card('hearts', 'A') }],
@@ -534,6 +624,20 @@ describe('validateCardPlay', () => {
     const result = validateCardPlay(card('clubs', '9'), hand, trick, null, game);
 
     expect(result.isValid).toBe(true);
+  });
+
+  it('rejects off-suit non-trump when player has trump and cannot follow suit', () => {
+    const hand = [card('clubs', '9'), card('hearts', 'K')]; // hearts is trump
+    const trick = mockTrick(
+      [{ playerId: 'p1', card: card('spades', 'A') }],
+      'spades',
+      'p2',
+    );
+
+    // Must play hearts K (trump), not clubs 9
+    const result = validateCardPlay(card('clubs', '9'), hand, trick, 'hearts', game);
+
+    expect(result.isValid).toBe(false);
   });
 });
 

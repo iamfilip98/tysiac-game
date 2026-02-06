@@ -163,16 +163,16 @@ export function Card({
             {/* Sparkle particles - disabled on mobile for performance */}
             {!isMobile && (
               <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
-                {[...Array(6)].map((_, i) => (
+                {[...Array(3)].map((_, i) => (
                   <div
                     key={i}
                     className="absolute w-1 h-1 rounded-full bg-white"
                     style={{
-                      top: `${15 + (i * 15)}%`,
-                      left: `${10 + (i * 16) % 80}%`,
+                      top: `${20 + (i * 25)}%`,
+                      left: `${15 + (i * 30) % 70}%`,
                       boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
-                      animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.2}s`,
+                      animation: `sparkle ${2 + i * 0.4}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.3}s`,
                     }}
                   />
                 ))}
