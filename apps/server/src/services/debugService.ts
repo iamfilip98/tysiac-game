@@ -467,6 +467,40 @@ export async function cleanupOldLogs(): Promise<number> {
   }
 }
 
+// Redact sensitive data from debug log entries before API response
+export function redactLogEntry(entry: DebugLogEntry): DebugLogEntry {
+  const redacted = { ...entry };
+
+  // Redact hand data from eventData
+  if (redacted.eventData && typeof redacted.eventData === 'object') {
+    redacted.eventData = redactHandData(redacted.eventData);
+  }
+
+  // Redact hand data from metadata
+  if (redacted.metadata && typeof redacted.metadata === 'object') {
+    redacted.metadata = redactHandData(redacted.metadata);
+  }
+
+  return redacted;
+}
+
+function redactHandData(obj: unknown): unknown {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(redactHandData);
+
+  const result: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+    if (key === 'hand' || key === 'playerHand' || key === 'handSummary') {
+      result[key] = '[REDACTED]';
+    } else if (typeof value === 'object' && value !== null) {
+      result[key] = redactHandData(value);
+    } else {
+      result[key] = value;
+    }
+  }
+  return result;
+}
+
 // Schedule periodic cleanup
 let cleanupTimer: NodeJS.Timeout | null = null;
 
