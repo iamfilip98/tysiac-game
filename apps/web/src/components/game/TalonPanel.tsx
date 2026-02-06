@@ -1,30 +1,12 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn } from '@/lib/utils';
+import { cn, truncateName } from '@/lib/utils';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
-
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-  return isMobile;
-}
 
 interface TalonDisplayProps {
   talon: CardType[];

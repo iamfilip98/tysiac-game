@@ -5,6 +5,13 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const MAX_NAME_LENGTH = 7;
+
+export function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
 export function formatScore(score: number): string {
   if (score >= 0) return `+${score}`;
   return score.toString();

@@ -3,15 +3,8 @@
 import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
-import { cn } from '@/lib/utils';
+import { cn, truncateName } from '@/lib/utils';
 import type { Card as CardType, ValidAction, Suit } from '@tysiac/shared';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
 
 interface DistributionState {
   currentTarget: string | null;

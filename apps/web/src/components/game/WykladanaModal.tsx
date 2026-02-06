@@ -4,14 +4,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { Card } from './Card';
+import { truncateName } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
 
 interface WykladanaModalProps {
   playerName: string;

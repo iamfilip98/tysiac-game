@@ -4,15 +4,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn } from '@/lib/utils';
+import { cn, truncateName } from '@/lib/utils';
 import type { Room, RoomPlayer } from '@tysiac/shared';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
 
 interface RoomLobbyProps {
   room: Room;

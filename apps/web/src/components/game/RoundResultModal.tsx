@@ -4,19 +4,12 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { cn } from '@/lib/utils';
+import { cn, truncateName } from '@/lib/utils';
 import type { RoundResult, GameStatistics } from '@tysiac/shared';
 import { AwardCard } from './AwardCard';
 import { DetailedStatsPanel } from './DetailedStatsPanel';
 import { RoundHistoryGraph } from './RoundHistoryGraph';
 import { WhatIfPanel } from './WhatIfPanel';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
 
 interface RoundResultModalProps {
   result: RoundResult;
