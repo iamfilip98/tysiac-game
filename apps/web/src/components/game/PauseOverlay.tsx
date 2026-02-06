@@ -56,11 +56,11 @@ export function PauseOverlay({ pausedByName, pausedAt, onResume }: PauseOverlayP
         </p>
 
         <div className="bg-table-900/50 rounded-lg p-4 mb-6">
-          <div className="text-sm text-white/70 mb-1">Time remaining to resume:</div>
+          <div className="text-sm text-white/50 mb-1">Time remaining to resume:</div>
           <div className="text-3xl font-mono text-amber-400">
             {timeRemaining}
           </div>
-          <div className="text-xs text-white/70 mt-1">
+          <div className="text-xs text-white/40 mt-1">
             Game will end if not resumed within 1 hour
           </div>
         </div>
@@ -74,7 +74,7 @@ export function PauseOverlay({ pausedByName, pausedAt, onResume }: PauseOverlayP
           Resume Game
         </Button>
 
-        <p className="text-white/70 text-xs mt-4">
+        <p className="text-white/40 text-xs mt-4">
           Any player can resume the game
         </p>
       </motion.div>

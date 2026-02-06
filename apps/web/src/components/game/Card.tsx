@@ -1,10 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { cn, getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/useIsMobile';
-import { KingFace, QueenFace, JackFace } from './card-faces';
+import { cn } from '@/lib/utils';
+import { getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
+
+// Hook to detect mobile for performance optimizations
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 interface CardProps {
   card: CardType;
@@ -163,16 +177,16 @@ export function Card({
             {/* Sparkle particles - disabled on mobile for performance */}
             {!isMobile && (
               <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
-                {[...Array(3)].map((_, i) => (
+                {[...Array(6)].map((_, i) => (
                   <div
                     key={i}
                     className="absolute w-1 h-1 rounded-full bg-white"
                     style={{
-                      top: `${20 + (i * 25)}%`,
-                      left: `${15 + (i * 30) % 70}%`,
+                      top: `${15 + (i * 15)}%`,
+                      left: `${10 + (i * 16) % 80}%`,
                       boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
-                      animation: `sparkle ${2 + i * 0.4}s ease-in-out infinite`,
-                      animationDelay: `${i * 0.3}s`,
+                      animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.2}s`,
                     }}
                   />
                 ))}
@@ -182,39 +196,13 @@ export function Card({
         )}
         {/* Card content */}
         <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
-          {/* Face card illustration or rank/suit */}
-          {card.rank === 'K' ? (
-            <div className="w-full h-full p-0.5">
-              <KingFace color={color as 'red' | 'black'} />
-            </div>
-          ) : card.rank === 'Q' ? (
-            <div className="w-full h-full p-0.5">
-              <QueenFace color={color as 'red' | 'black'} />
-            </div>
-          ) : card.rank === 'J' ? (
-            <div className="w-full h-full p-0.5">
-              <JackFace color={color as 'red' | 'black'} />
-            </div>
-          ) : (
-            <>
-              <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-                {card.rank}
-              </span>
-              <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-                {suitSymbol}
-              </span>
-            </>
-          )}
-        </div>
-        {/* Corner pips - top left */}
-        <div className={cn('absolute top-0.5 left-1 flex flex-col items-center leading-none text-[11px]', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
-          <span className="font-bold">{card.rank}</span>
-          <span className="-mt-0.5 text-[10px]">{suitSymbol}</span>
-        </div>
-        {/* Corner pips - bottom right (inverted) */}
-        <div className={cn('absolute bottom-0.5 right-1 flex flex-col items-center leading-none text-[11px] rotate-180', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
-          <span className="font-bold">{card.rank}</span>
-          <span className="-mt-0.5 text-[10px]">{suitSymbol}</span>
+          {/* Center rank and suit */}
+          <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+            {card.rank}
+          </span>
+          <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+            {suitSymbol}
+          </span>
         </div>
       </motion.div>
     </div>

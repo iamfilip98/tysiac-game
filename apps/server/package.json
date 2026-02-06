@@ -11,9 +11,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@fastify/cors": "^9.0.0",
@@ -31,7 +29,6 @@
     "@types/node": "^20.11.0",
     "drizzle-kit": "^0.20.0",
     "tsx": "^4.7.0",
-    "typescript": "^5.4.0",
-    "vitest": "^4.0.18"
+    "typescript": "^5.4.0"
   }
 }

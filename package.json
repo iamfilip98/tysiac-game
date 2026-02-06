@@ -9,21 +9,13 @@
     "test": "turbo test",
     "dev:web": "turbo dev --filter=@tysiac/web",
     "dev:server": "turbo dev --filter=@tysiac/server",
-    "dev:mobile": "pnpm --filter=@tysiac/mobile start",
-    "build:mobile:ios": "pnpm --filter=@tysiac/mobile build:ios",
-    "build:mobile:android": "pnpm --filter=@tysiac/mobile build:android",
     "db:generate": "pnpm --filter=@tysiac/server db:generate",
     "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
-    "db:push": "pnpm --filter=@tysiac/server db:push",
-    "test:e2e": "playwright test"
+    "db:push": "pnpm --filter=@tysiac/server db:push"
   },
   "dependencies": {
     "next": "^14.1.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
-  },
-  "devDependencies": {
-    "@playwright/test": "^1.58.2",
-    "socket.io-client": "^4.8.3"
   }
 }

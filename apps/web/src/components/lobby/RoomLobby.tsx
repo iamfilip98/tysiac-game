@@ -4,8 +4,15 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn, truncateName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { Room, RoomPlayer } from '@tysiac/shared';
+
+const MAX_NAME_LENGTH = 7;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
 
 interface RoomLobbyProps {
   room: Room;
@@ -227,7 +234,7 @@ export function RoomLobby({
             <div className="text-sm text-white/60 mb-2" id="players-label">
               Players ({room.players.length}/{room.maxPlayers})
               {room.maxPlayers === 4 && (
-                <span className="ml-2 text-xs text-white/70">(dealer sits out each round)</span>
+                <span className="ml-2 text-xs text-white/40">(dealer sits out each round)</span>
               )}
             </div>
 
@@ -299,7 +306,7 @@ export function RoomLobby({
           {isHost && (
             <div
               className={cn(
-                'mt-4 text-center text-sm text-white/70 min-h-[20px]',
+                'mt-4 text-center text-sm text-white/40 min-h-[20px]',
                 canStart && 'invisible'
               )}
               role="status"
@@ -330,7 +337,7 @@ function EmptySlot({ isHost, canAddAI, isAddingAI, onAddAI }: EmptySlotProps) {
       className={cn(
         SLOT_HEIGHT,
         'flex items-center justify-center',
-        'rounded-lg border-2 border-dashed border-table-600 text-white/70'
+        'rounded-lg border-2 border-dashed border-table-600 text-white/40'
       )}
       role="listitem"
       aria-label="Empty player slot"
@@ -421,7 +428,7 @@ function PlayerSlot({
               </span>
             )}
           </div>
-          <div className="text-xs text-white/70">
+          <div className="text-xs text-white/40">
             {isCurrentPlayer ? 'You' : player.isAI ? 'Computer' : 'Player'}
           </div>
         </div>
@@ -432,7 +439,7 @@ function PlayerSlot({
         <span
           className={cn(
             'text-sm flex items-center gap-1 w-[75px] justify-end',
-            player.isReady ? 'text-green-400' : 'text-white/70'
+            player.isReady ? 'text-green-400' : 'text-white/40'
           )}
           role="status"
           aria-label={`${player.name} is ${player.isReady ? 'ready' : 'not ready'}`}

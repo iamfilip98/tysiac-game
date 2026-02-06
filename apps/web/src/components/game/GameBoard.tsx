@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayerHand, OpponentHand } from './PlayerHand';
 import { TrickPile } from './TrickPile';
@@ -13,18 +13,25 @@ import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultMod
 import { PassedAt100Announcement } from './PassedAt100Announcement';
 import { ThrewAnnouncement } from './ThrewAnnouncement';
 import { PauseOverlay } from './PauseOverlay';
-import { DealAnimation } from './DealAnimation';
-import { EmotePanel } from './EmotePanel';
-import { EmoteBubble } from './EmoteBubble';
-import SoundToggle from '@/components/ui/SoundToggle';
-import { soundManager } from '@/lib/sounds';
-import { haptics as hapticManager } from '@/lib/haptics';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
-import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
-import type { Card as CardType, EmoteType } from '@tysiac/shared';
+import type { Card as CardType } from '@tysiac/shared';
+
+// Hook to track screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 
 export function GameBoard() {
@@ -62,7 +69,6 @@ export function GameBoard() {
     startGame,
     pauseGame,
     resumeGame,
-    sendEmote,
   } = useSocket();
 
   // Get current player info
@@ -108,51 +114,6 @@ export function GameBoard() {
   // Talon distribution state
   const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
   const [distributionCards, setDistributionCards] = useState<Map<string, CardType>>(new Map());
-
-  // Deal animation state
-  const [showDealAnimation, setShowDealAnimation] = useState(false);
-
-  // Emote bubbles state: playerId -> active emote
-  const [emotes, setEmotes] = useState<Map<string, { playerName: string; emoteType: EmoteType }>>(new Map());
-
-  // Listen for emote events from useSocket
-  useEffect(() => {
-    const handler = (e: Event) => {
-      const detail = (e as CustomEvent).detail as { playerId: string; playerName: string; emoteType: EmoteType };
-      soundManager.playEmote();
-      hapticManager.light();
-      setEmotes(prev => {
-        const next = new Map(prev);
-        next.set(detail.playerId, { playerName: detail.playerName, emoteType: detail.emoteType });
-        return next;
-      });
-      // Clear after 3 seconds
-      setTimeout(() => {
-        setEmotes(prev => {
-          const next = new Map(prev);
-          next.delete(detail.playerId);
-          return next;
-        });
-      }, 3000);
-    };
-    window.addEventListener('game:emote', handler);
-    return () => window.removeEventListener('game:emote', handler);
-  }, []);
-
-  // Show deal animation when phase transitions to dealing
-  useEffect(() => {
-    if (gameState?.phase === 'dealing') {
-      setShowDealAnimation(true);
-    }
-  }, [gameState?.phase]);
-
-  // Sound effects for game events
-  useEffect(() => {
-    if (isMyTurn && gameState?.phase === 'trickPlaying') {
-      soundManager.playTurnNotification();
-      hapticManager.medium();
-    }
-  }, [isMyTurn, gameState?.phase]);
 
   // Reset confirmation state when phase changes
   useEffect(() => {
@@ -284,48 +245,44 @@ export function GameBoard() {
       </div>
 
 
-      {/* Opponents — hidden during deal animation */}
-      {!showDealAnimation && (
-        <>
-          <div className={cn(
-            'absolute z-10',
-            isMobile ? 'top-20 left-2' : 'top-24 left-8'
-          )}>
-            {otherPlayers[0] && (
-              <OpponentHand
-                cardCount={getOpponentHandSize(otherPlayers[0].id)}
-                position="left"
-                playerName={otherPlayers[0].name}
-                isCurrentTurn={
-                  round?.currentTrick?.currentPlayer === otherPlayers[0].id
-                }
-              />
-            )}
-          </div>
+      {/* Opponents */}
+      <div className={cn(
+        'absolute z-10',
+        isMobile ? 'top-20 left-2' : 'top-24 left-8'
+      )}>
+        {otherPlayers[0] && (
+          <OpponentHand
+            cardCount={getOpponentHandSize(otherPlayers[0].id)}
+            position="left"
+            playerName={otherPlayers[0].name}
+            isCurrentTurn={
+              round?.currentTrick?.currentPlayer === otherPlayers[0].id
+            }
+          />
+        )}
+      </div>
 
-          <div className={cn(
-            'absolute z-10',
-            isMobile ? 'top-20 right-2' : 'top-24 right-8'
-          )}>
-            {otherPlayers[1] && (
-              <OpponentHand
-                cardCount={getOpponentHandSize(otherPlayers[1].id)}
-                position="right"
-                playerName={otherPlayers[1].name}
-                isCurrentTurn={
-                  round?.currentTrick?.currentPlayer === otherPlayers[1].id
-                }
-              />
-            )}
-          </div>
-        </>
-      )}
+      <div className={cn(
+        'absolute z-10',
+        isMobile ? 'top-20 right-2' : 'top-24 right-8'
+      )}>
+        {otherPlayers[1] && (
+          <OpponentHand
+            cardCount={getOpponentHandSize(otherPlayers[1].id)}
+            position="right"
+            playerName={otherPlayers[1].name}
+            isCurrentTurn={
+              round?.currentTrick?.currentPlayer === otherPlayers[1].id
+            }
+          />
+        )}
+      </div>
 
       {/* Center area - trick pile / talon */}
       <div className="absolute inset-0 flex items-center justify-center">
         <AnimatePresence mode="wait">
-          {/* Dealing / Bidding - show talon (hidden during deal animation) */}
-          {(phase === 'dealing' || phase === 'bidding') && !showDealAnimation && (
+          {/* Dealing / Bidding - show talon */}
+          {(phase === 'dealing' || phase === 'bidding') && (
             <motion.div
               key="talon-hidden"
               initial={{ opacity: 0 }}
@@ -476,13 +433,12 @@ export function GameBoard() {
         </div>
       )}
 
-      {/* Player's hand or Third active player (when spectating) — hidden during deal animation */}
+      {/* Player's hand or Third active player (when spectating) */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
         isSpectating
           ? (isMobile ? 'bottom-16' : 'bottom-20')
-          : (isMobile ? 'bottom-2' : 'bottom-4'),
-        showDealAnimation && 'invisible'
+          : (isMobile ? 'bottom-2' : 'bottom-4')
       )}>
         {isSpectating ? (
           // Show third active player at bottom center when spectating (horizontal layout)
@@ -602,38 +558,6 @@ export function GameBoard() {
           pausedAt={pauseData.pausedAt}
           onResume={resumeGame}
         />
-      )}
-
-      {/* Deal animation */}
-      {showDealAnimation && (
-        <DealAnimation
-          playerCount={playerCount as 3 | 4}
-          onComplete={() => setShowDealAnimation(false)}
-        />
-      )}
-
-      {/* Sound toggle - top right */}
-      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-30">
-        <SoundToggle />
-      </div>
-
-      {/* Emote panel - bottom right */}
-      {!isSpectating && (
-        <div className={cn('absolute z-30', isMobile ? 'bottom-2 right-2' : 'bottom-4 right-4')}>
-          <EmotePanel onEmote={sendEmote} />
-        </div>
-      )}
-
-      {/* Emote bubbles for opponents */}
-      {otherPlayers[0] && emotes.get(otherPlayers[0].id) && (
-        <div className={cn('absolute z-40', isMobile ? 'top-16 left-2' : 'top-20 left-8')}>
-          <EmoteBubble emote={emotes.get(otherPlayers[0].id) || null} position="left" />
-        </div>
-      )}
-      {otherPlayers[1] && emotes.get(otherPlayers[1].id) && (
-        <div className={cn('absolute z-40', isMobile ? 'top-16 right-2' : 'top-20 right-8')}>
-          <EmoteBubble emote={emotes.get(otherPlayers[1].id) || null} position="right" />
-        </div>
       )}
 
     </div>

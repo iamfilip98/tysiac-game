@@ -25,51 +25,47 @@ export function getValidCards(
   }
 
   const leadSuit = trick.leadSuit!;
-  const trickCards = trick.cards.map(c => c.card);
+  const leadCard = trick.cards[0].card;
+
+  // Get highest card played so far
+  const highestCard = getHighestCardInTrick(trick.cards.map(c => c.card), leadSuit, trumpSuit);
+
+  // Check if lead card is still winning
+  const leadIsWinning =
+    highestCard.suit === leadCard.suit &&
+    highestCard.rank === leadCard.rank;
+
+  // Only beat the lead if it's currently winning; otherwise just follow suit
+  const cardToBeat = leadIsWinning ? leadCard : null;
+
+  return getCardsFollowingStandardRules(hand, leadSuit, trumpSuit, cardToBeat);
+}
+
+function getCardsFollowingStandardRules(
+  hand: Card[],
+  leadSuit: Suit,
+  trumpSuit: Suit | null,
+  cardToBeat: Card | null  // null = just follow suit (lead already beaten)
+): Card[] {
   const cardsInSuit = hand.filter(c => c.suit === leadSuit);
 
-  // 1. Must follow suit if possible
+  // Must follow suit if possible
   if (cardsInSuit.length > 0) {
-    // Must beat the highest lead-suit card in the trick if possible
-    const leadSuitInTrick = trickCards.filter(c => c.suit === leadSuit);
-    const highestOfLeadSuit = leadSuitInTrick.reduce((a, b) =>
-      RANK_STRENGTH[a.rank] > RANK_STRENGTH[b.rank] ? a : b
-    );
+    // Only need to beat if there's a card to beat (lead is still winning)
+    if (cardToBeat) {
+      const beatingCards = cardsInSuit.filter(c =>
+        canBeat(c, cardToBeat, leadSuit, trumpSuit)
+      );
 
-    const beatingCards = cardsInSuit.filter(c =>
-      RANK_STRENGTH[c.rank] > RANK_STRENGTH[highestOfLeadSuit.rank]
-    );
-
-    if (beatingCards.length > 0) {
-      return beatingCards;
+      if (beatingCards.length > 0) {
+        return beatingCards;
+      }
     }
-    // Can't beat highest — just follow suit
+    // No card to beat OR can't beat - just follow suit
     return cardsInSuit;
   }
 
-  // 2. Can't follow suit — must trump if possible
-  if (trumpSuit) {
-    const trumpCards = hand.filter(c => c.suit === trumpSuit);
-    if (trumpCards.length > 0) {
-      // Must beat existing trumps in trick if possible
-      const trumpsInTrick = trickCards.filter(c => c.suit === trumpSuit);
-      if (trumpsInTrick.length > 0) {
-        const highestTrump = trumpsInTrick.reduce((a, b) =>
-          RANK_STRENGTH[a.rank] > RANK_STRENGTH[b.rank] ? a : b
-        );
-        const beatingTrumps = trumpCards.filter(c =>
-          RANK_STRENGTH[c.rank] > RANK_STRENGTH[highestTrump.rank]
-        );
-        if (beatingTrumps.length > 0) {
-          return beatingTrumps;
-        }
-      }
-      // No trump to beat or can't beat existing trump — play any trump
-      return trumpCards;
-    }
-  }
-
-  // 3. Can't follow suit, no trump available — play any card
+  // Can't follow suit - player can play any card (no trump obligation)
   return [...hand];
 }
 

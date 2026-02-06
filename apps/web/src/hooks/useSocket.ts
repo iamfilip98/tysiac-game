@@ -5,8 +5,7 @@ import { getSocket, connectSocket, TypedSocket } from '@/lib/socket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
 import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
-import { soundManager } from '@/lib/sounds';
-import type { Card, Suit, EmoteType } from '@tysiac/shared';
+import type { Card, Suit } from '@tysiac/shared';
 
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
@@ -165,12 +164,10 @@ export function useSocket() {
     });
 
     socket.on('game:roundEnd', (result) => {
-      soundManager.playRoundWin();
       setRoundResult(result);
     });
 
     socket.on('game:ended', ({ winnerId, statistics }) => {
-      soundManager.playGameWin();
       setShowGameEnd(true);
       if (statistics) {
         setGameStatistics(statistics);
@@ -180,7 +177,6 @@ export function useSocket() {
     });
 
     socket.on('game:error', ({ message }) => {
-      soundManager.playError();
       setError(message);
     });
 
@@ -191,7 +187,6 @@ export function useSocket() {
     });
 
     socket.on('game:trickWon', () => {
-      soundManager.playTrickWin();
       // Clear marriage indicator when trick completes
       setLastMarriageDeclared(null);
     });
@@ -219,12 +214,6 @@ export function useSocket() {
     socket.on('game:pauseExpired', () => {
       setPauseData(null);
       // The game will end and be handled through normal game end flow
-    });
-
-    // Emotes
-    socket.on('game:emote', (data) => {
-      // Dispatch custom event so GameBoard can handle emote bubbles
-      window.dispatchEvent(new CustomEvent('game:emote', { detail: data }));
     });
 
     // Reconnection
@@ -272,7 +261,6 @@ export function useSocket() {
       socket.off('game:paused');
       socket.off('game:resumed');
       socket.off('game:pauseExpired');
-      socket.off('game:emote');
       socket.off('connection:restored');
     };
   }, []);
@@ -326,14 +314,12 @@ export function useSocket() {
   // Game actions
   const bid = useCallback((amount: number) => {
     if (safeEmit('game:bid', amount)) {
-      soundManager.playBid();
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
 
   const pass = useCallback(() => {
     if (safeEmit('game:pass')) {
-      soundManager.playPass();
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
@@ -346,7 +332,6 @@ export function useSocket() {
 
   const playCard = useCallback((card: Card) => {
     if (safeEmit('game:playCard', card)) {
-      soundManager.playCardPlace();
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
@@ -385,10 +370,6 @@ export function useSocket() {
     safeEmit('game:resume');
   }, [safeEmit]);
 
-  const sendEmote = useCallback((emoteType: EmoteType) => {
-    safeEmit('game:emote', { emoteType });
-  }, [safeEmit]);
-
   return {
     // Room actions
     createRoom,
@@ -411,6 +392,5 @@ export function useSocket() {
     leaveGame,
     pauseGame,
     resumeGame,
-    sendEmote,
   };
 }

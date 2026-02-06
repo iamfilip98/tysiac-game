@@ -8,29 +8,16 @@ export const CardSchema = z.object({
 
 export const SuitSchema = z.enum(['hearts', 'diamonds', 'clubs', 'spades']);
 
-// Player name: alphanumeric, Polish characters, spaces, hyphens, underscores
-const playerNameSchema = z.string()
-  .min(1)
-  .max(20)
-  .trim()
-  .regex(
-    /^[a-zA-Z0-9\s\-_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/,
-    'Name can only contain letters, numbers, spaces, hyphens, and underscores'
-  );
-
 // Room events
 export const CreateRoomSchema = z.object({
-  playerName: playerNameSchema,
-  roomName: z.string().min(1).max(30).trim().regex(
-    /^[a-zA-Z0-9\s\-_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ!?.]+$/,
-    'Room name contains invalid characters'
-  ),
+  playerName: z.string().min(1).max(20).trim(),
+  roomName: z.string().min(1).max(30).trim(),
   isPrivate: z.boolean(),
   maxPlayers: z.union([z.literal(3), z.literal(4)]).optional().default(3),
 });
 
 export const JoinRoomSchema = z.object({
-  playerName: playerNameSchema,
+  playerName: z.string().min(1).max(20).trim(),
   roomCode: z.string().length(6).toUpperCase(),
 });
 
@@ -48,13 +35,6 @@ export const ReconnectSchema = z.object({
   roomId: z.string().min(1),
   playerId: z.string().min(1),
   sessionToken: z.string().min(1),
-});
-
-export const EmoteSchema = z.object({
-  emoteType: z.enum([
-    'nice-bid', 'oops', 'good-game', 'hurry-up', 'wow', 'sorry',
-    '👍', '😂', '😮', '😢', '🔥', '💀', '🎉', '😤',
-  ]),
 });
 
 // Type exports

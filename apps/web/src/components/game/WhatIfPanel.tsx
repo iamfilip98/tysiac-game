@@ -11,7 +11,7 @@ interface WhatIfPanelProps {
 export function WhatIfPanel({ scenarios, closeCalls }: WhatIfPanelProps) {
   if (scenarios.length === 0 && closeCalls.length === 0) {
     return (
-      <div className="text-center text-white/70 py-4">
+      <div className="text-center text-white/50 py-4">
         No interesting scenarios to report.
       </div>
     );

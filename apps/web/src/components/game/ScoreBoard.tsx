@@ -1,9 +1,16 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { cn, getSuitSymbol, truncateName } from '@/lib/utils';
-import { DealerChip } from './DealerChip';
+import { cn } from '@/lib/utils';
+import { getSuitSymbol } from '@/lib/utils';
 import type { Suit } from '@tysiac/shared';
+
+const MAX_NAME_LENGTH = 7;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
 
 interface ScoreBoardProps {
   players: { id: string; name: string; isAI: boolean }[];
@@ -36,8 +43,8 @@ export function ScoreBoard({
   const isFourPlayer = players.length === 4;
 
   return (
-    <div aria-live="polite" aria-label="Game scores" className={cn(
-      "bg-table-900/90 backdrop-blur border border-table-600 rounded-xl w-[180px] sm:w-[220px]",
+    <div className={cn(
+      "bg-table-900/90 backdrop-blur border border-table-600 rounded-xl w-[220px]",
       isFourPlayer ? "p-2" : "p-4"
     )}>
       {/* Header */}
@@ -85,13 +92,20 @@ export function ScoreBoard({
               <div className="flex items-center gap-2">
                 {/* Dealer indicator */}
                 {isDealer && (
-                  <DealerChip className="w-4 h-4" />
+                  <span
+                    className="text-sm"
+                    role="img"
+                    aria-label="Dealer"
+                    title="Dealer"
+                  >
+                    🎱
+                  </span>
                 )}
 
                 {/* Player name */}
                 <span
                   className={cn(
-                    'text-xs sm:text-sm font-medium',
+                    'text-sm font-medium',
                     isMe ? 'text-gold-400' : 'text-white'
                   )}
                   title={player.name}

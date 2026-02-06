@@ -1,10 +1,17 @@
 'use client';
 
-import { useMemo, useState, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence, useMotionValue, useTransform, PanInfo } from 'framer-motion';
+import { useMemo, useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
-import { cn, truncateName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 import type { Card as CardType, ValidAction, Suit } from '@tysiac/shared';
+
+const MAX_NAME_LENGTH = 7;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
 
 interface DistributionState {
   currentTarget: string | null;
@@ -45,47 +52,6 @@ function useScreenSize() {
 
 // Smooth easing for all devices (no springs)
 const smoothTransition = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] };
-
-// Drag threshold in pixels - drag up past this to play the card
-const DRAG_PLAY_THRESHOLD = -80;
-
-// Draggable card wrapper for drag-to-play
-function DraggableCard({
-  card,
-  isPlayable,
-  onDragPlay,
-  children,
-}: {
-  card: CardType;
-  isPlayable: boolean;
-  onDragPlay: (card: CardType) => void;
-  children: React.ReactNode;
-}) {
-  const y = useMotionValue(0);
-  const scale = useTransform(y, [0, DRAG_PLAY_THRESHOLD], [1, 1.08]);
-  const opacity = useTransform(y, [0, DRAG_PLAY_THRESHOLD * 1.5], [1, 0.6]);
-
-  const handleDragEnd = useCallback((_: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
-    if (isPlayable && info.offset.y < DRAG_PLAY_THRESHOLD) {
-      onDragPlay(card);
-    }
-  }, [card, isPlayable, onDragPlay]);
-
-  if (!isPlayable) return <>{children}</>;
-
-  return (
-    <motion.div
-      drag="y"
-      dragConstraints={{ top: 0, bottom: 0 }}
-      dragElastic={0.5}
-      dragSnapToOrigin
-      onDragEnd={handleDragEnd}
-      style={{ y, scale, opacity, touchAction: 'pan-x' }}
-    >
-      {children}
-    </motion.div>
-  );
-}
 
 export function PlayerHand({
   cards,
@@ -355,20 +321,14 @@ export function PlayerHand({
               }}
               className="relative"
             >
-              <DraggableCard
+              <Card
                 card={card}
-                isPlayable={isPlayableNow && !distributionState}
-                onDragPlay={onPlayCard}
-              >
-                <Card
-                  card={card}
-                  isSelected={distributionState ? isDistSelected : selected}
-                  isPlayable={isPlayableNow}
-                  isMarriageCard={isMarriageCard(card)}
-                  onClick={() => handleCardClick(card)}
-                  size={isMobile ? 'md' : 'lg'}
-                />
-              </DraggableCard>
+                isSelected={distributionState ? isDistSelected : selected}
+                isPlayable={isPlayableNow}
+                isMarriageCard={isMarriageCard(card)}
+                onClick={() => handleCardClick(card)}
+                size={isMobile ? 'md' : 'lg'}
+              />
               {distributionAssignee && (
                 <div
                   className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"

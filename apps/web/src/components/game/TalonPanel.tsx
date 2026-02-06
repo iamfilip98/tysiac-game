@@ -1,12 +1,30 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn, truncateName } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/useIsMobile';
+import { cn } from '@/lib/utils';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
+
+const MAX_NAME_LENGTH = 7;
+
+function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '…';
+}
+
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+  return isMobile;
+}
 
 interface TalonDisplayProps {
   talon: CardType[];
@@ -20,25 +38,22 @@ export function TalonDisplay({ talon, isRevealed }: TalonDisplayProps) {
     <div className="flex items-center justify-center gap-2">
       <AnimatePresence mode="wait">
         {isRevealed ? (
-          // Revealed talon cards with 3D flip animation
+          // Revealed talon cards - simple fade/scale animation (no 3D transforms)
           talon.map((card, i) => (
-            <div
+            <motion.div
               key={`${card.suit}-${card.rank}`}
-              style={{ perspective: '600px' }}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{
+                delay: i * 0.1,
+                duration: 0.25,
+                ease: 'easeOut'
+              }}
+              style={{ willChange: 'opacity, transform' }}
             >
-              <motion.div
-                initial={{ rotateY: 180, opacity: 0 }}
-                animate={{ rotateY: 0, opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{
-                  rotateY: { delay: i * 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] },
-                  opacity: { delay: i * 0.2, duration: 0.15 },
-                }}
-                style={{ willChange: 'transform, opacity', transformStyle: 'preserve-3d' }}
-              >
-                <Card card={card} size="md" isPlayable={false} />
-              </motion.div>
-            </div>
+              <Card card={card} size="md" isPlayable={false} />
+            </motion.div>
           ))
         ) : (
           // Face down talon

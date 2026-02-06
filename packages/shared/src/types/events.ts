@@ -1,40 +1,6 @@
 import type { Card, Suit } from './cards.js';
 import type { GameState, GamePlayer, GamePhase } from './game.js';
 
-// Emote types
-export type EmoteType =
-  | 'nice-bid'
-  | 'oops'
-  | 'good-game'
-  | 'hurry-up'
-  | 'wow'
-  | 'sorry'
-  | '👍'
-  | '😂'
-  | '😮'
-  | '😢'
-  | '🔥'
-  | '💀'
-  | '🎉'
-  | '😤';
-
-export const EMOTE_LABELS: Record<EmoteType, string> = {
-  'nice-bid': 'Nice bid!',
-  'oops': 'Oops!',
-  'good-game': 'Good game!',
-  'hurry-up': 'Hurry up!',
-  'wow': 'Wow!',
-  'sorry': 'Sorry',
-  '👍': '👍',
-  '😂': '😂',
-  '😮': '😮',
-  '😢': '😢',
-  '🔥': '🔥',
-  '💀': '💀',
-  '🎉': '🎉',
-  '😤': '😤',
-};
-
 // Room types
 export interface Room {
   id: string;
@@ -81,9 +47,6 @@ export interface ClientToServerEvents {
   'game:pause': () => void;
   'game:resume': () => void;
 
-  // Emote events
-  'game:emote': (data: { emoteType: EmoteType }) => void;
-
   // Connection events
   'player:reconnect': (data: { roomId: string; playerId: string; sessionToken: string }) => void;
 }
@@ -116,9 +79,6 @@ export interface ServerToClientEvents {
   'game:ended': (data: { winnerId: string; finalScores: Record<string, number>; statistics?: GameStatistics }) => void;
   'game:playerReplacedByAI': (data: { playerId: string; playerName: string }) => void;
   'game:error': (error: { code: string; message: string }) => void;
-
-  // Emote events
-  'game:emote': (data: { playerId: string; playerName: string; emoteType: EmoteType }) => void;
 
   // Connection events
   'connection:restored': (data: {

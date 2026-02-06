@@ -1,10 +1,24 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Card as CardType, Suit } from '@tysiac/shared';
+
+// Hook to track screen size
+function useIsMobile() {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+}
 
 interface TrickPileProps {
   cards: { playerId: string; card: CardType }[];
@@ -73,16 +87,84 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full bg-table-800/50 border border-table-600/30" />
 
-      {/* Gold glow when marriage declared — lightweight CSS animation */}
+      {/* Premium gold ring effect when marriage declared */}
       {marriageCard && (
-        <div
-          className="absolute inset-2 rounded-full pointer-events-none"
-          style={{
-            background: 'radial-gradient(circle, rgba(212, 175, 55, 0.4) 0%, rgba(245, 231, 163, 0.2) 40%, transparent 70%)',
-            boxShadow: '0 0 25px 8px rgba(212, 175, 55, 0.35), inset 0 0 20px 4px rgba(245, 231, 163, 0.15)',
-            animation: 'marriageGlow 2s ease-in-out infinite',
-          }}
-        />
+        <>
+          {/* Outer rotating ring */}
+          <motion.div
+            className="absolute inset-2 rounded-full pointer-events-none"
+            initial={{ rotate: 0, opacity: 0 }}
+            animate={{ rotate: 360, opacity: 1 }}
+            transition={{
+              rotate: { duration: 8, repeat: Infinity, ease: 'linear' },
+              opacity: { duration: 0.5 },
+            }}
+            style={{
+              background: `conic-gradient(
+                from 0deg,
+                transparent 0deg,
+                rgba(212, 175, 55, 0.6) 30deg,
+                rgba(245, 231, 163, 0.8) 60deg,
+                rgba(212, 175, 55, 0.6) 90deg,
+                transparent 120deg,
+                transparent 180deg,
+                rgba(212, 175, 55, 0.6) 210deg,
+                rgba(245, 231, 163, 0.8) 240deg,
+                rgba(212, 175, 55, 0.6) 270deg,
+                transparent 300deg,
+                transparent 360deg
+              )`,
+              WebkitMask: 'radial-gradient(transparent 60%, black 65%, black 100%)',
+              mask: 'radial-gradient(transparent 60%, black 65%, black 100%)',
+            }}
+          />
+          {/* Inner glow pulse */}
+          <motion.div
+            className="absolute inset-6 rounded-full pointer-events-none"
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{
+              scale: [1, 1.1, 1],
+              opacity: [0.4, 0.7, 0.4],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+            style={{
+              background: 'radial-gradient(circle, rgba(212, 175, 55, 0.5) 0%, rgba(245, 231, 163, 0.3) 40%, transparent 70%)',
+              boxShadow: '0 0 30px 10px rgba(212, 175, 55, 0.4)',
+            }}
+          />
+          {/* Floating sparkle particles */}
+          {[...Array(8)].map((_, i) => (
+            <motion.div
+              key={i}
+              className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
+              initial={{ opacity: 0, scale: 0 }}
+              animate={{
+                opacity: [0, 1, 0],
+                scale: [0, 1, 0],
+                x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
+                y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
+              }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                delay: i * 0.25,
+                ease: 'easeOut',
+              }}
+              style={{
+                left: '50%',
+                top: '50%',
+                marginLeft: '-3px',
+                marginTop: '-3px',
+                background: 'radial-gradient(circle, #fff 0%, #f5e7a3 50%, #d4af37 100%)',
+                boxShadow: '0 0 8px 2px rgba(245, 231, 163, 0.8)',
+              }}
+            />
+          ))}
+        </>
       )}
 
       {/* Cards */}

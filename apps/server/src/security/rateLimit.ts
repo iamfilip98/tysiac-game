@@ -11,10 +11,6 @@ interface RateLimitConfig {
 // Rate limit storage: socketId -> eventType -> entry
 const rateLimits = new Map<string, Map<string, RateLimitEntry>>();
 
-// IP-based connection tracking
-const ipConnectionCount = new Map<string, number>();
-const MAX_CONNECTIONS_PER_IP = 5;
-
 // Default limits per event type
 const eventLimits: Record<string, RateLimitConfig> = {
   'room:create': { maxRequests: 5, windowMs: 60000 },
@@ -64,24 +60,6 @@ export function checkRateLimit(socketId: string, eventType: string): { allowed: 
 
 export function clearRateLimits(socketId: string): void {
   rateLimits.delete(socketId);
-}
-
-export function trackIPConnection(ip: string): boolean {
-  const current = ipConnectionCount.get(ip) || 0;
-  if (current >= MAX_CONNECTIONS_PER_IP) {
-    return false; // Reject connection
-  }
-  ipConnectionCount.set(ip, current + 1);
-  return true;
-}
-
-export function releaseIPConnection(ip: string): void {
-  const current = ipConnectionCount.get(ip) || 0;
-  if (current <= 1) {
-    ipConnectionCount.delete(ip);
-  } else {
-    ipConnectionCount.set(ip, current - 1);
-  }
 }
 
 // Cleanup old entries periodically

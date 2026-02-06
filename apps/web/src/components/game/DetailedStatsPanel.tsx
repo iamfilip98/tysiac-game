@@ -31,7 +31,7 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
                 {getPlayerName(detail.playerId)}
                 {isMe && ' (You)'}
               </span>
-              <span className="text-xs text-white/70">
+              <span className="text-xs text-white/50">
                 Score range: {detail.lowestScore} - {detail.highestScore}
               </span>
             </div>
@@ -39,7 +39,7 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
             <div className="grid grid-cols-2 gap-3 text-sm">
               {/* Bid stats */}
               <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
-                <div className="text-white/70 text-xs mb-1">Bid Success Rate</div>
+                <div className="text-white/50 text-xs mb-1">Bid Success Rate</div>
                 <div className="flex items-center gap-2 mt-auto">
                   <div className="flex-1 h-2 bg-table-700 rounded-full overflow-hidden">
                     <motion.div
@@ -53,14 +53,14 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
                     {detail.bidSuccessRate}%
                   </span>
                 </div>
-                <div className="text-white/70 text-xs mt-1">
+                <div className="text-white/40 text-xs mt-1">
                   {detail.totalBidsWon}W / {detail.totalBidsFailed}L
                 </div>
               </div>
 
               {/* Avg bid */}
               <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
-                <div className="text-white/70 text-xs mb-1">Avg Bid Amount</div>
+                <div className="text-white/50 text-xs mb-1">Avg Bid Amount</div>
                 <div className="text-lg font-bold text-gold-400 mt-auto">
                   {detail.avgBidAmount}
                 </div>
@@ -68,7 +68,7 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
 
               {/* Marriages */}
               <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
-                <div className="text-white/70 text-xs mb-1">Marriages Declared</div>
+                <div className="text-white/50 text-xs mb-1">Marriages Declared</div>
                 <div className="text-lg font-bold text-purple-400 mt-auto">
                   {detail.totalMarriages}
                 </div>
@@ -76,7 +76,7 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
 
               {/* Best round */}
               <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
-                <div className="text-white/70 text-xs mb-1">Best Round</div>
+                <div className="text-white/50 text-xs mb-1">Best Round</div>
                 <div className="text-lg font-bold text-cyan-400 mt-auto">
                   {detail.highestSingleRound > 0 ? `+${detail.highestSingleRound}` : '-'}
                 </div>

@@ -13,12 +13,9 @@
   },
   "scripts": {
     "build": "tsc",
-    "dev": "tsc --watch",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "dev": "tsc --watch"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "vitest": "^4.0.18"
+    "typescript": "^5.4.0"
   }
 }

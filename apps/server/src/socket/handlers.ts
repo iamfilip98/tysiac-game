@@ -5,7 +5,7 @@ import * as gameService from '../services/gameService.js';
 import * as debugService from '../services/debugService.js';
 import { GameEngine } from '../game/engine.js';
 import { getClientGameState } from '../game/stateManager.js';
-import { checkRateLimit, clearRateLimits, trackIPConnection, releaseIPConnection } from '../security/rateLimit.js';
+import { checkRateLimit, clearRateLimits } from '../security/rateLimit.js';
 import { createSession, validateSession, invalidatePlayerSession, getSessionToken } from '../security/session.js';
 import {
   CreateRoomSchema,
@@ -15,7 +15,6 @@ import {
   CardSchema,
   SuitSchema,
   ReconnectSchema,
-  EmoteSchema,
 } from '../validation/schemas.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -110,13 +109,6 @@ function cleanupGame(gameId: string, roomId: string): void {
 
 export function setupSocketHandlers(io: TypedServer) {
   io.on('connection', (socket: TypedSocket) => {
-    // IP-based connection limiting
-    const clientIP = socket.handshake.address;
-    if (!trackIPConnection(clientIP)) {
-      socket.emit('room:error', { code: 'TOO_MANY_CONNECTIONS', message: 'Too many connections from your IP' });
-      socket.disconnect(true);
-      return;
-    }
 
     // Room events
     socket.on('room:create', (data) => {
@@ -890,42 +882,6 @@ export function setupSocketHandlers(io: TypedServer) {
       });
     });
 
-    // Emote broadcast
-    const emoteLastSent = new Map<string, number>();
-    socket.on('game:emote', (data) => {
-      withRateLimit(socket, 'game:emote', () => {
-        try {
-          const parsed = EmoteSchema.safeParse(data);
-          if (!parsed.success) return;
-
-          const playerId = socketToPlayer.get(socket.id);
-          if (!playerId) return;
-
-          // Per-player cooldown: 1 emote per 2 seconds
-          const now = Date.now();
-          const lastSent = emoteLastSent.get(playerId) || 0;
-          if (now - lastSent < 2000) return;
-          emoteLastSent.set(playerId, now);
-
-          const room = roomService.getRoomByPlayerId(playerId);
-          if (!room) return;
-
-          const player = room.players.find(p => p.id === playerId);
-          if (!player) return;
-
-          io.to(room.id).emit('game:emote', {
-            playerId,
-            playerName: player.name,
-            emoteType: parsed.data.emoteType,
-          });
-
-          logEvent({ socketId: socket.id, eventType: 'game:emote', eventData: parsed.data, result: 'success' });
-        } catch (err) {
-          logEvent({ socketId: socket.id, eventType: 'game:emote', result: 'error', errorMessage: String(err) });
-        }
-      });
-    });
-
     // Reconnection with session validation
     socket.on('player:reconnect', (data) => {
       withRateLimit(socket, 'player:reconnect', () => {
@@ -1026,7 +982,6 @@ export function setupSocketHandlers(io: TypedServer) {
       console.log(`Client disconnected: ${socket.id}`);
       logEvent({ socketId: socket.id, eventType: 'disconnect', result: 'success' });
       clearRateLimits(socket.id);
-      releaseIPConnection(clientIP);
       handlePlayerLeave(io, socket, false);
     });
   });
