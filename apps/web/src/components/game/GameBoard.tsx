@@ -148,11 +148,11 @@ export function GameBoard() {
 
   // Sound effects for game events
   useEffect(() => {
-    if (isMyTurn && phase === 'trickPlaying') {
+    if (isMyTurn && gameState?.phase === 'trickPlaying') {
       soundManager.playTurnNotification();
       hapticManager.medium();
     }
-  }, [isMyTurn, phase]);
+  }, [isMyTurn, gameState?.phase]);
 
   // Reset confirmation state when phase changes
   useEffect(() => {
