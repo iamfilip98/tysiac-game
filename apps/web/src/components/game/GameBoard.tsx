@@ -284,44 +284,48 @@ export function GameBoard() {
       </div>
 
 
-      {/* Opponents */}
-      <div className={cn(
-        'absolute z-10',
-        isMobile ? 'top-20 left-2' : 'top-24 left-8'
-      )}>
-        {otherPlayers[0] && (
-          <OpponentHand
-            cardCount={getOpponentHandSize(otherPlayers[0].id)}
-            position="left"
-            playerName={otherPlayers[0].name}
-            isCurrentTurn={
-              round?.currentTrick?.currentPlayer === otherPlayers[0].id
-            }
-          />
-        )}
-      </div>
+      {/* Opponents — hidden during deal animation */}
+      {!showDealAnimation && (
+        <>
+          <div className={cn(
+            'absolute z-10',
+            isMobile ? 'top-20 left-2' : 'top-24 left-8'
+          )}>
+            {otherPlayers[0] && (
+              <OpponentHand
+                cardCount={getOpponentHandSize(otherPlayers[0].id)}
+                position="left"
+                playerName={otherPlayers[0].name}
+                isCurrentTurn={
+                  round?.currentTrick?.currentPlayer === otherPlayers[0].id
+                }
+              />
+            )}
+          </div>
 
-      <div className={cn(
-        'absolute z-10',
-        isMobile ? 'top-20 right-2' : 'top-24 right-8'
-      )}>
-        {otherPlayers[1] && (
-          <OpponentHand
-            cardCount={getOpponentHandSize(otherPlayers[1].id)}
-            position="right"
-            playerName={otherPlayers[1].name}
-            isCurrentTurn={
-              round?.currentTrick?.currentPlayer === otherPlayers[1].id
-            }
-          />
-        )}
-      </div>
+          <div className={cn(
+            'absolute z-10',
+            isMobile ? 'top-20 right-2' : 'top-24 right-8'
+          )}>
+            {otherPlayers[1] && (
+              <OpponentHand
+                cardCount={getOpponentHandSize(otherPlayers[1].id)}
+                position="right"
+                playerName={otherPlayers[1].name}
+                isCurrentTurn={
+                  round?.currentTrick?.currentPlayer === otherPlayers[1].id
+                }
+              />
+            )}
+          </div>
+        </>
+      )}
 
       {/* Center area - trick pile / talon */}
       <div className="absolute inset-0 flex items-center justify-center">
         <AnimatePresence mode="wait">
-          {/* Dealing / Bidding - show talon */}
-          {(phase === 'dealing' || phase === 'bidding') && (
+          {/* Dealing / Bidding - show talon (hidden during deal animation) */}
+          {(phase === 'dealing' || phase === 'bidding') && !showDealAnimation && (
             <motion.div
               key="talon-hidden"
               initial={{ opacity: 0 }}
@@ -472,12 +476,13 @@ export function GameBoard() {
         </div>
       )}
 
-      {/* Player's hand or Third active player (when spectating) */}
+      {/* Player's hand or Third active player (when spectating) — hidden during deal animation */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
         isSpectating
           ? (isMobile ? 'bottom-16' : 'bottom-20')
-          : (isMobile ? 'bottom-2' : 'bottom-4')
+          : (isMobile ? 'bottom-2' : 'bottom-4'),
+        showDealAnimation && 'invisible'
       )}>
         {isSpectating ? (
           // Show third active player at bottom center when spectating (horizontal layout)
