@@ -1,17 +1,12 @@
 # Claude Code Notes
 
-## Deployment — CRITICAL
+## Deployment
 
 ### Split deployment: Vercel (web) + Railway (server)
 - **Web (Vercel)**: Auto-deploys on every push to main
-- **Server (Railway)**: Does NOT auto-deploy. You MUST run `railway up` after every push that changes server code
-- **Always deploy both** when pushing server changes. If you only push to git, the web updates but the server stays on old code — this causes mismatches and breaks the game
-- After deploying server changes, tell the user to **start a new game** — existing games may be in a corrupted state from the old code
-
-### Deploy checklist
-1. `git push` (deploys web to Vercel automatically)
-2. If server code changed (`apps/server/`): run `railway up`
-3. Verify the Railway build succeeds via the build logs URL
+- **Server (Railway)**: Auto-deploys on every push to main
+- Both deploy on `git push` — no manual steps needed
+- After deploying server changes that affect game state/validation, tell the user to **start a new game** — existing games may be in a corrupted state from the old code
 
 ## Game Rules — Tysiąc Card Validation
 
