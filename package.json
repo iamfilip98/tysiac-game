@@ -14,11 +14,16 @@
     "build:mobile:android": "pnpm --filter=@tysiac/mobile build:android",
     "db:generate": "pnpm --filter=@tysiac/server db:generate",
     "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
-    "db:push": "pnpm --filter=@tysiac/server db:push"
+    "db:push": "pnpm --filter=@tysiac/server db:push",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "next": "^14.1.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58.2",
+    "socket.io-client": "^4.8.3"
   }
 }
