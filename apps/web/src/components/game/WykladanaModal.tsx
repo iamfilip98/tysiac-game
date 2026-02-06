@@ -15,6 +15,49 @@ interface WykladanaModalProps {
   onComplete: () => void;
 }
 
+// Gold particle effects - premium shimmer particles rising upward
+function GoldParticles() {
+  const particles = Array.from({ length: 40 }, (_, i) => ({
+    id: i,
+    x: Math.random() * 100,
+    delay: Math.random() * 2,
+    duration: 2.5 + Math.random() * 2,
+    size: 2 + Math.random() * 4,
+    drift: (Math.random() - 0.5) * 60,
+  }));
+
+  return (
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {particles.map((p) => (
+        <motion.div
+          key={p.id}
+          className="absolute rounded-full"
+          style={{
+            left: `${p.x}%`,
+            bottom: '-10px',
+            width: p.size,
+            height: p.size,
+            background: `radial-gradient(circle, #fcd34d, #d97706)`,
+            boxShadow: `0 0 ${p.size * 2}px ${p.size}px rgba(251, 191, 36, 0.3)`,
+          }}
+          animate={{
+            y: [0, -(typeof window !== 'undefined' ? window.innerHeight : 800) - 50],
+            x: [0, p.drift],
+            opacity: [0, 1, 1, 0],
+            scale: [0.5, 1, 1, 0.3],
+          }}
+          transition={{
+            duration: p.duration,
+            delay: p.delay,
+            repeat: Infinity,
+            ease: 'easeOut',
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 // Confetti particle component
 function Confetti() {
   const colors = ['#fbbf24', '#f59e0b', '#fcd34d', '#d97706', '#fef3c7', '#fff'];
@@ -124,6 +167,7 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
     >
+      <GoldParticles />
       <Confetti />
 
       <motion.div
@@ -176,14 +220,23 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
               className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4"
             >
               {sortedCards.map((card, index) => (
-                <motion.div
+                <div
                   key={`${card.suit}-${card.rank}`}
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.08 }}
+                  style={{ perspective: '600px' }}
                 >
-                  <Card card={card} size="sm" isPlayable={false} />
-                </motion.div>
+                  <motion.div
+                    initial={{ rotateY: 180, opacity: 0, scale: 0.8 }}
+                    animate={{ rotateY: 0, opacity: 1, scale: 1 }}
+                    transition={{
+                      rotateY: { delay: 0.5 + index * 0.12, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] },
+                      opacity: { delay: 0.5 + index * 0.12, duration: 0.15 },
+                      scale: { delay: 0.5 + index * 0.12, duration: 0.3 },
+                    }}
+                    style={{ transformStyle: 'preserve-3d' }}
+                  >
+                    <Card card={card} size="sm" isPlayable={false} />
+                  </motion.div>
+                </div>
               ))}
             </motion.div>
 

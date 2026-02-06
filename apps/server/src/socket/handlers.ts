@@ -15,6 +15,7 @@ import {
   CardSchema,
   SuitSchema,
   ReconnectSchema,
+  EmoteSchema,
 } from '../validation/schemas.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
@@ -885,6 +886,42 @@ export function setupSocketHandlers(io: TypedServer) {
         } catch (error) {
           console.error('Error resuming game:', error);
           socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to resume game' });
+        }
+      });
+    });
+
+    // Emote broadcast
+    const emoteLastSent = new Map<string, number>();
+    socket.on('game:emote', (data) => {
+      withRateLimit(socket, 'game:emote', () => {
+        try {
+          const parsed = EmoteSchema.safeParse(data);
+          if (!parsed.success) return;
+
+          const playerId = socketToPlayer.get(socket.id);
+          if (!playerId) return;
+
+          // Per-player cooldown: 1 emote per 2 seconds
+          const now = Date.now();
+          const lastSent = emoteLastSent.get(playerId) || 0;
+          if (now - lastSent < 2000) return;
+          emoteLastSent.set(playerId, now);
+
+          const room = roomService.getRoomByPlayerId(playerId);
+          if (!room) return;
+
+          const player = room.players.find(p => p.id === playerId);
+          if (!player) return;
+
+          io.to(room.id).emit('game:emote', {
+            playerId,
+            playerName: player.name,
+            emoteType: parsed.data.emoteType,
+          });
+
+          logEvent({ socketId: socket.id, eventType: 'game:emote', eventData: parsed.data, result: 'success' });
+        } catch (err) {
+          logEvent({ socketId: socket.id, eventType: 'game:emote', result: 'error', errorMessage: String(err) });
         }
       });
     });

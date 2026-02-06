@@ -2,6 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { cn, getSuitSymbol, truncateName } from '@/lib/utils';
+import { DealerChip } from './DealerChip';
 import type { Suit } from '@tysiac/shared';
 
 interface ScoreBoardProps {
@@ -84,14 +85,7 @@ export function ScoreBoard({
               <div className="flex items-center gap-2">
                 {/* Dealer indicator */}
                 {isDealer && (
-                  <span
-                    className="text-sm"
-                    role="img"
-                    aria-label="Dealer"
-                    title="Dealer"
-                  >
-                    🎱
-                  </span>
+                  <DealerChip className="w-4 h-4" />
                 )}
 
                 {/* Player name */}

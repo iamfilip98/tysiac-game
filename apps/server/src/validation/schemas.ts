@@ -50,6 +50,13 @@ export const ReconnectSchema = z.object({
   sessionToken: z.string().min(1),
 });
 
+export const EmoteSchema = z.object({
+  emoteType: z.enum([
+    'nice-bid', 'oops', 'good-game', 'hurry-up', 'wow', 'sorry',
+    '👍', '😂', '😮', '😢', '🔥', '💀', '🎉', '😤',
+  ]),
+});
+
 // Type exports
 export type Card = z.infer<typeof CardSchema>;
 export type Suit = z.infer<typeof SuitSchema>;

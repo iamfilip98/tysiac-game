@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PlayerHand, OpponentHand } from './PlayerHand';
 import { TrickPile } from './TrickPile';
@@ -13,12 +13,18 @@ import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultMod
 import { PassedAt100Announcement } from './PassedAt100Announcement';
 import { ThrewAnnouncement } from './ThrewAnnouncement';
 import { PauseOverlay } from './PauseOverlay';
+import { DealAnimation } from './DealAnimation';
+import { EmotePanel } from './EmotePanel';
+import { EmoteBubble } from './EmoteBubble';
+import SoundToggle from '@/components/ui/SoundToggle';
+import { soundManager } from '@/lib/sounds';
+import { haptics as hapticManager } from '@/lib/haptics';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
-import type { Card as CardType } from '@tysiac/shared';
+import type { Card as CardType, EmoteType } from '@tysiac/shared';
 
 
 export function GameBoard() {
@@ -56,6 +62,7 @@ export function GameBoard() {
     startGame,
     pauseGame,
     resumeGame,
+    sendEmote,
   } = useSocket();
 
   // Get current player info
@@ -101,6 +108,51 @@ export function GameBoard() {
   // Talon distribution state
   const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
   const [distributionCards, setDistributionCards] = useState<Map<string, CardType>>(new Map());
+
+  // Deal animation state
+  const [showDealAnimation, setShowDealAnimation] = useState(false);
+
+  // Emote bubbles state: playerId -> active emote
+  const [emotes, setEmotes] = useState<Map<string, { playerName: string; emoteType: EmoteType }>>(new Map());
+
+  // Listen for emote events from useSocket
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as { playerId: string; playerName: string; emoteType: EmoteType };
+      soundManager.playEmote();
+      hapticManager.light();
+      setEmotes(prev => {
+        const next = new Map(prev);
+        next.set(detail.playerId, { playerName: detail.playerName, emoteType: detail.emoteType });
+        return next;
+      });
+      // Clear after 3 seconds
+      setTimeout(() => {
+        setEmotes(prev => {
+          const next = new Map(prev);
+          next.delete(detail.playerId);
+          return next;
+        });
+      }, 3000);
+    };
+    window.addEventListener('game:emote', handler);
+    return () => window.removeEventListener('game:emote', handler);
+  }, []);
+
+  // Show deal animation when phase transitions to dealing
+  useEffect(() => {
+    if (gameState?.phase === 'dealing') {
+      setShowDealAnimation(true);
+    }
+  }, [gameState?.phase]);
+
+  // Sound effects for game events
+  useEffect(() => {
+    if (isMyTurn && phase === 'trickPlaying') {
+      soundManager.playTurnNotification();
+      hapticManager.medium();
+    }
+  }, [isMyTurn, phase]);
 
   // Reset confirmation state when phase changes
   useEffect(() => {
@@ -545,6 +597,38 @@ export function GameBoard() {
           pausedAt={pauseData.pausedAt}
           onResume={resumeGame}
         />
+      )}
+
+      {/* Deal animation */}
+      {showDealAnimation && (
+        <DealAnimation
+          playerCount={playerCount as 3 | 4}
+          onComplete={() => setShowDealAnimation(false)}
+        />
+      )}
+
+      {/* Sound toggle - top right */}
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-30">
+        <SoundToggle />
+      </div>
+
+      {/* Emote panel - bottom right */}
+      {!isSpectating && (
+        <div className={cn('absolute z-30', isMobile ? 'bottom-2 right-2' : 'bottom-4 right-4')}>
+          <EmotePanel onEmote={sendEmote} />
+        </div>
+      )}
+
+      {/* Emote bubbles for opponents */}
+      {otherPlayers[0] && emotes.get(otherPlayers[0].id) && (
+        <div className={cn('absolute z-40', isMobile ? 'top-16 left-2' : 'top-20 left-8')}>
+          <EmoteBubble emote={emotes.get(otherPlayers[0].id) || null} position="left" />
+        </div>
+      )}
+      {otherPlayers[1] && emotes.get(otherPlayers[1].id) && (
+        <div className={cn('absolute z-40', isMobile ? 'top-16 right-2' : 'top-20 right-8')}>
+          <EmoteBubble emote={emotes.get(otherPlayers[1].id) || null} position="right" />
+        </div>
       )}
 
     </div>

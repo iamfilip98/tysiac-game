@@ -20,22 +20,25 @@ export function TalonDisplay({ talon, isRevealed }: TalonDisplayProps) {
     <div className="flex items-center justify-center gap-2">
       <AnimatePresence mode="wait">
         {isRevealed ? (
-          // Revealed talon cards - simple fade/scale animation (no 3D transforms)
+          // Revealed talon cards with 3D flip animation
           talon.map((card, i) => (
-            <motion.div
+            <div
               key={`${card.suit}-${card.rank}`}
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{
-                delay: i * 0.1,
-                duration: 0.25,
-                ease: 'easeOut'
-              }}
-              style={{ willChange: 'opacity, transform' }}
+              style={{ perspective: '600px' }}
             >
-              <Card card={card} size="md" isPlayable={false} />
-            </motion.div>
+              <motion.div
+                initial={{ rotateY: 180, opacity: 0 }}
+                animate={{ rotateY: 0, opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  rotateY: { delay: i * 0.2, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] },
+                  opacity: { delay: i * 0.2, duration: 0.15 },
+                }}
+                style={{ willChange: 'transform, opacity', transformStyle: 'preserve-3d' }}
+              >
+                <Card card={card} size="md" isPlayable={false} />
+              </motion.div>
+            </div>
           ))
         ) : (
           // Face down talon

@@ -5,7 +5,7 @@ import { getSocket, connectSocket, TypedSocket } from '@/lib/socket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
 import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
-import type { Card, Suit } from '@tysiac/shared';
+import type { Card, Suit, EmoteType } from '@tysiac/shared';
 
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
@@ -216,6 +216,12 @@ export function useSocket() {
       // The game will end and be handled through normal game end flow
     });
 
+    // Emotes
+    socket.on('game:emote', (data) => {
+      // Dispatch custom event so GameBoard can handle emote bubbles
+      window.dispatchEvent(new CustomEvent('game:emote', { detail: data }));
+    });
+
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions }) => {
       // Clear auto-reconnect flag on successful restore
@@ -261,6 +267,7 @@ export function useSocket() {
       socket.off('game:paused');
       socket.off('game:resumed');
       socket.off('game:pauseExpired');
+      socket.off('game:emote');
       socket.off('connection:restored');
     };
   }, []);
@@ -370,6 +377,10 @@ export function useSocket() {
     safeEmit('game:resume');
   }, [safeEmit]);
 
+  const sendEmote = useCallback((emoteType: EmoteType) => {
+    safeEmit('game:emote', { emoteType });
+  }, [safeEmit]);
+
   return {
     // Room actions
     createRoom,
@@ -392,5 +403,6 @@ export function useSocket() {
     leaveGame,
     pauseGame,
     resumeGame,
+    sendEmote,
   };
 }

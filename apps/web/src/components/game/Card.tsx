@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { cn, getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { KingFace, QueenFace, JackFace } from './card-faces';
 import type { Card as CardType } from '@tysiac/shared';
 
 interface CardProps {
@@ -181,13 +182,39 @@ export function Card({
         )}
         {/* Card content */}
         <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
-          {/* Center rank and suit */}
-          <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-            {card.rank}
-          </span>
-          <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
-            {suitSymbol}
-          </span>
+          {/* Face card illustration or rank/suit */}
+          {card.rank === 'K' ? (
+            <div className="w-full h-full p-0.5">
+              <KingFace color={color as 'red' | 'black'} />
+            </div>
+          ) : card.rank === 'Q' ? (
+            <div className="w-full h-full p-0.5">
+              <QueenFace color={color as 'red' | 'black'} />
+            </div>
+          ) : card.rank === 'J' ? (
+            <div className="w-full h-full p-0.5">
+              <JackFace color={color as 'red' | 'black'} />
+            </div>
+          ) : (
+            <>
+              <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+                {card.rank}
+              </span>
+              <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+                {suitSymbol}
+              </span>
+            </>
+          )}
+        </div>
+        {/* Corner pips - top left */}
+        <div className={cn('absolute top-0.5 left-0.5 flex flex-col items-center leading-none text-[8px]', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
+          <span className="font-bold">{card.rank}</span>
+          <span className="-mt-0.5">{suitSymbol}</span>
+        </div>
+        {/* Corner pips - bottom right (inverted) */}
+        <div className={cn('absolute bottom-0.5 right-0.5 flex flex-col items-center leading-none text-[8px] rotate-180', color === 'red' ? 'text-red-600' : 'text-gray-900')} aria-hidden="true">
+          <span className="font-bold">{card.rank}</span>
+          <span className="-mt-0.5">{suitSymbol}</span>
         </div>
       </motion.div>
     </div>
