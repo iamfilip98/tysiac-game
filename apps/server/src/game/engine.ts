@@ -1247,8 +1247,9 @@ export class GameEngine {
         }
 
         // Track highest round points (for bidder only, since they're the ones achieving big rounds)
+        // Use scoreChange (rounded to nearest 10) rather than raw totalRoundPoints
         if (playerResult.playerId === round.bidWinner && scoreResult.bidderMadeBid) {
-          stats.highestRoundPoints = Math.max(stats.highestRoundPoints, playerResult.totalRoundPoints);
+          stats.highestRoundPoints = Math.max(stats.highestRoundPoints, playerResult.scoreChange);
         }
       }
 
