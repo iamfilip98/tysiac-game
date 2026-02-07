@@ -467,6 +467,34 @@ export async function cleanupOldLogs(): Promise<number> {
   }
 }
 
+// Redact sensitive hand data from log entries
+function redactHandData(value: unknown): unknown {
+  if (value === null || value === undefined) return value;
+  if (Array.isArray(value)) return value.map(redactHandData);
+  if (typeof value === 'object') {
+    const obj = value as Record<string, unknown>;
+    const result: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(obj)) {
+      if (key === 'hand' || key === 'playerHand' || key === 'handSummary') {
+        result[key] = '[REDACTED]';
+      } else {
+        result[key] = redactHandData(val);
+      }
+    }
+    return result;
+  }
+  return value;
+}
+
+export function redactLogEntry(entry: DebugLogEntry): DebugLogEntry {
+  return {
+    ...entry,
+    eventData: redactHandData(entry.eventData),
+    gameState: redactHandData(entry.gameState),
+    metadata: redactHandData(entry.metadata),
+  };
+}
+
 // Schedule periodic cleanup
 let cleanupTimer: NodeJS.Timeout | null = null;
 

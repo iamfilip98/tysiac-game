@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
+import helmet from '@fastify/helmet';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@tysiac/shared';
 import { setupSocketHandlers } from './socket/handlers.js';
@@ -9,16 +10,33 @@ import { initializeSessions, startSessionCleanup, stopSessionCleanup } from './s
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
-const DEBUG_API_KEY = process.env.DEBUG_API_KEY || 'dev-debug-key'; // Set this in production!
+const DEBUG_API_KEY = process.env.DEBUG_API_KEY || '';
+const DEBUG_ENABLED = DEBUG_API_KEY.length > 0;
+
+// Parse comma-separated CORS origins into array (or single string)
+function parseCorsOrigin(origin: string): string | string[] {
+  const origins = origin.split(',').map(o => o.trim()).filter(Boolean);
+  return origins.length === 1 ? origins[0] : origins;
+}
+
+// Redact sensitive data from log arrays before returning via debug API
+function redactLogs<T>(logs: T[]): T[] {
+  return logs.map(log => debugService.redactLogEntry(log as never) as T);
+}
 
 async function main() {
   const fastify = Fastify({
     logger: true,
   });
 
+  // Security headers
+  await fastify.register(helmet, {
+    contentSecurityPolicy: false, // CSP handled by Next.js frontend
+  });
+
   // Enable CORS
   await fastify.register(cors, {
-    origin: CORS_ORIGIN,
+    origin: parseCorsOrigin(CORS_ORIGIN),
     credentials: true,
   });
 
@@ -29,6 +47,9 @@ async function main() {
 
   // Debug API authentication middleware
   const verifyDebugAuth = (request: { headers: Record<string, string | string[] | undefined> }) => {
+    if (!DEBUG_ENABLED) {
+      throw new Error('Unauthorized');
+    }
     const apiKey = request.headers['x-debug-key'];
     if (apiKey !== DEBUG_API_KEY) {
       throw new Error('Unauthorized');
@@ -56,7 +77,7 @@ async function main() {
       verifyDebugAuth(request);
       const { gameId } = request.params as { gameId: string };
       const logs = await debugService.getLogsByGameId(gameId);
-      return { logs };
+      return { logs: redactLogs(logs) };
     } catch (error) {
       if ((error as Error).message === 'Unauthorized') {
         reply.code(401);
@@ -72,7 +93,7 @@ async function main() {
       verifyDebugAuth(request);
       const { roomId } = request.params as { roomId: string };
       const logs = await debugService.getLogsByRoomId(roomId);
-      return { logs };
+      return { logs: redactLogs(logs) };
     } catch (error) {
       if ((error as Error).message === 'Unauthorized') {
         reply.code(401);
@@ -88,7 +109,7 @@ async function main() {
       verifyDebugAuth(request);
       const { limit } = request.query as { limit?: string };
       const logs = await debugService.getRecentLogs(limit ? parseInt(limit, 10) : 100);
-      return { logs };
+      return { logs: redactLogs(logs) };
     } catch (error) {
       if ((error as Error).message === 'Unauthorized') {
         reply.code(401);
@@ -104,7 +125,7 @@ async function main() {
       verifyDebugAuth(request);
       const { limit } = request.query as { limit?: string };
       const logs = await debugService.getErrorLogs(limit ? parseInt(limit, 10) : 100);
-      return { logs };
+      return { logs: redactLogs(logs) };
     } catch (error) {
       if ((error as Error).message === 'Unauthorized') {
         reply.code(401);
@@ -121,7 +142,7 @@ async function main() {
       const { eventType } = request.params as { eventType: string };
       const { limit } = request.query as { limit?: string };
       const logs = await debugService.getLogsByEventType(eventType, limit ? parseInt(limit, 10) : 100);
-      return { logs };
+      return { logs: redactLogs(logs) };
     } catch (error) {
       if ((error as Error).message === 'Unauthorized') {
         reply.code(401);
@@ -154,7 +175,7 @@ async function main() {
   // Create Socket.io server
   const io = new Server<ClientToServerEvents, ServerToClientEvents>(httpServer, {
     cors: {
-      origin: CORS_ORIGIN,
+      origin: parseCorsOrigin(CORS_ORIGIN),
       methods: ['GET', 'POST'],
       credentials: true,
     },

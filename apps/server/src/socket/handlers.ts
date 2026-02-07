@@ -5,7 +5,7 @@ import * as gameService from '../services/gameService.js';
 import * as debugService from '../services/debugService.js';
 import { GameEngine } from '../game/engine.js';
 import { getClientGameState } from '../game/stateManager.js';
-import { checkRateLimit, clearRateLimits } from '../security/rateLimit.js';
+import { checkRateLimit, clearRateLimits, trackIPConnection, releaseIPConnection } from '../security/rateLimit.js';
 import { createSession, validateSession, invalidatePlayerSession, getSessionToken } from '../security/session.js';
 import {
   CreateRoomSchema,
@@ -107,8 +107,23 @@ function cleanupGame(gameId: string, roomId: string): void {
   roomService.clearGameId(roomId);
 }
 
+// Track socket -> IP for cleanup on disconnect
+const socketToIP = new Map<string, string>();
+
 export function setupSocketHandlers(io: TypedServer) {
   io.on('connection', (socket: TypedSocket) => {
+    // IP connection limiting
+    const clientIP = socket.handshake.headers['x-forwarded-for']
+      ? String(socket.handshake.headers['x-forwarded-for']).split(',')[0].trim()
+      : socket.handshake.address;
+
+    if (!trackIPConnection(clientIP)) {
+      console.log(`[Connection] Rejected: too many connections from IP ${clientIP}`);
+      socket.emit('room:error', { code: 'TOO_MANY_CONNECTIONS', message: 'Too many connections from your IP' });
+      socket.disconnect(true);
+      return;
+    }
+    socketToIP.set(socket.id, clientIP);
 
     // Room events
     socket.on('room:create', (data) => {
@@ -982,6 +997,14 @@ export function setupSocketHandlers(io: TypedServer) {
       console.log(`Client disconnected: ${socket.id}`);
       logEvent({ socketId: socket.id, eventType: 'disconnect', result: 'success' });
       clearRateLimits(socket.id);
+
+      // Release IP connection count
+      const disconnectIP = socketToIP.get(socket.id);
+      if (disconnectIP) {
+        releaseIPConnection(disconnectIP);
+        socketToIP.delete(socket.id);
+      }
+
       handlePlayerLeave(io, socket, false);
     });
   });

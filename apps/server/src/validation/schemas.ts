@@ -8,16 +8,20 @@ export const CardSchema = z.object({
 
 export const SuitSchema = z.enum(['hearts', 'diamonds', 'clubs', 'spades']);
 
+// Name/room regex: alphanumeric, spaces, hyphens, underscores, Polish chars
+const playerNameRegex = /^[a-zA-Z0-9\s\-_ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/;
+const roomNameRegex = /^[a-zA-Z0-9\s\-_!?.ąćęłńóśźżĄĆĘŁŃÓŚŹŻ]+$/;
+
 // Room events
 export const CreateRoomSchema = z.object({
-  playerName: z.string().min(1).max(20).trim(),
-  roomName: z.string().min(1).max(30).trim(),
+  playerName: z.string().min(1).max(20).trim().regex(playerNameRegex, 'Player name contains invalid characters'),
+  roomName: z.string().min(1).max(30).trim().regex(roomNameRegex, 'Room name contains invalid characters'),
   isPrivate: z.boolean(),
   maxPlayers: z.union([z.literal(3), z.literal(4)]).optional().default(3),
 });
 
 export const JoinRoomSchema = z.object({
-  playerName: z.string().min(1).max(20).trim(),
+  playerName: z.string().min(1).max(20).trim().regex(playerNameRegex, 'Player name contains invalid characters'),
   roomCode: z.string().length(6).toUpperCase(),
 });
 

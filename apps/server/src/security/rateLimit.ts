@@ -79,3 +79,25 @@ export function cleanupRateLimits(): void {
 
 // Run cleanup every minute
 setInterval(cleanupRateLimits, 60000);
+
+// --- IP connection limiting ---
+const ipConnectionCount = new Map<string, number>();
+const MAX_CONNECTIONS_PER_IP = 5;
+
+export function trackIPConnection(ip: string): boolean {
+  const current = ipConnectionCount.get(ip) || 0;
+  if (current >= MAX_CONNECTIONS_PER_IP) {
+    return false;
+  }
+  ipConnectionCount.set(ip, current + 1);
+  return true;
+}
+
+export function releaseIPConnection(ip: string): void {
+  const current = ipConnectionCount.get(ip) || 0;
+  if (current <= 1) {
+    ipConnectionCount.delete(ip);
+  } else {
+    ipConnectionCount.set(ip, current - 1);
+  }
+}
