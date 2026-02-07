@@ -32,50 +32,29 @@ export function ElectricBorder({
   return (
     <div
       className={cn(
-        'relative rounded-xl overflow-hidden',
+        'relative rounded-xl',
         active && 'electric-border-wrapper',
         className
       )}
       style={style}
     >
-      {/* Animated border */}
+      {/* Animated border + glow */}
       {active && (
-        <>
-          <motion.div
-            className="absolute inset-0 rounded-xl"
-            style={{
-              background: `linear-gradient(90deg, ${color} 0%, transparent 30%, ${color} 50%, transparent 70%, ${color} 100%)`,
-              backgroundSize: '200% 100%',
-              padding: '2px',
-            }}
-            animate={{
-              backgroundPosition: ['0% 0%', '200% 0%'],
-            }}
-            transition={{
-              duration: speed,
-              repeat: Infinity,
-              ease: 'linear',
-            }}
-          >
-            <div className="w-full h-full rounded-[10px] bg-table-900" />
-          </motion.div>
-
-          {/* Glow effect */}
-          <motion.div
-            className="absolute inset-0 rounded-xl pointer-events-none"
-            style={{
-              boxShadow: `0 0 20px ${glow}, inset 0 0 20px ${glow}`,
-            }}
-            animate={{
-              opacity: [0.5, 1, 0.5],
-            }}
-            transition={{
-              duration: speed,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-        </>
+        <motion.div
+          className="absolute inset-0 rounded-xl pointer-events-none"
+          style={{
+            border: `2px solid ${color}`,
+            boxShadow: `0 0 15px ${glow}, inset 0 0 15px ${glow}`,
+          }}
+          animate={{
+            opacity: [0.5, 1, 0.5],
+          }}
+          transition={{
+            duration: speed,
+            repeat: Infinity,
+            ease: 'easeInOut',
+          }}
+        />
       )}
 
       {/* Content */}
