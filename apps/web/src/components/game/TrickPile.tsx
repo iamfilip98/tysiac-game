@@ -212,19 +212,6 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                 }}
               />
             ))}
-            {/* "Trump!" badge */}
-            <motion.div
-              className="absolute z-20 pointer-events-none"
-              initial={{ opacity: 0, scale: 0.5, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: isMobile ? -55 : -70 }}
-              exit={{ opacity: 0, scale: 0.8 }}
-              transition={{ duration: 0.3, ease: 'easeOut' }}
-              style={{ left: '50%', top: '50%', transform: 'translateX(-50%)' }}
-            >
-              <div className="px-2 py-0.5 bg-blue-500/80 border border-blue-300/60 rounded text-white text-xs font-bold whitespace-nowrap shadow-lg shadow-blue-500/30">
-                Trump!
-              </div>
-            </motion.div>
           </>
         )}
       </AnimatePresence>
