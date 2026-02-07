@@ -103,8 +103,8 @@ importers:
         specifier: ^9.0.0
         version: 9.0.1
       '@fastify/helmet':
-        specifier: ^13.0.2
-        version: 13.0.2
+        specifier: ^11
+        version: 11.1.1
       '@tysiac/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -113,7 +113,7 @@ importers:
         version: 16.6.1
       drizzle-orm:
         specifier: ^0.30.0
-        version: 0.30.10(@types/react@18.3.27)(postgres@3.4.8)(react@18.3.1)
+        version: 0.30.10(@types/react@19.1.17)(postgres@3.4.8)(react@18.3.1)
       fastify:
         specifier: ^4.26.0
         version: 4.29.1
@@ -1340,8 +1340,8 @@ packages:
   '@fastify/fast-json-stringify-compiler@4.3.0':
     resolution: {integrity: sha512-aZAXGYo6m22Fk1zZzEUKBvut/CIIQe/BapEORnxiD5Qr0kPHqqI69NtEMCme74h+at72sPhbkb4ZrLd1W3KRLA==}
 
-  '@fastify/helmet@13.0.2':
-    resolution: {integrity: sha512-tO1QMkOfNeCt9l4sG/FiWErH4QMm+RjHzbMTrgew1DYOQ2vb/6M1G2iNABBrD7Xq6dUk+HLzWW8u+rmmhQHifA==}
+  '@fastify/helmet@11.1.1':
+    resolution: {integrity: sha512-pjJxjk6SLEimITWadtYIXt6wBMfFC1I6OQyH/jYVCqSAn36sgAIFjeNiibHtifjCd+e25442pObis3Rjtame6A==}
 
   '@fastify/merge-json-schemas@0.1.1':
     resolution: {integrity: sha512-fERDVz7topgNjtXsJTTW1JKLy0rhuLRcquYqNR9rF7OcVpCa2OVW49ZPDIhaRRCaUuvVxI+N416xUoF76HNSXA==}
@@ -2836,9 +2836,6 @@ packages:
   fastify-plugin@4.5.1:
     resolution: {integrity: sha512-stRHYGeuqpEZTL1Ef0Ovr2ltazUT9g844X5z/zEBFLG8RYlpDiOCIG+ATvYEp+/zmc7sN29mcIMp8gvYplYPIQ==}
 
-  fastify-plugin@5.1.0:
-    resolution: {integrity: sha512-FAIDA8eovSt5qcDgcBvDuX/v0Cjz0ohGhENZ/wpc3y+oZCY2afZ9Baqql3g/lC+OHRnciQol4ww7tuthOb9idw==}
-
   fastify@4.29.1:
     resolution: {integrity: sha512-m2kMNHIG92tSNWv+Z3UeTR9AWLLuo7KctC7mlFPtMEVrfjIhmQhkQnT9v15qA/BfVq3vvj134Y0jl9SBje3jXQ==}
 
@@ -3000,9 +2997,9 @@ packages:
   heap@0.2.7:
     resolution: {integrity: sha512-2bsegYkkHO+h/9MGbn6KWcE45cHZgPANo5LXF7EvWdT0yT2EguSVO1nDgU5c8+ZOPwp2vMNa7YFsJhVcDR9Sdg==}
 
-  helmet@8.1.0:
-    resolution: {integrity: sha512-jOiHyAZsmnr8LqoPGmCjYAaiuWwjAPLgY8ZX2XrmHawt99/u1y6RgrZMTeoPfpUbV96HOalYgz1qzkRbw54Pmg==}
-    engines: {node: '>=18.0.0'}
+  helmet@7.2.0:
+    resolution: {integrity: sha512-ZRiwvN089JfMXokizgqEPXsl2Guk094yExfoDXR0cBYWxtBbaSww/w+vT4WEJsBW2iTUi1GgZ6swmoug3Oy4Xw==}
+    engines: {node: '>=16.0.0'}
 
   hermes-estree@0.29.1:
     resolution: {integrity: sha512-jl+x31n4/w+wEqm0I2r4CMimukLbLQEYpisys5oCre611CI5fc9TxhqkBBCJ1edDG4Kza0f7CgNz8xVMLZQOmQ==}
@@ -5853,10 +5850,10 @@ snapshots:
     dependencies:
       fast-json-stringify: 5.16.1
 
-  '@fastify/helmet@13.0.2':
+  '@fastify/helmet@11.1.1':
     dependencies:
-      fastify-plugin: 5.1.0
-      helmet: 8.1.0
+      fastify-plugin: 4.5.1
+      helmet: 7.2.0
 
   '@fastify/merge-json-schemas@0.1.1':
     dependencies:
@@ -7088,9 +7085,9 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  drizzle-orm@0.30.10(@types/react@18.3.27)(postgres@3.4.8)(react@18.3.1):
+  drizzle-orm@0.30.10(@types/react@19.1.17)(postgres@3.4.8)(react@18.3.1):
     optionalDependencies:
-      '@types/react': 18.3.27
+      '@types/react': 19.1.17
       postgres: 3.4.8
       react: 18.3.1
 
@@ -7502,8 +7499,6 @@ snapshots:
 
   fastify-plugin@4.5.1: {}
 
-  fastify-plugin@5.1.0: {}
-
   fastify@4.29.1:
     dependencies:
       '@fastify/ajv-compiler': 3.6.0
@@ -7676,7 +7671,7 @@ snapshots:
 
   heap@0.2.7: {}
 
-  helmet@8.1.0: {}
+  helmet@7.2.0: {}
 
   hermes-estree@0.29.1: {}
 
