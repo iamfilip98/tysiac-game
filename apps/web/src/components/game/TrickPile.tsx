@@ -26,9 +26,10 @@ interface TrickPileProps {
   currentPlayerId: string; // The viewing player
   marriageCard?: { suit: Suit } | null; // If a marriage was just declared, show Q as gold
   isSpectating?: boolean; // Whether the viewer is spectating (dealer in 4-player mode)
+  trumpWin?: boolean; // Show sparkle effect when trump wins the trick
 }
 
-export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating }: TrickPileProps) {
+export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating, trumpWin }: TrickPileProps) {
   const isMobile = useIsMobile();
 
   // Position cards based on who played them relative to current player
@@ -166,6 +167,67 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
           ))}
         </>
       )}
+
+      {/* Trump win sparkle burst */}
+      <AnimatePresence>
+        {trumpWin && (
+          <>
+            {/* Glow pulse */}
+            <motion.div
+              className="absolute inset-4 rounded-full pointer-events-none"
+              initial={{ scale: 0.5, opacity: 0 }}
+              animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.3, 0] }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 1.2, ease: 'easeOut' }}
+              style={{
+                background: 'radial-gradient(circle, rgba(147, 197, 253, 0.6) 0%, rgba(96, 165, 250, 0.3) 40%, transparent 70%)',
+                boxShadow: '0 0 25px 8px rgba(147, 197, 253, 0.4)',
+              }}
+            />
+            {/* Sparkle particles */}
+            {[...Array(8)].map((_, i) => (
+              <motion.div
+                key={`trump-sparkle-${i}`}
+                className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
+                initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                animate={{
+                  opacity: [0, 1, 0],
+                  scale: [0, 1.2, 0],
+                  x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
+                  y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
+                }}
+                exit={{ opacity: 0 }}
+                transition={{
+                  duration: 0.8,
+                  delay: i * 0.05,
+                  ease: 'easeOut',
+                }}
+                style={{
+                  left: '50%',
+                  top: '50%',
+                  marginLeft: '-3px',
+                  marginTop: '-3px',
+                  background: 'radial-gradient(circle, #fff 0%, #93c5fd 50%, #60a5fa 100%)',
+                  boxShadow: '0 0 6px 2px rgba(147, 197, 253, 0.8)',
+                }}
+              />
+            ))}
+            {/* "Trump!" badge */}
+            <motion.div
+              className="absolute z-20 pointer-events-none"
+              initial={{ opacity: 0, scale: 0.5, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: isMobile ? -55 : -70 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ duration: 0.3, ease: 'easeOut' }}
+              style={{ left: '50%', top: '50%', transform: 'translateX(-50%)' }}
+            >
+              <div className="px-2 py-0.5 bg-blue-500/80 border border-blue-300/60 rounded text-white text-xs font-bold whitespace-nowrap shadow-lg shadow-blue-500/30">
+                Trump!
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
 
       {/* Cards */}
       <AnimatePresence>

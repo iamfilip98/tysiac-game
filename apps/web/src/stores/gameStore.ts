@@ -22,6 +22,8 @@ interface GameState {
   threwNotification: { playerName: string; bidAmount: number; scoreChanges: Record<string, number> } | null;
   // Pause state notification
   pauseData: { pausedByName: string; pausedAt: number; expiresAt: number } | null;
+  // Trump trick win effect
+  trickWonData: { winnerId: string; wasTrumpWin: boolean } | null;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -38,6 +40,7 @@ interface GameState {
   setPassedAt100Notification: (data: { playerName: string } | null) => void;
   setThrewNotification: (data: { playerName: string; bidAmount: number; scoreChanges: Record<string, number> } | null) => void;
   setPauseData: (data: { pausedByName: string; pausedAt: number; expiresAt: number } | null) => void;
+  setTrickWonData: (data: { winnerId: string; wasTrumpWin: boolean } | null) => void;
   reset: () => void;
 }
 
@@ -56,6 +59,7 @@ export const useGameStore = create<GameState>((set) => ({
   passedAt100Notification: null,
   threwNotification: null,
   pauseData: null,
+  trickWonData: null,
 
   setGameState: (gameState) =>
     set({
@@ -102,6 +106,8 @@ export const useGameStore = create<GameState>((set) => ({
 
   setPauseData: (pauseData) => set({ pauseData }),
 
+  setTrickWonData: (trickWonData) => set({ trickWonData }),
+
   reset: () =>
     set({
       gameState: null,
@@ -118,5 +124,6 @@ export const useGameStore = create<GameState>((set) => ({
       passedAt100Notification: null,
       threwNotification: null,
       pauseData: null,
+      trickWonData: null,
     }),
 }));

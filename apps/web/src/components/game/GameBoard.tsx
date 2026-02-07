@@ -52,6 +52,7 @@ export function GameBoard() {
     passedAt100Notification,
     threwNotification,
     pauseData,
+    trickWonData,
   } = useGameStore();
   const { selectCard, setShowWykladana, setPassedAt100Notification, setThrewNotification } = useGameStore();
   const { setShowRoundResult, setShowGameEnd } = useGameStore();
@@ -348,6 +349,7 @@ export function GameBoard() {
                 currentPlayerId={isSpectating ? otherPlayers[0]?.id : playerId}
                 marriageCard={lastMarriageDeclared ? { suit: lastMarriageDeclared.suit } : null}
                 isSpectating={isSpectating}
+                trumpWin={trickWonData?.wasTrumpWin}
               />
             </motion.div>
           )}

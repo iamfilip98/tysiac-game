@@ -31,6 +31,7 @@ export function useSocket() {
     setPassedAt100Notification,
     setThrewNotification,
     setPauseData,
+    setTrickWonData,
     reset: resetGame,
   } = useGameStore();
 
@@ -186,9 +187,21 @@ export function useSocket() {
       // Marriage indicator will be cleared when trick completes (game:trickWon)
     });
 
-    socket.on('game:trickWon', () => {
+    socket.on('game:trickWon', (data: { winnerId: string; cards: Card[]; points: number }) => {
       // Clear marriage indicator when trick completes
       setLastMarriageDeclared(null);
+
+      // Determine if trump was used to win (trump card played into a non-trump lead)
+      const trumpSuit = useGameStore.getState().gameState?.round?.trumpSuit;
+      if (trumpSuit && data.cards.length > 0) {
+        const leadSuit = data.cards[0].suit;
+        const hasTrumpCard = data.cards.some(c => c.suit === trumpSuit);
+        const wasTrumpWin = hasTrumpCard && leadSuit !== trumpSuit;
+        if (wasTrumpWin) {
+          setTrickWonData({ winnerId: data.winnerId, wasTrumpWin: true });
+          setTimeout(() => setTrickWonData(null), 1500);
+        }
+      }
     });
 
     socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number; cards: Card[] }) => {
