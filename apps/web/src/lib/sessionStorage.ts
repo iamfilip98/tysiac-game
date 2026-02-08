@@ -16,8 +16,8 @@ export function saveSession(session: Omit<StoredSession, 'timestamp'>): void {
       timestamp: Date.now(),
     };
     localStorage.setItem(SESSION_KEY, JSON.stringify(stored));
-  } catch (e) {
-    console.warn('Failed to save session to localStorage:', e);
+  } catch {
+    // Silently swallow - localStorage may be unavailable
   }
 }
 
@@ -35,8 +35,8 @@ export function loadSession(): StoredSession | null {
     }
 
     return session;
-  } catch (e) {
-    console.warn('Failed to load session from localStorage:', e);
+  } catch {
+    // Silently swallow - localStorage may be unavailable
     return null;
   }
 }

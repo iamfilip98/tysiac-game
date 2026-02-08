@@ -1,16 +1,8 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { getSuitSymbol } from '@/lib/utils';
+import { cn, getSuitSymbol, getSuitName, truncateName } from '@/lib/utils';
 import type { Suit } from '@tysiac/shared';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
 
 interface ScoreBoardProps {
   players: { id: string; name: string; isAI: boolean }[];
@@ -63,6 +55,7 @@ export function ScoreBoard({
                   ? 'text-red-500'
                   : 'text-white'
               )}
+              aria-label={getSuitName(trumpSuit)}
             >
               {getSuitSymbol(trumpSuit)}
             </span>

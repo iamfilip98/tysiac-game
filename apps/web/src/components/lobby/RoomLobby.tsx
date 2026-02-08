@@ -1,18 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn } from '@/lib/utils';
+import { cn, truncateName, copyToClipboard } from '@/lib/utils';
 import type { Room, RoomPlayer } from '@tysiac/shared';
-
-const MAX_NAME_LENGTH = 7;
-
-function truncateName(name: string): string {
-  if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '…';
-}
 
 interface RoomLobbyProps {
   room: Room;
@@ -40,6 +33,19 @@ export function RoomLobby({
   const [linkCopied, setLinkCopied] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
   const [isAddingAI, setIsAddingAI] = useState(false);
+  const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+
+  useEffect(() => {
+    return () => {
+      timeoutsRef.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  const trackTimeout = (fn: () => void, ms: number) => {
+    const id = setTimeout(fn, ms);
+    timeoutsRef.current.push(id);
+    return id;
+  };
 
   const isHost = room.hostId === currentPlayerId;
   const currentPlayer = room.players.find((p) => p.id === currentPlayerId);
@@ -49,20 +55,9 @@ export function RoomLobby({
   const canAddAI = room.players.length < room.maxPlayers;
 
   const handleCopyCode = async () => {
-    try {
-      await navigator.clipboard.writeText(room.code);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      const textArea = document.createElement('textarea');
-      textArea.value = room.code;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    }
+    await copyToClipboard(room.code);
+    setCopied(true);
+    trackTimeout(() => setCopied(false), 2000);
   };
 
   const getShareUrl = () => {
@@ -90,34 +85,23 @@ export function RoomLobby({
     }
 
     // Fallback: copy link to clipboard
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    } catch {
-      const textArea = document.createElement('textarea');
-      textArea.value = shareUrl;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      setLinkCopied(true);
-      setTimeout(() => setLinkCopied(false), 2000);
-    }
+    await copyToClipboard(shareUrl);
+    setLinkCopied(true);
+    trackTimeout(() => setLinkCopied(false), 2000);
   };
 
   const handleStart = () => {
     if (!canStart || isStarting) return;
     setIsStarting(true);
     onStart();
-    setTimeout(() => setIsStarting(false), 5000);
+    trackTimeout(() => setIsStarting(false), 5000);
   };
 
   const handleAddAI = () => {
     if (!canAddAI || isAddingAI) return;
     setIsAddingAI(true);
     onAddAI();
-    setTimeout(() => setIsAddingAI(false), 1000);
+    trackTimeout(() => setIsAddingAI(false), 1000);
   };
 
   // Build the slot array: filled slots + empty slots

@@ -2,37 +2,26 @@
 
 import { useMemo, useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayerHand, OpponentHand } from './PlayerHand';
+import { PlayerHand } from './PlayerHand';
+import { OpponentHand } from './OpponentHand';
 import { TrickPile } from './TrickPile';
 import { ScoreBoard } from './ScoreBoard';
 import { BiddingPanel } from './BiddingPanel';
 import { TalonDisplay, TalonDistributionPanel } from './TalonPanel';
 import { PlayOrPassPanel } from './PlayOrPassPanel';
 import { WykladanaModal } from './WykladanaModal';
-import { RoundResultModal, GameEndModal, LeaveGameModal } from './RoundResultModal';
+import { RoundResultModal } from './RoundResultModal';
+import { GameEndModal } from './GameEndModal';
+import { LeaveGameModal } from './LeaveGameModal';
 import { PassedAt100Announcement } from './PassedAt100Announcement';
 import { ThrewAnnouncement } from './ThrewAnnouncement';
 import { PauseOverlay } from './PauseOverlay';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { cn } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
-
-// Hook to track screen size
-function useIsMobile() {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => setIsMobile(window.innerWidth < 640);
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  return isMobile;
-}
-
 
 export function GameBoard() {
   const isMobile = useIsMobile();

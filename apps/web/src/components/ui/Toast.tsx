@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useCallback, useRef, useEffect, ReactNode } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 
@@ -32,15 +32,25 @@ interface ToastProviderProps {
 
 export function ToastProvider({ children }: ToastProviderProps) {
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const timeoutMapRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+
+  useEffect(() => {
+    return () => {
+      timeoutMapRef.current.forEach((timeout) => clearTimeout(timeout));
+      timeoutMapRef.current.clear();
+    };
+  }, []);
 
   const showToast = useCallback((message: string, type: ToastType = 'info') => {
     const id = Math.random().toString(36).substring(2, 9);
     setToasts((prev) => [...prev, { id, message, type }]);
 
     // Auto-dismiss after 4 seconds
-    setTimeout(() => {
+    const timeout = setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== id));
+      timeoutMapRef.current.delete(id);
     }, 4000);
+    timeoutMapRef.current.set(id, timeout);
   }, []);
 
   const dismissToast = useCallback((id: string) => {

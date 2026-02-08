@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ToastProvider } from '@/components/ui/Toast';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -31,11 +32,13 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
       </head>
       <body className={`${inter.variable} font-sans h-full overflow-hidden`}>
-        <ToastProvider>
-          <div className="felt-texture h-full overflow-auto">
-            {children}
-          </div>
-        </ToastProvider>
+        <ErrorBoundary>
+          <ToastProvider>
+            <div className="felt-texture h-full overflow-auto">
+              {children}
+            </div>
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

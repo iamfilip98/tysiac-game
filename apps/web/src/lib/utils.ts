@@ -49,3 +49,23 @@ export function getCardDescription(card: { suit: string; rank: string }): string
   };
   return `${rankNames[card.rank] || card.rank} of ${getSuitName(card.suit)}`;
 }
+
+export const MAX_NAME_LENGTH = 7;
+
+export function truncateName(name: string): string {
+  if (name.length <= MAX_NAME_LENGTH) return name;
+  return name.slice(0, MAX_NAME_LENGTH) + '\u2026';
+}
+
+export async function copyToClipboard(text: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    document.body.appendChild(textArea);
+    textArea.select();
+    document.execCommand('copy');
+    document.body.removeChild(textArea);
+  }
+}

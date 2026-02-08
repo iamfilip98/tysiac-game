@@ -10,6 +10,7 @@ import type { Card, Suit } from '@tysiac/shared';
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
   const isAutoReconnectingRef = useRef(false);
+  const trickWonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     setRoom,
@@ -60,7 +61,6 @@ export function useSocket() {
       // Attempt auto-reconnect if session exists
       const storedSession = loadSession();
       if (storedSession) {
-        console.log('[auto-reconnect] Found stored session, attempting reconnect...');
         isAutoReconnectingRef.current = true;
         socket.emit('player:reconnect', {
           roomId: storedSession.roomId,
@@ -108,13 +108,10 @@ export function useSocket() {
     });
 
     socket.on('room:updated', (room) => {
-      console.log('[room:updated] Received room:', room?.id, 'gameId:', room?.gameId);
       setRoom(room);
     });
 
     socket.on('room:error', ({ code, message }) => {
-      console.log('[room:error] Error:', code, message);
-
       // If INVALID_SESSION during auto-reconnect on page load (no active game), fail silently
       if (code === 'INVALID_SESSION' && isAutoReconnectingRef.current) {
         const hasActiveGame = useGameStore.getState().gameState !== null;
@@ -122,7 +119,6 @@ export function useSocket() {
 
         // Only fail silently if user wasn't actively in a game/room
         if (!hasActiveGame && !hasActiveRoom) {
-          console.log('[room:error] Stale session detected on page load, clearing silently');
           isAutoReconnectingRef.current = false;
           clearSession();
           return;
@@ -135,23 +131,16 @@ export function useSocket() {
 
     // Game events
     socket.on('game:started', (state) => {
-      console.log('[game:started] HANDLER CALLED, state:', JSON.stringify(state).slice(0, 200));
-      console.log('[game:started] state.id =', state?.id);
       resetGame();
       setGameState(state);
       // Also update room with gameId since room:updated might not arrive in time
       const currentRoom = useRoomStore.getState().room;
-      console.log('[game:started] currentRoom:', currentRoom?.id, 'state.id:', state?.id);
       if (currentRoom && state?.id) {
-        console.log('[game:started] Updating room gameId:', state.id);
         setRoom({ ...currentRoom, gameId: state.id });
-      } else {
-        console.log('[game:started] SKIPPED room update - currentRoom:', !!currentRoom, 'state.id:', state?.id);
       }
     });
 
     socket.on('game:stateUpdate', (state) => {
-      console.log('[game:stateUpdate] Received update, phase:', state?.phase);
       setGameState(state);
       // Clear wykladana modal when phase changes away from wykladana
       if (state?.phase !== 'wykladana') {
@@ -160,7 +149,6 @@ export function useSocket() {
     });
 
     socket.on('game:yourTurn', ({ validActions }) => {
-      console.log('[game:yourTurn] RECEIVED! validActions:', validActions?.length, validActions);
       setValidActions(validActions);
     });
 
@@ -182,7 +170,6 @@ export function useSocket() {
     });
 
     socket.on('game:marriageDeclared', ({ playerId, suit }) => {
-      console.log('[game:marriageDeclared]', playerId, suit);
       setLastMarriageDeclared({ playerId, suit });
       // Marriage indicator will be cleared when trick completes (game:trickWon)
     });
@@ -199,7 +186,8 @@ export function useSocket() {
         const wasTrumpWin = hasTrumpCard && leadSuit !== trumpSuit;
         if (wasTrumpWin) {
           setTrickWonData({ winnerId: data.winnerId, wasTrumpWin: true });
-          setTimeout(() => setTrickWonData(null), 1500);
+          if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
+          trickWonTimeoutRef.current = setTimeout(() => setTrickWonData(null), 1500);
         }
       }
     });
@@ -253,6 +241,7 @@ export function useSocket() {
     connect();
 
     return () => {
+      if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');

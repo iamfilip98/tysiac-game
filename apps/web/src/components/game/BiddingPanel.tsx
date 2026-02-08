@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
@@ -23,6 +23,15 @@ export function BiddingPanel({
 }: BiddingPanelProps) {
   const [isBidding, setIsBidding] = useState(false);
   const [isPassing, setIsPassing] = useState(false);
+  const bidTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const passTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (bidTimeoutRef.current) clearTimeout(bidTimeoutRef.current);
+      if (passTimeoutRef.current) clearTimeout(passTimeoutRef.current);
+    };
+  }, []);
 
   const bidAction = validActions.find((a) => a.type === 'bid');
   const canPass = validActions.some((a) => a.type === 'pass');
@@ -45,7 +54,7 @@ export function BiddingPanel({
     if (canBid && !isBidding) {
       setIsBidding(true);
       onBid(nextBid);
-      setTimeout(() => setIsBidding(false), 2000);
+      bidTimeoutRef.current = setTimeout(() => setIsBidding(false), 2000);
     }
   };
 
@@ -53,7 +62,7 @@ export function BiddingPanel({
     if (!isPassing) {
       setIsPassing(true);
       onPass();
-      setTimeout(() => setIsPassing(false), 2000);
+      passTimeoutRef.current = setTimeout(() => setIsPassing(false), 2000);
     }
   };
 
