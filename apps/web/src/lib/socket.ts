@@ -11,6 +11,7 @@ export function getSocket(): TypedSocket {
   if (!socket) {
     socket = io(SOCKET_URL, {
       autoConnect: false,
+      withCredentials: true,
       reconnection: true,
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
@@ -29,19 +30,28 @@ export function connectSocket(): Promise<void> {
       return;
     }
 
+    let settled = false;
+
+    // Allow enough time for all reconnection attempts to complete
+    // (5 attempts with exponential backoff can take ~17s)
     const timeout = setTimeout(() => {
-      reject(new Error('Connection timeout'));
-    }, 10000);
+      if (!settled) {
+        settled = true;
+        s.off('connect', onConnect);
+        reject(new Error('Connection timeout'));
+      }
+    }, 20000);
 
-    s.on('connect', () => {
-      clearTimeout(timeout);
-      resolve();
-    });
+    function onConnect() {
+      if (!settled) {
+        settled = true;
+        clearTimeout(timeout);
+        resolve();
+      }
+    }
 
-    s.on('connect_error', (error) => {
-      clearTimeout(timeout);
-      reject(error);
-    });
+    // Use .once so the handler auto-removes after firing, preventing listener leaks
+    s.once('connect', onConnect);
 
     s.connect();
   });
