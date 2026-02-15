@@ -23,6 +23,7 @@ interface PlayerHandProps {
   isMyTurn: boolean;
   declaredMarriages?: Suit[];
   distributionState?: DistributionState;
+  phase?: string;
 }
 
 // Smooth easing for all devices (no springs)
@@ -37,6 +38,7 @@ export function PlayerHand({
   isMyTurn,
   declaredMarriages = [],
   distributionState,
+  phase,
 }: PlayerHandProps) {
   const { isMobile, width } = useScreenSize();
 
@@ -195,6 +197,39 @@ export function PlayerHand({
   // Fan angle - minimal on mobile for cleaner look, more on desktop
   const fanAngle = isMobile ? 0 : Math.min(cardCount * 3, 24);
   const startAngle = -fanAngle / 2;
+
+  // Mobile play-or-pass decision: horizontal scroll layout to browse cards
+  if (phase === 'playOrPassDecision' && isMobile) {
+    return (
+      <div
+        className="overflow-x-auto flex gap-2 pb-4 px-4 snap-x snap-mandatory"
+        style={{
+          width: '100vw',
+          marginLeft: '-16px',
+          scrollbarWidth: 'none',
+          WebkitOverflowScrolling: 'touch',
+        }}
+        role="group"
+        aria-label={`Your hand: ${cardCount} cards. Reviewing cards before decision.`}
+      >
+        {sortedCards.map((card) => (
+          <div
+            key={`${card.suit}-${card.rank}`}
+            className="flex-shrink-0 snap-center"
+          >
+            <Card
+              card={card}
+              isSelected={false}
+              isPlayable={false}
+              isMarriageCard={isMarriageCard(card)}
+              onClick={() => {}}
+              size="md"
+            />
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   // Mobile distribution mode: horizontal scroll layout for easier card selection
   if (distributionState && isMobile) {

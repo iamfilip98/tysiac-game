@@ -8,6 +8,7 @@ import type { Card, Suit } from '@tysiac/shared';
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
   const isAutoReconnectingRef = useRef(false);
+  const marriageClearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     setRoom,
@@ -168,11 +169,13 @@ export function useSocket() {
     });
 
     socket.on('game:marriageDeclared', ({ playerId, suit }) => {
+      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
       setLastMarriageDeclared({ playerId, suit });
     });
 
     socket.on('game:trickWon', () => {
-      setLastMarriageDeclared(null);
+      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
+      marriageClearTimeoutRef.current = setTimeout(() => setLastMarriageDeclared(null), 1500);
     });
 
     socket.on('game:wykladana', (data) => {
@@ -240,6 +243,7 @@ export function useSocket() {
     connect();
 
     return () => {
+      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');

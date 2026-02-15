@@ -796,11 +796,13 @@ export class GameEngine {
         const scoreChanges: Record<string, number> = {};
         scoreChanges[playerId] = -bidAmount;
 
-        // Distribute 120 points evenly to other players
+        // Distribute 120 points evenly to other players (barrel players get 0)
         for (const otherPlayer of otherActivePlayers) {
-          this.game.scores[otherPlayer.id].totalScore += pointsPerPlayer;
-          this.game.scores[otherPlayer.id].roundScores.push(pointsPerPlayer);
-          scoreChanges[otherPlayer.id] = pointsPerPlayer;
+          const isOnBarrel = this.game.scores[otherPlayer.id].isOnBarrel;
+          const awarded = isOnBarrel ? 0 : pointsPerPlayer;
+          this.game.scores[otherPlayer.id].totalScore += awarded;
+          this.game.scores[otherPlayer.id].roundScores.push(awarded);
+          scoreChanges[otherPlayer.id] = awarded;
         }
 
         // Emit the threw event with score changes
@@ -837,11 +839,18 @@ export class GameEngine {
         playerScores: {},
       };
       for (const p of this.game.players) {
-        const scoreChange = p.id === playerId
-          ? (bidAmount === 100 ? 0 : -bidAmount)
-          : (bidAmount === 100 ? 0 : Math.floor(120 / (round.isDealerSittingOut
-              ? this.game.players.filter(pl => pl.id !== round.dealer && pl.id !== playerId).length
-              : this.game.players.filter(pl => pl.id !== playerId).length)));
+        let scoreChange: number;
+        if (p.id === playerId) {
+          scoreChange = bidAmount === 100 ? 0 : -bidAmount;
+        } else if (bidAmount === 100) {
+          scoreChange = 0;
+        } else {
+          const isOnBarrel = this.game.scores[p.id].isOnBarrel;
+          const otherCount = round.isDealerSittingOut
+            ? this.game.players.filter(pl => pl.id !== round.dealer && pl.id !== playerId).length
+            : this.game.players.filter(pl => pl.id !== playerId).length;
+          scoreChange = isOnBarrel ? 0 : Math.floor(120 / otherCount);
+        }
         passedRoundHistory.playerScores[p.id] = {
           trickPoints: 0,
           marriagePoints: 0,

@@ -12,6 +12,7 @@ export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
   const isAutoReconnectingRef = useRef(false);
   const trickWonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const marriageClearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     setRoom,
@@ -190,14 +191,17 @@ export function useSocket() {
     });
 
     socket.on('game:marriageDeclared', ({ playerId, suit }) => {
+      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
       setLastMarriageDeclared({ playerId, suit });
       soundManager.marriage();
       // Marriage indicator will be cleared when trick completes (game:trickWon)
     });
 
     socket.on('game:trickWon', (data: { winnerId: string; cards: Card[]; points: number }) => {
-      // Clear marriage indicator when trick completes
-      setLastMarriageDeclared(null);
+      // Delay clearing marriage indicator so the queen keeps its gold glow
+      // during the trick exit animation (prevents blue trump flash)
+      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
+      marriageClearTimeoutRef.current = setTimeout(() => setLastMarriageDeclared(null), 1500);
       soundManager.trickWon();
 
       // Determine if trump was used to win (trump card played into a non-trump lead)
@@ -275,6 +279,7 @@ export function useSocket() {
     return () => {
       stopKeepAlive();
       if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
+      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');

@@ -341,6 +341,7 @@ export function GameBoard() {
             onPlayCard={playCard}
             isMyTurn={isMyTurn && phase === 'trickPlaying'}
             declaredMarriages={round?.declaredMarriages?.[playerId] || []}
+            phase={phase}
             distributionState={
               phase === 'talonDistribution' && round?.bidWinner === playerId
                 ? {
