@@ -26,7 +26,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         : 'bg-gradient-to-r from-gold-500 to-gold-600 text-table-950 hover:from-gold-400 hover:to-gold-500 focus:ring-gold-500 shadow-lg hover:shadow-glow border border-transparent',
       secondary: disabled
         ? 'bg-table-900 text-white/30 border border-table-700'
-        : 'bg-table-800/80 text-white border border-table-600 hover:bg-table-700 focus:ring-table-500',
+        : 'bg-table-800/80 text-white border border-white/[0.1] hover:bg-table-700 focus:ring-table-500',
       ghost: disabled
         ? 'bg-transparent text-white/30 border border-transparent'
         : 'bg-transparent text-white hover:bg-white/10 focus:ring-white/50 border border-transparent',

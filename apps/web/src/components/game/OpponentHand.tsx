@@ -39,7 +39,7 @@ export function OpponentHand({
       {/* Player name */}
       <div
         className={cn(
-          'text-sm font-medium px-2 py-1 rounded-lg bg-table-800/80',
+          'text-sm font-medium px-2 py-1 rounded-lg bg-table-800/80 border border-white/[0.06]',
           isCurrentTurn ? 'text-gold-400 ring-2 ring-gold-400/50' : 'text-white/80'
         )}
         title={playerName}

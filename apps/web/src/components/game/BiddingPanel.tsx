@@ -68,7 +68,7 @@ export function BiddingPanel({
 
   if (!isMyTurn) {
     return (
-      <div className="bg-table-900/80 border border-table-600 rounded-xl p-4 text-center">
+      <div className="bg-gradient-to-b from-table-800/85 to-table-900/85 backdrop-blur-md border border-white/[0.08] rounded-xl p-4 text-center" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-white/60">Waiting for other players to bid...</div>
         <div className="mt-2 text-lg font-medium text-gold-400">
           Current bid: {currentBid}
@@ -79,7 +79,7 @@ export function BiddingPanel({
 
   return (
     <ElectricBorder active={isMyTurn} color="#22c55e">
-      <div className="bg-table-900/90 backdrop-blur p-4 rounded-xl min-w-[280px]">
+      <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-4 rounded-xl min-w-[280px]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-center mb-4">
           <div className="text-sm text-white/60 mb-1">Your turn to bid</div>
           <div className="text-2xl font-bold text-gold-400">

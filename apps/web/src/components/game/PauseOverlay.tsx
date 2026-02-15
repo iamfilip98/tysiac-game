@@ -55,7 +55,7 @@ export function PauseOverlay({ pausedByName, pausedAt, onResume }: PauseOverlayP
           {pausedByName} paused the game
         </p>
 
-        <div className="bg-table-900/50 rounded-lg p-4 mb-6">
+        <div className="bg-table-950/50 border border-white/[0.06] rounded-lg p-4 mb-6">
           <div className="text-sm text-white/50 mb-1">Time remaining to resume:</div>
           <div className="text-3xl font-mono text-amber-400">
             {timeRemaining}

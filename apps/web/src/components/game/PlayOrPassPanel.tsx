@@ -35,7 +35,8 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, pla
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="px-4 py-3 bg-table-900/90 rounded-xl"
+        className="px-4 py-3 bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md rounded-xl"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
       >
         <h3 className="text-base font-bold text-gold-400 text-center mb-1">
           You won the bid at {bidAmount}

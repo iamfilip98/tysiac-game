@@ -43,8 +43,8 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
   };
 
   return (
-    <div className="rounded-xl border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)] h-full">
-      <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl h-full flex flex-col">
+    <div className="rounded-xl border border-gold-500/20 shadow-glow-gold h-full">
+      <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl h-full flex flex-col" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <h2 className="text-xl font-bold text-white mb-4">Browse Rooms</h2>
 
         <div className="mb-4">
@@ -64,13 +64,13 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
           <label className="block text-sm font-medium text-white/80 mb-2">
             Available Rooms
           </label>
-          <div className="flex-1 overflow-y-auto rounded-lg border border-table-600 bg-table-950/50">
+          <div className="flex-1 overflow-y-auto rounded-lg border border-white/[0.08] bg-table-950/50">
             {publicRooms.length === 0 ? (
               <div className="flex items-center justify-center h-full text-white/40 text-sm px-4 text-center">
                 No rooms available. Create one!
               </div>
             ) : (
-              <div className="divide-y divide-table-700">
+              <div className="divide-y divide-white/[0.06]">
                 {publicRooms.map((room) => {
                   const isFull = room.players.length >= room.maxPlayers;
                   const isUnlocking = unlockingRoomId === room.id;
@@ -109,7 +109,7 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
                             className={cn(
                               'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
                               !isFull && playerName.trim()
-                                ? 'bg-blue-500 hover:bg-blue-400 text-white'
+                                ? 'bg-gold-500 hover:bg-gold-400 text-table-950'
                                 : 'bg-table-700 text-white/30 cursor-not-allowed'
                             )}
                           >

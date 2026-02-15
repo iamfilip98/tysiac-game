@@ -79,7 +79,7 @@ export function TalonDistributionPanel({
 
   return (
     <ElectricBorder active color="#22c55e">
-      <div className="bg-table-900/90 backdrop-blur p-3 sm:p-4 rounded-xl">
+      <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-3 sm:p-4 rounded-xl" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-center mb-3">
           <h3 className="text-sm sm:text-base font-bold text-white">
             Give 1 card to each player

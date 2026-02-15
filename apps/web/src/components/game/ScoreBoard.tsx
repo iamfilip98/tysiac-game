@@ -36,12 +36,12 @@ export function ScoreBoard({
 
   return (
     <div className={cn(
-      "bg-table-900/90 backdrop-blur border border-table-600 rounded-xl w-[220px]",
+      "bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md border border-white/[0.08] rounded-xl w-[220px]",
       isFourPlayer ? "p-2" : "p-4"
-    )}>
+    )} style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
       {/* Header */}
       <div className={cn(
-        "flex items-center justify-between border-b border-table-600",
+        "flex items-center justify-between border-b border-white/[0.08]",
         isFourPlayer ? "mb-1.5 pb-1" : "mb-3 pb-2"
       )}>
         <h3 className="text-sm font-semibold text-white/80">Scores</h3>
@@ -161,7 +161,7 @@ export function ScoreBoard({
       {/* Round info */}
       {roundNumber && (
         <div className={cn(
-          "border-t border-table-600 flex items-center justify-center gap-2 text-xs text-white/60",
+          "border-t border-white/[0.08] flex items-center justify-center gap-2 text-xs text-white/60",
           isFourPlayer ? "mt-1.5 pt-1" : "mt-3 pt-2"
         )}>
           <span>Round {roundNumber}</span>

@@ -90,7 +90,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-4 sm:mb-8"
       >
-        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-1 sm:mb-2">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-1 sm:mb-2 text-shadow-heading">
           Tysi
           <span className="text-gold-400">ą</span>c
         </h1>
@@ -104,7 +104,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
               isConnecting
                 ? 'bg-yellow-500 animate-pulse'
                 : isConnected
-                ? 'bg-green-500'
+                ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
                 : 'bg-red-500'
             )}
           />
@@ -123,15 +123,15 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg"
+        className="flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg backdrop-blur-sm border border-white/[0.06]"
       >
         <button
           onClick={() => setTab('create')}
           className={cn(
             'px-6 py-2 rounded-md font-medium transition-all',
             tab === 'create'
-              ? 'bg-gold-500 text-table-950'
-              : 'text-white/60 hover:text-white'
+              ? 'bg-gold-500 text-table-950 shadow-[0_0_10px_rgba(251,191,36,0.25)]'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
           )}
         >
           Create Room
@@ -141,8 +141,8 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           className={cn(
             'px-6 py-2 rounded-md font-medium transition-all',
             tab === 'join'
-              ? 'bg-gold-500 text-table-950'
-              : 'text-white/60 hover:text-white'
+              ? 'bg-gold-500 text-table-950 shadow-[0_0_10px_rgba(251,191,36,0.25)]'
+              : 'text-white/60 hover:text-white hover:bg-white/5'
           )}
         >
           Browse Rooms

@@ -113,7 +113,7 @@ export function RoomLobby({
   return (
     <div className="w-full max-w-lg mx-auto" role="region" aria-label="Room lobby">
       <ElectricBorder active color="#fbbf24">
-        <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl">
+        <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
           {/* Header */}
           <div className="text-center mb-6">
             <h2 className="text-2xl font-bold text-white mb-2">{room.name}</h2>
@@ -262,7 +262,7 @@ export function RoomLobby({
 
             {/* Host actions - Start Game is now a separate prominent button */}
             {isHost && (
-              <div className="mt-4 pt-4 border-t border-table-600">
+              <div className="mt-4 pt-4 border-t border-white/[0.08]">
                 <Button
                   variant="primary"
                   onClick={handleStart}
@@ -321,7 +321,7 @@ function EmptySlot({ isHost, canAddAI, isAddingAI, onAddAI }: EmptySlotProps) {
       className={cn(
         SLOT_HEIGHT,
         'flex items-center justify-center',
-        'rounded-lg border-2 border-dashed border-table-600 text-white/40'
+        'rounded-lg border-2 border-dashed border-white/[0.12] text-white/40'
       )}
       role="listitem"
       aria-label="Empty player slot"
@@ -372,7 +372,7 @@ function PlayerSlot({
         'flex items-center justify-between px-3 rounded-lg',
         isCurrentPlayer
           ? 'bg-gold-500/10 border border-gold-500/30'
-          : 'bg-table-800/50 border border-table-600'
+          : 'bg-table-800/50 border border-white/[0.08]'
       )}
       role="listitem"
     >

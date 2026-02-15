@@ -32,7 +32,7 @@ export function MarriagePanel({
 
   return (
     <ElectricBorder active color="#f59e0b">
-      <div className="bg-table-900/90 backdrop-blur p-4 rounded-xl">
+      <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-4 rounded-xl" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-center mb-4">
           <h3 className="text-lg font-bold text-gold-400">Declare Marriage?</h3>
           <p className="text-sm text-white/60">
@@ -56,7 +56,7 @@ export function MarriagePanel({
                 className={cn(
                   'flex flex-col items-center gap-1 p-3 rounded-xl',
                   'bg-table-800 hover:bg-table-700 transition-all',
-                  'border-2 border-table-600 hover:border-gold-500/50',
+                  'border-2 border-white/[0.1] hover:border-gold-500/50',
                   'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
                   'active:bg-table-600'
                 )}

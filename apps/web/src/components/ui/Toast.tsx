@@ -93,10 +93,10 @@ interface ToastItemProps {
 }
 
 const typeStyles: Record<ToastType, string> = {
-  success: 'bg-green-600 border-green-500',
-  error: 'bg-red-600 border-red-500',
-  warning: 'bg-amber-600 border-amber-500',
-  info: 'bg-blue-600 border-blue-500',
+  success: 'bg-green-600/90 border-green-400/50',
+  error: 'bg-red-600/90 border-red-400/50',
+  warning: 'bg-amber-600/90 border-amber-400/50',
+  info: 'bg-blue-600/90 border-blue-400/50',
 };
 
 const typeIcons: Record<ToastType, ReactNode> = {
@@ -130,7 +130,7 @@ function ToastItem({ toast, onDismiss }: ToastItemProps) {
       exit={{ opacity: 0, x: 100, scale: 0.9 }}
       transition={{ type: 'spring', damping: 25, stiffness: 300 }}
       className={cn(
-        'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg',
+        'pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg backdrop-blur-md',
         'text-white min-w-[280px] max-w-[400px]',
         typeStyles[toast.type]
       )}

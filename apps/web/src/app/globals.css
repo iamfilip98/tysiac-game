@@ -204,6 +204,9 @@ html,
   .text-balance {
     text-wrap: balance;
   }
+  .text-shadow-heading {
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3), 0 0 40px rgba(251, 191, 36, 0.1);
+  }
 }
 
 /* Card table felt texture */

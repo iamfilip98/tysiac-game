@@ -116,11 +116,12 @@ export function Modal({
               aria-label={ariaLabel}
               aria-describedby={ariaDescribedBy}
               tabIndex={-1}
+              style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
               className={cn(
                 'w-full max-w-[calc(100%-2rem)] sm:max-w-md p-4 sm:p-6',
                 'max-h-[85vh] sm:max-h-[90vh] overflow-y-auto',
                 'bg-gradient-to-b from-table-800 to-table-900',
-                'border border-table-600 rounded-xl sm:rounded-2xl',
+                'border border-white/[0.1] rounded-xl sm:rounded-2xl',
                 'shadow-2xl',
                 className
               )}

@@ -26,10 +26,11 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
   };
 
   return (
-    <div className="rounded-xl border-2 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
+    <div className="rounded-xl border border-gold-500/20 shadow-glow-gold">
       <form
         onSubmit={handleSubmit}
-        className="bg-table-900/90 backdrop-blur p-6 rounded-xl"
+        className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
       >
         <h2 className="text-xl font-bold text-white mb-4">Create New Room</h2>
 
@@ -65,8 +66,8 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
                 className={cn(
                   'flex-1 py-2 px-4 rounded-lg font-medium transition-all',
                   maxPlayers === 3
-                    ? 'bg-green-500 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]'
-                    : 'bg-table-700 text-white/70 hover:bg-table-600'
+                    ? 'bg-gold-500 text-table-950 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                    : 'bg-table-700 text-white/70 hover:bg-table-600 hover:text-white'
                 )}
               >
                 3 Players
@@ -77,8 +78,8 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
                 className={cn(
                   'flex-1 py-2 px-4 rounded-lg font-medium transition-all',
                   maxPlayers === 4
-                    ? 'bg-green-500 text-white shadow-[0_0_10px_rgba(34,197,94,0.4)]'
-                    : 'bg-table-700 text-white/70 hover:bg-table-600'
+                    ? 'bg-gold-500 text-table-950 shadow-[0_0_10px_rgba(251,191,36,0.3)]'
+                    : 'bg-table-700 text-white/70 hover:bg-table-600 hover:text-white'
                 )}
               >
                 4 Players

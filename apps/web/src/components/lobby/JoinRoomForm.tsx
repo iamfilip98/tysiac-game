@@ -23,10 +23,11 @@ export function JoinRoomForm({ onSubmit, isLoading, isConnected = false, initial
   };
 
   return (
-    <div className="rounded-xl border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
+    <div className="rounded-xl border border-gold-500/20 shadow-glow-gold">
       <form
         onSubmit={handleSubmit}
-        className="bg-table-900/90 backdrop-blur p-6 rounded-xl"
+        className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl"
+        style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
       >
         <h2 className="text-xl font-bold text-white mb-4">Join Room</h2>
 
