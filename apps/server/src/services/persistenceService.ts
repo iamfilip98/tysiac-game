@@ -43,13 +43,15 @@ export function persistGame(game: GameState, room: Room): void {
   if (lastTime && now - lastTime < THROTTLE_MS) return;
   lastPersistTime.set(game.id, now);
 
-  // Fire-and-forget upsert
+  // Fire-and-forget upsert (cast text→jsonb to avoid double-encoding)
+  const gameJson = JSON.stringify(game);
+  const roomJson = JSON.stringify(room);
   db.execute(sql`
     INSERT INTO active_games (game_id, game_state, room_state, phase, updated_at)
-    VALUES (${game.id}, ${JSON.stringify(game)}::jsonb, ${JSON.stringify(room)}::jsonb, ${game.phase}, now())
+    VALUES (${game.id}, ${gameJson}::text::jsonb, ${roomJson}::text::jsonb, ${game.phase}, now())
     ON CONFLICT (game_id) DO UPDATE SET
-      game_state = ${JSON.stringify(game)}::jsonb,
-      room_state = ${JSON.stringify(room)}::jsonb,
+      game_state = ${gameJson}::text::jsonb,
+      room_state = ${roomJson}::text::jsonb,
       phase = ${game.phase},
       updated_at = now()
   `).catch((error) => {
@@ -72,8 +74,17 @@ export async function loadActiveGames(): Promise<Array<{ gameState: GameState; r
     const results: Array<{ gameState: GameState; roomState: Room }> = [];
     for (const row of rows) {
       try {
-        const gameState = row.game_state as GameState;
-        const roomState = row.room_state as Room;
+        // Handle both properly-stored objects and double-encoded strings
+        let gameState = row.game_state as GameState;
+        let roomState = row.room_state as Room;
+        if (typeof gameState === 'string') gameState = JSON.parse(gameState);
+        if (typeof roomState === 'string') roomState = JSON.parse(roomState);
+
+        // Validate essential fields exist
+        if (!gameState?.id || !gameState?.phase || !gameState?.players) {
+          console.warn('[Persistence] Skipping invalid game entry');
+          continue;
+        }
 
         // Skip games in terminal phases
         if (gameState.phase === 'gameEnd' || gameState.phase === 'idle') continue;
@@ -132,12 +143,14 @@ export async function flushAllGames(
 
     try {
       // Bypass throttle for shutdown flush
+      const gJson = JSON.stringify(game);
+      const rJson = JSON.stringify(room);
       await db.execute(sql`
         INSERT INTO active_games (game_id, game_state, room_state, phase, updated_at)
-        VALUES (${game.id}, ${JSON.stringify(game)}::jsonb, ${JSON.stringify(room)}::jsonb, ${game.phase}, now())
+        VALUES (${game.id}, ${gJson}::text::jsonb, ${rJson}::text::jsonb, ${game.phase}, now())
         ON CONFLICT (game_id) DO UPDATE SET
-          game_state = ${JSON.stringify(game)}::jsonb,
-          room_state = ${JSON.stringify(room)}::jsonb,
+          game_state = ${gJson}::text::jsonb,
+          room_state = ${rJson}::text::jsonb,
           phase = ${game.phase},
           updated_at = now()
       `);
