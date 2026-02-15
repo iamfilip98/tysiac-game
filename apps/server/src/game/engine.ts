@@ -862,10 +862,13 @@ export class GameEngine {
       }
       this.roundHistory.push(passedRoundHistory);
 
-      // Skip scoring and start a new round after a brief delay
+      // Delay must exceed client notification duration so cards aren't dealt while it's visible
+      // Pass at 100: 3s notification + 1.5s pause = 4.5s
+      // Threw (>100): 4s notification + 1.5s pause = 5.5s
+      const newRoundDelay = bidAmount === 100 ? 4500 : 5500;
       this.safeSetTimeout(() => {
         this.startNewRound();
-      }, 2000);
+      }, newRoundDelay);
     } else {
       // Player chose to play - proceed to talon distribution
       this.proceedToTalonDistribution();

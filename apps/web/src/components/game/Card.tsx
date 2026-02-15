@@ -44,6 +44,8 @@ export function Card({
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
   const cardDescription = getCardDescription(card);
+  const isFaceCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
+  const showCornerPips = size !== 'sm';
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.key === 'Enter' || e.key === ' ') && isPlayable && onClick) {
@@ -254,15 +256,65 @@ export function Card({
             )}
           </>
         )}
+        {/* Face card decorative inner frame */}
+        {isFaceCard && (
+          <div
+            className="absolute inset-[5px] rounded border pointer-events-none"
+            style={{ borderColor: isMarriageCard ? 'rgba(120, 90, 20, 0.25)' : 'rgba(128, 128, 128, 0.15)' }}
+            aria-hidden="true"
+          />
+        )}
         {/* Card content */}
-        <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
+        <div className="absolute inset-0 flex flex-col items-center justify-center card-text" aria-hidden="true">
+          {/* Top-left corner pip */}
+          {showCornerPips && (
+            <div
+              className="absolute top-[3px] left-[4px] flex flex-col items-center leading-none"
+              style={{
+                color: isMarriageCard
+                  ? (color === 'red' ? '#991b1b' : '#1a1a1a')
+                  : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
+              }}
+            >
+              <span className={cn('font-bold', size === 'lg' ? 'text-[11px]' : 'text-[9px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[10px]' : 'text-[8px]')}>{suitSymbol}</span>
+            </div>
+          )}
           {/* Center rank and suit */}
-          <span className="font-bold text-lg" style={{ color: color === 'red' ? 'var(--card-red)' : 'var(--card-black)' }}>
+          <span
+            className={cn('font-bold', isFaceCard ? 'text-xl' : 'text-lg')}
+            style={{
+              color: isMarriageCard
+                ? (color === 'red' ? '#991b1b' : '#1a1a1a')
+                : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
+            }}
+          >
             {card.rank}
           </span>
-          <span className="text-3xl" style={{ color: color === 'red' ? 'var(--card-red)' : 'var(--card-black)' }}>
+          <span
+            className={cn(isFaceCard ? 'text-2xl' : 'text-3xl')}
+            style={{
+              color: isMarriageCard
+                ? (color === 'red' ? '#991b1b' : '#1a1a1a')
+                : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
+            }}
+          >
             {suitSymbol}
           </span>
+          {/* Bottom-right corner pip (rotated 180deg) */}
+          {showCornerPips && (
+            <div
+              className="absolute bottom-[3px] right-[4px] flex flex-col items-center leading-none rotate-180"
+              style={{
+                color: isMarriageCard
+                  ? (color === 'red' ? '#991b1b' : '#1a1a1a')
+                  : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
+              }}
+            >
+              <span className={cn('font-bold', size === 'lg' ? 'text-[11px]' : 'text-[9px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[10px]' : 'text-[8px]')}>{suitSymbol}</span>
+            </div>
+          )}
         </div>
       </motion.div>
     </div>

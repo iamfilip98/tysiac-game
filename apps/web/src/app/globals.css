@@ -52,7 +52,7 @@ html,
   --card-shadow-inset: rgba(255, 255, 255, 0.08);
   --card-back-1: #1a1a2e;
   --card-back-2: #2a2a3e;
-  --card-red: #f87171;
+  --card-red: #ef4444;
   --card-black: #e5e5e5;
 }
 
@@ -264,25 +264,49 @@ html,
     0 0 20px rgba(251, 191, 36, 0.5);
 }
 
-/* Card back pattern */
+/* Card back pattern — diamond lattice with decorative border + center emblem */
 .card-back {
   background:
+    radial-gradient(ellipse at 50% 50%, rgba(255,255,255,0.06) 0%, transparent 70%),
     repeating-linear-gradient(
       45deg,
       var(--card-back-1) 0px,
-      var(--card-back-1) 10px,
-      var(--card-back-2) 10px,
-      var(--card-back-2) 20px
+      var(--card-back-1) 8px,
+      var(--card-back-2) 8px,
+      var(--card-back-2) 16px
+    ),
+    repeating-linear-gradient(
+      -45deg,
+      var(--card-back-1) 0px,
+      var(--card-back-1) 8px,
+      var(--card-back-2) 8px,
+      var(--card-back-2) 16px
     );
   position: relative;
 }
 
+/* Center diamond emblem */
+.card-back::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24%;
+  height: 34%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  z-index: 1;
+}
+
+/* Decorative double-frame border */
 .card-back::after {
   content: '';
   position: absolute;
-  inset: 4px;
+  inset: 3px;
   border: 2px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
+  box-shadow: inset 0 0 0 3px rgba(0, 0, 0, 0.15), inset 0 0 0 5px rgba(255, 255, 255, 0.08);
 }
 
 /* Suit colors */
@@ -292,6 +316,19 @@ html,
 
 .suit-clubs, .suit-spades {
   color: var(--card-black);
+}
+
+/* Card text shadow for readability over overlays */
+.card-text {
+  text-shadow:
+    0 0 3px rgba(255, 255, 255, 0.4),
+    0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .card-text {
+  text-shadow:
+    0 0 3px rgba(0, 0, 0, 0.5),
+    0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
 /* Glowing button */
