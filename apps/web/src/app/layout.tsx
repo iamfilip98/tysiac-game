@@ -42,10 +42,10 @@ export default function RootLayout({
     <html lang="en" className="h-full" data-theme="classic" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-        <meta name="theme-color" content="#052e16" />
+        <meta name="theme-color" content="#1a3d2b" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var c={classic:'#052e16',dark:'#08080c',chocolate:'#1a0f07',midnight:'#070b18',burgundy:'#1a070c',purple:'#0f0719'};var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){document.documentElement.setAttribute('data-theme',p.state.theme);var m=document.querySelector('meta[name="theme-color"]');if(m&&c[p.state.theme])m.content=c[p.state.theme]}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
+            __html: `(function(){try{var c={classic:'#1a3d2b',dark:'#1c1c22',chocolate:'#3d2517',midnight:'#0f1a3d',burgundy:'#3d1520',purple:'#261540'};var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){document.documentElement.setAttribute('data-theme',p.state.theme);var m=document.querySelector('meta[name="theme-color"]');if(m&&c[p.state.theme])m.content=c[p.state.theme]}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
           }}
         />
       </head>

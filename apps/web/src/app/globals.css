@@ -185,6 +185,19 @@ html,
     top: 0;
     left: 0;
   }
+
+  /* iOS status bar theme strip — shows theme color behind the translucent status bar */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: env(safe-area-inset-top, 0px);
+    background: var(--felt-primary);
+    z-index: 9999;
+    pointer-events: none;
+  }
 }
 
 @layer utilities {
