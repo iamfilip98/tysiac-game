@@ -1459,7 +1459,10 @@ export class GameEngine {
             trick,
             round.trumpSuit,
             round.bidWinner === playerId,
-            round.finalBid
+            round.finalBid,
+            round.bidWinner || playerId,
+            round.players,
+            playerId
           );
           this.handlePlayCard(playerId, card);
         }

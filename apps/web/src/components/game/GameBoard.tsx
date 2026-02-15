@@ -355,7 +355,7 @@ export function GameBoard() {
       {/* Action panels */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-30 w-full px-4 sm:w-auto sm:px-0',
-        isMobile ? 'bottom-28' : 'bottom-32'
+        isMobile ? 'bottom-32' : 'bottom-36'
       )}>
         <AnimatePresence mode="wait">
           {/* Bidding panel */}

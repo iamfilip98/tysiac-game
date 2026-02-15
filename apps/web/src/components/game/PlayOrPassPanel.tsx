@@ -35,20 +35,17 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, pla
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-6 bg-table-900/90 rounded-xl"
+        className="px-4 py-3 bg-table-900/90 rounded-xl"
       >
-        <h3 className="text-xl font-bold text-gold-400 text-center mb-2">
+        <h3 className="text-base font-bold text-gold-400 text-center mb-1">
           You won the bid at {bidAmount}
         </h3>
-        <p className="text-white/70 text-center mb-4">
-          You've seen the talon. Do you want to play this round?
-        </p>
-        <p className="text-white/50 text-sm text-center mb-6">
+        <p className="text-white/60 text-center text-sm mb-2">
           {isNoPenalty
-            ? 'Throwing means no points lost or gained, moving to the next round.'
-            : `Throwing: you lose ${bidAmount} points, others gain +${pointsPerOpponent} each.`}
+            ? 'Throw = no points change.'
+            : `Throw = you lose ${bidAmount}, others gain +${pointsPerOpponent} each.`}
         </p>
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-3 justify-center">
           <Button
             variant="secondary"
             onClick={onPass}

@@ -26,6 +26,84 @@ const sizeClasses = {
   lg: 'w-20 h-[120px] text-base',
 };
 
+// Face card SVG portraits
+function KingPortrait({ color, isMarriage }: { color: string; isMarriage: boolean }) {
+  const fill = isMarriage
+    ? (color === 'red' ? '#7a2020' : '#3a3a3a')
+    : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
+  return (
+    <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
+      {/* Crown */}
+      <polygon points="10,18 13,10 16,16 20,6 24,16 27,10 30,18" fill={fill} opacity="0.9" />
+      <rect x="10" y="17" width="20" height="3" rx="0.5" fill={fill} opacity="0.8" />
+      {/* Head */}
+      <ellipse cx="20" cy="26" rx="6" ry="5.5" fill={fill} opacity="0.7" />
+      {/* Body/shoulders */}
+      <path d="M11,38 Q11,32 15,31 L20,30 L25,31 Q29,32 29,38 Z" fill={fill} opacity="0.6" />
+      {/* Sword (right side) */}
+      <line x1="29" y1="22" x2="33" y2="38" stroke={fill} strokeWidth="1.5" opacity="0.5" />
+      <line x1="28" y1="26" x2="34" y2="26" stroke={fill} strokeWidth="1.2" opacity="0.5" />
+      {/* Robe detail */}
+      <path d="M15,34 L20,38 L25,34" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.4" />
+      {/* Base */}
+      <rect x="12" y="38" width="16" height="2" rx="1" fill={fill} opacity="0.3" />
+    </svg>
+  );
+}
+
+function QueenPortrait({ color, isMarriage }: { color: string; isMarriage: boolean }) {
+  const fill = isMarriage
+    ? (color === 'red' ? '#7a2020' : '#3a3a3a')
+    : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
+  return (
+    <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
+      {/* Tiara/crown */}
+      <path d="M13,18 L15,12 L17,16 L20,9 L23,16 L25,12 L27,18" fill="none" stroke={fill} strokeWidth="1.2" opacity="0.9" />
+      <ellipse cx="20" cy="10" rx="1.5" ry="1.5" fill={fill} opacity="0.7" />
+      <rect x="13" y="17" width="14" height="2" rx="0.5" fill={fill} opacity="0.7" />
+      {/* Head */}
+      <ellipse cx="20" cy="25" rx="5.5" ry="5" fill={fill} opacity="0.7" />
+      {/* Neck */}
+      <rect x="18" y="29" width="4" height="3" rx="1" fill={fill} opacity="0.5" />
+      {/* Body/dress */}
+      <path d="M12,42 Q12,33 16,32 L20,31 L24,32 Q28,33 28,42 Z" fill={fill} opacity="0.5" />
+      {/* Dress flowing detail */}
+      <path d="M14,36 Q20,40 26,36" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.35" />
+      <path d="M13,39 Q20,43 27,39" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.3" />
+      {/* Base */}
+      <ellipse cx="20" cy="42" rx="9" ry="1.5" fill={fill} opacity="0.25" />
+    </svg>
+  );
+}
+
+function JackPortrait({ color, isMarriage }: { color: string; isMarriage: boolean }) {
+  const fill = isMarriage
+    ? (color === 'red' ? '#7a2020' : '#3a3a3a')
+    : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
+  return (
+    <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
+      {/* Helmet */}
+      <path d="M14,20 Q14,10 20,8 Q26,10 26,20 Z" fill={fill} opacity="0.8" />
+      {/* Visor slit */}
+      <path d="M16,16 L24,16" stroke={fill === 'var(--card-red)' || fill === '#7a2020' ? '#fff' : '#fff'} strokeWidth="1.2" opacity="0.4" />
+      {/* Helmet plume */}
+      <path d="M20,8 Q22,4 24,6 Q23,8 20,8" fill={fill} opacity="0.6" />
+      {/* Head/face area */}
+      <rect x="15" y="19" width="10" height="5" rx="1" fill={fill} opacity="0.5" />
+      {/* Shoulders */}
+      <path d="M12,32 Q12,26 16,25 L20,24 L24,25 Q28,26 28,32 Z" fill={fill} opacity="0.55" />
+      {/* Shield */}
+      <path d="M14,30 L14,39 Q14,43 20,45 Q26,43 26,39 L26,30 Z" fill={fill} opacity="0.35" />
+      {/* Shield cross */}
+      <line x1="20" y1="30" x2="20" y2="43" stroke={fill} strokeWidth="1" opacity="0.25" />
+      <line x1="14" y1="36" x2="26" y2="36" stroke={fill} strokeWidth="1" opacity="0.25" />
+      {/* Shoulder guards */}
+      <ellipse cx="13" cy="28" rx="3" ry="2" fill={fill} opacity="0.3" />
+      <ellipse cx="27" cy="28" rx="3" ry="2" fill={fill} opacity="0.3" />
+    </svg>
+  );
+}
+
 export function Card({
   card,
   isSelected = false,
@@ -41,11 +119,35 @@ export function Card({
 }: CardProps) {
   const isMobile = useIsMobile();
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
+  const theme = usePreferencesStore((s) => s.theme);
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
   const cardDescription = getCardDescription(card);
-  const isFaceCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
+  const isFaceCard = ['K', 'Q', 'J'].includes(card.rank);
+  const isHighCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
   const showCornerPips = size !== 'sm';
+  const showPortrait = isFaceCard && size !== 'sm';
+  const isDarkTheme = theme === 'dark';
+
+  // Marriage card text color — dark theme needs white text for readability on gold
+  const getTextColor = () => {
+    if (isMarriageCard) {
+      if (isDarkTheme) {
+        return '#ffffff';
+      }
+      return color === 'red' ? '#991b1b' : '#1a1a1a';
+    }
+    return color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
+  };
+
+  const marriageTextStyle = isMarriageCard && isDarkTheme
+    ? {
+        WebkitTextStroke: '0.5px rgba(0,0,0,0.7)',
+        textShadow: '0 1px 2px rgba(0,0,0,0.5)',
+      } as React.CSSProperties
+    : {};
+
+  const textColor = getTextColor();
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.key === 'Enter' || e.key === ' ') && isPlayable && onClick) {
@@ -132,6 +234,17 @@ export function Card({
         )}
         style={{ ...style, willChange: 'opacity, transform' }}
       >
+        {/* Paper texture overlay */}
+        <div
+          className="absolute inset-0 rounded-lg pointer-events-none"
+          style={{
+            backgroundImage: `radial-gradient(circle at 30% 40%, rgba(0,0,0,0.02) 1px, transparent 1px),
+              radial-gradient(circle at 70% 60%, rgba(0,0,0,0.015) 1px, transparent 1px),
+              radial-gradient(circle at 50% 20%, rgba(0,0,0,0.02) 0.5px, transparent 0.5px)`,
+            backgroundSize: '8px 8px, 12px 12px, 6px 6px',
+          }}
+          aria-hidden="true"
+        />
         {/* Premium gold effect for marriage cards */}
         {isMarriageCard && (
           <>
@@ -256,11 +369,23 @@ export function Card({
             )}
           </>
         )}
-        {/* Face card decorative inner frame */}
-        {isFaceCard && (
+        {/* Decorative inner frame — all cards */}
+        <div
+          className="absolute inset-[5px] rounded border pointer-events-none"
+          style={{
+            borderColor: isMarriageCard
+              ? 'rgba(120, 90, 20, 0.25)'
+              : isHighCard
+                ? 'rgba(128, 128, 128, 0.18)'
+                : 'rgba(128, 128, 128, 0.1)',
+          }}
+          aria-hidden="true"
+        />
+        {/* Gold hairline for face cards */}
+        {isHighCard && !isMarriageCard && (
           <div
-            className="absolute inset-[5px] rounded border pointer-events-none"
-            style={{ borderColor: isMarriageCard ? 'rgba(120, 90, 20, 0.25)' : 'rgba(128, 128, 128, 0.15)' }}
+            className="absolute inset-[4px] rounded pointer-events-none"
+            style={{ border: '0.5px solid rgba(212, 175, 55, 0.12)' }}
             aria-hidden="true"
           />
         )}
@@ -270,46 +395,43 @@ export function Card({
           {showCornerPips && (
             <div
               className="absolute top-[3px] left-[4px] flex flex-col items-center leading-none"
-              style={{
-                color: isMarriageCard
-                  ? (color === 'red' ? '#991b1b' : '#1a1a1a')
-                  : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
-              }}
+              style={{ color: textColor, ...marriageTextStyle }}
             >
               <span className={cn('font-bold', size === 'lg' ? 'text-[11px]' : 'text-[9px]')}>{card.rank}</span>
               <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[10px]' : 'text-[8px]')}>{suitSymbol}</span>
             </div>
           )}
-          {/* Center rank and suit */}
-          <span
-            className={cn('font-bold', isFaceCard ? 'text-xl' : 'text-lg')}
-            style={{
-              color: isMarriageCard
-                ? (color === 'red' ? '#991b1b' : '#1a1a1a')
-                : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
-            }}
-          >
-            {card.rank}
-          </span>
-          <span
-            className={cn(isFaceCard ? 'text-2xl' : 'text-3xl')}
-            style={{
-              color: isMarriageCard
-                ? (color === 'red' ? '#991b1b' : '#1a1a1a')
-                : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
-            }}
-          >
-            {suitSymbol}
-          </span>
+          {/* Center: SVG portrait for face cards (md/lg), text for others */}
+          {showPortrait ? (
+            <div className={cn(
+              'flex items-center justify-center',
+              size === 'lg' ? 'w-[52px] h-[68px]' : 'w-[40px] h-[54px]'
+            )}>
+              {card.rank === 'K' && <KingPortrait color={color} isMarriage={isMarriageCard} />}
+              {card.rank === 'Q' && <QueenPortrait color={color} isMarriage={isMarriageCard} />}
+              {card.rank === 'J' && <JackPortrait color={color} isMarriage={isMarriageCard} />}
+            </div>
+          ) : (
+            <>
+              <span
+                className={cn('font-bold', isHighCard ? 'text-xl' : 'text-lg')}
+                style={{ color: textColor, ...marriageTextStyle }}
+              >
+                {card.rank}
+              </span>
+              <span
+                className={cn(isHighCard ? 'text-2xl' : 'text-3xl')}
+                style={{ color: textColor, ...marriageTextStyle }}
+              >
+                {suitSymbol}
+              </span>
+            </>
+          )}
           {/* Bottom-right corner pip (rotated 180deg) */}
           {showCornerPips && (
             <div
               className="absolute bottom-[3px] right-[4px] flex flex-col items-center leading-none rotate-180"
-              style={{
-                color: isMarriageCard
-                  ? (color === 'red' ? '#991b1b' : '#1a1a1a')
-                  : color === 'red' ? 'var(--card-red)' : 'var(--card-black)',
-              }}
+              style={{ color: textColor, ...marriageTextStyle }}
             >
               <span className={cn('font-bold', size === 'lg' ? 'text-[11px]' : 'text-[9px]')}>{card.rank}</span>
               <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[10px]' : 'text-[8px]')}>{suitSymbol}</span>
