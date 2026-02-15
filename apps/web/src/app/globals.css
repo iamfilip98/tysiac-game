@@ -2,6 +2,44 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Theme variables ─────────────────────────────────────────── */
+html,
+[data-theme="classic"] {
+  --table-50:  240 253 244;
+  --table-100: 220 252 231;
+  --table-200: 187 247 208;
+  --table-300: 134 239 172;
+  --table-400: 74 222 128;
+  --table-500: 34 197 94;
+  --table-600: 22 163 74;
+  --table-700: 21 128 61;
+  --table-800: 22 101 52;
+  --table-900: 20 83 45;
+  --table-950: 5 46 22;
+
+  --felt-primary: #1a3d2b;
+  --felt-secondary: #052e16;
+  --felt-glow: rgba(34, 197, 94, 0.1);
+}
+
+[data-theme="dark"] {
+  --table-50:  245 245 245;
+  --table-100: 229 229 229;
+  --table-200: 212 212 212;
+  --table-300: 163 163 163;
+  --table-400: 115 115 115;
+  --table-500: 82 82 82;
+  --table-600: 64 64 64;
+  --table-700: 45 45 45;
+  --table-800: 26 26 26;
+  --table-900: 18 18 18;
+  --table-950: 10 10 10;
+
+  --felt-primary: #1a1a1a;
+  --felt-secondary: #0a0a0a;
+  --felt-glow: rgba(255, 255, 255, 0.04);
+}
+
 :root {
   --background: 5 46% 4%;
   --foreground: 0 0% 95%;
@@ -18,7 +56,7 @@
     @apply bg-table-950 text-white antialiased;
     background-image:
       radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.4) 100%),
-      radial-gradient(circle at 50% 50%, #1a3d2b 0%, #052e16 100%);
+      radial-gradient(circle at 50% 50%, var(--felt-primary) 0%, var(--felt-secondary) 100%);
     height: 100%;
     height: 100dvh;
     overflow: hidden;
@@ -38,7 +76,7 @@
 /* Card table felt texture */
 .felt-texture {
   background-image:
-    radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.1) 0%, transparent 50%),
+    radial-gradient(circle at 50% 50%, var(--felt-glow) 0%, transparent 50%),
     url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
 }
 
@@ -270,4 +308,33 @@
       transform: scale(0.5);
     }
   }
+}
+
+/* User-toggled animations off (mirrors reduced-motion) */
+[data-animations="off"] *,
+[data-animations="off"] *::before,
+[data-animations="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+
+[data-animations="off"] .electric-border::before {
+  animation: none;
+}
+
+[data-animations="off"] .btn-glow::before {
+  animation: none;
+}
+
+[data-animations="off"] .score-barrel {
+  animation: none;
+}
+
+[data-animations="off"] .playing-card {
+  transition: none;
+}
+
+[data-animations="off"] .playing-card:hover {
+  transform: none;
 }

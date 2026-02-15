@@ -1,14 +1,9 @@
 'use client';
 
-const MUTE_KEY = 'tysiac-muted';
+import { usePreferencesStore } from '@/stores/preferencesStore';
 
 class SoundManager {
   private ctx: AudioContext | null = null;
-  private _muted: boolean;
-
-  constructor() {
-    this._muted = typeof window !== 'undefined' && localStorage.getItem(MUTE_KEY) === 'true';
-  }
 
   private getCtx(): AudioContext | null {
     if (typeof window === 'undefined') return null;
@@ -22,19 +17,11 @@ class SoundManager {
   }
 
   get muted() {
-    return this._muted;
-  }
-
-  toggleMute(): boolean {
-    this._muted = !this._muted;
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(MUTE_KEY, String(this._muted));
-    }
-    return this._muted;
+    return !usePreferencesStore.getState().soundEnabled;
   }
 
   private playTone(frequency: number, duration: number, type: OscillatorType = 'sine', volume = 0.15) {
-    if (this._muted) return;
+    if (this.muted) return;
     const ctx = this.getCtx();
     if (!ctx) return;
 
@@ -56,7 +43,7 @@ class SoundManager {
 
   /** Short percussive click for playing a card */
   cardPlay() {
-    if (this._muted) return;
+    if (this.muted) return;
     const ctx = this.getCtx();
     if (!ctx) return;
 

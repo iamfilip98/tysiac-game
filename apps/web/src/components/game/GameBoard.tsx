@@ -16,17 +16,17 @@ import { LeaveGameModal } from './LeaveGameModal';
 import { PassedAt100Announcement } from './PassedAt100Announcement';
 import { ThrewAnnouncement } from './ThrewAnnouncement';
 import { PauseOverlay } from './PauseOverlay';
+import { SettingsDropdown } from './SettingsDropdown';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { soundManager } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
 
 export function GameBoard() {
   const isMobile = useIsMobile();
-  const { playerId } = useRoomStore();
+  const { playerId, room } = useRoomStore();
   const {
     gameState,
     validActions,
@@ -101,9 +101,6 @@ export function GameBoard() {
 
   // Track leave game modal
   const [showLeaveModal, setShowLeaveModal] = useState(false);
-
-  // Sound mute state
-  const [isMuted, setIsMuted] = useState(soundManager.muted);
 
   // Talon distribution state
   const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
@@ -200,32 +197,26 @@ export function GameBoard() {
       {/* Background gradient */}
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
 
-      {/* Leave game button - top left */}
+      {/* Top-left button bar */}
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 z-30 flex gap-2">
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
+          className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
         >
-          <span className="sm:hidden">←</span>
-          <span className="hidden sm:inline">← Leave</span>
+          <span className="sm:hidden">&larr;</span>
+          <span className="hidden sm:inline">&larr; Leave</span>
         </button>
-        {phase !== 'gameEnd' && !gameState.isPaused && (
+        {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
           <button
             onClick={pauseGame}
-            className="px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-amber-700/50 border border-table-600 rounded-lg text-white/70 hover:text-amber-400 text-sm transition-colors"
+            className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-amber-700/50 border border-table-600 rounded-lg text-white/70 hover:text-amber-400 text-sm transition-colors"
             title="Pause game"
           >
             <span className="sm:hidden">||</span>
             <span className="hidden sm:inline">|| Pause</span>
           </button>
         )}
-        <button
-          onClick={() => setIsMuted(soundManager.toggleMute())}
-          className="px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
-          title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
-        >
-          {isMuted ? '🔇' : '🔊'}
-        </button>
+        <SettingsDropdown />
       </div>
 
       {/* Score board - top center */}

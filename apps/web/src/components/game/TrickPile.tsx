@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { Card as CardType, Suit } from '@tysiac/shared';
 
 interface TrickPileProps {
@@ -18,6 +19,7 @@ interface TrickPileProps {
 
 export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating, trumpWin, trumpSuit }: TrickPileProps) {
   const isMobile = useIsMobile();
+  const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
 
   // Position cards based on who played them relative to current player
   const getCardPosition = (playerId: string) => {
@@ -75,118 +77,72 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full bg-table-800/50 border border-table-600/30" />
 
-      {/* Premium gold ring effect when marriage declared */}
+      {/* Marriage declared indicator */}
       {marriageCard && (
-        <>
-          {/* Outer rotating ring */}
-          <motion.div
-            className="absolute inset-2 rounded-full pointer-events-none"
-            initial={{ rotate: 0, opacity: 0 }}
-            animate={{ rotate: 360, opacity: 1 }}
-            transition={{
-              rotate: { duration: 8, repeat: Infinity, ease: 'linear' },
-              opacity: { duration: 0.5 },
-            }}
-            style={{
-              background: `conic-gradient(
-                from 0deg,
-                transparent 0deg,
-                rgba(212, 175, 55, 0.6) 30deg,
-                rgba(245, 231, 163, 0.8) 60deg,
-                rgba(212, 175, 55, 0.6) 90deg,
-                transparent 120deg,
-                transparent 180deg,
-                rgba(212, 175, 55, 0.6) 210deg,
-                rgba(245, 231, 163, 0.8) 240deg,
-                rgba(212, 175, 55, 0.6) 270deg,
-                transparent 300deg,
-                transparent 360deg
-              )`,
-              WebkitMask: 'radial-gradient(transparent 60%, black 65%, black 100%)',
-              mask: 'radial-gradient(transparent 60%, black 65%, black 100%)',
-            }}
-          />
-          {/* Inner glow pulse */}
-          <motion.div
-            className="absolute inset-6 rounded-full pointer-events-none"
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{
-              scale: [1, 1.1, 1],
-              opacity: [0.4, 0.7, 0.4],
-            }}
-            transition={{
-              duration: 2,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-            style={{
-              background: 'radial-gradient(circle, rgba(212, 175, 55, 0.5) 0%, rgba(245, 231, 163, 0.3) 40%, transparent 70%)',
-              boxShadow: '0 0 30px 10px rgba(212, 175, 55, 0.4)',
-            }}
-          />
-          {/* Floating sparkle particles */}
-          {[...Array(8)].map((_, i) => (
+        animationsEnabled ? (
+          <>
+            {/* Outer rotating ring */}
             <motion.div
-              key={i}
-              className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
-              initial={{ opacity: 0, scale: 0 }}
+              className="absolute inset-2 rounded-full pointer-events-none"
+              initial={{ rotate: 0, opacity: 0 }}
+              animate={{ rotate: 360, opacity: 1 }}
+              transition={{
+                rotate: { duration: 8, repeat: Infinity, ease: 'linear' },
+                opacity: { duration: 0.5 },
+              }}
+              style={{
+                background: `conic-gradient(
+                  from 0deg,
+                  transparent 0deg,
+                  rgba(212, 175, 55, 0.6) 30deg,
+                  rgba(245, 231, 163, 0.8) 60deg,
+                  rgba(212, 175, 55, 0.6) 90deg,
+                  transparent 120deg,
+                  transparent 180deg,
+                  rgba(212, 175, 55, 0.6) 210deg,
+                  rgba(245, 231, 163, 0.8) 240deg,
+                  rgba(212, 175, 55, 0.6) 270deg,
+                  transparent 300deg,
+                  transparent 360deg
+                )`,
+                WebkitMask: 'radial-gradient(transparent 60%, black 65%, black 100%)',
+                mask: 'radial-gradient(transparent 60%, black 65%, black 100%)',
+              }}
+            />
+            {/* Inner glow pulse */}
+            <motion.div
+              className="absolute inset-6 rounded-full pointer-events-none"
+              initial={{ scale: 0.8, opacity: 0 }}
               animate={{
-                opacity: [0, 1, 0],
-                scale: [0, 1, 0],
-                x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
-                y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
+                scale: [1, 1.1, 1],
+                opacity: [0.4, 0.7, 0.4],
               }}
               transition={{
                 duration: 2,
                 repeat: Infinity,
-                delay: i * 0.25,
-                ease: 'easeOut',
+                ease: 'easeInOut',
               }}
               style={{
-                left: '50%',
-                top: '50%',
-                marginLeft: '-3px',
-                marginTop: '-3px',
-                background: 'radial-gradient(circle, #fff 0%, #f5e7a3 50%, #d4af37 100%)',
-                boxShadow: '0 0 8px 2px rgba(245, 231, 163, 0.8)',
+                background: 'radial-gradient(circle, rgba(212, 175, 55, 0.5) 0%, rgba(245, 231, 163, 0.3) 40%, transparent 70%)',
+                boxShadow: '0 0 30px 10px rgba(212, 175, 55, 0.4)',
               }}
             />
-          ))}
-        </>
-      )}
-
-      {/* Trump win sparkle burst */}
-      <AnimatePresence>
-        {trumpWin && (
-          <>
-            {/* Glow pulse */}
-            <motion.div
-              className="absolute inset-4 rounded-full pointer-events-none"
-              initial={{ scale: 0.5, opacity: 0 }}
-              animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.3, 0] }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 1.2, ease: 'easeOut' }}
-              style={{
-                background: 'radial-gradient(circle, rgba(147, 197, 253, 0.6) 0%, rgba(96, 165, 250, 0.3) 40%, transparent 70%)',
-                boxShadow: '0 0 25px 8px rgba(147, 197, 253, 0.4)',
-              }}
-            />
-            {/* Sparkle particles */}
+            {/* Floating sparkle particles */}
             {[...Array(8)].map((_, i) => (
               <motion.div
-                key={`trump-sparkle-${i}`}
+                key={i}
                 className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
-                initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                initial={{ opacity: 0, scale: 0 }}
                 animate={{
                   opacity: [0, 1, 0],
-                  scale: [0, 1.2, 0],
-                  x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
-                  y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
+                  scale: [0, 1, 0],
+                  x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
+                  y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
                 }}
-                exit={{ opacity: 0 }}
                 transition={{
-                  duration: 0.8,
-                  delay: i * 0.05,
+                  duration: 2,
+                  repeat: Infinity,
+                  delay: i * 0.25,
                   ease: 'easeOut',
                 }}
                 style={{
@@ -194,14 +150,70 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                   top: '50%',
                   marginLeft: '-3px',
                   marginTop: '-3px',
-                  background: 'radial-gradient(circle, #fff 0%, #93c5fd 50%, #60a5fa 100%)',
-                  boxShadow: '0 0 6px 2px rgba(147, 197, 253, 0.8)',
+                  background: 'radial-gradient(circle, #fff 0%, #f5e7a3 50%, #d4af37 100%)',
+                  boxShadow: '0 0 8px 2px rgba(245, 231, 163, 0.8)',
                 }}
               />
             ))}
           </>
-        )}
-      </AnimatePresence>
+        ) : (
+          /* Static gold border fallback when animations off */
+          <div
+            className="absolute inset-3 rounded-full pointer-events-none border-2 border-gold-400/60"
+            style={{ boxShadow: '0 0 12px 2px rgba(212, 175, 55, 0.3)' }}
+          />
+        )
+      )}
+
+      {/* Trump win sparkle burst */}
+      {animationsEnabled && (
+        <AnimatePresence>
+          {trumpWin && (
+            <>
+              {/* Glow pulse */}
+              <motion.div
+                className="absolute inset-4 rounded-full pointer-events-none"
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: [1, 1.2, 1], opacity: [0.6, 0.3, 0] }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 1.2, ease: 'easeOut' }}
+                style={{
+                  background: 'radial-gradient(circle, rgba(147, 197, 253, 0.6) 0%, rgba(96, 165, 250, 0.3) 40%, transparent 70%)',
+                  boxShadow: '0 0 25px 8px rgba(147, 197, 253, 0.4)',
+                }}
+              />
+              {/* Sparkle particles */}
+              {[...Array(8)].map((_, i) => (
+                <motion.div
+                  key={`trump-sparkle-${i}`}
+                  className="absolute w-1.5 h-1.5 rounded-full pointer-events-none"
+                  initial={{ opacity: 0, scale: 0, x: 0, y: 0 }}
+                  animate={{
+                    opacity: [0, 1, 0],
+                    scale: [0, 1.2, 0],
+                    x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
+                    y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
+                  }}
+                  exit={{ opacity: 0 }}
+                  transition={{
+                    duration: 0.8,
+                    delay: i * 0.05,
+                    ease: 'easeOut',
+                  }}
+                  style={{
+                    left: '50%',
+                    top: '50%',
+                    marginLeft: '-3px',
+                    marginTop: '-3px',
+                    background: 'radial-gradient(circle, #fff 0%, #93c5fd 50%, #60a5fa 100%)',
+                    boxShadow: '0 0 6px 2px rgba(147, 197, 253, 0.8)',
+                  }}
+                />
+              ))}
+            </>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Cards */}
       <AnimatePresence>

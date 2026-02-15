@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
@@ -38,16 +39,23 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en" className="h-full">
+    <html lang="en" className="h-full" data-theme="classic" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme)document.documentElement.setAttribute('data-theme',p.state.theme);if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className={`${inter.variable} font-sans h-full overflow-hidden`}>
         <ErrorBoundary>
           <ToastProvider>
-            <div className="felt-texture h-full overflow-auto">
-              {children}
-            </div>
+            <ThemeProvider>
+              <div className="felt-texture h-full overflow-auto">
+                {children}
+              </div>
+            </ThemeProvider>
           </ToastProvider>
         </ErrorBoundary>
       </body>

@@ -1,0 +1,70 @@
+'use client';
+
+import { useState, useRef, useEffect } from 'react';
+import { usePreferencesStore } from '@/stores/preferencesStore';
+
+export function SettingsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  const { theme, soundEnabled, animationsEnabled, toggleTheme, toggleSound, toggleAnimations } =
+    usePreferencesStore();
+
+  // Close on outside click
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
+        title="Settings"
+        aria-expanded={open}
+        aria-haspopup="true"
+      >
+        <span className="sm:hidden" aria-hidden="true">&#9881;</span>
+        <span className="hidden sm:inline" aria-hidden="true">&#9881; Settings</span>
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-1 w-48 bg-table-900/95 border border-table-600 rounded-lg shadow-xl z-50 py-1">
+          {/* Sound */}
+          <button
+            onClick={toggleSound}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-white/80 hover:bg-table-700/50 transition-colors"
+          >
+            <span>Sound</span>
+            <span className="text-xs text-white/50">{soundEnabled ? 'On' : 'Off'}</span>
+          </button>
+
+          {/* Theme */}
+          <button
+            onClick={toggleTheme}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-white/80 hover:bg-table-700/50 transition-colors"
+          >
+            <span>Theme</span>
+            <span className="text-xs text-white/50 capitalize">{theme}</span>
+          </button>
+
+          {/* Animations */}
+          <button
+            onClick={toggleAnimations}
+            className="w-full flex items-center justify-between px-3 py-2 text-sm text-white/80 hover:bg-table-700/50 transition-colors"
+          >
+            <span>Animations</span>
+            <span className="text-xs text-white/50">{animationsEnabled ? 'On' : 'Off'}</span>
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

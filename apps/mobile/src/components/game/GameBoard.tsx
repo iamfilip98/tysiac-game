@@ -22,7 +22,7 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export function GameBoard() {
   const insets = useSafeAreaInsets();
-  const { playerId } = useRoomStore();
+  const { playerId, room } = useRoomStore();
   const {
     gameState,
     validActions,
@@ -199,7 +199,7 @@ export function GameBoard() {
           phase={phase}
         />
 
-        {phase !== 'gameEnd' && !gameState.isPaused && (
+        {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
           <TouchableOpacity
             style={styles.pauseButton}
             onPress={pauseGame}
@@ -447,6 +447,8 @@ const styles = StyleSheet.create({
     left: spacing.md,
     top: spacing.sm,
     padding: spacing.sm,
+    minWidth: 44,
+    alignItems: 'center',
     backgroundColor: 'rgba(22, 101, 52, 0.8)',
     borderRadius: borderRadius.md,
     borderWidth: 1,
@@ -454,13 +456,15 @@ const styles = StyleSheet.create({
   },
   leaveButtonText: {
     color: 'rgba(255, 255, 255, 0.7)',
-    fontSize: fontSize.lg,
+    fontSize: fontSize.md,
   },
   pauseButton: {
     position: 'absolute',
     right: spacing.md,
     top: spacing.sm,
     padding: spacing.sm,
+    minWidth: 44,
+    alignItems: 'center',
     backgroundColor: 'rgba(22, 101, 52, 0.8)',
     borderRadius: borderRadius.md,
     borderWidth: 1,

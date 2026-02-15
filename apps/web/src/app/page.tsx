@@ -8,18 +8,17 @@ import { RoomBrowser } from '@/components/lobby/RoomBrowser';
 import { RoomLobby } from '@/components/lobby/RoomLobby';
 import { GameBoard } from '@/components/game/GameBoard';
 import { Modal, ModalHeader, ModalBody } from '@/components/ui/Modal';
+import { SettingsDropdown } from '@/components/game/SettingsDropdown';
 import { useSocket } from '@/hooks/useSocket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
 import { useToast } from '@/components/ui/Toast';
-import { soundManager } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
 
 function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   const [tab, setTab] = useState<'create' | 'join'>(roomCodeFromUrl ? 'join' : 'create');
   const [showRulesModal, setShowRulesModal] = useState(false);
-  const [isMuted, setIsMuted] = useState(soundManager.muted);
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
@@ -80,14 +79,10 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   // Show landing / create or join
   return (
     <main className="h-full flex flex-col items-center justify-center p-4 overflow-auto relative">
-      {/* Mute toggle */}
-      <button
-        onClick={() => setIsMuted(soundManager.toggleMute())}
-        className="absolute top-4 right-4 z-10 px-2 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
-        title={isMuted ? 'Unmute sounds' : 'Mute sounds'}
-      >
-        {isMuted ? '🔇' : '🔊'}
-      </button>
+      {/* Settings */}
+      <div className="absolute top-4 right-4 z-10">
+        <SettingsDropdown />
+      </div>
 
       {/* Logo / Title */}
       <motion.div

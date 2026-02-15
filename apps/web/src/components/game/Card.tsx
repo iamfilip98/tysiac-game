@@ -3,6 +3,7 @@
 import { motion } from 'framer-motion';
 import { cn, getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { Card as CardType } from '@tysiac/shared';
 
 interface CardProps {
@@ -39,6 +40,7 @@ export function Card({
   delay = 0,
 }: CardProps) {
   const isMobile = useIsMobile();
+  const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
   const cardDescription = getCardDescription(card);
@@ -106,8 +108,8 @@ export function Card({
           opacity: 1,
           y: isSelected ? -16 : 0,
         }}
-        whileHover={isPlayable && !isMobile ? { y: -8 } : undefined}
-        whileTap={isPlayable && !isMobile ? { scale: 0.97 } : undefined}
+        whileHover={isPlayable && !isMobile && animationsEnabled ? { y: -8 } : undefined}
+        whileTap={isPlayable && !isMobile && animationsEnabled ? { scale: 0.97 } : undefined}
         transition={transition}
         onClick={isInteractive ? onClick : undefined}
         onKeyDown={isInteractive ? handleKeyDown : undefined}
@@ -149,8 +151,8 @@ export function Card({
               }}
               aria-hidden="true"
             />
-            {/* Animated shimmer overlay - disabled on mobile for performance */}
-            {!isMobile && (
+            {/* Animated shimmer overlay - disabled on mobile / animations off */}
+            {!isMobile && animationsEnabled && (
               <div
                 className="absolute inset-0 rounded-lg overflow-hidden"
                 aria-hidden="true"
@@ -172,8 +174,8 @@ export function Card({
                 />
               </div>
             )}
-            {/* Sparkle particles - disabled on mobile for performance */}
-            {!isMobile && (
+            {/* Sparkle particles - disabled on mobile / animations off */}
+            {!isMobile && animationsEnabled && (
               <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
                 {[...Array(6)].map((_, i) => (
                   <div
@@ -209,8 +211,8 @@ export function Card({
               }}
               aria-hidden="true"
             />
-            {/* Animated blue shimmer - desktop only */}
-            {!isMobile && (
+            {/* Animated blue shimmer - desktop only, animations on */}
+            {!isMobile && animationsEnabled && (
               <div
                 className="absolute inset-0 rounded-lg overflow-hidden"
                 aria-hidden="true"
@@ -232,8 +234,8 @@ export function Card({
                 />
               </div>
             )}
-            {/* Blue sparkle particles - desktop only */}
-            {!isMobile && (
+            {/* Blue sparkle particles - desktop only, animations on */}
+            {!isMobile && animationsEnabled && (
               <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
                 {[...Array(4)].map((_, i) => (
                   <div
