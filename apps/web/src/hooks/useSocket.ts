@@ -20,6 +20,7 @@ export function useSocket() {
     setConnecting,
     setError,
     setPublicRooms,
+    clearRoom,
     reset: resetRoom,
   } = useRoomStore();
 
@@ -319,9 +320,9 @@ export function useSocket() {
   const leaveRoom = useCallback(() => {
     safeEmit('room:leave');
     clearSession(); // Clear localStorage when intentionally leaving
-    resetRoom();
+    clearRoom();
     resetGame();
-  }, [safeEmit, resetRoom, resetGame]);
+  }, [safeEmit, clearRoom, resetGame]);
 
   const setReady = useCallback((isReady: boolean) => {
     safeEmit('room:ready', isReady);
@@ -385,10 +386,10 @@ export function useSocket() {
   const leaveGame = useCallback(() => {
     if (safeEmit('game:leave')) {
       clearSession();
-      resetRoom();
+      clearRoom();
       resetGame();
     }
-  }, [safeEmit, resetRoom, resetGame]);
+  }, [safeEmit, clearRoom, resetGame]);
 
   const pauseGame = useCallback(() => {
     safeEmit('game:pause');

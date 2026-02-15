@@ -17,6 +17,7 @@ interface RoomState {
   setError: (error: string | null) => void;
   setPublicRooms: (rooms: Room[]) => void;
   updatePlayer: (playerId: string, updates: Partial<RoomPlayer>) => void;
+  clearRoom: () => void;
   reset: () => void;
 }
 
@@ -44,6 +45,13 @@ export const useRoomStore = create<RoomState>((set) => ({
       );
 
       return { room: { ...state.room, players } };
+    }),
+
+  clearRoom: () =>
+    set({
+      room: null,
+      playerId: null,
+      error: null,
     }),
 
   reset: () =>
