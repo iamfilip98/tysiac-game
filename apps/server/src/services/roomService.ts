@@ -235,6 +235,13 @@ export function clearPreviousWinner(roomId: string): void {
   }
 }
 
+export function restoreRoom(room: Room): void {
+  rooms.set(room.id, room);
+  for (const player of room.players) {
+    playerRooms.set(player.id, room.id);
+  }
+}
+
 export function replacePlayerWithAI(roomId: string, playerId: string): Room | null {
   const room = rooms.get(roomId);
   if (!room) return null;

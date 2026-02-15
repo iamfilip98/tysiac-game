@@ -16,6 +16,7 @@ export class GameEngine {
   private ai: AIPlayer;
   private onCleanup?: () => void;
   private socketLookup: (playerId: string) => string | null;
+  private onPersist?: (game: GameState) => void;
 
   // Bidding state tracking
   private currentBidder: string = '';
@@ -48,13 +49,15 @@ export class GameEngine {
     roomId: string,
     onCleanup?: () => void,
     socketLookup?: (playerId: string) => string | null,
-    isRecreated: boolean = false
+    isRecreated: boolean = false,
+    onPersist?: (game: GameState) => void
   ) {
     this.game = game;
     this.io = io;
     this.roomId = roomId;
     this.ai = new AIPlayer();
     this.onCleanup = onCleanup;
+    this.onPersist = onPersist;
     this.socketLookup = socketLookup || ((playerId) =>
       playerId.startsWith('player-') ? playerId.replace('player-', '') : null
     );
@@ -95,20 +98,10 @@ export class GameEngine {
     const round = this.game.currentRound;
     if (!round) return;
 
-    // For bidding phase, we need to determine current bidder
-    if (this.game.phase === 'bidding') {
-      // If there's a bid winner, the next bidder would be someone else
-      // This is an approximation - in practice, bidding state is complex
-      // For simplicity, if we're in bidding, let the current highest bidder continue
-      if (round.bidWinner) {
-        this.currentBidder = round.bidWinner;
-      }
-    }
-
-    // For trick playing, the current player is stored in the trick
-    if (this.game.phase === 'trickPlaying' && round.currentTrick) {
-      // Nothing special needed - currentTrick.currentPlayer is already in game state
-    }
+    // Restore bidding state from persisted fields
+    if (round.currentBidder) this.currentBidder = round.currentBidder;
+    if (round.passedPlayers) this.passedPlayers = [...round.passedPlayers];
+    if (round.talonAddedToHand) this.talonAddedToHand = true;
   }
 
   /**
@@ -1324,8 +1317,21 @@ export class GameEngine {
     }
   }
 
+  /**
+   * Sync engine-internal bidding state to game state for persistence
+   */
+  private syncBiddingState(): void {
+    if (!this.game.currentRound) return;
+    this.game.currentRound.currentBidder = this.currentBidder;
+    this.game.currentRound.passedPlayers = [...this.passedPlayers];
+    this.game.currentRound.talonAddedToHand = this.talonAddedToHand;
+  }
+
   private broadcastState(): void {
     if (this.isCleanedUp) return;
+
+    // Sync engine state to game object before broadcast/persist
+    this.syncBiddingState();
 
     const eventName = this.isFirstRound ? 'game:started' : 'game:stateUpdate';
     if (this.isFirstRound) {
@@ -1359,6 +1365,9 @@ export class GameEngine {
       gameState: this.game,
       result: 'success',
     });
+
+    // Fire-and-forget DB persistence
+    this.onPersist?.(this.game);
   }
 
   private promptCurrentPlayer(): void {
@@ -1739,5 +1748,80 @@ export class GameEngine {
    */
   isPaused(): boolean {
     return this.game.isPaused === true;
+  }
+
+  /**
+   * Resume game logic after restoring from database (called after players reconnect).
+   * Handles phase-specific resumption: re-prompts players, triggers AI, restarts timers.
+   */
+  resumeAfterRestore(): void {
+    if (this.isCleanedUp) return;
+    if (this.game.isPaused) return;
+
+    const phase = this.game.phase;
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      eventType: 'engine:resumeAfterRestore',
+      eventData: { phase },
+      result: 'success',
+    });
+
+    switch (phase) {
+      case 'dealing':
+        // Skip animation, go straight to bidding
+        this.startBidding();
+        break;
+
+      case 'bidding':
+        // Bidding state already restored in restoreStateFromGame
+        this.promptCurrentPlayer();
+        break;
+
+      case 'talonReveal':
+        // Reset confirmations and re-check
+        this.talonConfirmations.clear();
+        for (const player of this.game.players) {
+          if (player.isAI) {
+            this.talonConfirmations.add(player.id);
+          }
+        }
+        this.checkTalonConfirmations();
+        break;
+
+      case 'playOrPassDecision':
+        this.promptPlayOrPassDecision();
+        break;
+
+      case 'talonDistribution':
+        this.promptCurrentPlayer();
+        break;
+
+      case 'wykladana':
+        // Reset confirmations and re-check
+        this.wykladanaConfirmations.clear();
+        for (const player of this.game.players) {
+          if (player.isAI) {
+            this.wykladanaConfirmations.add(player.id);
+          }
+        }
+        this.checkWykladanaConfirmations();
+        break;
+
+      case 'trickPlaying':
+        this.promptCurrentPlayer();
+        break;
+
+      case 'roundScoring':
+        // Scoring already applied, start new round after brief delay
+        this.safeSetTimeout(() => this.startNewRound(), 3000);
+        break;
+
+      case 'gameEnd':
+      case 'idle':
+        // No action needed
+        break;
+    }
   }
 }

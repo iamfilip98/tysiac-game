@@ -193,3 +193,11 @@ export function addCardsToHand(game: GameState, playerId: string, cards: Card[])
   playerState.hand.push(...cards);
   updateGame(game);
 }
+
+export function restoreGame(game: GameState): void {
+  games.set(game.id, game);
+}
+
+export function getAllGames(): GameState[] {
+  return Array.from(games.values());
+}

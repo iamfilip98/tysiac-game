@@ -60,6 +60,10 @@ export interface RoundState {
   dealerMarriagePoints: number;
   talonMarriages: Suit[];
   talonAces?: number; // Number of aces in talon (for 4-player dealer scoring)
+  // Engine state persisted for restore across server restarts
+  currentBidder?: string;
+  passedPlayers?: string[];
+  talonAddedToHand?: boolean;
 }
 
 // Player scores

@@ -16,6 +16,7 @@ import {
   SuitSchema,
   ReconnectSchema,
 } from '../validation/schemas.js';
+import { persistGame, removePersistedGame } from '../services/persistenceService.js';
 
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
 type TypedServer = Server<ClientToServerEvents, ServerToClientEvents>;
@@ -105,6 +106,8 @@ function cleanupGame(gameId: string, roomId: string): void {
   gameCreationLocks.delete(roomId);
   // Clear gameId from room so "Play Again" works
   roomService.clearGameId(roomId);
+  // Remove persisted game state from database
+  removePersistedGame(gameId);
 }
 
 // Track socket -> IP for cleanup on disconnect
@@ -407,13 +410,18 @@ export function setupSocketHandlers(io: TypedServer) {
           const game = gameService.createGame(room.id, players);
           roomService.setGameId(room.id, game.id);
 
-          // Create game engine with cleanup callback and socket lookup
+          // Create game engine with cleanup callback, socket lookup, and persistence
           const engine = new GameEngine(
             game,
             io,
             room.id,
             () => { cleanupGame(game.id, room.id); broadcastRoomList(io); },
-            (playerId: string) => playerToSocket.get(playerId) || null
+            (playerId: string) => playerToSocket.get(playerId) || null,
+            false,
+            (g) => {
+              const r = roomService.getRoom(g.roomId);
+              if (r) persistGame(g, r);
+            }
           );
           gameEngines.set(game.id, engine);
 
@@ -968,9 +976,18 @@ export function setupSocketHandlers(io: TypedServer) {
                   room.id,
                   () => { cleanupGame(game.id, room.id); broadcastRoomList(io); },
                   (pid: string) => playerToSocket.get(pid) || null,
-                  true
+                  true,
+                  (g) => {
+                    const r = roomService.getRoom(g.roomId);
+                    if (r) persistGame(g, r);
+                  }
                 );
                 gameEngines.set(room.gameId, engine);
+
+                // After a short delay, resume phase-specific logic (AI turns, timers)
+                setTimeout(() => {
+                  engine!.resumeAfterRestore();
+                }, 5000);
               }
 
               // Let the engine handle turn notification with correct internal state

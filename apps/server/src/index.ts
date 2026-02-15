@@ -6,7 +6,10 @@ import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@tysiac/shared';
 import { setupSocketHandlers } from './socket/handlers.js';
 import * as debugService from './services/debugService.js';
+import * as gameService from './services/gameService.js';
+import * as roomService from './services/roomService.js';
 import { initializeSessions, startSessionCleanup, stopSessionCleanup } from './security/session.js';
+import { initPersistence, loadActiveGames, flushAllGames } from './services/persistenceService.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
@@ -203,6 +206,13 @@ async function main() {
     stopSessionCleanup();
     debugService.stopPeriodicCleanup();
     await debugService.forceFlush();
+
+    // Flush all active game states to DB before shutdown
+    await flushAllGames(
+      () => gameService.getAllGames(),
+      (roomId) => roomService.getRoom(roomId)
+    );
+
     await fastify.close();
     process.exit(0);
   };
@@ -254,6 +264,25 @@ async function main() {
   }).catch((err) => {
     console.error('Failed to initialize sessions (continuing with in-memory):', err);
     startSessionCleanup(); // Still start cleanup for in-memory sessions
+  });
+
+  // Restore active games from database
+  initPersistence().then(async () => {
+    try {
+      const activeGames = await loadActiveGames();
+      for (const { gameState, roomState } of activeGames) {
+        gameService.restoreGame(gameState);
+        roomService.restoreRoom(roomState);
+        console.log(`[Restore] Game ${gameState.id} restored (phase: ${gameState.phase})`);
+      }
+      if (activeGames.length > 0) {
+        console.log(`[Restore] ${activeGames.length} active game(s) restored from database`);
+      }
+    } catch (err) {
+      console.error('[Restore] Failed to restore games (continuing without):', err);
+    }
+  }).catch((err) => {
+    console.error('[Persistence] Failed to initialize (continuing without):', err);
   });
 
   // Start periodic cleanup for debug logs (every hour)
