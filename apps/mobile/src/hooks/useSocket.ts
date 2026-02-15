@@ -1,17 +1,13 @@
-'use client';
-
 import { useEffect, useCallback, useRef } from 'react';
-import { getSocket, connectSocket, startKeepAlive, stopKeepAlive, TypedSocket } from '@/lib/socket';
+import { getSocket, connectSocket, TypedSocket } from '@/lib/socket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
-import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
-import { soundManager } from '@/lib/sounds';
+import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/storage';
 import type { Card, Suit } from '@tysiac/shared';
 
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
   const isAutoReconnectingRef = useRef(false);
-  const trickWonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     setRoom,
@@ -34,7 +30,6 @@ export function useSocket() {
     setPassedAt100Notification,
     setThrewNotification,
     setPauseData,
-    setTrickWonData,
     reset: resetGame,
   } = useGameStore();
 
@@ -56,13 +51,14 @@ export function useSocket() {
     }
 
     // Socket event handlers
-    socket.on('connect', () => {
+    socket.on('connect', async () => {
       setConnected(true);
       setError(null);
 
       // Attempt auto-reconnect if session exists
-      const storedSession = loadSession();
+      const storedSession = await loadSession();
       if (storedSession) {
+        console.log('[auto-reconnect] Found stored session, attempting reconnect...');
         isAutoReconnectingRef.current = true;
         socket.emit('player:reconnect', {
           roomId: storedSession.roomId,
@@ -82,12 +78,12 @@ export function useSocket() {
     });
 
     // Room events
-    socket.on('room:created', (room) => {
+    socket.on('room:created', async (room) => {
       setRoom(room);
       setPlayerId(room.hostId);
 
-      // Save session to localStorage
-      saveSession({
+      // Save session
+      await saveSession({
         playerId: room.hostId,
         roomId: room.id,
         sessionToken: room.sessionToken,
@@ -95,13 +91,13 @@ export function useSocket() {
       });
     });
 
-    socket.on('room:joined', ({ room, playerId, sessionToken }) => {
+    socket.on('room:joined', async ({ room, playerId, sessionToken }) => {
       setRoom(room);
       setPlayerId(playerId);
 
-      // Save session to localStorage
+      // Save session
       const player = room.players.find(p => p.id === playerId);
-      saveSession({
+      await saveSession({
         playerId,
         roomId: room.id,
         sessionToken,
@@ -113,16 +109,16 @@ export function useSocket() {
       setRoom(room);
     });
 
-    socket.on('room:error', ({ code, message }) => {
-      // If INVALID_SESSION during auto-reconnect on page load (no active game), fail silently
+    socket.on('room:error', async ({ code, message }) => {
+      // If INVALID_SESSION during auto-reconnect on app start, fail silently
       if (code === 'INVALID_SESSION' && isAutoReconnectingRef.current) {
         const hasActiveGame = useGameStore.getState().gameState !== null;
         const hasActiveRoom = useRoomStore.getState().room !== null;
 
-        // Only fail silently if user wasn't actively in a game/room
         if (!hasActiveGame && !hasActiveRoom) {
+          console.log('[room:error] Stale session detected on app start, clearing silently');
           isAutoReconnectingRef.current = false;
-          clearSession();
+          await clearSession();
           return;
         }
       }
@@ -135,8 +131,7 @@ export function useSocket() {
     socket.on('game:started', (state) => {
       resetGame();
       setGameState(state);
-      startKeepAlive();
-      // Also update room with gameId since room:updated might not arrive in time
+      // Also update room with gameId
       const currentRoom = useRoomStore.getState().room;
       if (currentRoom && state?.id) {
         setRoom({ ...currentRoom, gameId: state.id });
@@ -144,16 +139,8 @@ export function useSocket() {
     });
 
     socket.on('game:stateUpdate', (state) => {
-      // Detect new card played by comparing trick cards
-      const prevState = useGameStore.getState().gameState;
-      const prevTrickCards = prevState?.round?.currentTrick?.cards?.length ?? 0;
-      const newTrickCards = state?.round?.currentTrick?.cards?.length ?? 0;
-      if (newTrickCards > prevTrickCards) {
-        soundManager.cardPlay();
-      }
-
       setGameState(state);
-      // Clear wykladana modal when phase changes away from wykladana
+      // Clear wykladana modal when phase changes
       if (state?.phase !== 'wykladana') {
         setWykladanaData(null);
       }
@@ -161,23 +148,19 @@ export function useSocket() {
 
     socket.on('game:yourTurn', ({ validActions }) => {
       setValidActions(validActions);
-      soundManager.yourTurn();
     });
 
     socket.on('game:roundEnd', (result) => {
       setRoundResult(result);
-      soundManager.roundEnd();
     });
 
-    socket.on('game:ended', ({ winnerId, statistics }) => {
-      stopKeepAlive();
+    socket.on('game:ended', async ({ winnerId, statistics }) => {
       setShowGameEnd(true);
       if (statistics) {
         setGameStatistics(statistics);
       }
-      soundManager.gameWin();
-      // Don't clear session here - player may want to click "Play Again"
-      // Session is cleared when player explicitly leaves via leaveRoom or leaveGame
+      // Clear session when game ends
+      await clearSession();
     });
 
     socket.on('game:error', ({ message }) => {
@@ -186,44 +169,39 @@ export function useSocket() {
 
     socket.on('game:marriageDeclared', ({ playerId, suit }) => {
       setLastMarriageDeclared({ playerId, suit });
-      soundManager.marriage();
-      // Marriage indicator will be cleared when trick completes (game:trickWon)
     });
 
-    socket.on('game:trickWon', (data: { winnerId: string; cards: Card[]; points: number }) => {
-      // Clear marriage indicator when trick completes
+    socket.on('game:trickWon', () => {
       setLastMarriageDeclared(null);
-      soundManager.trickWon();
-
-      // Determine if trump was used to win (trump card played into a non-trump lead)
-      const trumpSuit = useGameStore.getState().gameState?.round?.trumpSuit;
-      if (trumpSuit && data.cards.length > 0) {
-        const leadSuit = data.cards[0].suit;
-        const hasTrumpCard = data.cards.some(c => c.suit === trumpSuit);
-        const wasTrumpWin = hasTrumpCard && leadSuit !== trumpSuit;
-        if (wasTrumpWin) {
-          setTrickWonData({ winnerId: data.winnerId, wasTrumpWin: true });
-          if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
-          trickWonTimeoutRef.current = setTimeout(() => setTrickWonData(null), 1500);
-        }
-      }
     });
 
-    socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number; cards: Card[] }) => {
-      setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints, cards: data.cards });
-      soundManager.wykladana();
+    socket.on('game:wykladana', (data) => {
+      setWykladanaData({
+        playerName: data.playerName,
+        bid: data.bid,
+        marriagePoints: data.marriagePoints,
+        cards: data.cards,
+      });
     });
 
-    socket.on('game:playerPassedAt100', (data: { playerId: string; playerName: string }) => {
+    socket.on('game:playerPassedAt100', (data) => {
       setPassedAt100Notification({ playerName: data.playerName });
     });
 
-    socket.on('game:playerThrew', (data: { playerId: string; playerName: string; bidAmount: number; scoreChanges: Record<string, number> }) => {
-      setThrewNotification({ playerName: data.playerName, bidAmount: data.bidAmount, scoreChanges: data.scoreChanges });
+    socket.on('game:playerThrew', (data) => {
+      setThrewNotification({
+        playerName: data.playerName,
+        bidAmount: data.bidAmount,
+        scoreChanges: data.scoreChanges,
+      });
     });
 
-    socket.on('game:paused', (data: { pausedBy: string; pausedByName: string; pausedAt: number; expiresAt: number }) => {
-      setPauseData({ pausedByName: data.pausedByName, pausedAt: data.pausedAt, expiresAt: data.expiresAt });
+    socket.on('game:paused', (data) => {
+      setPauseData({
+        pausedByName: data.pausedByName,
+        pausedAt: data.pausedAt,
+        expiresAt: data.expiresAt,
+      });
     });
 
     socket.on('game:resumed', () => {
@@ -232,7 +210,6 @@ export function useSocket() {
 
     socket.on('game:pauseExpired', () => {
       setPauseData(null);
-      // The game will end and be handled through normal game end flow
     });
 
     // Lobby
@@ -241,12 +218,11 @@ export function useSocket() {
     });
 
     // Reconnection
-    socket.on('connection:restored', ({ room, gameState, validActions }) => {
-      // Clear auto-reconnect flag on successful restore
+    socket.on('connection:restored', async ({ room, gameState, validActions }) => {
       isAutoReconnectingRef.current = false;
 
       // Restore playerId from session
-      const storedSession = loadSession();
+      const storedSession = await loadSession();
       if (storedSession) {
         setPlayerId(storedSession.playerId);
       }
@@ -254,19 +230,16 @@ export function useSocket() {
       setRoom(room);
       if (gameState) {
         setGameState(gameState);
-        startKeepAlive();
       }
       if (validActions && validActions.length > 0) {
         setValidActions(validActions);
       }
-      updateSessionTimestamp();
+      await updateSessionTimestamp();
     });
 
     connect();
 
     return () => {
-      stopKeepAlive();
-      if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
@@ -294,57 +267,72 @@ export function useSocket() {
   }, []);
 
   // Helper to check connection and emit with error handling
-  const safeEmit = useCallback((
-    event: string,
-    ...args: unknown[]
-  ): boolean => {
-    const socket = socketRef.current;
-    if (!socket?.connected) {
-      setError('Not connected to server. Please refresh the page.');
-      return false;
-    }
-    (socket.emit as (event: string, ...args: unknown[]) => void)(event, ...args);
-    return true;
-  }, [setError]);
+  const safeEmit = useCallback(
+    (event: string, ...args: unknown[]): boolean => {
+      const socket = socketRef.current;
+      if (!socket?.connected) {
+        setError('Not connected to server. Please check your connection.');
+        return false;
+      }
+      (socket.emit as (event: string, ...args: unknown[]) => void)(event, ...args);
+      return true;
+    },
+    [setError]
+  );
 
   // Room actions
-  const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3) => {
-    safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers });
-  }, [safeEmit]);
+  const createRoom = useCallback(
+    (playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3) => {
+      safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers });
+    },
+    [safeEmit]
+  );
 
-  const joinRoom = useCallback((playerName: string, roomCode: string) => {
-    safeEmit('room:join', { playerName, roomCode });
-  }, [safeEmit]);
+  const joinRoom = useCallback(
+    (playerName: string, roomCode: string) => {
+      safeEmit('room:join', { playerName, roomCode });
+    },
+    [safeEmit]
+  );
 
-  const leaveRoom = useCallback(() => {
+  const leaveRoom = useCallback(async () => {
     safeEmit('room:leave');
-    clearSession(); // Clear localStorage when intentionally leaving
+    await clearSession();
     resetRoom();
     resetGame();
   }, [safeEmit, resetRoom, resetGame]);
 
-  const setReady = useCallback((isReady: boolean) => {
-    safeEmit('room:ready', isReady);
-  }, [safeEmit]);
+  const setReady = useCallback(
+    (isReady: boolean) => {
+      safeEmit('room:ready', isReady);
+    },
+    [safeEmit]
+  );
 
   const addAI = useCallback(() => {
     safeEmit('room:addAI');
   }, [safeEmit]);
 
-  const removeAI = useCallback((aiId: string) => {
-    safeEmit('room:removeAI', aiId);
-  }, [safeEmit]);
+  const removeAI = useCallback(
+    (aiId: string) => {
+      safeEmit('room:removeAI', aiId);
+    },
+    [safeEmit]
+  );
 
   const startGame = useCallback(() => {
     safeEmit('room:startGame');
   }, [safeEmit]);
 
   // Game actions
-  const bid = useCallback((amount: number) => {
-    if (safeEmit('game:bid', amount)) {
-      setValidActions([]);
-    }
-  }, [safeEmit, setValidActions]);
+  const bid = useCallback(
+    (amount: number) => {
+      if (safeEmit('game:bid', amount)) {
+        setValidActions([]);
+      }
+    },
+    [safeEmit, setValidActions]
+  );
 
   const pass = useCallback(() => {
     if (safeEmit('game:pass')) {
@@ -352,21 +340,30 @@ export function useSocket() {
     }
   }, [safeEmit, setValidActions]);
 
-  const distributeTalon = useCallback((distribution: { playerId: string; card: Card }[]) => {
-    if (safeEmit('game:distributeTalon', distribution)) {
-      setValidActions([]);
-    }
-  }, [safeEmit, setValidActions]);
+  const distributeTalon = useCallback(
+    (distribution: { playerId: string; card: Card }[]) => {
+      if (safeEmit('game:distributeTalon', distribution)) {
+        setValidActions([]);
+      }
+    },
+    [safeEmit, setValidActions]
+  );
 
-  const playCard = useCallback((card: Card) => {
-    if (safeEmit('game:playCard', card)) {
-      setValidActions([]);
-    }
-  }, [safeEmit, setValidActions]);
+  const playCard = useCallback(
+    (card: Card) => {
+      if (safeEmit('game:playCard', card)) {
+        setValidActions([]);
+      }
+    },
+    [safeEmit, setValidActions]
+  );
 
-  const declareMarriage = useCallback((suit: Suit) => {
-    safeEmit('game:declareMarriage', suit);
-  }, [safeEmit]);
+  const declareMarriage = useCallback(
+    (suit: Suit) => {
+      safeEmit('game:declareMarriage', suit);
+    },
+    [safeEmit]
+  );
 
   const confirmTalon = useCallback(() => {
     safeEmit('game:confirmTalon');
@@ -376,15 +373,18 @@ export function useSocket() {
     safeEmit('game:confirmWykladana');
   }, [safeEmit]);
 
-  const playOrPass = useCallback((decision: 'play' | 'pass') => {
-    if (safeEmit('game:playOrPass', decision)) {
-      setValidActions([]);
-    }
-  }, [safeEmit, setValidActions]);
+  const playOrPass = useCallback(
+    (decision: 'play' | 'pass') => {
+      if (safeEmit('game:playOrPass', decision)) {
+        setValidActions([]);
+      }
+    },
+    [safeEmit, setValidActions]
+  );
 
-  const leaveGame = useCallback(() => {
+  const leaveGame = useCallback(async () => {
     if (safeEmit('game:leave')) {
-      clearSession();
+      await clearSession();
       resetRoom();
       resetGame();
     }

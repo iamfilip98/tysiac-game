@@ -20,12 +20,3 @@ When the user reports a game issue:
    ```
 3. Analyze the logs to find the root cause before making code changes
 
-## Deployment
-
-### Railway
-- Railway almost never auto-redeploys on git push
-- When deploying changes, manually trigger a redeploy using the Railway CLI:
-  ```bash
-  railway up
-  ```
-- Or use the Railway dashboard to manually redeploy the service

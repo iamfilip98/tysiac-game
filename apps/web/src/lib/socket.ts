@@ -63,3 +63,20 @@ export function disconnectSocket(): void {
     socket = null;
   }
 }
+
+// Keep-alive: ping /health every 5 min to prevent Render free-tier spin-down
+let keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+
+export function startKeepAlive(): void {
+  if (keepAliveInterval) return;
+  keepAliveInterval = setInterval(() => {
+    fetch(`${SOCKET_URL}/health`).catch(() => {});
+  }, 5 * 60 * 1000);
+}
+
+export function stopKeepAlive(): void {
+  if (keepAliveInterval) {
+    clearInterval(keepAliveInterval);
+    keepAliveInterval = null;
+  }
+}

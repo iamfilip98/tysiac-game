@@ -125,6 +125,9 @@ export function setupSocketHandlers(io: TypedServer) {
     }
     socketToIP.set(socket.id, clientIP);
 
+    // Send current public room list to newly connected client
+    socket.emit('lobby:roomList', roomService.getPublicRooms());
+
     // Room events
     socket.on('room:create', (data) => {
       withRateLimit(socket, 'room:create', async () => {
@@ -409,7 +412,7 @@ export function setupSocketHandlers(io: TypedServer) {
             game,
             io,
             room.id,
-            () => cleanupGame(game.id, room.id),
+            () => { cleanupGame(game.id, room.id); broadcastRoomList(io); },
             (playerId: string) => playerToSocket.get(playerId) || null
           );
           gameEngines.set(game.id, engine);
@@ -963,7 +966,7 @@ export function setupSocketHandlers(io: TypedServer) {
                   game,
                   io,
                   room.id,
-                  () => cleanupGame(game.id, room.id),
+                  () => { cleanupGame(game.id, room.id); broadcastRoomList(io); },
                   (pid: string) => playerToSocket.get(pid) || null,
                   true
                 );

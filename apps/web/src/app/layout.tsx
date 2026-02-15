@@ -10,6 +10,17 @@ export const metadata: Metadata = {
   title: 'Tysiąc - Polish Card Game',
   description: 'Play the classic Polish card game Tysiąc (1000) online with friends or AI opponents',
   keywords: ['card game', 'Polish', 'Tysiąc', '1000', 'multiplayer', 'online'],
+  openGraph: {
+    title: 'Tysiąc - Polish Card Game',
+    description: 'Play the classic Polish card game Tysiąc (1000) online with friends or AI opponents',
+    type: 'website',
+    siteName: 'Tysiąc',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Tysiąc - Polish Card Game',
+    description: 'Play the classic Polish card game Tysiąc (1000) online with friends or AI opponents',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
