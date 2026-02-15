@@ -36,7 +36,7 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
 
   return (
     <div className="rounded-xl border-2 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]">
-      <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl">
+      <div className="bg-table-900/90 backdrop-blur p-6 rounded-xl min-h-[370px] flex flex-col">
         <h2 className="text-xl font-bold text-white mb-4">Browse Rooms</h2>
 
         {/* Name input */}
@@ -97,7 +97,7 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
         </div>
 
         {/* Private room section */}
-        <div className="border-t border-table-600 pt-3">
+        <div className="border-t border-table-600 pt-3 mt-auto">
           <button
             type="button"
             onClick={() => setShowPrivate(!showPrivate)}
