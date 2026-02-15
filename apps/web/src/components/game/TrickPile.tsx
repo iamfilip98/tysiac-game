@@ -13,9 +13,10 @@ interface TrickPileProps {
   marriageCard?: { suit: Suit } | null; // If a marriage was just declared, show Q as gold
   isSpectating?: boolean; // Whether the viewer is spectating (dealer in 4-player mode)
   trumpWin?: boolean; // Show sparkle effect when trump wins the trick
+  trumpSuit?: Suit | null; // Current trump suit for blue glow on trump cards
 }
 
-export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating, trumpWin }: TrickPileProps) {
+export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating, trumpWin, trumpSuit }: TrickPileProps) {
   const isMobile = useIsMobile();
 
   // Position cards based on who played them relative to current player
@@ -243,6 +244,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                 size={isMobile ? 'sm' : 'md'}
                 isPlayable={false}
                 isMarriageCard={marriageCard?.suit === card.suit && card.rank === 'Q'}
+                isTrumpCard={!!trumpSuit && card.suit === trumpSuit}
               />
             </motion.div>
           );

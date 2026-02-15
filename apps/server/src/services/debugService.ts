@@ -21,13 +21,60 @@ interface DebugLogEntry {
   timestamp: Date;
 }
 
-const inMemoryLogs: DebugLogEntry[] = [];
-const MAX_IN_MEMORY_LOGS = 10000; // Keep last 10k logs in memory
+// O(1) circular buffer — avoids shift() GC pressure on large arrays
+class CircularBuffer<T> {
+  private buffer: (T | undefined)[];
+  private head = 0; // next write position
+  private count = 0;
+  readonly capacity: number;
+
+  constructor(capacity: number) {
+    this.capacity = capacity;
+    this.buffer = new Array(capacity);
+  }
+
+  push(item: T): void {
+    this.buffer[this.head] = item;
+    this.head = (this.head + 1) % this.capacity;
+    if (this.count < this.capacity) this.count++;
+  }
+
+  /** Return all items oldest-first */
+  toArray(): T[] {
+    if (this.count === 0) return [];
+    const result: T[] = new Array(this.count);
+    const start = this.count < this.capacity ? 0 : this.head;
+    for (let i = 0; i < this.count; i++) {
+      result[i] = this.buffer[(start + i) % this.capacity] as T;
+    }
+    return result;
+  }
+
+  get length(): number {
+    return this.count;
+  }
+
+  clear(): void {
+    this.buffer = new Array(this.capacity);
+    this.head = 0;
+    this.count = 0;
+  }
+}
+
+const MAX_IN_MEMORY_LOGS = 2000;
 const FLUSH_INTERVAL = 5000; // Flush to DB every 5 seconds
 const MAX_GAMES_TO_KEEP = 10; // Keep logs for last 10 games only
+const MAX_PENDING_WRITES = 500; // Cap pending writes to prevent unbounded growth
+
+const logBuffer = new CircularBuffer<DebugLogEntry>(MAX_IN_MEMORY_LOGS);
 
 let flushTimer: NodeJS.Timeout | null = null;
 let pendingWrites: DebugLogEntry[] = [];
+
+/** Get a snapshot of in-memory logs (oldest first) */
+function getInMemoryLogs(): DebugLogEntry[] {
+  return logBuffer.toArray();
+}
 
 // Generate a session ID for grouping logs before a game is created
 export function generateSessionId(): string {
@@ -64,7 +111,7 @@ export function logDebug(params: {
     timestamp: new Date(),
   };
 
-  // Also log to console for immediate visibility in Railway logs
+  // Also log to console for immediate visibility
   const logPrefix = `[${params.eventType}]`;
   const logData = {
     gameId: params.gameId,
@@ -75,15 +122,18 @@ export function logDebug(params: {
   };
   console.log(logPrefix, JSON.stringify(logData));
 
-  // Add to in-memory logs
-  inMemoryLogs.push(entry);
-  if (inMemoryLogs.length > MAX_IN_MEMORY_LOGS) {
-    inMemoryLogs.shift(); // Remove oldest
-  }
+  // Add to circular buffer (O(1), no shift)
+  logBuffer.push(entry);
 
-  // Add to pending writes for database
+  // Add to pending writes for database (with cap)
   if (db) {
     pendingWrites.push(entry);
+    if (pendingWrites.length > MAX_PENDING_WRITES) {
+      // Drop oldest pending writes to prevent unbounded memory growth
+      const excess = pendingWrites.length - MAX_PENDING_WRITES;
+      pendingWrites = pendingWrites.slice(excess);
+      console.warn(`[DebugService] Dropped ${excess} oldest pending writes (cap: ${MAX_PENDING_WRITES})`);
+    }
     scheduleFlush();
   }
 }
@@ -138,8 +188,11 @@ async function flushToDatabase(): Promise<void> {
     await db.insert(debugLogs).values(toWrite);
   } catch (error) {
     console.error('[DebugService] Failed to flush logs to database:', error);
-    // Re-add failed writes to pending (at the front)
+    // Re-add failed writes, but respect the cap
     pendingWrites = [...toWrite, ...pendingWrites];
+    if (pendingWrites.length > MAX_PENDING_WRITES) {
+      pendingWrites = pendingWrites.slice(pendingWrites.length - MAX_PENDING_WRITES);
+    }
   }
 }
 
@@ -155,7 +208,7 @@ export async function forceFlush(): Promise<void> {
 // Query logs for a specific game
 export async function getLogsByGameId(gameId: string): Promise<DebugLogEntry[]> {
   // Check in-memory first
-  const memoryLogs = inMemoryLogs.filter(log => log.gameId === gameId);
+  const memoryLogs = getInMemoryLogs().filter(log => log.gameId === gameId);
 
   if (!db) {
     return memoryLogs;
@@ -186,7 +239,7 @@ export async function getLogsByGameId(gameId: string): Promise<DebugLogEntry[]> 
 
 // Query logs for a specific session
 export async function getLogsBySessionId(sessionId: string): Promise<DebugLogEntry[]> {
-  const memoryLogs = inMemoryLogs.filter(log => log.sessionId === sessionId);
+  const memoryLogs = getInMemoryLogs().filter(log => log.sessionId === sessionId);
 
   if (!db) {
     return memoryLogs;
@@ -215,7 +268,7 @@ export async function getLogsBySessionId(sessionId: string): Promise<DebugLogEnt
 
 // Query logs for a specific room
 export async function getLogsByRoomId(roomId: string): Promise<DebugLogEntry[]> {
-  const memoryLogs = inMemoryLogs.filter(log => log.roomId === roomId);
+  const memoryLogs = getInMemoryLogs().filter(log => log.roomId === roomId);
 
   if (!db) {
     return memoryLogs;
@@ -244,7 +297,8 @@ export async function getLogsByRoomId(roomId: string): Promise<DebugLogEntry[]> 
 
 // Query recent logs (for debugging)
 export async function getRecentLogs(limit: number = 100): Promise<DebugLogEntry[]> {
-  const memoryLogs = inMemoryLogs.slice(-limit);
+  const allMemory = getInMemoryLogs();
+  const memoryLogs = allMemory.slice(-limit);
 
   if (!db) {
     return memoryLogs;
@@ -268,7 +322,7 @@ export async function getRecentLogs(limit: number = 100): Promise<DebugLogEntry[
 
 // Search logs by event type
 export async function getLogsByEventType(eventType: string, limit: number = 100): Promise<DebugLogEntry[]> {
-  const memoryLogs = inMemoryLogs
+  const memoryLogs = getInMemoryLogs()
     .filter(log => log.eventType === eventType)
     .slice(-limit);
 
@@ -295,7 +349,7 @@ export async function getLogsByEventType(eventType: string, limit: number = 100)
 
 // Search logs by error
 export async function getErrorLogs(limit: number = 100): Promise<DebugLogEntry[]> {
-  const memoryLogs = inMemoryLogs
+  const memoryLogs = getInMemoryLogs()
     .filter(log => log.result === 'error' || log.result === 'rejected')
     .slice(-limit);
 
@@ -339,7 +393,7 @@ export async function getRecentGamesSummary(): Promise<Array<{
       errorCount: number;
     }>();
 
-    for (const log of inMemoryLogs) {
+    for (const log of getInMemoryLogs()) {
       if (!log.gameId) continue;
 
       const existing = gameMap.get(log.gameId);
@@ -401,10 +455,11 @@ export async function getRecentGamesSummary(): Promise<Array<{
 // Cleanup old logs (keep only last N games)
 export async function cleanupOldLogs(): Promise<number> {
   if (!db) {
-    // Clean up in-memory logs by game
+    // Rebuild circular buffer keeping only logs for recent games
+    const allLogs = getInMemoryLogs();
     const gameTimestamps = new Map<string, Date>();
 
-    for (const log of inMemoryLogs) {
+    for (const log of allLogs) {
       if (log.gameId) {
         const existing = gameTimestamps.get(log.gameId);
         if (!existing || log.timestamp > existing) {
@@ -413,28 +468,21 @@ export async function cleanupOldLogs(): Promise<number> {
       }
     }
 
-    // Sort games by most recent activity
     const sortedGames = Array.from(gameTimestamps.entries())
       .sort((a, b) => b[1].getTime() - a[1].getTime());
 
-    // Keep only last N games
     const gamesToKeep = new Set(sortedGames.slice(0, MAX_GAMES_TO_KEEP).map(g => g[0]));
 
-    const beforeCount = inMemoryLogs.length;
-    const toRemove: number[] = [];
+    const beforeCount = allLogs.length;
+    const kept = allLogs.filter(log => !log.gameId || gamesToKeep.has(log.gameId));
 
-    inMemoryLogs.forEach((log, index) => {
-      if (log.gameId && !gamesToKeep.has(log.gameId)) {
-        toRemove.push(index);
-      }
-    });
-
-    // Remove in reverse order to preserve indices
-    for (let i = toRemove.length - 1; i >= 0; i--) {
-      inMemoryLogs.splice(toRemove[i], 1);
+    // Rebuild circular buffer with kept logs
+    logBuffer.clear();
+    for (const log of kept) {
+      logBuffer.push(log);
     }
 
-    return beforeCount - inMemoryLogs.length;
+    return beforeCount - kept.length;
   }
 
   try {

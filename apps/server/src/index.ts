@@ -40,9 +40,19 @@ async function main() {
     credentials: true,
   });
 
-  // Health check endpoint
+  // Health check endpoint with memory stats
   fastify.get('/health', async () => {
-    return { status: 'ok', timestamp: Date.now() };
+    const mem = process.memoryUsage();
+    return {
+      status: 'ok',
+      timestamp: Date.now(),
+      uptime: Math.floor(process.uptime()),
+      memory: {
+        heapUsedMB: Math.round(mem.heapUsed / 1024 / 1024 * 10) / 10,
+        heapTotalMB: Math.round(mem.heapTotal / 1024 / 1024 * 10) / 10,
+        rssMB: Math.round(mem.rss / 1024 / 1024 * 10) / 10,
+      },
+    };
   });
 
   // Debug API authentication middleware
@@ -198,6 +208,31 @@ async function main() {
 
   process.on('SIGTERM', shutdown);
   process.on('SIGINT', shutdown);
+
+  // Crash protection — log and exit cleanly so Render auto-restarts
+  process.on('uncaughtException', async (error) => {
+    console.error('[FATAL] Uncaught exception:', error);
+    try {
+      await debugService.forceFlush();
+    } catch { /* ignore flush errors during crash */ }
+    setTimeout(() => process.exit(1), 1000);
+  });
+
+  process.on('unhandledRejection', (reason) => {
+    console.error('[WARNING] Unhandled promise rejection:', reason);
+    // Don't crash — isolated promise failures shouldn't take down the server
+  });
+
+  // Memory monitoring (every 60s) — warn when approaching Render free tier limit (512MB)
+  const MEMORY_LIMIT_MB = 512;
+  const MEMORY_WARN_THRESHOLD = 0.8; // 80%
+  setInterval(() => {
+    const mem = process.memoryUsage();
+    const rssMB = mem.rss / 1024 / 1024;
+    if (rssMB > MEMORY_LIMIT_MB * MEMORY_WARN_THRESHOLD) {
+      console.warn(`[Memory] RSS ${rssMB.toFixed(1)}MB exceeds ${MEMORY_WARN_THRESHOLD * 100}% of ${MEMORY_LIMIT_MB}MB limit`);
+    }
+  }, 60000);
 
   // Start server FIRST so health checks pass immediately
   try {

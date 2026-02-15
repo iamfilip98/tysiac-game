@@ -11,6 +11,7 @@ interface CardProps {
   isPlayable?: boolean;
   isFaceDown?: boolean;
   isMarriageCard?: boolean;
+  isTrumpCard?: boolean;
   size?: 'sm' | 'md' | 'lg';
   onClick?: () => void;
   style?: React.CSSProperties;
@@ -30,6 +31,7 @@ export function Card({
   isPlayable = true,
   isFaceDown = false,
   isMarriageCard = false,
+  isTrumpCard = false,
   size = 'md',
   onClick,
   style,
@@ -82,6 +84,17 @@ export function Card({
           style={{
             boxShadow: '0 0 20px 4px rgba(212, 175, 55, 0.7), 0 0 40px 8px rgba(245, 231, 163, 0.3)',
             border: '1px solid rgba(245, 231, 163, 0.5)',
+          }}
+          aria-hidden="true"
+        />
+      )}
+      {/* Outer glow for trump cards (marriage gold takes priority) */}
+      {isTrumpCard && !isMarriageCard && (
+        <div
+          className="absolute -inset-[4px] rounded-xl"
+          style={{
+            boxShadow: '0 0 20px 4px rgba(96,165,250,0.7), 0 0 40px 8px rgba(147,197,253,0.3)',
+            border: '1px solid rgba(147,197,253,0.5)',
           }}
           aria-hidden="true"
         />
@@ -172,6 +185,66 @@ export function Card({
                       boxShadow: '0 0 4px 1px rgba(255, 255, 255, 0.8)',
                       animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
                       animationDelay: `${i * 0.2}s`,
+                    }}
+                  />
+                ))}
+              </div>
+            )}
+          </>
+        )}
+        {/* Blue effect for trump cards (marriage gold takes priority) */}
+        {isTrumpCard && !isMarriageCard && (
+          <>
+            {/* Subtle blue gradient overlay */}
+            <div
+              className="absolute inset-0 rounded-lg"
+              style={{
+                background: `linear-gradient(
+                  135deg,
+                  rgba(96,165,250,0.15) 0%,
+                  rgba(147,197,253,0.25) 30%,
+                  rgba(96,165,250,0.15) 60%,
+                  rgba(59,130,246,0.2) 100%
+                )`,
+              }}
+              aria-hidden="true"
+            />
+            {/* Animated blue shimmer - desktop only */}
+            {!isMobile && (
+              <div
+                className="absolute inset-0 rounded-lg overflow-hidden"
+                aria-hidden="true"
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(
+                      110deg,
+                      transparent 20%,
+                      rgba(147,197,253,0.3) 40%,
+                      rgba(191,219,254,0.5) 50%,
+                      rgba(147,197,253,0.3) 60%,
+                      transparent 80%
+                    )`,
+                    backgroundSize: '200% 100%',
+                    animation: 'blueShimmer 2.5s ease-in-out infinite',
+                  }}
+                />
+              </div>
+            )}
+            {/* Blue sparkle particles - desktop only */}
+            {!isMobile && (
+              <div className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none" aria-hidden="true">
+                {[...Array(4)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="absolute w-1 h-1 rounded-full bg-white"
+                    style={{
+                      top: `${20 + (i * 20)}%`,
+                      left: `${15 + (i * 22) % 70}%`,
+                      boxShadow: '0 0 4px 1px rgba(147,197,253,0.8)',
+                      animation: `sparkle ${1.5 + i * 0.3}s ease-in-out infinite`,
+                      animationDelay: `${i * 0.25}s`,
                     }}
                   />
                 ))}

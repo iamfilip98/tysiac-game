@@ -339,6 +339,7 @@ export function GameBoard() {
                 marriageCard={lastMarriageDeclared ? { suit: lastMarriageDeclared.suit } : null}
                 isSpectating={isSpectating}
                 trumpWin={trickWonData?.wasTrumpWin}
+                trumpSuit={round?.trumpSuit}
               />
             </motion.div>
           )}
