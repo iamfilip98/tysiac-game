@@ -198,10 +198,10 @@ export function GameBoard() {
       <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
 
       {/* Top-left button bar */}
-      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-4 z-30 flex gap-2">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-2 sm:left-4 z-30 flex gap-1 sm:gap-2">
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
+          className="min-w-[28px] sm:min-w-[36px] px-1 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-table-600 rounded-lg text-white/70 hover:text-white text-sm transition-colors"
         >
           <span className="sm:hidden">&larr;</span>
           <span className="hidden sm:inline">&larr; Leave</span>
@@ -209,7 +209,7 @@ export function GameBoard() {
         {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
           <button
             onClick={pauseGame}
-            className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-amber-700/50 border border-table-600 rounded-lg text-white/70 hover:text-amber-400 text-sm transition-colors"
+            className="min-w-[28px] sm:min-w-[36px] px-1 sm:px-3 py-1.5 bg-table-800/80 hover:bg-amber-700/50 border border-table-600 rounded-lg text-white/70 hover:text-amber-400 text-sm transition-colors"
             title="Pause game"
           >
             <span className="sm:hidden">||</span>
