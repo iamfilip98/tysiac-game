@@ -34,19 +34,19 @@ function KingPortrait({ color, isMarriage }: { color: string; isMarriage: boolea
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
       {/* Crown */}
-      <polygon points="10,18 13,10 16,16 20,6 24,16 27,10 30,18" fill={fill} opacity="0.9" />
-      <rect x="10" y="17" width="20" height="3" rx="0.5" fill={fill} opacity="0.8" />
+      <polygon points="10,16 13,8 16,14 20,4 24,14 27,8 30,16" fill={fill} opacity="0.9" />
+      <rect x="10" y="15" width="20" height="3" rx="0.5" fill={fill} opacity="0.8" />
       {/* Head */}
-      <ellipse cx="20" cy="26" rx="6" ry="5.5" fill={fill} opacity="0.7" />
+      <ellipse cx="20" cy="24" rx="6" ry="5.5" fill={fill} opacity="0.7" />
       {/* Body/shoulders */}
-      <path d="M11,38 Q11,32 15,31 L20,30 L25,31 Q29,32 29,38 Z" fill={fill} opacity="0.6" />
+      <path d="M11,36 Q11,30 15,29 L20,28 L25,29 Q29,30 29,36 Z" fill={fill} opacity="0.6" />
       {/* Sword (right side) */}
-      <line x1="29" y1="22" x2="33" y2="38" stroke={fill} strokeWidth="1.5" opacity="0.5" />
-      <line x1="28" y1="26" x2="34" y2="26" stroke={fill} strokeWidth="1.2" opacity="0.5" />
+      <line x1="29" y1="20" x2="33" y2="36" stroke={fill} strokeWidth="1.5" opacity="0.5" />
+      <line x1="28" y1="24" x2="34" y2="24" stroke={fill} strokeWidth="1.2" opacity="0.5" />
       {/* Robe detail */}
-      <path d="M15,34 L20,38 L25,34" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.4" />
-      {/* Base */}
-      <rect x="12" y="38" width="16" height="2" rx="1" fill={fill} opacity="0.3" />
+      <path d="M15,32 L20,36 L25,32" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.4" />
+      {/* Rank letter */}
+      <text x="20" y="50" textAnchor="middle" fontSize="12" fontWeight="bold" fontFamily="serif" fill={fill} opacity="0.85">K</text>
     </svg>
   );
 }
@@ -58,20 +58,20 @@ function QueenPortrait({ color, isMarriage }: { color: string; isMarriage: boole
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
       {/* Tiara/crown */}
-      <path d="M13,18 L15,12 L17,16 L20,9 L23,16 L25,12 L27,18" fill="none" stroke={fill} strokeWidth="1.2" opacity="0.9" />
-      <ellipse cx="20" cy="10" rx="1.5" ry="1.5" fill={fill} opacity="0.7" />
-      <rect x="13" y="17" width="14" height="2" rx="0.5" fill={fill} opacity="0.7" />
+      <path d="M13,16 L15,10 L17,14 L20,7 L23,14 L25,10 L27,16" fill="none" stroke={fill} strokeWidth="1.2" opacity="0.9" />
+      <ellipse cx="20" cy="8" rx="1.5" ry="1.5" fill={fill} opacity="0.7" />
+      <rect x="13" y="15" width="14" height="2" rx="0.5" fill={fill} opacity="0.7" />
       {/* Head */}
-      <ellipse cx="20" cy="25" rx="5.5" ry="5" fill={fill} opacity="0.7" />
+      <ellipse cx="20" cy="23" rx="5.5" ry="5" fill={fill} opacity="0.7" />
       {/* Neck */}
-      <rect x="18" y="29" width="4" height="3" rx="1" fill={fill} opacity="0.5" />
+      <rect x="18" y="27" width="4" height="3" rx="1" fill={fill} opacity="0.5" />
       {/* Body/dress */}
-      <path d="M12,42 Q12,33 16,32 L20,31 L24,32 Q28,33 28,42 Z" fill={fill} opacity="0.5" />
+      <path d="M12,40 Q12,31 16,30 L20,29 L24,30 Q28,31 28,40 Z" fill={fill} opacity="0.5" />
       {/* Dress flowing detail */}
-      <path d="M14,36 Q20,40 26,36" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.35" />
-      <path d="M13,39 Q20,43 27,39" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.3" />
-      {/* Base */}
-      <ellipse cx="20" cy="42" rx="9" ry="1.5" fill={fill} opacity="0.25" />
+      <path d="M14,34 Q20,38 26,34" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.35" />
+      <path d="M13,37 Q20,41 27,37" fill="none" stroke={fill} strokeWidth="0.8" opacity="0.3" />
+      {/* Rank letter */}
+      <text x="20" y="50" textAnchor="middle" fontSize="12" fontWeight="bold" fontFamily="serif" fill={fill} opacity="0.85">Q</text>
     </svg>
   );
 }
@@ -83,23 +83,25 @@ function JackPortrait({ color, isMarriage }: { color: string; isMarriage: boolea
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
       {/* Helmet */}
-      <path d="M14,20 Q14,10 20,8 Q26,10 26,20 Z" fill={fill} opacity="0.8" />
+      <path d="M14,18 Q14,8 20,6 Q26,8 26,18 Z" fill={fill} opacity="0.8" />
       {/* Visor slit */}
-      <path d="M16,16 L24,16" stroke={fill === 'var(--card-red)' || fill === '#7a2020' ? '#fff' : '#fff'} strokeWidth="1.2" opacity="0.4" />
+      <path d="M16,14 L24,14" stroke="#fff" strokeWidth="1.2" opacity="0.4" />
       {/* Helmet plume */}
-      <path d="M20,8 Q22,4 24,6 Q23,8 20,8" fill={fill} opacity="0.6" />
+      <path d="M20,6 Q22,2 24,4 Q23,6 20,6" fill={fill} opacity="0.6" />
       {/* Head/face area */}
-      <rect x="15" y="19" width="10" height="5" rx="1" fill={fill} opacity="0.5" />
+      <rect x="15" y="17" width="10" height="5" rx="1" fill={fill} opacity="0.5" />
       {/* Shoulders */}
-      <path d="M12,32 Q12,26 16,25 L20,24 L24,25 Q28,26 28,32 Z" fill={fill} opacity="0.55" />
+      <path d="M12,30 Q12,24 16,23 L20,22 L24,23 Q28,24 28,30 Z" fill={fill} opacity="0.55" />
       {/* Shield */}
-      <path d="M14,30 L14,39 Q14,43 20,45 Q26,43 26,39 L26,30 Z" fill={fill} opacity="0.35" />
+      <path d="M14,28 L14,37 Q14,41 20,43 Q26,41 26,37 L26,28 Z" fill={fill} opacity="0.35" />
       {/* Shield cross */}
-      <line x1="20" y1="30" x2="20" y2="43" stroke={fill} strokeWidth="1" opacity="0.25" />
-      <line x1="14" y1="36" x2="26" y2="36" stroke={fill} strokeWidth="1" opacity="0.25" />
+      <line x1="20" y1="28" x2="20" y2="41" stroke={fill} strokeWidth="1" opacity="0.25" />
+      <line x1="14" y1="34" x2="26" y2="34" stroke={fill} strokeWidth="1" opacity="0.25" />
       {/* Shoulder guards */}
-      <ellipse cx="13" cy="28" rx="3" ry="2" fill={fill} opacity="0.3" />
-      <ellipse cx="27" cy="28" rx="3" ry="2" fill={fill} opacity="0.3" />
+      <ellipse cx="13" cy="26" rx="3" ry="2" fill={fill} opacity="0.3" />
+      <ellipse cx="27" cy="26" rx="3" ry="2" fill={fill} opacity="0.3" />
+      {/* Rank letter */}
+      <text x="20" y="52" textAnchor="middle" fontSize="12" fontWeight="bold" fontFamily="serif" fill={fill} opacity="0.85">J</text>
     </svg>
   );
 }
@@ -125,7 +127,7 @@ export function Card({
   const cardDescription = getCardDescription(card);
   const isFaceCard = ['K', 'Q', 'J'].includes(card.rank);
   const isHighCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
-  const showCornerPips = size !== 'sm';
+  const showCornerPips = true; // Show on all sizes
   const showPortrait = isFaceCard && size !== 'sm';
   const isDarkTheme = theme === 'dark';
 
@@ -226,7 +228,7 @@ export function Card({
           color === 'red' ? 'red' : 'black',
           sizeClasses[size],
           isPlayable && 'cursor-pointer ring-2 ring-green-500',
-          !isPlayable && 'opacity-50 cursor-not-allowed',
+          !isPlayable && onClick && 'opacity-50 cursor-not-allowed',
           isSelected && 'ring-2 ring-gold-400 shadow-glow',
           isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
           isMobile && isPlayable && 'active:scale-[0.97]',
@@ -394,18 +396,18 @@ export function Card({
           {/* Top-left corner pip */}
           {showCornerPips && (
             <div
-              className="absolute top-[3px] left-[4px] flex flex-col items-center leading-none"
+              className="absolute top-[2px] left-[3px] flex flex-col items-center leading-none"
               style={{ color: textColor, ...marriageTextStyle }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[11px]' : 'text-[9px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[10px]' : 'text-[8px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[12px]' : size === 'md' ? 'text-[10px]' : 'text-[7px]')}>{suitSymbol}</span>
             </div>
           )}
           {/* Center: SVG portrait for face cards (md/lg), text for others */}
           {showPortrait ? (
             <div className={cn(
               'flex items-center justify-center',
-              size === 'lg' ? 'w-[52px] h-[68px]' : 'w-[40px] h-[54px]'
+              size === 'lg' ? 'w-[58px] h-[76px]' : 'w-[46px] h-[60px]'
             )}>
               {card.rank === 'K' && <KingPortrait color={color} isMarriage={isMarriageCard} />}
               {card.rank === 'Q' && <QueenPortrait color={color} isMarriage={isMarriageCard} />}
@@ -414,13 +416,13 @@ export function Card({
           ) : (
             <>
               <span
-                className={cn('font-bold', isHighCard ? 'text-xl' : 'text-lg')}
+                className={cn('font-bold', size === 'sm' ? 'text-base' : isHighCard ? 'text-2xl' : 'text-xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {card.rank}
               </span>
               <span
-                className={cn(isHighCard ? 'text-2xl' : 'text-3xl')}
+                className={cn(size === 'sm' ? 'text-lg' : isHighCard ? 'text-3xl' : 'text-3xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {suitSymbol}
@@ -430,11 +432,11 @@ export function Card({
           {/* Bottom-right corner pip (rotated 180deg) */}
           {showCornerPips && (
             <div
-              className="absolute bottom-[3px] right-[4px] flex flex-col items-center leading-none rotate-180"
+              className="absolute bottom-[2px] right-[3px] flex flex-col items-center leading-none rotate-180"
               style={{ color: textColor, ...marriageTextStyle }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[11px]' : 'text-[9px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[10px]' : 'text-[8px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[12px]' : size === 'md' ? 'text-[10px]' : 'text-[7px]')}>{suitSymbol}</span>
             </div>
           )}
         </div>
