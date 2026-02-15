@@ -1,7 +1,7 @@
 import { Server } from 'socket.io';
 import type { GameState, Card, Suit, ClientGameState, ValidAction, RoundResult } from '@tysiac/shared';
 import { createDeck, shuffleDeck, getTotalMarriageValue, hasMarriage, MARRIAGE_VALUES, CARD_POINTS, SUITS } from '@tysiac/shared';
-import { getValidCards, getTrickWinner, validateBid, validateCardPlay, canDeclareMarriage } from './validation.js';
+import { getValidCards, getTrickWinner, getTrickWinnerWithReason, validateBid, validateCardPlay, canDeclareMarriage } from './validation.js';
 import { calculateRoundScores, applyScores, createRoundResult } from './scoring.js';
 import { getClientGameState, getValidActions, getNextPlayer, isAIPlayer } from './stateManager.js';
 import { AIPlayer } from '../ai/index.js';
@@ -1153,7 +1153,7 @@ export class GameEngine {
     const round = this.game.currentRound!;
     const trick = round.currentTrick!;
 
-    const winnerId = getTrickWinner(trick, round.trumpSuit);
+    const { winnerId, winningCard, reason } = getTrickWinnerWithReason(trick, round.trumpSuit);
 
     // Safety check for winner
     if (!winnerId) {
@@ -1168,6 +1168,23 @@ export class GameEngine {
       const cardPoints: Record<string, number> = { '9': 0, 'J': 2, 'Q': 3, 'K': 4, '10': 10, 'A': 11 };
       return sum + cardPoints[c.rank];
     }, 0);
+
+    logDebug({
+      gameId: this.game.id,
+      roomId: this.roomId,
+      playerId: winnerId,
+      eventType: 'trick:completed',
+      eventData: {
+        trickNumber: trick.trickNumber,
+        cards: trick.cards.map(c => ({ playerId: c.playerId, card: `${c.card.rank}${c.card.suit}` })),
+        leadSuit: trick.leadSuit,
+        trumpSuit: round.trumpSuit,
+        winningCard: `${winningCard.rank}${winningCard.suit}`,
+        points,
+        reason,
+      },
+      result: 'success',
+    });
 
     // Award to winner
     round.players[winnerId].tricksWon.push(trickCards);

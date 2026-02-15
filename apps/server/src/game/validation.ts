@@ -136,22 +136,45 @@ export function getHighestCardInTrick(
   return highest;
 }
 
+export interface TrickWinnerResult {
+  winnerId: string;
+  winningCard: Card;
+  reason: string;
+}
+
 export function getTrickWinner(
   trick: TrickState,
   trumpSuit: Suit | null
 ): string {
+  return getTrickWinnerWithReason(trick, trumpSuit).winnerId;
+}
+
+export function getTrickWinnerWithReason(
+  trick: TrickState,
+  trumpSuit: Suit | null
+): TrickWinnerResult {
   const leadSuit = trick.leadSuit!;
-  const highestCard = getHighestCardInTrick(
-    trick.cards.map(c => c.card),
-    leadSuit,
-    trumpSuit
-  );
+  const cards = trick.cards.map(c => c.card);
+  const highestCard = getHighestCardInTrick(cards, leadSuit, trumpSuit);
 
   const winner = trick.cards.find(c =>
     c.card.suit === highestCard.suit && c.card.rank === highestCard.rank
   );
 
-  return winner!.playerId;
+  // Determine reason
+  let reason: string;
+  const isTrump = trumpSuit && highestCard.suit === trumpSuit;
+  const isLeadSuit = highestCard.suit === leadSuit;
+
+  if (isTrump && !isLeadSuit) {
+    reason = `${highestCard.rank}${highestCard.suit} won by trumping (trump: ${trumpSuit}, lead: ${leadSuit})`;
+  } else if (isTrump && isLeadSuit) {
+    reason = `${highestCard.rank}${highestCard.suit} won as highest trump (trump is lead suit)`;
+  } else {
+    reason = `${highestCard.rank}${highestCard.suit} won as highest card in lead suit (${leadSuit})`;
+  }
+
+  return { winnerId: winner!.playerId, winningCard: highestCard, reason };
 }
 
 export function validateBid(
