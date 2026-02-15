@@ -162,7 +162,10 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         className="w-full max-w-sm grid grid-cols-1 grid-rows-1"
       >
         {/* Green Box: Create Room */}
-        <div className={cn('col-start-1 row-start-1', tab !== 'create' && 'invisible')}>
+        <div className={cn(
+          'col-start-1 row-start-1 transition-opacity duration-150',
+          tab === 'create' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}>
           <CreateRoomForm
             onSubmit={createRoom}
             isLoading={isConnecting}
@@ -170,7 +173,10 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           />
         </div>
         {/* Blue Box: Browse Rooms */}
-        <div className={cn('col-start-1 row-start-1', tab !== 'join' && 'invisible')}>
+        <div className={cn(
+          'col-start-1 row-start-1 transition-opacity duration-150',
+          tab === 'join' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+        )}>
           <RoomBrowser
             publicRooms={publicRooms}
             onJoin={joinRoom}
