@@ -253,7 +253,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
             >
               <Card
                 card={card}
-                size={isMobile ? 'sm' : 'md'}
+                size="md"
                 isPlayable={false}
                 isMarriageCard={marriageCard?.suit === card.suit && card.rank === 'Q'}
                 isTrumpCard={!!trumpSuit && card.suit === trumpSuit}

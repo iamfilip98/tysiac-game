@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { ElectricBorder } from '@/components/ui/ElectricBorder';
+import { motion } from 'framer-motion';
 import { truncateName } from '@/lib/utils';
 import { Card } from './Card';
 import type { Card as CardType } from '@tysiac/shared';
@@ -64,35 +63,26 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
   const [hasConfirmed, setHasConfirmed] = useState(false);
 
   // Sort cards by suit and rank, ensuring red/black alternation when possible
-  // Same logic as PlayerHand.tsx for consistency
   const sortedCards = useMemo(() => {
     const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
     const isRedSuit = (suit: string) => suit === 'hearts' || suit === 'diamonds';
     const suitValue: Record<string, number> = { hearts: 100, diamonds: 80, clubs: 60, spades: 40 };
 
-    // Find unique suits in hand
     const suitsInHand = Array.from(new Set(cards.map(c => c.suit)));
 
-    // Determine optimal suit order to avoid same-color adjacency
     let suitOrder: string[];
     if (suitsInHand.length === 3) {
-      // With 3 suits, arrange to alternate colors
-      // Sort by marriage value (descending) so higher-value suits appear first (on left)
       const redSuits = suitsInHand.filter(isRedSuit).sort((a, b) => suitValue[b] - suitValue[a]);
       const blackSuits = suitsInHand.filter(s => !isRedSuit(s)).sort((a, b) => suitValue[b] - suitValue[a]);
 
       if (redSuits.length === 2) {
-        // 2 red, 1 black: red, black, red
         suitOrder = [redSuits[0], blackSuits[0], redSuits[1]];
       } else if (blackSuits.length === 2) {
-        // 2 black, 1 red: black, red, black
         suitOrder = [blackSuits[0], redSuits[0], blackSuits[1]];
       } else {
-        // Fallback
         suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
       }
     } else {
-      // Default order for 4 suits (alternates red/black): hearts, clubs, diamonds, spades
       suitOrder = ['hearts', 'clubs', 'diamonds', 'spades'];
     }
 
@@ -122,97 +112,85 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
     >
       <Confetti />
 
       <motion.div
-        initial={{ scale: 0, rotate: -10 }}
-        animate={{
-          scale: [0, 1.2, 1],
-          rotate: [-10, 5, 0],
-        }}
-        transition={{
-          duration: 0.6,
-          times: [0, 0.7, 1],
-          type: 'spring',
-          stiffness: 200,
-        }}
-        className="relative z-10 max-w-md sm:max-w-lg"
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        className="relative z-10 w-full max-w-md sm:max-w-lg bg-gradient-to-b from-table-800 to-table-900 border border-table-600 rounded-xl sm:rounded-2xl shadow-2xl overflow-hidden"
       >
-        <ElectricBorder active color="#fbbf24" speed={1}>
-          <div className="bg-gradient-to-b from-amber-900/90 to-amber-950/95 px-8 sm:px-16 py-8 sm:py-12 rounded-2xl text-center">
-            <motion.div
-              animate={{
-                scale: [1, 1.1, 1],
-              }}
-              transition={{
-                duration: 0.8,
-                repeat: Infinity,
-              }}
-              className="text-4xl sm:text-6xl font-bold text-gold-400 mb-4"
-              style={{
-                textShadow: '0 0 30px #fbbf24, 0 0 60px #fbbf24',
-              }}
-            >
-              WYKŁADANA!
-            </motion.div>
+        {/* Decorative gold glow at top */}
+        <div className="absolute inset-0 bg-gradient-to-b from-gold-500/10 via-transparent to-transparent pointer-events-none" />
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-              className="text-xl sm:text-2xl text-white font-medium mb-4"
-              title={playerName}
-            >
-              {truncateName(playerName)}
-            </motion.p>
+        <div className="relative px-6 sm:px-10 py-6 sm:py-8 text-center">
+          {/* Title */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8, y: -10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: 'spring', damping: 12, delay: 0.1 }}
+            className="text-4xl sm:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-amber-500 mb-4"
+            style={{
+              textShadow: '0 0 15px rgba(251, 191, 36, 0.4)',
+            }}
+          >
+            WYKŁADANA!
+          </motion.div>
 
-            {/* Cards display */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.5 }}
-              className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-4"
-            >
-              {sortedCards.map((card, index) => (
-                <motion.div
-                  key={`${card.suit}-${card.rank}`}
-                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  transition={{ delay: 0.5 + index * 0.08 }}
-                >
-                  <Card card={card} size="sm" isPlayable={false} />
-                </motion.div>
-              ))}
-            </motion.div>
+          {/* Player name */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="text-xl sm:text-2xl text-white font-medium mb-5"
+            title={playerName}
+          >
+            {truncateName(playerName)}
+          </motion.p>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 + sortedCards.length * 0.08 }}
-              className="text-gold-300"
-            >
-              120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}
-            </motion.p>
+          {/* Cards display */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex flex-wrap justify-center gap-1 sm:gap-2 mb-5"
+          >
+            {sortedCards.map((card, index) => (
+              <motion.div
+                key={`${card.suit}-${card.rank}`}
+                initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ delay: 0.5 + index * 0.08 }}
+              >
+                <Card card={card} size="md" isPlayable={false} />
+              </motion.div>
+            ))}
+          </motion.div>
 
-            {/* Continue button */}
-            <AnimatePresence>
-              {showButton && (
-                <motion.button
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  onClick={handleContinue}
-                  disabled={hasConfirmed}
-                  className="mt-6 px-8 py-3 bg-gold-500 hover:bg-gold-400 disabled:bg-gold-500/50 text-black font-bold rounded-lg transition-colors shadow-lg disabled:cursor-not-allowed"
-                >
-                  {hasConfirmed ? 'Waiting for others...' : 'Continue'}
-                </motion.button>
-              )}
-            </AnimatePresence>
-          </div>
-        </ElectricBorder>
+          {/* Points summary */}
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 + sortedCards.length * 0.08 }}
+            className="text-gold-300 mb-6"
+          >
+            120 trick points{marriagePoints > 0 ? ` + ${marriagePoints} marriage points` : ''}
+          </motion.p>
+
+          {/* Continue button — always rendered, fades in to prevent layout shift */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: showButton ? 1 : 0 }}
+            transition={{ duration: 0.3 }}
+            onClick={handleContinue}
+            disabled={hasConfirmed || !showButton}
+            className="px-8 py-3 bg-gold-500 hover:bg-gold-400 disabled:bg-gold-500/50 text-black font-bold rounded-lg transition-colors shadow-lg disabled:cursor-not-allowed"
+          >
+            {hasConfirmed ? 'Waiting for others...' : 'Continue'}
+          </motion.button>
+        </div>
       </motion.div>
     </motion.div>
   );
