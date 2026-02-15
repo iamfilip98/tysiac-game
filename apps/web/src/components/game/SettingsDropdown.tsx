@@ -2,6 +2,16 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
+import type { Theme } from '@/stores/preferencesStore';
+
+const THEME_LABELS: Record<Theme, string> = {
+  classic: 'Classic',
+  dark: 'Dark',
+  chocolate: 'Chocolate',
+  midnight: 'Midnight',
+  burgundy: 'Burgundy',
+  purple: 'Purple',
+};
 
 export function SettingsDropdown() {
   const [open, setOpen] = useState(false);
@@ -52,7 +62,7 @@ export function SettingsDropdown() {
             className="w-full flex items-center justify-between px-3 py-2 text-sm text-white/80 hover:bg-table-700/50 transition-colors"
           >
             <span>Theme</span>
-            <span className="text-xs text-white/50 capitalize">{theme}</span>
+            <span className="text-xs text-white/50">{THEME_LABELS[theme]}</span>
           </button>
 
           {/* Animations */}
