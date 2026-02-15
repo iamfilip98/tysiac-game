@@ -4,7 +4,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@tysiac/shared';
-import { setupSocketHandlers } from './socket/handlers.js';
+import { setupSocketHandlers, syncAllEnginesForShutdown } from './socket/handlers.js';
 import * as debugService from './services/debugService.js';
 import * as gameService from './services/gameService.js';
 import * as roomService from './services/roomService.js';
@@ -200,18 +200,41 @@ async function main() {
   // Set up socket handlers
   setupSocketHandlers(io);
 
-  // Graceful shutdown handler
+  // Graceful shutdown handler — game state flush is highest priority
+  let isShuttingDown = false;
   const shutdown = async () => {
+    if (isShuttingDown) return; // Prevent double-shutdown
+    isShuttingDown = true;
     console.log('Shutting down gracefully...');
+
+    // Hard deadline: force exit after 8s (Render gives ~10s before SIGKILL)
+    const forceExit = setTimeout(() => {
+      console.error('[Shutdown] Timeout — forcing exit');
+      process.exit(1);
+    }, 8000);
+    forceExit.unref();
+
     stopSessionCleanup();
     debugService.stopPeriodicCleanup();
-    await debugService.forceFlush();
 
-    // Flush all active game states to DB before shutdown
-    await flushAllGames(
-      () => gameService.getAllGames(),
-      (roomId) => roomService.getRoom(roomId)
-    );
+    // 1. HIGHEST PRIORITY: Sync engine state + flush games to DB
+    try {
+      syncAllEnginesForShutdown();
+      await flushAllGames(
+        () => gameService.getAllGames(),
+        (roomId) => roomService.getRoom(roomId)
+      );
+    } catch (err) {
+      console.error('[Shutdown] Game flush failed:', err);
+    }
+
+    // 2. Lower priority: flush debug logs (best-effort)
+    try {
+      await Promise.race([
+        debugService.forceFlush(),
+        new Promise(resolve => setTimeout(resolve, 2000)),
+      ]);
+    } catch { /* ignore debug flush errors */ }
 
     await fastify.close();
     process.exit(0);

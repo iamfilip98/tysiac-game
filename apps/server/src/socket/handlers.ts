@@ -113,6 +113,21 @@ function cleanupGame(gameId: string, roomId: string): void {
 // Track socket -> IP for cleanup on disconnect
 const socketToIP = new Map<string, string>();
 
+/**
+ * Sync all active engine states to their game objects before DB flush.
+ * Must be called during shutdown BEFORE flushAllGames().
+ */
+export function syncAllEnginesForShutdown(): void {
+  for (const [gameId, engine] of gameEngines) {
+    try {
+      engine.syncStateForPersist();
+    } catch (err) {
+      console.error(`[Shutdown] Failed to sync engine ${gameId}:`, err);
+    }
+  }
+  console.log(`[Shutdown] Synced ${gameEngines.size} engine(s)`);
+}
+
 export function setupSocketHandlers(io: TypedServer) {
   io.on('connection', (socket: TypedSocket) => {
     // IP connection limiting

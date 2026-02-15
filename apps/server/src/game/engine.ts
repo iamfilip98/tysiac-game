@@ -1330,9 +1330,10 @@ export class GameEngine {
   }
 
   /**
-   * Sync engine-internal bidding state to game state for persistence
+   * Sync engine-internal state to game object for persistence.
+   * Called before every broadcast and during shutdown flush.
    */
-  private syncBiddingState(): void {
+  syncStateForPersist(): void {
     if (!this.game.currentRound) return;
     this.game.currentRound.currentBidder = this.currentBidder;
     this.game.currentRound.passedPlayers = [...this.passedPlayers];
@@ -1343,7 +1344,7 @@ export class GameEngine {
     if (this.isCleanedUp) return;
 
     // Sync engine state to game object before broadcast/persist
-    this.syncBiddingState();
+    this.syncStateForPersist();
 
     const eventName = this.isFirstRound ? 'game:started' : 'game:stateUpdate';
     if (this.isFirstRound) {
