@@ -154,20 +154,23 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         </button>
       </motion.div>
 
-      {/* Forms */}
+      {/* Green Box + Blue Box — stacked in same grid cell so they always match height */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="w-full max-w-sm"
+        className="w-full max-w-sm grid grid-cols-1 grid-rows-1"
       >
-        {tab === 'create' ? (
+        {/* Green Box: Create Room */}
+        <div className={cn('col-start-1 row-start-1', tab !== 'create' && 'invisible')}>
           <CreateRoomForm
             onSubmit={createRoom}
             isLoading={isConnecting}
             isConnected={isConnected}
           />
-        ) : (
+        </div>
+        {/* Blue Box: Browse Rooms */}
+        <div className={cn('col-start-1 row-start-1', tab !== 'join' && 'invisible')}>
           <RoomBrowser
             publicRooms={publicRooms}
             onJoin={joinRoom}
@@ -175,7 +178,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
             isConnected={isConnected}
             initialCode={roomCodeFromUrl}
           />
-        )}
+        </div>
       </motion.div>
 
       {/* Error display */}
