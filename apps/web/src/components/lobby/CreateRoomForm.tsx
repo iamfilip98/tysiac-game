@@ -29,7 +29,7 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
     <div className="rounded-xl border-2 border-green-500/50 shadow-[0_0_15px_rgba(34,197,94,0.3)]">
       <form
         onSubmit={handleSubmit}
-        className="bg-table-900/90 backdrop-blur p-6 rounded-xl min-h-[370px]"
+        className="bg-table-900/90 backdrop-blur p-6 rounded-xl"
       >
         <h2 className="text-xl font-bold text-white mb-4">Create New Room</h2>
 
