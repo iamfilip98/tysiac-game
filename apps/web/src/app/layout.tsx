@@ -42,9 +42,10 @@ export default function RootLayout({
     <html lang="en" className="h-full" data-theme="classic" suppressHydrationWarning>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+        <meta name="theme-color" content="#052e16" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme)document.documentElement.setAttribute('data-theme',p.state.theme);if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
+            __html: `(function(){try{var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){document.documentElement.setAttribute('data-theme',p.state.theme);var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content',p.state.theme==='dark'?'#0a0a0a':'#052e16')}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
           }}
         />
       </head>

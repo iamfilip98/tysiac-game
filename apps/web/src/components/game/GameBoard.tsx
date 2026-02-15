@@ -216,6 +216,10 @@ export function GameBoard() {
             <span className="hidden sm:inline">|| Pause</span>
           </button>
         )}
+      </div>
+
+      {/* Top-right settings */}
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-30">
         <SettingsDropdown />
       </div>
 

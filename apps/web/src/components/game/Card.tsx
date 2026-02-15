@@ -257,10 +257,10 @@ export function Card({
         {/* Card content */}
         <div className="absolute inset-1 flex flex-col items-center justify-center" aria-hidden="true">
           {/* Center rank and suit */}
-          <span className={cn('font-bold text-lg', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+          <span className="font-bold text-lg" style={{ color: color === 'red' ? 'var(--card-red)' : 'var(--card-black)' }}>
             {card.rank}
           </span>
-          <span className={cn('text-3xl', color === 'red' ? 'text-red-600' : 'text-gray-900')}>
+          <span className="text-3xl" style={{ color: color === 'red' ? 'var(--card-red)' : 'var(--card-black)' }}>
             {suitSymbol}
           </span>
         </div>
