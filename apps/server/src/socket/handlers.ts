@@ -125,8 +125,8 @@ export function setupSocketHandlers(io: TypedServer) {
     }
     socketToIP.set(socket.id, clientIP);
 
-    // Send current public room list to newly connected client
-    socket.emit('lobby:roomList', roomService.getPublicRooms());
+    // Send current room list to newly connected client
+    socket.emit('lobby:roomList', roomService.getJoinableRooms());
 
     // Room events
     socket.on('room:create', (data) => {
@@ -1114,6 +1114,6 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
 }
 
 function broadcastRoomList(io: TypedServer) {
-  const rooms = roomService.getPublicRooms();
+  const rooms = roomService.getJoinableRooms();
   io.emit('lobby:roomList', rooms);
 }

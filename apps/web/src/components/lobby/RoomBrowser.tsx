@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { cn } from '@/lib/utils';
@@ -17,20 +16,30 @@ interface RoomBrowserProps {
 
 export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = false, initialCode = '' }: RoomBrowserProps) {
   const [playerName, setPlayerName] = useState('');
-  const [showPrivate, setShowPrivate] = useState(!!initialCode);
-  const [privateCode, setPrivateCode] = useState(initialCode);
+  // Track which private room is being unlocked (by room id)
+  const [unlockingRoomId, setUnlockingRoomId] = useState<string | null>(null);
+  const [codeInput, setCodeInput] = useState(initialCode);
 
-  const joinableRooms = publicRooms.filter(r => !r.gameId);
-
-  const handleJoinRoom = (roomCode: string) => {
+  const handleJoinPublic = (roomCode: string) => {
     if (!playerName.trim()) return;
     onJoin(playerName.trim(), roomCode);
   };
 
-  const handlePrivateSubmit = (e: React.FormEvent) => {
+  const handleJoinPrivate = (e: React.FormEvent) => {
     e.preventDefault();
-    if (playerName.trim() && privateCode.trim()) {
-      onJoin(playerName.trim(), privateCode.trim().toUpperCase());
+    if (!playerName.trim() || codeInput.length !== 6) return;
+    onJoin(playerName.trim(), codeInput.trim().toUpperCase());
+    setUnlockingRoomId(null);
+    setCodeInput('');
+  };
+
+  const toggleUnlock = (roomId: string) => {
+    if (unlockingRoomId === roomId) {
+      setUnlockingRoomId(null);
+      setCodeInput('');
+    } else {
+      setUnlockingRoomId(roomId);
+      setCodeInput('');
     }
   };
 
@@ -53,97 +62,97 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
         </div>
 
         {/* Room list */}
-        <div className="mb-4">
+        <div className="flex-1">
           <label className="block text-sm font-medium text-white/80 mb-2">
-            Public Rooms
+            Available Rooms
           </label>
-          <div className="min-h-[140px] max-h-[200px] overflow-y-auto rounded-lg border border-table-600 bg-table-950/50">
-            {joinableRooms.length === 0 ? (
-              <div className="flex items-center justify-center h-[140px] text-white/40 text-sm px-4 text-center">
-                No public rooms available. Create one!
+          <div className="min-h-[168px] max-h-[200px] overflow-y-auto rounded-lg border border-table-600 bg-table-950/50">
+            {publicRooms.length === 0 ? (
+              <div className="flex items-center justify-center h-[168px] text-white/40 text-sm px-4 text-center">
+                No rooms available. Create one!
               </div>
             ) : (
               <div className="divide-y divide-table-700">
-                {joinableRooms.map((room) => (
-                  <div
-                    key={room.id}
-                    className="flex items-center justify-between px-3 py-2.5 hover:bg-table-800/50 transition-colors"
-                  >
-                    <div className="flex-1 min-w-0 mr-3">
-                      <div className="text-white text-sm font-medium truncate">
-                        {room.name}
+                {publicRooms.map((room) => {
+                  const isFull = room.players.length >= room.maxPlayers;
+                  const isUnlocking = unlockingRoomId === room.id;
+
+                  return (
+                    <div key={room.id}>
+                      <div className="flex items-center justify-between px-3 py-2.5 hover:bg-table-800/50 transition-colors">
+                        <div className="flex-1 min-w-0 mr-3">
+                          <div className="text-white text-sm font-medium truncate flex items-center gap-1.5">
+                            {room.isPrivate && <span className="text-xs text-gold-400" title="Private room">🔒</span>}
+                            {room.name}
+                          </div>
+                          <div className="text-white/50 text-xs">
+                            {room.players.find(p => p.isHost)?.name || 'Unknown'} · {room.players.length}/{room.maxPlayers} players
+                          </div>
+                        </div>
+                        {room.isPrivate ? (
+                          <button
+                            onClick={() => toggleUnlock(room.id)}
+                            disabled={!isConnected || isLoading || !playerName.trim() || isFull}
+                            className={cn(
+                              'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
+                              !isFull && playerName.trim()
+                                ? isUnlocking
+                                  ? 'bg-gold-500 text-table-950'
+                                  : 'bg-gold-500/80 hover:bg-gold-400 text-table-950'
+                                : 'bg-table-700 text-white/30 cursor-not-allowed'
+                            )}
+                          >
+                            {isFull ? 'Full' : isUnlocking ? 'Cancel' : 'Enter Code'}
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => handleJoinPublic(room.code)}
+                            disabled={!isConnected || isLoading || !playerName.trim() || isFull}
+                            className={cn(
+                              'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
+                              !isFull && playerName.trim()
+                                ? 'bg-blue-500 hover:bg-blue-400 text-white'
+                                : 'bg-table-700 text-white/30 cursor-not-allowed'
+                            )}
+                          >
+                            {isFull ? 'Full' : 'Join'}
+                          </button>
+                        )}
                       </div>
-                      <div className="text-white/50 text-xs">
-                        {room.players.find(p => p.isHost)?.name || 'Unknown'} · {room.players.length}/{room.maxPlayers} players
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleJoinRoom(room.code)}
-                      disabled={!isConnected || isLoading || !playerName.trim() || room.players.length >= room.maxPlayers}
-                      className={cn(
-                        'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
-                        playerName.trim() && room.players.length < room.maxPlayers
-                          ? 'bg-blue-500 hover:bg-blue-400 text-white'
-                          : 'bg-table-700 text-white/30 cursor-not-allowed'
+
+                      {/* Inline code entry for private rooms */}
+                      {isUnlocking && (
+                        <form onSubmit={handleJoinPrivate} className="px-3 pb-2.5">
+                          <div className="flex gap-2">
+                            <input
+                              autoFocus
+                              placeholder="Enter 6-char code"
+                              value={codeInput}
+                              onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                              maxLength={6}
+                              className="flex-1 px-2 py-1 bg-table-800 border border-table-600 rounded-md text-white text-xs font-mono tracking-widest text-center uppercase focus:outline-none focus:ring-1 focus:ring-gold-500"
+                            />
+                            <button
+                              type="submit"
+                              disabled={codeInput.length !== 6}
+                              className={cn(
+                                'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
+                                codeInput.length === 6
+                                  ? 'bg-gold-500 hover:bg-gold-400 text-table-950'
+                                  : 'bg-table-700 text-white/30 cursor-not-allowed'
+                              )}
+                            >
+                              Join
+                            </button>
+                          </div>
+                        </form>
                       )}
-                    >
-                      {room.players.length >= room.maxPlayers ? 'Full' : 'Join'}
-                    </button>
-                  </div>
-                ))}
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
-        </div>
-
-        {/* Private room section */}
-        <div className="border-t border-table-600 pt-3 mt-auto">
-          <button
-            type="button"
-            onClick={() => setShowPrivate(!showPrivate)}
-            className="flex items-center gap-2 text-sm text-white/60 hover:text-white transition-colors w-full"
-          >
-            <span className={cn(
-              'transition-transform text-xs',
-              showPrivate && 'rotate-90'
-            )}>
-              ▶
-            </span>
-            Join Private Room
-          </button>
-
-          <AnimatePresence>
-            {showPrivate && (
-              <motion.form
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-                onSubmit={handlePrivateSubmit}
-              >
-                <div className="flex gap-2 mt-3">
-                  <Input
-                    id="privateRoomCode"
-                    placeholder="Room code"
-                    value={privateCode}
-                    onChange={(e) => setPrivateCode(e.target.value.toUpperCase())}
-                    maxLength={6}
-                    className="font-mono tracking-widest text-center uppercase"
-                  />
-                  <Button
-                    type="submit"
-                    variant="secondary"
-                    size="sm"
-                    className="shrink-0"
-                    disabled={!isConnected || isLoading || !playerName.trim() || privateCode.length !== 6}
-                  >
-                    Join
-                  </Button>
-                </div>
-              </motion.form>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </div>

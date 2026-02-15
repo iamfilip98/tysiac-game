@@ -80,6 +80,12 @@ export function getPublicRooms(): Room[] {
   return Array.from(rooms.values()).filter(r => !r.isPrivate && !r.gameId && r.players.length < r.maxPlayers);
 }
 
+export function getJoinableRooms(): Room[] {
+  return Array.from(rooms.values())
+    .filter(r => !r.gameId && r.players.length < r.maxPlayers)
+    .map(r => r.isPrivate ? { ...r, code: '' } : r);
+}
+
 export function joinRoom(roomId: string, playerId: string, playerName: string): Room | null {
   const room = rooms.get(roomId);
   if (!room) return null;
