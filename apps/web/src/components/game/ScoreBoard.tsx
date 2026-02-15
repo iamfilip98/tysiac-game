@@ -104,9 +104,6 @@ export function ScoreBoard({
                   title={player.name}
                 >
                   {truncateName(player.name)}
-                  {player.isAI && (
-                    <span className="ml-1 text-xs text-white/60">(AI)</span>
-                  )}
                 </span>
 
                 {/* Bid indicator */}

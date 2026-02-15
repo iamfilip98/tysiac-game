@@ -46,7 +46,7 @@ export function SettingsDropdown() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-1 w-48 bg-table-900/95 border border-table-600 rounded-lg shadow-xl z-50 py-1">
+        <div className="absolute right-0 top-full mt-1 w-48 bg-table-900 border border-table-600 rounded-lg shadow-xl z-50 py-1">
           {/* Sound */}
           <button
             onClick={toggleSound}
