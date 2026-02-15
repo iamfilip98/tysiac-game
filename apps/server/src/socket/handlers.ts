@@ -1036,6 +1036,8 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
 
     // If game is in progress, use grace period for reconnection
     if (room.gameId && !immediate) {
+      // Clear stale socket mapping so grace period timeout can detect non-reconnection
+      playerToSocket.delete(playerId);
       socket.to(room.id).emit('player:disconnected', playerId);
 
       // Set timeout for cleanup
@@ -1050,7 +1052,6 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
         }
 
         // Player didn't reconnect, clean up
-        playerToSocket.delete(playerId);
         await invalidatePlayerSession(playerId);
         console.log(`Player ${playerId} did not reconnect within grace period`);
       }, DISCONNECT_GRACE_PERIOD);

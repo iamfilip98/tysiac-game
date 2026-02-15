@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
-import { getSocket, connectSocket, startKeepAlive, stopKeepAlive, TypedSocket } from '@/lib/socket';
+import { getSocket, connectSocket, startKeepAlive, stopKeepAlive, startVisibilityHandler, TypedSocket } from '@/lib/socket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
 import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
@@ -73,12 +73,16 @@ export function useSocket() {
       }
     });
 
-    socket.on('disconnect', () => {
+    socket.on('disconnect', (reason) => {
       setConnected(false);
+      // If server forcefully closed the connection, it won't auto-reconnect
+      // Manually trigger reconnect for transport-level disconnects
+      if (reason === 'transport close' || reason === 'ping timeout') {
+        console.log(`[Socket] Disconnected (${reason}), will auto-reconnect...`);
+      }
     });
 
     socket.on('connect_error', () => {
-      setError('Connection error');
       setConnected(false);
     });
 
@@ -262,6 +266,9 @@ export function useSocket() {
       }
       updateSessionTimestamp();
     });
+
+    // Detect tab visibility changes and reconnect if socket died in background
+    startVisibilityHandler();
 
     connect();
 

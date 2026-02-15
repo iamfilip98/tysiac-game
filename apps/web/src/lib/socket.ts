@@ -13,9 +13,11 @@ export function getSocket(): TypedSocket {
       autoConnect: false,
       withCredentials: true,
       reconnection: true,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: Infinity,
       reconnectionDelay: 1000,
-      timeout: 10000,
+      reconnectionDelayMax: 5000,
+      timeout: 20000,
+      transports: ['websocket', 'polling'],
     }) as TypedSocket;
   }
   return socket;
@@ -32,15 +34,14 @@ export function connectSocket(): Promise<void> {
 
     let settled = false;
 
-    // Allow enough time for all reconnection attempts to complete
-    // (5 attempts with exponential backoff can take ~17s)
+    // Allow enough time for initial connection (Render cold start can take 30-60s)
     const timeout = setTimeout(() => {
       if (!settled) {
         settled = true;
         s.off('connect', onConnect);
         reject(new Error('Connection timeout'));
       }
-    }, 20000);
+    }, 30000);
 
     function onConnect() {
       if (!settled) {
@@ -79,4 +80,20 @@ export function stopKeepAlive(): void {
     clearInterval(keepAliveInterval);
     keepAliveInterval = null;
   }
+}
+
+// Detect tab becoming visible again and reconnect if needed
+// Browsers can silently kill WebSocket connections when tab is backgrounded
+let visibilityHandlerActive = false;
+
+export function startVisibilityHandler(): void {
+  if (visibilityHandlerActive || typeof document === 'undefined') return;
+  visibilityHandlerActive = true;
+
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && socket && !socket.connected) {
+      console.log('[Socket] Tab became visible, reconnecting...');
+      socket.connect();
+    }
+  });
 }
