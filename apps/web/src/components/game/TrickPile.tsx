@@ -27,26 +27,26 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
     // or 0 = self (bottom), 1 = left, 2 = right (for active player)
     const spectatorPositions = isMobile
       ? [
-          { x: -40, y: -15, rotate: -10 }, // Position 0 = left
-          { x: 40, y: -15, rotate: 10 },   // Position 1 = right
-          { x: 0, y: 30, rotate: 0 },      // Position 2 = bottom
+          { x: -48, y: -18, rotate: -10 }, // Position 0 = left
+          { x: 48, y: -18, rotate: 10 },   // Position 1 = right
+          { x: 0, y: 36, rotate: 0 },      // Position 2 = bottom
         ]
       : [
-          { x: -60, y: -20, rotate: -15 }, // Position 0 = left
-          { x: 60, y: -20, rotate: 15 },   // Position 1 = right
-          { x: 0, y: 40, rotate: 0 },      // Position 2 = bottom
+          { x: -72, y: -24, rotate: -15 }, // Position 0 = left
+          { x: 72, y: -24, rotate: 15 },   // Position 1 = right
+          { x: 0, y: 50, rotate: 0 },      // Position 2 = bottom
         ];
 
     const activePositions = isMobile
       ? [
-          { x: 0, y: 30, rotate: 0 },     // Self (bottom)
-          { x: -40, y: -15, rotate: -10 }, // Left
-          { x: 40, y: -15, rotate: 10 },   // Right
+          { x: 0, y: 36, rotate: 0 },     // Self (bottom)
+          { x: -48, y: -18, rotate: -10 }, // Left
+          { x: 48, y: -18, rotate: 10 },   // Right
         ]
       : [
-          { x: 0, y: 40, rotate: 0 },     // Self (bottom)
-          { x: -60, y: -20, rotate: -15 }, // Left
-          { x: 60, y: -20, rotate: 15 },   // Right
+          { x: 0, y: 50, rotate: 0 },     // Self (bottom)
+          { x: -72, y: -24, rotate: -15 }, // Left
+          { x: 72, y: -24, rotate: 15 },   // Right
         ];
 
     // When spectating, use fixed position mapping based on player index in the players array
@@ -72,7 +72,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
   return (
     <div className={cn(
       'relative flex items-center justify-center',
-      isMobile ? 'w-36 h-36' : 'w-48 h-48'
+      isMobile ? 'w-48 h-48' : 'w-60 h-60'
     )}>
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full" style={{
@@ -139,8 +139,8 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                 animate={{
                   opacity: [0, 1, 0],
                   scale: [0, 1, 0],
-                  x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
-                  y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 50 : 70),
+                  x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 65 : 90),
+                  y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 65 : 90),
                 }}
                 transition={{
                   duration: 2,
@@ -194,8 +194,8 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                   animate={{
                     opacity: [0, 1, 0],
                     scale: [0, 1.2, 0],
-                    x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
-                    y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 45 : 65),
+                    x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 60 : 85),
+                    y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 60 : 85),
                   }}
                   exit={{ opacity: 0 }}
                   transition={{
@@ -252,7 +252,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
             >
               <Card
                 card={card}
-                size="sm"
+                size={isMobile ? 'md' : 'lg'}
                 isPlayable={false}
                 isMarriageCard={marriageCard?.suit === card.suit && card.rank === 'Q'}
                 isTrumpCard={!!trumpSuit && card.suit === trumpSuit}
