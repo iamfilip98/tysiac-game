@@ -13,6 +13,7 @@ export function useSocket() {
   const isAutoReconnectingRef = useRef(false);
   const trickWonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const marriageClearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const createRoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const {
     setRoom,
@@ -77,6 +78,7 @@ export function useSocket() {
 
     socket.on('disconnect', (reason) => {
       setConnected(false);
+      setCreatingRoom(false);
       // If server forcefully closed the connection, it won't auto-reconnect
       // Manually trigger reconnect for transport-level disconnects
       if (reason === 'transport close' || reason === 'ping timeout') {
@@ -90,6 +92,7 @@ export function useSocket() {
 
     // Room events
     socket.on('room:created', (room) => {
+      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
       setCreatingRoom(false);
       setRoom(room);
       setPlayerId(room.hostId);
@@ -122,6 +125,7 @@ export function useSocket() {
     });
 
     socket.on('room:error', ({ code, message }) => {
+      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
       setCreatingRoom(false);
       // If INVALID_SESSION during auto-reconnect on page load (no active game), fail silently
       if (code === 'INVALID_SESSION' && isAutoReconnectingRef.current) {
@@ -283,6 +287,7 @@ export function useSocket() {
       stopKeepAlive();
       if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
       if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
+      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
@@ -327,8 +332,16 @@ export function useSocket() {
   const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3) => {
     if (safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers })) {
       setCreatingRoom(true);
+      // Failsafe: clear creating state if server never responds
+      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
+      createRoomTimeoutRef.current = setTimeout(() => {
+        if (useRoomStore.getState().isCreatingRoom) {
+          setCreatingRoom(false);
+          setError('Room creation timed out. Please try again.');
+        }
+      }, 10000);
     }
-  }, [safeEmit, setCreatingRoom]);
+  }, [safeEmit, setCreatingRoom, setError]);
 
   const joinRoom = useCallback((playerName: string, roomCode: string) => {
     safeEmit('room:join', { playerName, roomCode });

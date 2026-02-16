@@ -17,6 +17,7 @@ export const THEME_COLORS: Record<Theme, string> = {
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = usePreferencesStore((s) => s.theme);
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
+  const cardStyle = usePreferencesStore((s) => s.cardStyle);
 
   useEffect(() => {
     const color = THEME_COLORS[theme] || THEME_COLORS.classic;
@@ -40,6 +41,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       animationsEnabled ? 'on' : 'off',
     );
   }, [animationsEnabled]);
+
+  useEffect(() => {
+    if (cardStyle === 'auto') {
+      document.documentElement.removeAttribute('data-card-style');
+    } else {
+      document.documentElement.setAttribute('data-card-style', cardStyle);
+    }
+  }, [cardStyle]);
 
   return <>{children}</>;
 }

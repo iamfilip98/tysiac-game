@@ -89,21 +89,52 @@ export function ScoreBoard({
                     className="w-5 h-5 flex items-center justify-center"
                     title="Dealer"
                     aria-label="Dealer"
-                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}
+                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
                   >
                     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
                       <defs>
-                        <linearGradient id="dealer-gold" x1="0" y1="0" x2="1" y2="1">
+                        <radialGradient id="chip-dome" cx="0.4" cy="0.35" r="0.65">
                           <stop offset="0%" stopColor="#f5e7a3" />
                           <stop offset="50%" stopColor="#d4af37" />
-                          <stop offset="100%" stopColor="#b8941f" />
-                        </linearGradient>
+                          <stop offset="100%" stopColor="#9a7b1a" />
+                        </radialGradient>
+                        <radialGradient id="chip-shine" cx="0.4" cy="0.3" r="0.5">
+                          <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
+                          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
+                        </radialGradient>
+                        <clipPath id="chip-clip">
+                          <circle cx="10" cy="10" r="9" />
+                        </clipPath>
                       </defs>
-                      <circle cx="10" cy="10" r="9" fill="url(#dealer-gold)" />
-                      <circle cx="10" cy="10" r="8.2" fill="none" stroke="#b8941f" strokeWidth="0.6" />
-                      <circle cx="10" cy="10" r="6.8" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" strokeDasharray="2.2 1.8" />
+                      {/* Base chip */}
+                      <circle cx="10" cy="10" r="9" fill="url(#chip-dome)" />
+                      {/* Edge notches — 8 rectangles at 45° intervals, clipped to circle */}
+                      <g clipPath="url(#chip-clip)">
+                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
+                          <rect
+                            key={angle}
+                            x="9" y="0" width="2" height="3.5"
+                            rx="0.5"
+                            fill="#b8941f"
+                            transform={`rotate(${angle} 10 10)`}
+                          />
+                        ))}
+                      </g>
+                      {/* Outer ring */}
+                      <circle cx="10" cy="10" r="8.3" fill="none" stroke="#9a7b1a" strokeWidth="0.5" />
+                      {/* Dotted decorative ring */}
+                      <circle cx="10" cy="10" r="6.8" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="0.5" strokeDasharray="1.8 1.4" />
+                      {/* Inner solid ring */}
                       <circle cx="10" cy="10" r="5.5" fill="none" stroke="#b8941f" strokeWidth="0.4" />
-                      <text x="10" y="13.5" textAnchor="middle" fontSize="8" fontWeight="bold" fill="white" fontFamily="system-ui" style={{ textShadow: '0 1px 1px rgba(0,0,0,0.3)' } as React.CSSProperties}>D</text>
+                      {/* Center star */}
+                      <path
+                        d="M10 5.8 L10.7 8.2 L13.2 8.2 L11.2 9.6 L11.9 12 L10 10.6 L8.1 12 L8.8 9.6 L6.8 8.2 L9.3 8.2 Z"
+                        fill="rgba(255,255,255,0.85)"
+                        stroke="#b8941f"
+                        strokeWidth="0.3"
+                      />
+                      {/* Highlight overlay for shininess */}
+                      <circle cx="10" cy="10" r="8.8" fill="url(#chip-shine)" />
                     </svg>
                   </span>
                 )}

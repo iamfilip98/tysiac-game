@@ -123,6 +123,7 @@ export function Card({
   const isMobile = useIsMobile();
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
   const theme = usePreferencesStore((s) => s.theme);
+  const cardStyle = usePreferencesStore((s) => s.cardStyle);
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
   const cardDescription = getCardDescription(card);
@@ -130,12 +131,12 @@ export function Card({
   const isHighCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
   const showCornerPips = true; // Show on all sizes
   const showPortrait = isFaceCard && size !== 'xs';
-  const isDarkTheme = theme === 'dark';
+  const isDarkCards = cardStyle === 'black' || (cardStyle === 'auto' && theme === 'dark');
 
-  // Marriage card text color — dark theme needs white text for readability on gold
+  // Marriage card text color — dark cards need white text for readability on gold
   const getTextColor = () => {
     if (isMarriageCard) {
-      if (isDarkTheme) {
+      if (isDarkCards) {
         return '#ffffff';
       }
       return color === 'red' ? '#991b1b' : '#1a1a1a';
@@ -143,7 +144,7 @@ export function Card({
     return color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
   };
 
-  const marriageTextStyle = isMarriageCard && isDarkTheme
+  const marriageTextStyle = isMarriageCard && isDarkCards
     ? {
         WebkitTextStroke: '0.5px rgba(0,0,0,0.7)',
         textShadow: '0 1px 2px rgba(0,0,0,0.5)',

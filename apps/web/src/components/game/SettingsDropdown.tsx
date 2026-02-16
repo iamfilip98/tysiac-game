@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
-import type { Theme } from '@/stores/preferencesStore';
+import type { Theme, CardStyle } from '@/stores/preferencesStore';
 
 const THEME_LABELS: Record<Theme, string> = {
   classic: 'Classic',
@@ -13,11 +13,17 @@ const THEME_LABELS: Record<Theme, string> = {
   purple: 'Purple',
 };
 
+const CARD_STYLE_LABELS: Record<CardStyle, string> = {
+  auto: 'Auto',
+  white: 'White',
+  black: 'Dark',
+};
+
 export function SettingsDropdown() {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { theme, soundEnabled, animationsEnabled, toggleTheme, toggleSound, toggleAnimations } =
+  const { theme, soundEnabled, animationsEnabled, cardStyle, toggleTheme, toggleSound, toggleAnimations, toggleCardStyle } =
     usePreferencesStore();
 
   // Close on outside click
@@ -36,7 +42,7 @@ export function SettingsDropdown() {
     <div ref={ref} className="relative">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-white/[0.1] rounded-lg text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1.5"
+        className="btn-toolbar min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1.5"
         title="Settings"
         aria-expanded={open}
         aria-haspopup="true"
@@ -99,13 +105,26 @@ export function SettingsDropdown() {
           {/* Animations */}
           <button
             onClick={toggleAnimations}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors border-b border-white/[0.04]"
           >
             <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
             </svg>
             <span className="flex-1 text-left">Animations</span>
             <span className={`text-xs ${animationsEnabled ? 'text-gold-400' : 'text-white/40'}`}>{animationsEnabled ? 'On' : 'Off'}</span>
+          </button>
+
+          {/* Card Style */}
+          <button
+            onClick={toggleCardStyle}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+          >
+            <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <rect x="3" y="3" width="18" height="18" rx="2" />
+              <path d="M12 8 L13.5 11.5 L12 15 L10.5 11.5 Z" fill="currentColor" opacity="0.5" />
+            </svg>
+            <span className="flex-1 text-left">Cards</span>
+            <span className={`text-xs ${cardStyle === 'auto' ? 'text-white/40' : 'text-gold-400'}`}>{CARD_STYLE_LABELS[cardStyle]}</span>
           </button>
         </div>
       )}

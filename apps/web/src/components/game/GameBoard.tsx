@@ -209,7 +209,7 @@ export function GameBoard() {
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-2 sm:left-4 z-30 flex gap-1 sm:gap-2">
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-table-700 border border-white/[0.1] rounded-lg text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1.5"
+          className="btn-toolbar min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1.5"
           title="Leave game"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -222,7 +222,7 @@ export function GameBoard() {
         {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
           <button
             onClick={pauseGame}
-            className="min-w-[36px] px-2 sm:px-3 py-1.5 bg-table-800/80 hover:bg-gold-500/20 border border-white/[0.1] rounded-lg text-white/70 hover:text-gold-400 text-sm transition-colors flex items-center gap-1.5"
+            className="btn-toolbar btn-toolbar-gold min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-gold-400 text-sm transition-colors flex items-center gap-1.5"
             title="Pause game"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
