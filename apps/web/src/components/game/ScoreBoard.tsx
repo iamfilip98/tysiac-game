@@ -86,55 +86,34 @@ export function ScoreBoard({
                 {/* Dealer indicator */}
                 {isDealer && (
                   <span
-                    className="w-5 h-5 flex items-center justify-center"
+                    className="w-5 h-5 flex items-center justify-center flex-shrink-0"
                     title="Dealer"
                     aria-label="Dealer"
                     style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.5))' }}
                   >
                     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                      <defs>
-                        <radialGradient id="chip-dome" cx="0.4" cy="0.35" r="0.65">
-                          <stop offset="0%" stopColor="#f5e7a3" />
-                          <stop offset="50%" stopColor="#d4af37" />
-                          <stop offset="100%" stopColor="#9a7b1a" />
-                        </radialGradient>
-                        <radialGradient id="chip-shine" cx="0.4" cy="0.3" r="0.5">
-                          <stop offset="0%" stopColor="rgba(255,255,255,0.45)" />
-                          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                        </radialGradient>
-                        <clipPath id="chip-clip">
-                          <circle cx="10" cy="10" r="9" />
-                        </clipPath>
-                      </defs>
-                      {/* Base chip */}
-                      <circle cx="10" cy="10" r="9" fill="url(#chip-dome)" />
-                      {/* Edge notches — 8 rectangles at 45° intervals, clipped to circle */}
-                      <g clipPath="url(#chip-clip)">
-                        {[0, 45, 90, 135, 180, 225, 270, 315].map((angle) => (
-                          <rect
-                            key={angle}
-                            x="9" y="0" width="2" height="3.5"
-                            rx="0.5"
-                            fill="#b8941f"
-                            transform={`rotate(${angle} 10 10)`}
-                          />
-                        ))}
-                      </g>
-                      {/* Outer ring */}
-                      <circle cx="10" cy="10" r="8.3" fill="none" stroke="#9a7b1a" strokeWidth="0.5" />
-                      {/* Dotted decorative ring */}
-                      <circle cx="10" cy="10" r="6.8" fill="none" stroke="rgba(255,255,255,0.35)" strokeWidth="0.5" strokeDasharray="1.8 1.4" />
-                      {/* Inner solid ring */}
-                      <circle cx="10" cy="10" r="5.5" fill="none" stroke="#b8941f" strokeWidth="0.4" />
-                      {/* Center star */}
-                      <path
-                        d="M10 5.8 L10.7 8.2 L13.2 8.2 L11.2 9.6 L11.9 12 L10 10.6 L8.1 12 L8.8 9.6 L6.8 8.2 L9.3 8.2 Z"
-                        fill="rgba(255,255,255,0.85)"
-                        stroke="#b8941f"
-                        strokeWidth="0.3"
-                      />
-                      {/* Highlight overlay for shininess */}
-                      <circle cx="10" cy="10" r="8.8" fill="url(#chip-shine)" />
+                      {/* Black base */}
+                      <circle cx="10" cy="10" r="9" fill="#1a1a1a" />
+                      {/* Gold alternating wedges (4 of 8 segments) */}
+                      <path d="M10,10 L19,10 A9,9 0 0,1 16.36,16.36Z" fill="#d4af37" />
+                      <path d="M10,10 L10,19 A9,9 0 0,1 3.64,16.36Z" fill="#d4af37" />
+                      <path d="M10,10 L1,10 A9,9 0 0,1 3.64,3.64Z" fill="#d4af37" />
+                      <path d="M10,10 L10,1 A9,9 0 0,1 16.36,3.64Z" fill="#d4af37" />
+                      {/* Suit symbols on gold wedges */}
+                      <text x="16.9" y="12.9" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♠</text>
+                      <text x="7.1" y="16.9" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♥</text>
+                      <text x="3.1" y="7.1" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♣</text>
+                      <text x="12.9" y="3.1" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♦</text>
+                      {/* Gold outer ring */}
+                      <circle cx="10" cy="10" r="8.7" fill="none" stroke="#b8941f" strokeWidth="0.6" />
+                      {/* Black inner circle */}
+                      <circle cx="10" cy="10" r="5.8" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.4" />
+                      {/* Gold center */}
+                      <circle cx="10" cy="10" r="4.8" fill="#d4af37" />
+                      {/* Highlight for 3D feel */}
+                      <ellipse cx="9" cy="8.5" rx="3" ry="2.5" fill="rgba(255,255,255,0.15)" />
+                      {/* Center ring detail */}
+                      <circle cx="10" cy="10" r="4.8" fill="none" stroke="#b8941f" strokeWidth="0.3" />
                     </svg>
                   </span>
                 )}
