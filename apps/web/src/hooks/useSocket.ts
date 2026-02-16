@@ -153,14 +153,6 @@ export function useSocket() {
     });
 
     socket.on('game:stateUpdate', (state) => {
-      // Detect new card played by comparing trick cards
-      const prevState = useGameStore.getState().gameState;
-      const prevTrickCards = prevState?.round?.currentTrick?.cards?.length ?? 0;
-      const newTrickCards = state?.round?.currentTrick?.cards?.length ?? 0;
-      if (newTrickCards > prevTrickCards) {
-        soundManager.cardPlay();
-      }
-
       setGameState(state);
       // Clear wykladana modal when phase changes away from wykladana
       if (state?.phase !== 'wykladana') {
@@ -187,6 +179,36 @@ export function useSocket() {
       soundManager.gameWin();
       // Don't clear session here - player may want to click "Play Again"
       // Session is cleared when player explicitly leaves via leaveRoom or leaveGame
+    });
+
+    // Optimistic trick card rendering — when a card is played, add it to the
+    // current trick immediately so the card visually appears in the center
+    // without waiting for the next game:stateUpdate broadcast.
+    socket.on('game:cardPlayed', ({ playerId, card }: { playerId: string; card: Card }) => {
+      const gs = useGameStore.getState().gameState;
+      if (!gs?.round?.currentTrick) return;
+      // Only append if this card isn't already in the trick (avoid duplicates from stateUpdate)
+      const already = gs.round.currentTrick.cards.some(
+        c => c.card.suit === card.suit && c.card.rank === card.rank
+      );
+      if (already) return;
+      soundManager.cardPlay();
+      // Remove card from own hand if we played it (prevents card appearing in both hand and trick)
+      const myId = useRoomStore.getState().playerId;
+      const myHand = playerId === myId
+        ? gs.myHand.filter(c => !(c.suit === card.suit && c.rank === card.rank))
+        : gs.myHand;
+      setGameState({
+        ...gs,
+        myHand,
+        round: {
+          ...gs.round,
+          currentTrick: {
+            ...gs.round.currentTrick,
+            cards: [...gs.round.currentTrick.cards, { playerId, card }],
+          },
+        },
+      });
     });
 
     socket.on('game:error', ({ message }) => {
@@ -292,6 +314,7 @@ export function useSocket() {
       socket.off('room:updated');
       socket.off('room:error');
       socket.off('game:started');
+      socket.off('game:cardPlayed');
       socket.off('game:stateUpdate');
       socket.off('game:yourTurn');
       socket.off('game:roundEnd');
