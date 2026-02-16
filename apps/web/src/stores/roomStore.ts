@@ -6,6 +6,7 @@ interface RoomState {
   playerId: string | null;
   isConnected: boolean;
   isConnecting: boolean;
+  isCreatingRoom: boolean;
   error: string | null;
   publicRooms: Room[];
 
@@ -14,6 +15,7 @@ interface RoomState {
   setPlayerId: (id: string) => void;
   setConnected: (connected: boolean) => void;
   setConnecting: (connecting: boolean) => void;
+  setCreatingRoom: (creating: boolean) => void;
   setError: (error: string | null) => void;
   setPublicRooms: (rooms: Room[]) => void;
   updatePlayer: (playerId: string, updates: Partial<RoomPlayer>) => void;
@@ -26,6 +28,7 @@ export const useRoomStore = create<RoomState>((set) => ({
   playerId: null,
   isConnected: false,
   isConnecting: false,
+  isCreatingRoom: false,
   error: null,
   publicRooms: [],
 
@@ -33,6 +36,7 @@ export const useRoomStore = create<RoomState>((set) => ({
   setPlayerId: (playerId) => set({ playerId }),
   setConnected: (isConnected) => set({ isConnected }),
   setConnecting: (isConnecting) => set({ isConnecting }),
+  setCreatingRoom: (isCreatingRoom) => set({ isCreatingRoom }),
   setError: (error) => set({ error }),
   setPublicRooms: (publicRooms) => set({ publicRooms }),
 
@@ -60,6 +64,7 @@ export const useRoomStore = create<RoomState>((set) => ({
       playerId: null,
       isConnected: false,
       isConnecting: false,
+      isCreatingRoom: false,
       error: null,
       publicRooms: [],
     }),

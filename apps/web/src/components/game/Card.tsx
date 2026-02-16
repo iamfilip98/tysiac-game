@@ -440,20 +440,23 @@ export function Card({
               {card.rank === 'J' && <JackPortrait color={color} isMarriage={isMarriageCard} />}
             </div>
           ) : (
-            <>
+            <div className={cn(
+              'flex flex-col items-center justify-center',
+              size === 'lg' ? 'w-[58px] h-[76px]' : size === 'sm' ? 'w-[38px] h-[50px]' : size === 'xs' ? 'w-[28px] h-[40px]' : 'w-[46px] h-[60px]'
+            )}>
               <span
-                className={cn('font-bold', size === 'xs' ? 'text-lg' : isHighCard ? 'text-3xl' : 'text-2xl')}
+                className={cn('font-bold', size === 'xs' ? 'text-base' : size === 'sm' ? 'text-lg' : 'text-2xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {card.rank}
               </span>
               <span
-                className={cn(size === 'xs' ? 'text-xl' : 'text-4xl')}
+                className={cn('-mt-1', size === 'xs' ? 'text-lg' : size === 'sm' ? 'text-xl' : 'text-3xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {suitSymbol}
               </span>
-            </>
+            </div>
           )}
           {/* Bottom-right corner pip (rotated 180deg) */}
           {showCornerPips && (

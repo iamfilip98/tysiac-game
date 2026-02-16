@@ -1,4 +1,12 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <rect x="2" y="2" width="28" height="28" rx="4" fill="#1a3a2a" stroke="#22c55e" stroke-width="2"/>
-  <text x="16" y="22" font-family="Arial, sans-serif" font-size="18" font-weight="bold" fill="#fbbf24" text-anchor="middle">T</text>
+  <defs>
+    <linearGradient id="gold" x1="0" y1="0" x2="0.5" y2="1">
+      <stop offset="0%" stop-color="#f5e7a3"/>
+      <stop offset="50%" stop-color="#d4af37"/>
+      <stop offset="100%" stop-color="#b8941f"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="30" height="30" rx="5" fill="#1a3a2a"/>
+  <rect x="1" y="1" width="30" height="30" rx="5" fill="none" stroke="#d4af37" stroke-opacity="0.6" stroke-width="1.5"/>
+  <text x="16" y="23" font-family="Georgia, serif" font-size="20" font-weight="bold" fill="url(#gold)" text-anchor="middle">T</text>
 </svg>

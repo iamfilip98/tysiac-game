@@ -178,8 +178,8 @@ export function PlayerHand({
   // Card dimensions: sm=48px, md=64px, lg=80px
   const cardWidth = isMobile ? 64 : 80;
 
-  // Calculate available width (screen width minus padding)
-  const availableWidth = isMobile ? width - 32 : Math.min(width - 64, 700);
+  // Calculate available width (screen width minus padding + safe area insets)
+  const availableWidth = isMobile ? width - 48 : Math.min(width - 64, 700);
 
   // Calculate spread to fit all cards with minimum visibility
   // Each card needs at least 35px visible (to show rank/suit corner)
@@ -251,7 +251,12 @@ export function PlayerHand({
         "relative flex justify-center items-end",
         isMobile ? "h-32" : "h-40"
       )}
-      style={{ width: isMobile ? '100%' : 'auto' }}
+      style={{
+        width: isMobile ? '100%' : 'auto',
+        paddingLeft: isMobile ? 'max(8px, env(safe-area-inset-left))' : undefined,
+        paddingRight: isMobile ? 'max(8px, env(safe-area-inset-right))' : undefined,
+        paddingBottom: isMobile ? 'env(safe-area-inset-bottom)' : undefined,
+      }}
       role="group"
       aria-label={`Your hand: ${cardCount} cards${isMyTurn ? '. Your turn to play.' : ''}`}
     >
@@ -281,6 +286,7 @@ export function PlayerHand({
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
+              layoutId={`card-${card.suit}-${card.rank}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{
                 opacity: 1,

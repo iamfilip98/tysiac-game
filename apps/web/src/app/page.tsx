@@ -23,7 +23,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
-  const { room, playerId, isConnected, isConnecting, error, publicRooms } = useRoomStore();
+  const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms } = useRoomStore();
 
   // Clean up URL after reading room code (removes ?room= from URL)
   useEffect(() => {
@@ -199,7 +199,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         )}>
           <CreateRoomForm
             onSubmit={createRoom}
-            isLoading={isConnecting}
+            isLoading={isConnecting || isCreatingRoom}
             isConnected={isConnected}
           />
         </div>
@@ -247,7 +247,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           </button>
         </div>
         <ul className="text-sm text-white/60 space-y-1">
-          <li>• 3 players, 24-card deck (9-A in each suit)</li>
+          <li>• 3-4 players, 24-card deck (9-A in each suit)</li>
           <li>• Bid for the right to pick up the talon</li>
           <li>• Declare marriages (K+Q) for bonus points</li>
           <li>• First to 1000 points wins!</li>
@@ -279,7 +279,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           <section>
             <h4 className="text-gold-400 font-semibold mb-2">Overview</h4>
             <p className="text-white/70">
-              Tysiąc (meaning &ldquo;Thousand&rdquo; in Polish) is a classic trick-taking card game for 3 players.
+              Tysiąc (meaning &ldquo;Thousand&rdquo; in Polish) is a classic trick-taking card game for 3 or 4 players.
               The goal is to be the first player to reach 1000 points.
             </p>
           </section>
@@ -364,13 +364,13 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           <section>
             <h4 className="text-gold-400 font-semibold mb-2">The Barrel</h4>
             <p className="text-white/70 mb-2">
-              When you reach 800+ points, you&apos;re &ldquo;on the barrel.&rdquo; You then have 3 attempts
-              as the bidder to reach 1000 and win. If you use all 3 attempts without winning, your score
-              resets to 800.
+              When you reach 800+ points, you&apos;re &ldquo;on the barrel.&rdquo; You must reach exactly
+              1000 to win. If you bid and make your bid but don&apos;t reach 1000, that counts as a barrel
+              attempt. After 3 such attempts, your score resets to 800. If you fail to make your bid,
+              you lose the bid amount as normal (this does not count as a barrel attempt).
             </p>
             <ul className="text-white/70 space-y-1">
               <li>• Non-bidders on the barrel score 0 for that round</li>
-              <li>• Failing a bid on the barrel still costs the bid amount</li>
             </ul>
           </section>
 

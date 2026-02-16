@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
 import { PlayerHand } from './PlayerHand';
 import { OpponentHand } from './OpponentHand';
 import { TrickPile } from './TrickPile';
@@ -194,6 +194,7 @@ export function GameBoard() {
   };
 
   return (
+    <LayoutGroup>
     <div className="relative h-full w-full overflow-hidden" style={{ height: '100dvh' }}>
       {/* Background atmosphere */}
       <div className="absolute inset-0" style={{
@@ -212,9 +213,9 @@ export function GameBoard() {
           title="Leave game"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
-            <polyline points="16 17 21 12 16 7" />
-            <line x1="21" y1="12" x2="9" y2="12" />
+            <path d="M15 21h4a2 2 0 002-2V5a2 2 0 00-2-2h-4" />
+            <polyline points="8 17 3 12 8 7" />
+            <line x1="3" y1="12" x2="15" y2="12" />
           </svg>
           <span className="hidden sm:inline">Leave</span>
         </button>
@@ -580,5 +581,6 @@ export function GameBoard() {
       )}
 
     </div>
+    </LayoutGroup>
   );
 }

@@ -89,12 +89,21 @@ export function ScoreBoard({
                     className="w-5 h-5 flex items-center justify-center"
                     title="Dealer"
                     aria-label="Dealer"
+                    style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}
                   >
                     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                      <circle cx="10" cy="10" r="9" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" />
-                      <circle cx="10" cy="10" r="6.5" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" strokeDasharray="2.5 2" />
-                      <circle cx="10" cy="10" r="3.5" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
-                      <text x="10" y="13" textAnchor="middle" fontSize="7" fontWeight="bold" fill="rgba(255,255,255,0.7)" fontFamily="system-ui">D</text>
+                      <defs>
+                        <linearGradient id="dealer-gold" x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor="#f5e7a3" />
+                          <stop offset="50%" stopColor="#d4af37" />
+                          <stop offset="100%" stopColor="#b8941f" />
+                        </linearGradient>
+                      </defs>
+                      <circle cx="10" cy="10" r="9" fill="url(#dealer-gold)" />
+                      <circle cx="10" cy="10" r="8.2" fill="none" stroke="#b8941f" strokeWidth="0.6" />
+                      <circle cx="10" cy="10" r="6.8" fill="none" stroke="rgba(255,255,255,0.3)" strokeWidth="0.5" strokeDasharray="2.2 1.8" />
+                      <circle cx="10" cy="10" r="5.5" fill="none" stroke="#b8941f" strokeWidth="0.4" />
+                      <text x="10" y="13.5" textAnchor="middle" fontSize="8" fontWeight="bold" fill="white" fontFamily="system-ui" style={{ textShadow: '0 1px 1px rgba(0,0,0,0.3)' } as React.CSSProperties}>D</text>
                     </svg>
                   </span>
                 )}

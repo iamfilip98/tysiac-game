@@ -224,14 +224,12 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
           const position = getCardPosition(playerId);
           const player = players.find((p) => p.id === playerId);
 
-          // Simpler transitions for mobile
-          const transition = isMobile
-            ? { duration: 0.2, ease: 'easeOut' }
-            : { type: 'spring', stiffness: 300, damping: 25 };
+          const transition = { duration: 0.35, ease: 'easeOut' as const };
 
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
+              layoutId={`card-${card.suit}-${card.rank}`}
               initial={{
                 opacity: 0,
                 x: position.x * 2.5,

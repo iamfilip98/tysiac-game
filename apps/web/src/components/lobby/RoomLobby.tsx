@@ -32,7 +32,8 @@ export function RoomLobby({
   const [copied, setCopied] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const [isStarting, setIsStarting] = useState(false);
-  const [isAddingAI, setIsAddingAI] = useState(false);
+  const [addingAISlotIndex, setAddingAISlotIndex] = useState<number | null>(null);
+  const prevPlayerCount = useRef(room.players.length);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
 
   useEffect(() => {
@@ -40,6 +41,14 @@ export function RoomLobby({
       timeoutsRef.current.forEach((t) => clearTimeout(t));
     };
   }, []);
+
+  // Reset AI loading state when a new player joins
+  useEffect(() => {
+    if (room.players.length !== prevPlayerCount.current) {
+      prevPlayerCount.current = room.players.length;
+      setAddingAISlotIndex(null);
+    }
+  }, [room.players.length]);
 
   const trackTimeout = (fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms);
@@ -97,11 +106,11 @@ export function RoomLobby({
     trackTimeout(() => setIsStarting(false), 5000);
   };
 
-  const handleAddAI = () => {
-    if (!canAddAI || isAddingAI) return;
-    setIsAddingAI(true);
+  const handleAddAI = (slotIndex: number) => {
+    if (!canAddAI || addingAISlotIndex !== null) return;
+    setAddingAISlotIndex(slotIndex);
     onAddAI();
-    trackTimeout(() => setIsAddingAI(false), 1000);
+    trackTimeout(() => setAddingAISlotIndex(null), 3000);
   };
 
   // Build the slot array: filled slots + empty slots
@@ -238,8 +247,8 @@ export function RoomLobby({
                     key={`empty-${index}`}
                     isHost={isHost}
                     canAddAI={canAddAI}
-                    isAddingAI={isAddingAI}
-                    onAddAI={handleAddAI}
+                    isAddingAI={addingAISlotIndex === index}
+                    onAddAI={() => handleAddAI(index)}
                   />
                 )
               )}
@@ -332,8 +341,8 @@ function EmptySlot({ isHost, canAddAI, isAddingAI, onAddAI }: EmptySlotProps) {
           disabled={isAddingAI}
           className={cn(
             'flex items-center gap-2 px-4 py-2 rounded-lg transition-colors',
-            'bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 hover:text-purple-300',
-            'border border-purple-500/30 hover:border-purple-500/50',
+            'bg-gold-500/10 hover:bg-gold-500/20 text-gold-400 hover:text-gold-300',
+            'border border-gold-500/30 hover:border-gold-500/50',
             'disabled:opacity-50 disabled:cursor-not-allowed'
           )}
           aria-busy={isAddingAI}
@@ -383,7 +392,7 @@ function PlayerSlot({
           className={cn(
             'w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0',
             player.isAI
-              ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/20'
+              ? 'bg-gold-500/20 text-gold-400 ring-1 ring-gold-500/20'
               : 'bg-table-700 text-white ring-1 ring-white/10'
           )}
           aria-hidden="true"
@@ -408,7 +417,7 @@ function PlayerSlot({
               </span>
             )}
             {player.isAI && (
-              <span className="text-xs bg-purple-500/20 text-purple-400 px-1.5 py-0.5 rounded shrink-0">
+              <span className="text-xs bg-gold-500/20 text-gold-400 px-1.5 py-0.5 rounded shrink-0">
                 AI
               </span>
             )}

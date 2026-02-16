@@ -19,6 +19,7 @@ export function useSocket() {
     setPlayerId,
     setConnected,
     setConnecting,
+    setCreatingRoom,
     setError,
     setPublicRooms,
     clearRoom,
@@ -89,6 +90,7 @@ export function useSocket() {
 
     // Room events
     socket.on('room:created', (room) => {
+      setCreatingRoom(false);
       setRoom(room);
       setPlayerId(room.hostId);
 
@@ -120,6 +122,7 @@ export function useSocket() {
     });
 
     socket.on('room:error', ({ code, message }) => {
+      setCreatingRoom(false);
       // If INVALID_SESSION during auto-reconnect on page load (no active game), fail silently
       if (code === 'INVALID_SESSION' && isAutoReconnectingRef.current) {
         const hasActiveGame = useGameStore.getState().gameState !== null;
@@ -322,8 +325,10 @@ export function useSocket() {
 
   // Room actions
   const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3) => {
-    safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers });
-  }, [safeEmit]);
+    if (safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers })) {
+      setCreatingRoom(true);
+    }
+  }, [safeEmit, setCreatingRoom]);
 
   const joinRoom = useCallback((playerName: string, roomCode: string) => {
     safeEmit('room:join', { playerName, roomCode });

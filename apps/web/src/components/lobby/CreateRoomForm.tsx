@@ -112,7 +112,7 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
           disabled={!isConnected || isLoading || !playerName.trim() || !roomName.trim()}
           glow
         >
-          {isLoading ? 'Connecting...' : !isConnected ? 'Waiting for connection...' : 'Create Room'}
+          {!isConnected ? 'Waiting for connection...' : isLoading ? 'Creating Room...' : 'Create Room'}
         </Button>
       </form>
     </div>

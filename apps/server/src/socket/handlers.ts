@@ -160,9 +160,15 @@ export function setupSocketHandlers(io: TypedServer) {
           const { playerName, roomName, isPrivate, maxPlayers } = parsed.data;
           const playerId = `player-${socket.id}`;
 
-          // Clear any existing mappings for this socket
+          // Reject if this socket already has a player in a room
           const existingPlayer = socketToPlayer.get(socket.id);
           if (existingPlayer) {
+            const existingRoom = roomService.getRoomByPlayerId(existingPlayer);
+            if (existingRoom) {
+              logEvent({ socketId: socket.id, eventType: 'room:create', eventData: parsed.data, result: 'rejected', errorMessage: 'Already in a room' });
+              socket.emit('room:error', { code: 'ALREADY_IN_ROOM', message: 'You are already in a room' });
+              return;
+            }
             playerToSocket.delete(existingPlayer);
             await invalidatePlayerSession(existingPlayer);
           }
