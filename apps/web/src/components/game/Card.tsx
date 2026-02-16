@@ -178,32 +178,7 @@ export function Card({
         style={{ ...style, willChange: 'opacity, transform' }}
         role="img"
         aria-label="Face-down card"
-      >
-        {/* Enchanted shimmer */}
-        {animationsEnabled && (
-          <div
-            className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none"
-            style={{ zIndex: 1 }}
-            aria-hidden="true"
-          >
-            <div
-              className="absolute inset-0"
-              style={{
-                background: `linear-gradient(
-                  105deg,
-                  transparent 25%,
-                  rgba(212, 175, 55, 0.2) 38%,
-                  rgba(255, 255, 255, 0.35) 50%,
-                  rgba(212, 175, 55, 0.2) 62%,
-                  transparent 75%
-                )`,
-                backgroundSize: '250% 100%',
-                animation: 'cardBackShimmer 3.5s ease-in-out infinite',
-              }}
-            />
-          </div>
-        )}
-      </motion.div>
+      />
     );
   }
 

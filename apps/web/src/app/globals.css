@@ -273,6 +273,8 @@ html,
 /* Card back pattern — ornamental damask with gold accents */
 .card-back {
   background:
+    /* Shimmer sweep */
+    linear-gradient(105deg, transparent 20%, rgba(212,175,55,0.15) 35%, rgba(255,255,255,0.28) 50%, rgba(212,175,55,0.15) 65%, transparent 80%),
     /* Subtle vignette */
     radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.25) 100%),
     /* Scrollwork / damask pattern using layered radial gradients */
@@ -289,7 +291,9 @@ html,
     ),
     /* Base gradient */
     linear-gradient(135deg, var(--card-back-1) 0%, var(--card-back-2) 50%, var(--card-back-1) 100%);
-  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 16px 16px, 100% 100%;
+  background-size: 250% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 16px 16px, 100% 100%;
+  background-position: 250% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
+  animation: cardBackShimmer 3.5s ease-in-out infinite;
   position: relative;
 }
 
@@ -395,10 +399,10 @@ html,
 /* Enchanted shimmer for card backs */
 @keyframes cardBackShimmer {
   0% {
-    background-position: 250% 0;
+    background-position: 250% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
   }
   100% {
-    background-position: -250% 0;
+    background-position: -250% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
   }
 }
 
@@ -500,7 +504,7 @@ html,
 
   @keyframes cardBackShimmer {
     0%, 100% {
-      background-position: 0 0;
+      background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
     }
   }
 }
