@@ -19,13 +19,19 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
 
   useEffect(() => {
+    const color = THEME_COLORS[theme] || THEME_COLORS.classic;
+
     document.documentElement.setAttribute('data-theme', theme);
 
-    // Update meta theme-color for regular Safari toolbar (not web clips — those use body bg directly)
+    // Update meta theme-color for regular Safari toolbar
     const meta = document.querySelector('meta[name="theme-color"]');
     if (meta) {
-      meta.setAttribute('content', THEME_COLORS[theme] || THEME_COLORS.classic);
+      meta.setAttribute('content', color);
     }
+
+    // Force body background-color with felt-primary hex — iOS web clips sample this for the status bar.
+    // Must be a literal value (not CSS variable) for iOS to pick up dynamic changes.
+    document.body.style.backgroundColor = color;
   }, [theme]);
 
   useEffect(() => {

@@ -45,7 +45,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#1a3d2b" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var c={classic:'#1a3d2b',dark:'#1c1c22',chocolate:'#3d2517',midnight:'#0f1a3d',burgundy:'#3d1520',purple:'#261540'};var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){var t=p.state.theme;document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m&&c[t])m.content=c[t]}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
+            __html: `(function(){try{var c={classic:'#1a3d2b',dark:'#1c1c22',chocolate:'#3d2517',midnight:'#0f1a3d',burgundy:'#3d1520',purple:'#261540'};var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){var t=p.state.theme;document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m&&c[t])m.content=c[t];document.addEventListener('DOMContentLoaded',function(){if(c[t])document.body.style.backgroundColor=c[t]})}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off')}}catch(e){}})()`,
           }}
         />
       </head>
