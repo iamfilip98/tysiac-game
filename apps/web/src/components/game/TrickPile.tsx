@@ -3,7 +3,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
-import { useIsMobile } from '@/hooks/useIsMobile';
+import { useScreenSize } from '@/hooks/useIsMobile';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { Card as CardType, Suit } from '@tysiac/shared';
 
@@ -18,36 +18,36 @@ interface TrickPileProps {
 }
 
 export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpectating, trumpWin, trumpSuit }: TrickPileProps) {
-  const isMobile = useIsMobile();
+  const { isMobile, height } = useScreenSize();
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
+
+  // Card size tier based on viewport height:
+  // - Short mobile (<700px): 'sm' (56×84) — original compact size
+  // - Tall mobile (>=700px): 'md' (64×96)
+  // - Desktop: 'lg' (80×120)
+  const sizeTier = !isMobile ? 'lg' : height < 700 ? 'sm' : 'md';
 
   // Position cards based on who played them relative to current player
   const getCardPosition = (playerId: string) => {
-    // Responsive positions: 0 = left, 1 = right, 2 = bottom (for spectating)
-    // or 0 = self (bottom), 1 = left, 2 = right (for active player)
-    const spectatorPositions = isMobile
-      ? [
-          { x: -48, y: -34, rotate: -10 }, // Position 0 = left
-          { x: 48, y: -34, rotate: 10 },   // Position 1 = right
-          { x: 0, y: 50, rotate: 0 },      // Position 2 = bottom
-        ]
-      : [
-          { x: -72, y: -36, rotate: -15 }, // Position 0 = left
-          { x: 72, y: -36, rotate: 15 },   // Position 1 = right
-          { x: 0, y: 58, rotate: 0 },      // Position 2 = bottom
-        ];
+    // Spread distances scale with card size tier
+    const spreads = {
+      sm: { x: 40, yUp: -28, yDown: 42, rot: 8 },
+      md: { x: 48, yUp: -34, yDown: 50, rot: 10 },
+      lg: { x: 72, yUp: -36, yDown: 58, rot: 15 },
+    };
+    const s = spreads[sizeTier];
 
-    const activePositions = isMobile
-      ? [
-          { x: 0, y: 50, rotate: 0 },     // Self (bottom)
-          { x: -48, y: -34, rotate: -10 }, // Left
-          { x: 48, y: -34, rotate: 10 },   // Right
-        ]
-      : [
-          { x: 0, y: 58, rotate: 0 },     // Self (bottom)
-          { x: -72, y: -36, rotate: -15 }, // Left
-          { x: 72, y: -36, rotate: 15 },   // Right
-        ];
+    const spectatorPositions = [
+      { x: -s.x, y: s.yUp, rotate: -s.rot },  // Position 0 = left
+      { x: s.x, y: s.yUp, rotate: s.rot },     // Position 1 = right
+      { x: 0, y: s.yDown, rotate: 0 },          // Position 2 = bottom
+    ];
+
+    const activePositions = [
+      { x: 0, y: s.yDown, rotate: 0 },          // Self (bottom)
+      { x: -s.x, y: s.yUp, rotate: -s.rot },   // Left
+      { x: s.x, y: s.yUp, rotate: s.rot },      // Right
+    ];
 
     // When spectating, use fixed position mapping based on player index in the players array
     // players[0] = left, players[1] = right, players[2] = bottom (matches GameBoard otherPlayers layout)
@@ -72,7 +72,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
   return (
     <div className={cn(
       'relative flex items-center justify-center',
-      isMobile ? 'w-52 h-56' : 'w-64 h-64'
+      sizeTier === 'sm' ? 'w-44 h-44' : sizeTier === 'md' ? 'w-52 h-56' : 'w-64 h-64'
     )}>
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full" style={{
@@ -139,8 +139,8 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                 animate={{
                   opacity: [0, 1, 0],
                   scale: [0, 1, 0],
-                  x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 65 : 90),
-                  y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 65 : 90),
+                  x: Math.cos((i * 45 * Math.PI) / 180) * (sizeTier === 'lg' ? 90 : sizeTier === 'md' ? 65 : 55),
+                  y: Math.sin((i * 45 * Math.PI) / 180) * (sizeTier === 'lg' ? 90 : sizeTier === 'md' ? 65 : 55),
                 }}
                 transition={{
                   duration: 2,
@@ -194,8 +194,8 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
                   animate={{
                     opacity: [0, 1, 0],
                     scale: [0, 1.2, 0],
-                    x: Math.cos((i * 45 * Math.PI) / 180) * (isMobile ? 60 : 85),
-                    y: Math.sin((i * 45 * Math.PI) / 180) * (isMobile ? 60 : 85),
+                    x: Math.cos((i * 45 * Math.PI) / 180) * (sizeTier === 'lg' ? 85 : sizeTier === 'md' ? 60 : 50),
+                    y: Math.sin((i * 45 * Math.PI) / 180) * (sizeTier === 'lg' ? 85 : sizeTier === 'md' ? 60 : 50),
                   }}
                   exit={{ opacity: 0 }}
                   transition={{
@@ -252,7 +252,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
             >
               <Card
                 card={card}
-                size={isMobile ? 'md' : 'lg'}
+                size={sizeTier}
                 isPlayable={false}
                 isMarriageCard={marriageCard?.suit === card.suit && card.rank === 'Q'}
                 isTrumpCard={!!trumpSuit && card.suit === trumpSuit}

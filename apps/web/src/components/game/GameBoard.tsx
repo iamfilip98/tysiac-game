@@ -312,7 +312,10 @@ export function GameBoard() {
       </div>
 
       {/* Center area - trick pile / talon */}
-      <div className="absolute inset-0 flex items-center justify-center">
+      <div className={cn(
+        'absolute flex items-center justify-center',
+        isMobile ? 'inset-x-0 top-28 bottom-36' : 'inset-0'
+      )}>
         <AnimatePresence mode="wait">
           {/* Dealing / Bidding - show talon */}
           {(phase === 'dealing' || phase === 'bidding') && (
@@ -517,7 +520,7 @@ export function GameBoard() {
           transition={{ duration: 2, repeat: Infinity }}
           className={cn(
             'absolute left-1/2 -translate-x-1/2 z-20',
-            isMobile ? 'bottom-36' : 'bottom-48'
+            isMobile ? 'bottom-28' : 'bottom-48'
           )}
           role="status"
           aria-live="assertive"

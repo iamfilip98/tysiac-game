@@ -16,13 +16,14 @@ export function useIsMobile() {
 }
 
 export function useScreenSize() {
-  const [screenSize, setScreenSize] = useState({ isMobile: false, width: 1024 });
+  const [screenSize, setScreenSize] = useState({ isMobile: false, width: 1024, height: 768 });
 
   useEffect(() => {
     const updateSize = () => {
       setScreenSize({
         isMobile: window.innerWidth < 640,
         width: window.innerWidth,
+        height: window.innerHeight,
       });
     };
     updateSize();
