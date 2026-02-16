@@ -43,7 +43,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
       previousError.current = null;
     }
   }, [error, showToast]);
-  const { gameState } = useGameStore();
+  const gameState = useGameStore((s) => s.gameState);
 
   const {
     createRoom,

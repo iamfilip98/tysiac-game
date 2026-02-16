@@ -3,9 +3,18 @@ const nextConfig = {
   reactStrictMode: true,
   transpilePackages: ['@tysiac/shared'],
 
-  // Prevent aggressive caching on mobile browsers
+  // Cache headers: immutable for hashed static assets, no-cache for everything else
   async headers() {
     return [
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
       {
         source: '/:path*',
         headers: [

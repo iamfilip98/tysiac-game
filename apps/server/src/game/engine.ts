@@ -39,6 +39,9 @@ export class GameEngine {
   // Prevent talon from being added to hand twice
   private talonAddedToHand: boolean = false;
 
+  // Broadcast coalescing — only send the last state in a synchronous flow
+  private broadcastPending: boolean = false;
+
   // Statistics tracking
   private playerStats: Map<string, PlayerGameStats> = new Map();
   private roundHistory: RoundHistory[] = [];
@@ -1341,6 +1344,21 @@ export class GameEngine {
   }
 
   private broadcastState(): void {
+    if (this.isCleanedUp) return;
+
+    // Coalesce multiple broadcastState() calls in the same synchronous flow.
+    // Only the last state snapshot is sent, reducing redundant broadcasts
+    // (e.g., marriage declaration + card play in the same tick).
+    if (!this.broadcastPending) {
+      this.broadcastPending = true;
+      queueMicrotask(() => {
+        this.broadcastPending = false;
+        this.doBroadcast();
+      });
+    }
+  }
+
+  private doBroadcast(): void {
     if (this.isCleanedUp) return;
 
     // Sync engine state to game object before broadcast/persist

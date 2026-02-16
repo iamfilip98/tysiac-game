@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn, truncateName } from '@/lib/utils';
 import { useScreenSize } from '@/hooks/useIsMobile';
@@ -14,7 +15,7 @@ interface OpponentHandProps {
   isCurrentTurn?: boolean;
 }
 
-export function OpponentHand({
+export const OpponentHand = memo(function OpponentHand({
   cardCount,
   position,
   playerName,
@@ -93,4 +94,4 @@ export function OpponentHand({
       </div>
     </div>
   );
-}
+});

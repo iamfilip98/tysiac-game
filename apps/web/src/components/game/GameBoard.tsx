@@ -23,6 +23,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { cn } from '@/lib/utils';
+import { useShallow } from 'zustand/react/shallow';
 import type { Card as CardType } from '@tysiac/shared';
 
 export function GameBoard() {
@@ -44,9 +45,29 @@ export function GameBoard() {
     threwNotification,
     pauseData,
     trickWonData,
-  } = useGameStore();
-  const { selectCard, setShowWykladana, setPassedAt100Notification, setThrewNotification } = useGameStore();
-  const { setShowRoundResult, setShowGameEnd } = useGameStore();
+  } = useGameStore(useShallow((s) => ({
+    gameState: s.gameState,
+    validActions: s.validActions,
+    selectedCard: s.selectedCard,
+    lastRoundResult: s.lastRoundResult,
+    showRoundResult: s.showRoundResult,
+    showGameEnd: s.showGameEnd,
+    isMyTurn: s.isMyTurn,
+    lastMarriageDeclared: s.lastMarriageDeclared,
+    wykladanaData: s.wykladanaData,
+    showWykladana: s.showWykladana,
+    gameStatistics: s.gameStatistics,
+    passedAt100Notification: s.passedAt100Notification,
+    threwNotification: s.threwNotification,
+    pauseData: s.pauseData,
+    trickWonData: s.trickWonData,
+  })));
+  const selectCard = useGameStore((s) => s.selectCard);
+  const setShowWykladana = useGameStore((s) => s.setShowWykladana);
+  const setPassedAt100Notification = useGameStore((s) => s.setPassedAt100Notification);
+  const setThrewNotification = useGameStore((s) => s.setThrewNotification);
+  const setShowRoundResult = useGameStore((s) => s.setShowRoundResult);
+  const setShowGameEnd = useGameStore((s) => s.setShowGameEnd);
 
   const {
     bid,

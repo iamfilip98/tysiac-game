@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn, getSuitSymbol, getSuitName, truncateName } from '@/lib/utils';
 import type { Suit } from '@tysiac/shared';
@@ -20,7 +21,7 @@ interface ScoreBoardProps {
   phase?: string;
 }
 
-export function ScoreBoard({
+export const ScoreBoard = memo(function ScoreBoard({
   players,
   scores,
   currentPlayerId,
@@ -218,7 +219,7 @@ export function ScoreBoard({
       )}
     </div>
   );
-}
+});
 
 // Compact inline score display
 interface InlineScoreProps {

@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn, getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useIsMobile';
@@ -107,7 +108,11 @@ function JackPortrait({ color, isMarriage }: { color: string; isMarriage: boolea
   );
 }
 
-export function Card({
+// Static transition objects — avoids re-creating on every render
+const TRANSITION_MOBILE = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] as const };
+const TRANSITION_DESKTOP = { duration: 0.3, ease: [0.25, 0.1, 0.25, 1] as const };
+
+export const Card = memo(function Card({
   card,
   isSelected = false,
   isPlayable = true,
@@ -160,10 +165,9 @@ export function Card({
     }
   };
 
-  // Simpler, smoother transitions - avoid springs on mobile for better performance
-  const transition = isMobile
-    ? { delay, duration: 0.2, ease: [0.25, 0.1, 0.25, 1] }
-    : { delay, duration: 0.3, ease: [0.25, 0.1, 0.25, 1] };
+  const transition = delay > 0
+    ? { delay, ...(isMobile ? TRANSITION_MOBILE : TRANSITION_DESKTOP) }
+    : isMobile ? TRANSITION_MOBILE : TRANSITION_DESKTOP;
 
   if (isFaceDown) {
     return (
@@ -448,7 +452,7 @@ export function Card({
       </motion.div>
     </div>
   );
-}
+});
 
 // Card placeholder (empty spot)
 export function CardPlaceholder({ size = 'md', className }: { size?: 'xs' | 'sm' | 'md' | 'lg'; className?: string }) {

@@ -15,32 +15,28 @@ export function useSocket() {
   const marriageClearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const createRoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const {
-    setRoom,
-    setPlayerId,
-    setConnected,
-    setConnecting,
-    setCreatingRoom,
-    setError,
-    setPublicRooms,
-    clearRoom,
-    reset: resetRoom,
-  } = useRoomStore();
+  const setRoom = useRoomStore((s) => s.setRoom);
+  const setPlayerId = useRoomStore((s) => s.setPlayerId);
+  const setConnected = useRoomStore((s) => s.setConnected);
+  const setConnecting = useRoomStore((s) => s.setConnecting);
+  const setCreatingRoom = useRoomStore((s) => s.setCreatingRoom);
+  const setError = useRoomStore((s) => s.setError);
+  const setPublicRooms = useRoomStore((s) => s.setPublicRooms);
+  const clearRoom = useRoomStore((s) => s.clearRoom);
+  const resetRoom = useRoomStore((s) => s.reset);
 
-  const {
-    setGameState,
-    setValidActions,
-    setRoundResult,
-    setShowGameEnd,
-    setLastMarriageDeclared,
-    setWykladanaData,
-    setGameStatistics,
-    setPassedAt100Notification,
-    setThrewNotification,
-    setPauseData,
-    setTrickWonData,
-    reset: resetGame,
-  } = useGameStore();
+  const setGameState = useGameStore((s) => s.setGameState);
+  const setValidActions = useGameStore((s) => s.setValidActions);
+  const setRoundResult = useGameStore((s) => s.setRoundResult);
+  const setShowGameEnd = useGameStore((s) => s.setShowGameEnd);
+  const setLastMarriageDeclared = useGameStore((s) => s.setLastMarriageDeclared);
+  const setWykladanaData = useGameStore((s) => s.setWykladanaData);
+  const setGameStatistics = useGameStore((s) => s.setGameStatistics);
+  const setPassedAt100Notification = useGameStore((s) => s.setPassedAt100Notification);
+  const setThrewNotification = useGameStore((s) => s.setThrewNotification);
+  const setPauseData = useGameStore((s) => s.setPauseData);
+  const setTrickWonData = useGameStore((s) => s.setTrickWonData);
+  const resetGame = useGameStore((s) => s.reset);
 
   // Connect and set up listeners
   useEffect(() => {
