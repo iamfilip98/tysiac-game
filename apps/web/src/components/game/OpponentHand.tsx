@@ -63,7 +63,7 @@ export function OpponentHand({
       {/* Cards */}
       <div
         className={cn(
-          'flex',
+          'relative flex',
           cardDirection === 'vertical' ? 'flex-col -space-y-6 sm:-space-y-8' : '-space-x-4 sm:-space-x-6'
         )}
         aria-hidden="true"
@@ -84,6 +84,13 @@ export function OpponentHand({
             }}
           />
         ))}
+        {/* Unified shimmer sweep across all cards */}
+        {!isMobile && (
+          <div
+            className="absolute inset-0 pointer-events-none opponent-hand-shimmer"
+            style={{ borderRadius: 'inherit' }}
+          />
+        )}
       </div>
     </div>
   );

@@ -293,11 +293,28 @@ html,
     0 0 20px rgba(251, 191, 36, 0.5);
 }
 
+/* Unified shimmer sweep across opponent hand */
+.opponent-hand-shimmer {
+  background: linear-gradient(
+    105deg,
+    transparent 30%,
+    rgba(255, 255, 255, 0.12) 45%,
+    rgba(212, 175, 55, 0.08) 50%,
+    rgba(255, 255, 255, 0.12) 55%,
+    transparent 70%
+  );
+  background-size: 300% 100%;
+  animation: handShimmer 4s ease-in-out infinite;
+}
+
+@keyframes handShimmer {
+  0% { background-position: 300% 0; }
+  100% { background-position: -300% 0; }
+}
+
 /* Card back pattern — ornamental damask with gold accents */
 .card-back {
   background:
-    /* Shimmer sweep */
-    linear-gradient(105deg, transparent 20%, rgba(212,175,55,0.15) 35%, rgba(255,255,255,0.28) 50%, rgba(212,175,55,0.15) 65%, transparent 80%),
     /* Subtle vignette */
     radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,0,0.25) 100%),
     /* Scrollwork / damask pattern using layered radial gradients */
@@ -314,9 +331,6 @@ html,
     ),
     /* Base gradient */
     linear-gradient(135deg, var(--card-back-1) 0%, var(--card-back-2) 50%, var(--card-back-1) 100%);
-  background-size: 250% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 16px 16px, 100% 100%;
-  background-position: 250% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
-  animation: cardBackShimmer 3.5s ease-in-out infinite;
   position: relative;
 }
 
@@ -456,16 +470,6 @@ html,
   }
 }
 
-/* Enchanted shimmer for card backs */
-@keyframes cardBackShimmer {
-  0% {
-    background-position: 250% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
-  }
-  100% {
-    background-position: -250% 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
-  }
-}
-
 /* Sparkle animation for marriage card particles */
 @keyframes sparkle {
   0%, 100% {
@@ -562,11 +566,6 @@ html,
     }
   }
 
-  @keyframes cardBackShimmer {
-    0%, 100% {
-      background-position: 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0, 0 0;
-    }
-  }
 }
 
 /* User-toggled animations off (mirrors reduced-motion) */
