@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn, truncateName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { truncateName } from '@tysiac/shared';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
 

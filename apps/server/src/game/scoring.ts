@@ -28,7 +28,7 @@ export interface RoundScoreResult {
  * - Non-bidders can get marriage points if they won tricks
  * - Non-bidders round to nearest 10 (6+ rounds up), but only if under 800
  * - Players at/above 800 (on barrel) get 0 unless they're bidder
- * - Barrel: must reach 1000 or stay. 3 failed attempts = fall back to 800
+ * - Barrel: must reach 1000 or stay. Fall off by failing a bid and dropping below 800
  * - First to 1000 wins instantly
  * - Negative scores allowed
  */
@@ -95,22 +95,8 @@ export function calculateRoundScores(game: GameState): RoundScoreResult {
             fellOffBarrel = true;
           }
         } else {
-          // Made bid but didn't reach 1000 while on barrel
-          const newAttempts = currentScore.barrelAttempts + 1;
-
-          if (newAttempts >= 3) {
-            // Fall off barrel after 3 attempts - reset to 800
-            newTotalScore = BARREL_THRESHOLD;
-            fellOffBarrel = true;
-            currentScore.barrelAttempts = 0;
-            // Actual score change reflects the fall
-            scoreChange = BARREL_THRESHOLD - currentScore.totalScore;
-          } else {
-            // Stay on barrel but still receive the points earned
-            newTotalScore = currentScore.totalScore + scoreChange;
-            // scoreChange already set correctly from roundToTen(totalRoundPoints)
-            currentScore.barrelAttempts = newAttempts;
-          }
+          // Made bid but didn't reach 1000 while on barrel — just add points normally
+          newTotalScore = currentScore.totalScore + scoreChange;
         }
       } else {
         newTotalScore = currentScore.totalScore + scoreChange;

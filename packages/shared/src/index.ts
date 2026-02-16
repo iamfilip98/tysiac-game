@@ -6,3 +6,6 @@ export * from './types/game.js';
 
 // Socket event types
 export * from './types/events.js';
+
+// Display utilities
+export * from './utils.js';

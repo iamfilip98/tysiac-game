@@ -2,7 +2,9 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { truncateName } from '@/lib/utils';
+import { truncateName } from '@tysiac/shared';
+import { usePreferencesStore } from '@/stores/preferencesStore';
+import { useIsMobile } from '@/hooks/useIsMobile';
 import { Card } from './Card';
 import type { Card as CardType } from '@tysiac/shared';
 
@@ -15,9 +17,9 @@ interface WykladanaModalProps {
 }
 
 // Confetti particle component
-function Confetti() {
+function Confetti({ count = 50 }: { count?: number }) {
   const colors = ['#fbbf24', '#f59e0b', '#fcd34d', '#d97706', '#fef3c7', '#fff'];
-  const particles = Array.from({ length: 50 }, (_, i) => ({
+  const particles = Array.from({ length: count }, (_, i) => ({
     id: i,
     color: colors[Math.floor(Math.random() * colors.length)],
     x: Math.random() * 100,
@@ -61,6 +63,8 @@ function Confetti() {
 export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onComplete }: WykladanaModalProps) {
   const [showButton, setShowButton] = useState(false);
   const [hasConfirmed, setHasConfirmed] = useState(false);
+  const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
+  const isMobile = useIsMobile();
 
   // Sort cards by suit and rank, ensuring red/black alternation when possible
   const sortedCards = useMemo(() => {
@@ -114,7 +118,7 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
       animate={{ opacity: 1 }}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
     >
-      <Confetti />
+      {animationsEnabled && <Confetti count={isMobile ? 25 : 50} />}
 
       <motion.div
         initial={{ opacity: 0, scale: 0.95, y: 20 }}

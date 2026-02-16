@@ -372,7 +372,7 @@ export function useSocket() {
           setCreatingRoom(false);
           setError('Room creation timed out. Please try again.');
         }
-      }, 10000);
+      }, 30000);
     }
   }, [safeEmit, setCreatingRoom, setError]);
 

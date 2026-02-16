@@ -2,7 +2,8 @@
 
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { cn, getSuitSymbol, getSuitName, truncateName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { getSuitSymbol, getSuitName, truncateName } from '@tysiac/shared';
 import type { Suit } from '@tysiac/shared';
 
 interface ScoreBoardProps {
@@ -37,7 +38,7 @@ export const ScoreBoard = memo(function ScoreBoard({
 
   return (
     <div className={cn(
-      "bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md border border-white/[0.08] rounded-xl w-[220px]",
+      "bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md border border-white/[0.08] rounded-xl w-[180px] sm:w-[220px]",
       isFourPlayer ? "p-2" : "p-4"
     )} style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
       {/* Header */}
@@ -122,7 +123,8 @@ export const ScoreBoard = memo(function ScoreBoard({
                 {/* Player name */}
                 <span
                   className={cn(
-                    'text-sm font-medium',
+                    'font-medium overflow-hidden text-ellipsis whitespace-nowrap',
+                    isFourPlayer ? 'text-[11px] sm:text-sm max-w-[60px] sm:max-w-none' : 'text-sm',
                     isMe ? 'text-gold-400' : 'text-white'
                   )}
                   title={player.name}

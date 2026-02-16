@@ -6,28 +6,41 @@ import { PlayerHand } from './PlayerHand';
 import { OpponentHand } from './OpponentHand';
 import { TrickPile } from './TrickPile';
 import { ScoreBoard } from './ScoreBoard';
-import { BiddingPanel } from './BiddingPanel';
-import { TalonDisplay, TalonDistributionPanel } from './TalonPanel';
-import { PlayOrPassPanel } from './PlayOrPassPanel';
-import { WykladanaModal } from './WykladanaModal';
-import { RoundResultModal } from './RoundResultModal';
-import { GameEndModal } from './GameEndModal';
-import { LeaveGameModal } from './LeaveGameModal';
-import { PassedAt100Announcement } from './PassedAt100Announcement';
-import { ThrewAnnouncement } from './ThrewAnnouncement';
-import { PauseOverlay } from './PauseOverlay';
+import { TalonDisplay } from './TalonPanel';
+import { GameActionPanels } from './GameActionPanels';
+import { GameOverlays } from './GameOverlays';
 import { SettingsDropdown } from './SettingsDropdown';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
-import { useIsMobile } from '@/hooks/useIsMobile';
+import { useScreenSize } from '@/hooks/useIsMobile';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { cn } from '@/lib/utils';
 import { useShallow } from 'zustand/react/shallow';
 import type { Card as CardType } from '@tysiac/shared';
 
+// Layout positions based on screen dimensions
+// Compact: very small phones (<600px height, e.g. iPhone SE)
+// Normal: standard mobile (600-900px, e.g. iPhone 16 Pro at 852px)
+// Large: desktop/tablets (>900px)
+function getLayoutPositions(isMobile: boolean, height: number) {
+  const isCompact = isMobile && height < 600;
+
+  return {
+    opponents: isMobile ? (isCompact ? 'top-16' : 'top-20') : 'top-24',
+    opponentsLeftRight: isMobile ? (isCompact ? 'left-1 right-1' : 'left-2 right-2') : 'left-8 right-8',
+    actionPanel: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
+    playerHand: isMobile ? 'bottom-2' : 'bottom-4',
+    spectatingHand: isMobile ? 'bottom-16' : 'bottom-20',
+    turnIndicator: isMobile ? (isCompact ? 'bottom-24' : 'bottom-28') : 'bottom-48',
+    spectatingIndicator: isMobile ? 'bottom-2' : 'bottom-4',
+    centerArea: isMobile ? (isCompact ? 'top-52 bottom-32' : 'top-64 bottom-36') : '',
+  };
+}
+
 export function GameBoard() {
-  const isMobile = useIsMobile();
+  const { isMobile, height } = useScreenSize();
+  const layout = getLayoutPositions(isMobile, height);
   const { playerId, room } = useRoomStore();
   const {
     gameState,
@@ -63,11 +76,9 @@ export function GameBoard() {
     trickWonData: s.trickWonData,
   })));
   const selectCard = useGameStore((s) => s.selectCard);
-  const setShowWykladana = useGameStore((s) => s.setShowWykladana);
   const setPassedAt100Notification = useGameStore((s) => s.setPassedAt100Notification);
   const setThrewNotification = useGameStore((s) => s.setThrewNotification);
   const setShowRoundResult = useGameStore((s) => s.setShowRoundResult);
-  const setShowGameEnd = useGameStore((s) => s.setShowGameEnd);
 
   const {
     bid,
@@ -184,7 +195,18 @@ export function GameBoard() {
   }, [isSpectating, gameState?.phase, hasConfirmedTalon, confirmTalon]);
 
 
+  const { isConnected, isConnecting } = useRoomStore(useShallow((s) => ({
+    isConnected: s.isConnected,
+    isConnecting: s.isConnecting,
+  })));
+
   if (!gameState || !playerId) {
+    const loadingMessage = !isConnected && !isConnecting
+      ? 'Reconnecting to game...'
+      : !isConnected
+      ? 'Connecting to server...'
+      : 'Waiting for game data...';
+
     return (
       <div className="flex items-center justify-center h-screen" role="status" aria-label="Loading game">
         <div className="text-white/80 flex items-center gap-3">
@@ -192,7 +214,7 @@ export function GameBoard() {
             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
           </svg>
-          Loading game...
+          {loadingMessage}
         </div>
       </div>
     );
@@ -283,7 +305,8 @@ export function GameBoard() {
       {/* Opponents */}
       <div className={cn(
         'absolute z-10',
-        isMobile ? 'top-20 left-2' : 'top-24 left-8'
+        layout.opponents,
+        isMobile ? 'left-2' : 'left-8'
       )}>
         {otherPlayers[0] && (
           <OpponentHand
@@ -299,7 +322,8 @@ export function GameBoard() {
 
       <div className={cn(
         'absolute z-10',
-        isMobile ? 'top-20 right-2' : 'top-24 right-8'
+        layout.opponents,
+        isMobile ? 'right-2' : 'right-8'
       )}>
         {otherPlayers[1] && (
           <OpponentHand
@@ -316,7 +340,7 @@ export function GameBoard() {
       {/* Center area - trick pile / talon */}
       <div className={cn(
         'absolute flex items-center justify-center',
-        isMobile ? 'inset-x-0 top-64 bottom-36' : 'inset-0'
+        isMobile ? `inset-x-0 ${layout.centerArea}` : 'inset-0'
       )}>
         <AnimatePresence mode="wait">
           {/* Dealing / Bidding - show talon */}
@@ -397,73 +421,33 @@ export function GameBoard() {
       {/* Action panels */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-30 w-full px-4 sm:w-auto sm:px-0',
-        isMobile ? 'bottom-32' : 'bottom-36'
+        layout.actionPanel
       )}>
-        <AnimatePresence mode="wait">
-          {/* Bidding panel */}
-          {phase === 'bidding' && (
-            <motion.div
-              key="bidding"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <BiddingPanel
-                validActions={validActions}
-                currentBid={round?.finalBid || 100}
-                onBid={bid}
-                onPass={pass}
-                isMyTurn={isMyTurn}
-              />
-            </motion.div>
-          )}
-
-          {/* Play or Pass decision */}
-          {phase === 'playOrPassDecision' && (
-            <motion.div
-              key="playOrPass"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-            >
-              <PlayOrPassPanel
-                onPlay={() => playOrPass('play')}
-                onPass={() => playOrPass('pass')}
-                isMyTurn={(isMyTurn || validActions.some(a => a.type === 'playOrPass')) && round?.bidWinner === playerId}
-                bidAmount={round?.finalBid || 100}
-                playerCount={playerCount}
-              />
-            </motion.div>
-          )}
-
-          {/* Talon distribution */}
-          {phase === 'talonDistribution' &&
-            round?.bidWinner === playerId &&
-            gameState.cardsToDistribute && (
-              <motion.div
-                key="distribution"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-              >
-                <TalonDistributionPanel
-                  otherPlayers={otherPlayers.slice(0, 2)}
-                  selectedCards={distributionCards}
-                  currentTarget={distributionTarget}
-                  onSelectTarget={setDistributionTarget}
-                  onDistribute={handleDistributeSubmit}
-                />
-              </motion.div>
-            )}
-
-        </AnimatePresence>
+        <GameActionPanels
+          phase={phase}
+          validActions={validActions}
+          currentBid={round?.finalBid || 100}
+          onBid={bid}
+          onPass={pass}
+          isMyTurn={isMyTurn}
+          onPlayOrPass={playOrPass}
+          isBidWinner={round?.bidWinner === playerId}
+          bidAmount={round?.finalBid || 100}
+          playerCount={playerCount}
+          hasCardsToDistribute={!!gameState.cardsToDistribute}
+          otherPlayers={otherPlayers.slice(0, 2)}
+          distributionCards={distributionCards}
+          distributionTarget={distributionTarget}
+          onSelectTarget={setDistributionTarget}
+          onDistributeSubmit={handleDistributeSubmit}
+        />
       </div>
 
       {/* Spectating indicator for dealer in 4-player mode */}
       {isSpectating && (
         <div className={cn(
           'absolute left-1/2 -translate-x-1/2 z-20',
-          isMobile ? 'bottom-2' : 'bottom-4'
+          layout.spectatingIndicator
         )}>
           <div className="px-4 py-2 bg-table-800/90 border border-amber-500/50 rounded-lg text-center">
             <div className="text-amber-400 text-sm font-medium">
@@ -476,9 +460,7 @@ export function GameBoard() {
       {/* Player's hand or Third active player (when spectating) */}
       <div className={cn(
         'absolute left-1/2 -translate-x-1/2 z-10',
-        isSpectating
-          ? (isMobile ? 'bottom-16' : 'bottom-20')
-          : (isMobile ? 'bottom-2' : 'bottom-4')
+        isSpectating ? layout.spectatingHand : layout.playerHand
       )}>
         {isSpectating ? (
           // Show third active player at bottom center when spectating (horizontal layout)
@@ -522,7 +504,7 @@ export function GameBoard() {
           transition={{ duration: 2, repeat: Infinity }}
           className={cn(
             'absolute left-1/2 -translate-x-1/2 z-20',
-            isMobile ? 'bottom-28' : 'bottom-48'
+            layout.turnIndicator
           )}
           role="status"
           aria-live="assertive"
@@ -538,73 +520,37 @@ export function GameBoard() {
         </motion.div>
       )}
 
-      {/* WYKLADANA celebration */}
-      {showWykladana && wykladanaData && (
-        <WykladanaModal
-          playerName={wykladanaData.playerName}
-          bid={wykladanaData.bid}
-          marriagePoints={wykladanaData.marriagePoints}
-          cards={wykladanaData.cards}
-          onComplete={confirmWykladana}
-        />
-      )}
-
-      {/* Round result modal */}
-      {showRoundResult && lastRoundResult && (
-        <RoundResultModal
-          result={lastRoundResult}
-          players={gameState.players}
-          onClose={() => setShowRoundResult(false)}
-        />
-      )}
-
-      {/* Game end modal */}
-      {showGameEnd && gameState.winner && (
-        <GameEndModal
-          winnerId={gameState.winner}
-          players={gameState.players}
-          scores={Object.fromEntries(
-            Object.entries(scores).map(([id, s]) => [id, s.totalScore])
-          )}
-          currentPlayerId={playerId}
-          statistics={gameStatistics}
-          onPlayAgain={startGame}
-          onLeave={leaveRoom}
-        />
-      )}
-
-      {/* Leave game confirmation modal */}
-      {showLeaveModal && (
-        <LeaveGameModal
-          onConfirm={() => {
-            setShowLeaveModal(false);
-            leaveGame();
-          }}
-          onCancel={() => setShowLeaveModal(false)}
-        />
-      )}
-
-      {/* Passed at 100 announcement */}
-      <PassedAt100Announcement
-        playerName={passedAt100Notification?.playerName || null}
-        onComplete={() => setPassedAt100Notification(null)}
-      />
-
-      {/* Threw announcement (for bids > 100) */}
-      <ThrewAnnouncement
-        data={threwNotification}
+      {/* Modals and announcements */}
+      <GameOverlays
+        showWykladana={showWykladana}
+        wykladanaData={wykladanaData}
+        onConfirmWykladana={confirmWykladana}
+        showRoundResult={showRoundResult}
+        lastRoundResult={lastRoundResult}
         players={gameState.players}
-        onComplete={() => setThrewNotification(null)}
+        onCloseRoundResult={() => setShowRoundResult(false)}
+        showGameEnd={showGameEnd}
+        winner={gameState.winner}
+        scores={Object.fromEntries(
+          Object.entries(scores).map(([id, s]) => [id, s.totalScore])
+        )}
+        currentPlayerId={playerId}
+        gameStatistics={gameStatistics}
+        onPlayAgain={startGame}
+        onLeaveRoom={leaveRoom}
+        showLeaveModal={showLeaveModal}
+        onConfirmLeave={() => {
+          setShowLeaveModal(false);
+          leaveGame();
+        }}
+        onCancelLeave={() => setShowLeaveModal(false)}
+        passedAt100Notification={passedAt100Notification}
+        onClearPassedAt100={() => setPassedAt100Notification(null)}
+        threwNotification={threwNotification}
+        onClearThrew={() => setThrewNotification(null)}
+        pauseData={pauseData}
+        onResume={resumeGame}
       />
-
-      {/* Pause overlay */}
-      {(gameState.isPaused || pauseData) && pauseData && (
-        <PauseOverlay
-          pausedByName={pauseData.pausedByName}
-          pausedAt={pauseData.pausedAt}
-          onResume={resumeGame}
-        />
-      )}
 
     </div>
     </LayoutGroup>

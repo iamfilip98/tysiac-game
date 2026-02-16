@@ -3,8 +3,8 @@
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { getSuitSymbol } from '@/lib/utils';
 import { cn } from '@/lib/utils';
+import { getSuitSymbol } from '@tysiac/shared';
 import type { Suit } from '@tysiac/shared';
 
 interface MarriagePanelProps {

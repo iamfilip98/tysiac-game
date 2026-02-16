@@ -2,7 +2,8 @@
 
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { cn, truncateName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { truncateName } from '@tysiac/shared';
 
 // Smooth easing for all devices (no springs)
 const smoothTransition = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] };

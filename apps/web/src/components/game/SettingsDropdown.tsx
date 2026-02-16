@@ -2,6 +2,8 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
+import { useGameStore } from '@/stores/gameStore';
+import { RulesModal } from './RulesModal';
 import type { Theme, CardStyle } from '@/stores/preferencesStore';
 
 const THEME_LABELS: Record<Theme, string> = {
@@ -21,10 +23,13 @@ const CARD_STYLE_LABELS: Record<CardStyle, string> = {
 
 export function SettingsDropdown() {
   const [open, setOpen] = useState(false);
+  const [showRules, setShowRules] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const { theme, soundEnabled, animationsEnabled, cardStyle, toggleTheme, toggleSound, toggleAnimations, toggleCardStyle } =
     usePreferencesStore();
+
+  const isMyTurn = useGameStore((s) => s.isMyTurn);
 
   // Close on outside click
   useEffect(() => {
@@ -117,7 +122,7 @@ export function SettingsDropdown() {
           {/* Card Style */}
           <button
             onClick={toggleCardStyle}
-            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors border-b border-white/[0.04]"
           >
             <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
               <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -126,8 +131,22 @@ export function SettingsDropdown() {
             <span className="flex-1 text-left">Cards</span>
             <span className={`text-xs ${cardStyle === 'auto' ? 'text-white/40' : 'text-gold-400'}`}>{CARD_STYLE_LABELS[cardStyle]}</span>
           </button>
+
+          {/* Game Rules */}
+          <button
+            onClick={() => { setShowRules(true); setOpen(false); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-sm text-white/80 hover:bg-white/[0.06] transition-colors"
+          >
+            <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+            </svg>
+            <span className="flex-1 text-left">Game Rules</span>
+          </button>
         </div>
       )}
+
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} isMyTurn={isMyTurn} />
     </div>
   );
 }

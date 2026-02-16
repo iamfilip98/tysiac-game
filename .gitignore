@@ -33,6 +33,13 @@ pnpm-debug.log*
 
 # Testing
 coverage
+test-results
+
+# Storybook
+storybook-static
+
+# Expo
+.expo
 
 # Database
 *.db

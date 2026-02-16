@@ -2,7 +2,8 @@
 
 import { memo } from 'react';
 import { motion } from 'framer-motion';
-import { cn, getSuitSymbol, getSuitColor, getCardDescription } from '@/lib/utils';
+import { cn, getCardDescription } from '@/lib/utils';
+import { getSuitSymbol, getSuitColor } from '@tysiac/shared';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { Card as CardType } from '@tysiac/shared';
@@ -408,19 +409,13 @@ export const Card = memo(function Card({
           )}
           {/* Center: SVG portrait for face cards (md/lg/sm), text for others */}
           {showPortrait ? (
-            <div className={cn(
-              'flex items-center justify-center',
-              size === 'lg' ? 'w-[66px] h-[86px]' : size === 'sm' ? 'w-[42px] h-[55px]' : 'w-[52px] h-[68px]'
-            )}>
+            <div className="flex items-center justify-center w-[82%] h-[72%]">
               {card.rank === 'K' && <KingPortrait color={color} />}
               {card.rank === 'Q' && <QueenPortrait color={color} />}
               {card.rank === 'J' && <JackPortrait color={color} />}
             </div>
           ) : (
-            <div className={cn(
-              'flex flex-col items-center justify-center',
-              size === 'lg' ? 'w-[66px] h-[86px]' : size === 'sm' ? 'w-[42px] h-[55px]' : size === 'xs' ? 'w-[28px] h-[40px]' : 'w-[52px] h-[68px]'
-            )}>
+            <div className="flex flex-col items-center justify-center w-[82%] h-[72%]">
               <span
                 className={cn('font-bold', size === 'xs' ? 'text-lg' : size === 'sm' ? 'text-xl' : size === 'md' ? 'text-3xl' : 'text-4xl')}
                 style={{ color: textColor }}

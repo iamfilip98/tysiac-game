@@ -4,7 +4,9 @@ import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
-import { cn, truncateName, copyToClipboard } from '@/lib/utils';
+import { cn, copyToClipboard } from '@/lib/utils';
+import { truncateName } from '@tysiac/shared';
+import { useRoomStore } from '@/stores/roomStore';
 import type { Room, RoomPlayer } from '@tysiac/shared';
 
 interface RoomLobbyProps {
@@ -35,6 +37,7 @@ export function RoomLobby({
   const [addingAISlotIndex, setAddingAISlotIndex] = useState<number | null>(null);
   const prevPlayerCount = useRef(room.players.length);
   const timeoutsRef = useRef<NodeJS.Timeout[]>([]);
+  const error = useRoomStore((s) => s.error);
 
   useEffect(() => {
     return () => {
@@ -49,6 +52,13 @@ export function RoomLobby({
       setAddingAISlotIndex(null);
     }
   }, [room.players.length]);
+
+  // Clear AI loading state on error (toast is shown by page.tsx)
+  useEffect(() => {
+    if (error && addingAISlotIndex !== null) {
+      setAddingAISlotIndex(null);
+    }
+  }, [error, addingAISlotIndex]);
 
   const trackTimeout = (fn: () => void, ms: number) => {
     const id = setTimeout(fn, ms);

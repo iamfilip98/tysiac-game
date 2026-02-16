@@ -3,7 +3,8 @@
 import { motion } from 'framer-motion';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { cn, truncateName } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { truncateName } from '@tysiac/shared';
 import type { RoundResult } from '@tysiac/shared';
 
 interface RoundResultModalProps {

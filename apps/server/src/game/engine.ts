@@ -8,43 +8,49 @@ import { AIPlayer } from '../ai/index.js';
 import { detectWykladana } from './wykladana.js';
 import { logDebug } from '../services/debugService.js';
 import { calculateGameStatistics, createInitialPlayerStats, type PlayerGameStats, type RoundHistory } from './statistics.js';
+import * as bidding from './phases/bidding.js';
+import * as talon from './phases/talon.js';
+import * as trickPlaying from './phases/trickPlaying.js';
 
 export class GameEngine {
-  private game: GameState;
-  private io: Server;
-  private roomId: string;
-  private ai: AIPlayer;
-  private onCleanup?: () => void;
+  public game: GameState;
+  public io: Server;
+  public roomId: string;
+  public ai: AIPlayer;
+  public onCleanup?: () => void;
   private socketLookup: (playerId: string) => string | null;
   private onPersist?: (game: GameState) => void;
 
   // Bidding state tracking
-  private currentBidder: string = '';
-  private passedPlayers: string[] = [];
+  public currentBidder: string = '';
+  public passedPlayers: string[] = [];
 
   // Talon confirmation tracking
-  private talonConfirmations: Set<string> = new Set();
+  public talonConfirmations: Set<string> = new Set();
 
   // Wykladana confirmation tracking
-  private wykladanaConfirmations: Set<string> = new Set();
+  public wykladanaConfirmations: Set<string> = new Set();
 
   // Safeguard timer for playOrPass decision
-  private playOrPassTimer: NodeJS.Timeout | null = null;
+  public playOrPassTimer: NodeJS.Timeout | null = null;
 
   // Track all timers for cleanup
-  private activeTimers: Set<NodeJS.Timeout> = new Set();
-  private isCleanedUp: boolean = false;
-  private isFirstRound: boolean = true;
+  public activeTimers: Set<NodeJS.Timeout> = new Set();
+  public isCleanedUp: boolean = false;
+  public isFirstRound: boolean = true;
 
   // Prevent talon from being added to hand twice
-  private talonAddedToHand: boolean = false;
+  public talonAddedToHand: boolean = false;
 
   // Broadcast coalescing — only send the last state in a synchronous flow
   private broadcastPending: boolean = false;
 
+  // Room privacy — public games have timeouts
+  public isPrivateRoom: boolean = true;
+
   // Statistics tracking
-  private playerStats: Map<string, PlayerGameStats> = new Map();
-  private roundHistory: RoundHistory[] = [];
+  public playerStats: Map<string, PlayerGameStats> = new Map();
+  public roundHistory: RoundHistory[] = [];
 
   constructor(
     game: GameState,
@@ -53,11 +59,13 @@ export class GameEngine {
     onCleanup?: () => void,
     socketLookup?: (playerId: string) => string | null,
     isRecreated: boolean = false,
-    onPersist?: (game: GameState) => void
+    onPersist?: (game: GameState) => void,
+    isPrivate: boolean = true
   ) {
     this.game = game;
     this.io = io;
     this.roomId = roomId;
+    this.isPrivateRoom = isPrivate;
     this.ai = new AIPlayer();
     this.onCleanup = onCleanup;
     this.onPersist = onPersist;
@@ -173,7 +181,7 @@ export class GameEngine {
   }
 
   // Safe setTimeout that tracks timers for cleanup
-  private safeSetTimeout(callback: () => void, delay: number): NodeJS.Timeout | null {
+  public safeSetTimeout(callback: () => void, delay: number): NodeJS.Timeout | null {
     if (this.isCleanedUp) return null;
 
     const timer = setTimeout(() => {
@@ -215,7 +223,7 @@ export class GameEngine {
     this.startNewRound();
   }
 
-  private startNewRound(): void {
+  public startNewRound(): void {
     if (this.isCleanedUp) return;
 
     const roundNumber = this.game.currentRound ? this.game.currentRound.roundNumber + 1 : 1;
@@ -244,7 +252,7 @@ export class GameEngine {
 
     // Deal cards until all hands are valid (18+ points OR has marriage)
     let hands: Card[][] = [[], [], []];
-    let talon: Card[] = [];
+    let talonCards: Card[] = [];
     let validDeal = false;
 
     while (!validDeal) {
@@ -253,7 +261,7 @@ export class GameEngine {
       for (let i = 0; i < 21; i++) {
         hands[i % 3].push(deck[i]);
       }
-      talon = deck.slice(21, 24);
+      talonCards = deck.slice(21, 24);
 
       // Check all hands are valid
       validDeal = hands.every(hand => isHandValid(hand));
@@ -266,15 +274,15 @@ export class GameEngine {
     if (is4Player) {
       const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
       for (const suit of suits) {
-        const hasQueen = talon.some(c => c.suit === suit && c.rank === 'Q');
-        const hasKing = talon.some(c => c.suit === suit && c.rank === 'K');
+        const hasQueen = talonCards.some(c => c.suit === suit && c.rank === 'Q');
+        const hasKing = talonCards.some(c => c.suit === suit && c.rank === 'K');
         if (hasQueen && hasKing) {
           talonMarriages.push(suit);
           dealerMarriagePoints += MARRIAGE_VALUES[suit];
         }
       }
       // Count aces in talon - each ace gives dealer 50 points
-      talonAces = talon.filter(c => c.rank === 'A').length;
+      talonAces = talonCards.filter(c => c.rank === 'A').length;
       dealerMarriagePoints += talonAces * 50;
     }
 
@@ -306,7 +314,7 @@ export class GameEngine {
     this.game.currentRound = {
       roundNumber,
       dealer: dealer.id,
-      talon,
+      talon: talonCards,
       talonRevealed: false,
       trumpSuit: null,
       bidWinner: null,
@@ -329,223 +337,15 @@ export class GameEngine {
     this.safeSetTimeout(() => this.startBidding(), 500);
   }
 
-  private startBidding(): void {
-    if (this.isCleanedUp) return;
+  // --- Bidding phase (delegated to phases/bidding.ts) ---
 
-    const round = this.game.currentRound!;
-    const playerCount = this.game.players.length;
-    const is4Player = playerCount === 4;
+  private startBidding(): void { bidding.startBidding(this); }
+  handleBid(playerId: string, amount: number): void { bidding.handleBid(this, playerId, amount); }
+  handlePass(playerId: string): void { bidding.handlePass(this, playerId); }
 
-    // Get active players (exclude dealer in 4-player mode)
-    const activePlayers = is4Player
-      ? this.game.players.filter(p => p.id !== round.dealer)
-      : this.game.players;
+  // --- Talon phase (delegated to phases/talon.ts) ---
 
-    const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
-
-    // Find first active player after dealer (left of dealer)
-    let leftOfDealerIndex = (dealerIndex + 1) % playerCount;
-    while (is4Player && this.game.players[leftOfDealerIndex].id === round.dealer) {
-      leftOfDealerIndex = (leftOfDealerIndex + 1) % playerCount;
-    }
-    const leftOfDealer = this.game.players[leftOfDealerIndex].id;
-
-    // Left of dealer has auto-100
-    round.bidWinner = leftOfDealer;
-    round.finalBid = 100;
-
-    // Find second active player after dealer (next bidder starts at 110)
-    let nextBidderIndex = (leftOfDealerIndex + 1) % playerCount;
-    while (is4Player && this.game.players[nextBidderIndex].id === round.dealer) {
-      nextBidderIndex = (nextBidderIndex + 1) % playerCount;
-    }
-    this.currentBidder = this.game.players[nextBidderIndex].id;
-    this.passedPlayers = [];
-
-    this.game.phase = 'bidding';
-    this.broadcastState();
-    this.promptCurrentPlayer();
-  }
-
-  handleBid(playerId: string, amount: number): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'bidding') return;
-    if (playerId !== this.currentBidder) return;
-
-    const round = this.game.currentRound!;
-    const hand = round.players[playerId].hand;
-
-    const isFirstBid = round.finalBid === 100;
-    const validation = validateBid(amount, round.finalBid, hand, isFirstBid);
-
-    if (!validation.isValid) {
-      this.sendError(playerId, validation.reason!);
-      return;
-    }
-
-    // Update bid
-    round.finalBid = amount;
-    round.bidWinner = playerId;
-
-    this.broadcastState();
-    this.advanceBidding();
-  }
-
-  handlePass(playerId: string): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'bidding') return;
-    if (playerId !== this.currentBidder) return;
-
-    const round = this.game.currentRound!;
-    const playerCount = this.game.players.length;
-    const is4Player = round.isDealerSittingOut;
-    const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
-
-    // Find left of dealer (skip dealer in 4-player mode)
-    let leftOfDealerIndex = (dealerIndex + 1) % playerCount;
-    while (is4Player && this.game.players[leftOfDealerIndex].id === round.dealer) {
-      leftOfDealerIndex = (leftOfDealerIndex + 1) % playerCount;
-    }
-    const leftOfDealer = this.game.players[leftOfDealerIndex].id;
-
-    // Left of dealer can't pass if others have all passed
-    if (playerId === leftOfDealer && this.passedPlayers.length === 2) {
-      this.sendError(playerId, 'You must bid - others have passed');
-      return;
-    }
-
-    this.passedPlayers.push(playerId);
-    this.broadcastState();
-    this.advanceBidding();
-  }
-
-  private advanceBidding(): void {
-    if (this.isCleanedUp) return;
-
-    const round = this.game.currentRound!;
-    const is4Player = round.isDealerSittingOut;
-
-    // Check if bidding is complete (2 players passed)
-    if (this.passedPlayers.length >= 2) {
-      this.endBidding();
-      return;
-    }
-
-    // Get active players (exclude dealer in 4-player mode)
-    const activePlayers = is4Player
-      ? this.game.players.filter(p => p.id !== round.dealer)
-      : this.game.players;
-
-    // Build bidding order from active players starting left of dealer
-    const dealerIndex = this.game.players.findIndex(p => p.id === round.dealer);
-    const biddingOrder: string[] = [];
-    for (let i = 1; i <= this.game.players.length; i++) {
-      const player = this.game.players[(dealerIndex + i) % this.game.players.length];
-      // Only exclude dealer in 4-player mode (where dealer sits out)
-      if (!is4Player || player.id !== round.dealer) {
-        biddingOrder.push(player.id);
-      }
-    }
-
-    // Get active bidders (excluding passed players and current highest bidder)
-    const activeBidders = biddingOrder.filter(
-      p => !this.passedPlayers.includes(p) && p !== round.bidWinner
-    );
-
-    if (activeBidders.length === 0) {
-      this.endBidding();
-      return;
-    }
-
-    // Next bidder is first active bidder after current
-    const currentIndex = biddingOrder.indexOf(this.currentBidder);
-    let nextBidder: string | null = null;
-
-    for (let i = 1; i <= biddingOrder.length; i++) {
-      const candidate = biddingOrder[(currentIndex + i) % biddingOrder.length];
-      if (activeBidders.includes(candidate)) {
-        nextBidder = candidate;
-        break;
-      }
-    }
-
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      eventType: 'bidding:advance',
-      eventData: {
-        currentBidder: this.currentBidder,
-        bidWinner: round.bidWinner,
-        finalBid: round.finalBid,
-        passedPlayers: this.passedPlayers,
-        biddingOrder,
-        activeBidders,
-        nextBidder,
-        currentIndex,
-      },
-      result: 'success',
-    });
-
-    if (nextBidder) {
-      this.currentBidder = nextBidder;
-      this.promptCurrentPlayer();
-    } else {
-      this.endBidding();
-    }
-  }
-
-  private endBidding(): void {
-    if (this.isCleanedUp) return;
-
-    this.game.phase = 'talonReveal';
-    const round = this.game.currentRound!;
-    round.talonRevealed = true;
-
-    // Reset talon confirmations
-    this.talonConfirmations.clear();
-
-    this.broadcastState();
-
-    // Auto-confirm for players who don't need to confirm:
-    // - AI players (they auto-confirm)
-    // - Sitting-out dealer in 4-player mode
-    // - Non-bid-winners when bid is exactly 100 (they can't see the talon)
-    const bidWasAt100 = round.finalBid === 100;
-    const autoConfirmDetails: { playerId: string; reason: string }[] = [];
-
-    for (const player of this.game.players) {
-      const isAI = player.isAI;
-      const isSittingOutDealer = round.isDealerSittingOut && player.id === round.dealer;
-      const cantSeeTalon = bidWasAt100 && player.id !== round.bidWinner;
-
-      if (isAI || isSittingOutDealer || cantSeeTalon) {
-        this.talonConfirmations.add(player.id);
-        const reason = isAI ? 'isAI' : isSittingOutDealer ? 'sittingOutDealer' : 'cantSeeTalon';
-        autoConfirmDetails.push({ playerId: player.id, reason });
-      }
-    }
-
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      eventType: 'talon:autoConfirmSummary',
-      eventData: {
-        bidWasAt100,
-        bidWinner: round.bidWinner,
-        dealer: round.dealer,
-        isDealerSittingOut: round.isDealerSittingOut,
-        allPlayers: this.game.players.map(p => ({ id: p.id, name: p.name, isAI: p.isAI })),
-        autoConfirmed: autoConfirmDetails,
-        confirmationSet: Array.from(this.talonConfirmations),
-      },
-      result: 'success',
-    });
-
-    // Check if all confirmations are in
-    this.checkTalonConfirmations();
-  }
-
-  private clearPlayOrPassTimer(): void {
+  public clearPlayOrPassTimer(): void {
     if (this.playOrPassTimer) {
       clearTimeout(this.playOrPassTimer);
       this.activeTimers.delete(this.playOrPassTimer);
@@ -553,679 +353,23 @@ export class GameEngine {
     }
   }
 
-  handleConfirmTalon(playerId: string): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'talonReveal') {
-      logDebug({
-        gameId: this.game.id,
-        roomId: this.roomId,
-        playerId,
-        eventType: 'talon:confirm:rejected',
-        eventData: { reason: 'wrong_phase', currentPhase: this.game.phase },
-        result: 'rejected',
-      });
-      return;
-    }
-
-    // Add player confirmation
-    this.talonConfirmations.add(playerId);
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      playerId,
-      eventType: 'talon:confirm',
-      eventData: {
-        confirmations: Array.from(this.talonConfirmations),
-        totalPlayers: this.game.players.length,
-      },
-      result: 'success',
-    });
-    this.checkTalonConfirmations();
-  }
-
-  private checkTalonConfirmations(): void {
-    if (this.isCleanedUp) return;
-
-    // Auto-confirm disconnected players (no socket = disconnected)
-    for (const player of this.game.players) {
-      if (player.isAI) continue; // AI already auto-confirmed
-      const socketId = this.getSocketId(player.id);
-      if (!socketId && !this.talonConfirmations.has(player.id)) {
-        logDebug({
-          gameId: this.game.id,
-          roomId: this.roomId,
-          playerId: player.id,
-          eventType: 'talon:autoconfirm:disconnected',
-          eventData: { reason: 'no_socket' },
-          result: 'success',
-        });
-        this.talonConfirmations.add(player.id);
-      }
-    }
-
-    // Check if all players have confirmed
-    const playerIds = this.game.players.map(p => p.id);
-    const confirmedIds = Array.from(this.talonConfirmations);
-    const missingConfirmations = playerIds.filter(id => !this.talonConfirmations.has(id));
-    const allConfirmed = missingConfirmations.length === 0;
-
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      eventType: 'talon:checkConfirmations',
-      eventData: {
-        playerIds,
-        confirmedIds,
-        missingConfirmations,
-        allConfirmed,
-      },
-      result: allConfirmed ? 'success' : 'rejected',
-    });
-
-    if (allConfirmed) {
-      const round = this.game.currentRound!;
-
-      // Bidder always gets the option to play or throw (pass)
-      // Give talon to bid winner before the decision so they can see it in their hand
-      const bidWinnerId = round.bidWinner!;
-      if (!this.talonAddedToHand) {
-        round.players[bidWinnerId].hand.push(...round.talon);
-        round.cardsToDistribute = [...round.talon];
-        this.talonAddedToHand = true;
-      }
-
-      logDebug({
-        gameId: this.game.id,
-        roomId: this.roomId,
-        eventType: 'phase:transition',
-        eventData: {
-          from: 'talonReveal',
-          to: 'playOrPassDecision',
-          bidWinner: round.bidWinner,
-          finalBid: round.finalBid,
-          talonAddedToHand: true,
-        },
-        result: 'success',
-      });
-      this.game.phase = 'playOrPassDecision';
-      this.broadcastState();
-      this.promptPlayOrPassDecision();
-    }
-  }
-
-  handleConfirmWykladana(playerId: string): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'wykladana') {
-      logDebug({
-        gameId: this.game.id,
-        roomId: this.roomId,
-        playerId,
-        eventType: 'wykladana:confirm:rejected',
-        eventData: { reason: 'wrong_phase', currentPhase: this.game.phase },
-        result: 'rejected',
-      });
-      return;
-    }
-
-    this.wykladanaConfirmations.add(playerId);
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      playerId,
-      eventType: 'wykladana:confirm',
-      eventData: {
-        confirmations: Array.from(this.wykladanaConfirmations),
-        totalPlayers: this.game.players.length,
-      },
-      result: 'success',
-    });
-    this.checkWykladanaConfirmations();
-  }
-
-  private checkWykladanaConfirmations(): void {
-    if (this.isCleanedUp) return;
-
-    const playerIds = this.game.players.map(p => p.id);
-    const allConfirmed = playerIds.every(id => this.wykladanaConfirmations.has(id));
-
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      eventType: 'wykladana:checkConfirmations',
-      eventData: {
-        playerIds,
-        confirmedIds: Array.from(this.wykladanaConfirmations),
-        allConfirmed,
-      },
-      result: allConfirmed ? 'success' : 'rejected',
-    });
-
-    if (allConfirmed) {
-      // All players acknowledged, end the round
-      this.endRound();
-    }
-  }
-
-  private promptPlayOrPassDecision(): void {
-    if (this.isCleanedUp) return;
-
-    const round = this.game.currentRound!;
-    const bidWinnerId = round.bidWinner!;
-
-    // Check if AI player - AI always chooses to play
-    if (isAIPlayer(this.game, bidWinnerId)) {
-      logDebug({
-        gameId: this.game.id,
-        roomId: this.roomId,
-        playerId: bidWinnerId,
-        eventType: 'playOrPass:prompt:ai',
-        eventData: { decision: 'auto_play' },
-        result: 'success',
-      });
-      this.safeSetTimeout(() => {
-        this.handlePlayOrPass(bidWinnerId, 'play');
-      }, 800);
-      return;
-    }
-
-    // Notify human player
-    const socketId = this.getSocketId(bidWinnerId);
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      playerId: bidWinnerId,
-      socketId: socketId || undefined,
-      eventType: 'playOrPass:prompt:human',
-      eventData: { hasSocket: !!socketId },
-      result: socketId ? 'success' : 'error',
-      errorMessage: socketId ? undefined : 'No socket found for bid winner',
-    });
-    if (socketId) {
-      this.io.to(socketId).emit('game:yourTurn', {
-        validActions: [{ type: 'playOrPass' }],
-      });
-    } else {
-      // No socket - player disconnected. Auto-play for them.
-      logDebug({
-        gameId: this.game.id,
-        roomId: this.roomId,
-        playerId: bidWinnerId,
-        eventType: 'playOrPass:autoPlay:disconnected',
-        eventData: { reason: 'no_socket' },
-        result: 'success',
-      });
-      this.safeSetTimeout(() => {
-        this.handlePlayOrPass(bidWinnerId, 'play');
-      }, 800);
-    }
-  }
-
-  handlePlayOrPass(playerId: string, decision: 'play' | 'pass'): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'playOrPassDecision') return;
-
-    // Clear the safeguard timer since we're handling the decision
-    this.clearPlayOrPassTimer();
-
-    const round = this.game.currentRound!;
-    if (playerId !== round.bidWinner) return;
-
-    if (decision === 'pass') {
-      const player = this.game.players.find(p => p.id === playerId);
-      const bidAmount = round.finalBid;
-
-      if (bidAmount === 100) {
-        // At 100: no penalty, just emit passed event
-        this.io.to(this.roomId).emit('game:playerPassedAt100', {
-          playerId,
-          playerName: player?.name || 'Unknown',
-        });
-      } else {
-        // At >100: bidder loses bid amount, 120 points distributed to others
-        // Deduct bid amount from bidder
-        this.game.scores[playerId].totalScore -= bidAmount;
-        this.game.scores[playerId].roundScores.push(-bidAmount);
-
-        // Get active players (exclude dealer in 4-player mode)
-        const activePlayers = round.isDealerSittingOut
-          ? this.game.players.filter(p => p.id !== round.dealer)
-          : this.game.players;
-
-        // Other active players (exclude the bidder)
-        const otherActivePlayers = activePlayers.filter(p => p.id !== playerId);
-        const pointsPerPlayer = Math.floor(120 / otherActivePlayers.length);
-
-        // Track score changes for the event
-        const scoreChanges: Record<string, number> = {};
-        scoreChanges[playerId] = -bidAmount;
-
-        // Distribute 120 points evenly to other players (barrel players get 0)
-        for (const otherPlayer of otherActivePlayers) {
-          const isOnBarrel = this.game.scores[otherPlayer.id].isOnBarrel;
-          const awarded = isOnBarrel ? 0 : pointsPerPlayer;
-          this.game.scores[otherPlayer.id].totalScore += awarded;
-          this.game.scores[otherPlayer.id].roundScores.push(awarded);
-          scoreChanges[otherPlayer.id] = awarded;
-        }
-
-        // Emit the threw event with score changes
-        this.io.to(this.roomId).emit('game:playerThrew', {
-          playerId,
-          playerName: player?.name || 'Unknown',
-          bidAmount,
-          scoreChanges,
-        });
-
-        logDebug({
-          gameId: this.game.id,
-          roomId: this.roomId,
-          playerId,
-          eventType: 'player:threw',
-          eventData: {
-            bidAmount,
-            scoreChanges,
-            newScores: Object.fromEntries(
-              Object.entries(this.game.scores).map(([id, s]) => [id, s.totalScore])
-            ),
-          },
-          result: 'success',
-        });
-      }
-
-      // Record the passed round in history
-      const passedRoundHistory: RoundHistory = {
-        roundNumber: round.roundNumber,
-        bidWinner: playerId,
-        bid: bidAmount,
-        bidderMadeBid: false,
-        wasPassed: true,
-        playerScores: {},
-      };
-      for (const p of this.game.players) {
-        let scoreChange: number;
-        if (p.id === playerId) {
-          scoreChange = bidAmount === 100 ? 0 : -bidAmount;
-        } else if (bidAmount === 100) {
-          scoreChange = 0;
-        } else {
-          const isOnBarrel = this.game.scores[p.id].isOnBarrel;
-          const otherCount = round.isDealerSittingOut
-            ? this.game.players.filter(pl => pl.id !== round.dealer && pl.id !== playerId).length
-            : this.game.players.filter(pl => pl.id !== playerId).length;
-          scoreChange = isOnBarrel ? 0 : Math.floor(120 / otherCount);
-        }
-        passedRoundHistory.playerScores[p.id] = {
-          trickPoints: 0,
-          marriagePoints: 0,
-          totalRoundPoints: 0,
-          scoreChange,
-          newTotalScore: this.game.scores[p.id].totalScore,
-          wasOnBarrel: this.game.scores[p.id].isOnBarrel,
-        };
-      }
-      this.roundHistory.push(passedRoundHistory);
-
-      // Delay must exceed client notification duration so cards aren't dealt while it's visible
-      // Pass at 100: 3s notification + 1.5s pause = 4.5s
-      // Threw (>100): 4s notification + 1.5s pause = 5.5s
-      const newRoundDelay = bidAmount === 100 ? 4500 : 5500;
-      this.safeSetTimeout(() => {
-        this.startNewRound();
-      }, newRoundDelay);
-    } else {
-      // Player chose to play - proceed to talon distribution
-      this.proceedToTalonDistribution();
-    }
-  }
-
-  private proceedToTalonDistribution(): void {
-    if (this.isCleanedUp) return;
-
-    const round = this.game.currentRound!;
-    const bidWinnerId = round.bidWinner!;
-
-    // Only add talon if not already added
-    if (!this.talonAddedToHand) {
-      round.players[bidWinnerId].hand.push(...round.talon);
-      round.cardsToDistribute = [...round.talon];
-      this.talonAddedToHand = true;
-    }
-
-    this.safeSetTimeout(() => {
-      if (this.isCleanedUp) return;
-      this.game.phase = 'talonDistribution';
-      this.broadcastState();
-      this.promptCurrentPlayer();
-    }, 500);
-  }
-
-  handleDistributeTalon(playerId: string, distribution: { playerId: string; card: Card }[]): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'talonDistribution') return;
-
-    const round = this.game.currentRound!;
-    if (playerId !== round.bidWinner) return;
-
-    // Validate distribution
-    if (distribution.length !== 2) {
-      this.sendError(playerId, 'Must give exactly 2 cards');
-      return;
-    }
-
-    // Get other active players (exclude bidder and sitting-out dealer)
-    const otherPlayers = this.game.players
-      .filter(p => p.id !== playerId && !(round.isDealerSittingOut && p.id === round.dealer))
-      .map(p => p.id);
-    const targetPlayers = distribution.map(d => d.playerId);
-
-    // Each other player must receive exactly 1 card
-    if (!otherPlayers.every(p => targetPlayers.filter(t => t === p).length === 1)) {
-      this.sendError(playerId, 'Each opponent must receive exactly 1 card');
-      return;
-    }
-
-    // Check for duplicate cards in distribution
-    const distributedCards = distribution.map(d => `${d.card.suit}-${d.card.rank}`);
-    if (new Set(distributedCards).size !== distributedCards.length) {
-      this.sendError(playerId, 'Cannot give the same card twice');
-      return;
-    }
-
-    const bidderHand = round.players[playerId].hand;
-
-    // Verify cards are in hand
-    for (const { card } of distribution) {
-      const inHand = bidderHand.some(c => c.suit === card.suit && c.rank === card.rank);
-      if (!inHand) {
-        this.sendError(playerId, 'Card not in hand');
-        return;
-      }
-    }
-
-    // Distribute cards
-    for (const { playerId: targetId, card } of distribution) {
-      // Remove from bidder's hand
-      const index = bidderHand.findIndex(c => c.suit === card.suit && c.rank === card.rank);
-      bidderHand.splice(index, 1);
-
-      // Add to target's hand
-      round.players[targetId].hand.push(card);
-    }
-
-    round.cardsToDistribute = [];
-    this.startTrickPlaying();
-  }
-
-  private startTrickPlaying(): void {
-    if (this.isCleanedUp) return;
-
-    const round = this.game.currentRound!;
-
-    // Check for WYKLADANA before starting tricks
-    const isWykladana = detectWykladana(this.game);
-
-    if (isWykladana) {
-      // Award all 120 trick points to bidder immediately
-      const bidderState = round.players[round.bidWinner!];
-      bidderState.pointsFromTricks = 120; // All trick points
-      bidderState.tricksWon = [[]]; // Mark as having won at least one trick for marriage points
-      round.completedTricks = 8;
-
-      // Auto-declare all marriages in bidder's hand
-      const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
-      for (const suit of suits) {
-        if (hasMarriage(bidderState.hand, suit)) {
-          bidderState.declaredMarriages.push(suit);
-          bidderState.marriagePoints += MARRIAGE_VALUES[suit];
-          // Set trump to highest value marriage (first one found in order)
-          if (!round.trumpSuit) {
-            round.trumpSuit = suit;
-          }
-        }
-      }
-
-      // Emit WYKLADANA celebration event
-      const bidWinner = this.game.players.find(p => p.id === round.bidWinner);
-      this.io.to(this.roomId).emit('game:wykladana', {
-        playerId: round.bidWinner!,
-        playerName: bidWinner?.name || 'Unknown',
-        bid: round.finalBid,
-        marriagePoints: bidderState.marriagePoints,
-        cards: bidderState.hand,
-      });
-
-      // Set phase to wykladana and wait for all players to confirm
-      this.game.phase = 'wykladana';
-      this.wykladanaConfirmations.clear();
-
-      // Auto-confirm for AI players
-      for (const player of this.game.players) {
-        if (player.isAI) {
-          this.wykladanaConfirmations.add(player.id);
-        }
-      }
-
-      this.broadcastState();
-      this.checkWykladanaConfirmations();
-      return;
-    }
-
-    // Normal trick playing setup
-    round.currentTrick = {
-      cards: [],
-      leadSuit: null,
-      currentPlayer: round.bidWinner!,
-      trickNumber: 1,
-    };
-
-    this.game.phase = 'trickPlaying';
-    this.broadcastState();
-    this.promptCurrentPlayer();
-  }
-
-  handleDeclareMarriage(playerId: string, suit: Suit): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'trickPlaying') return;
-
-    const round = this.game.currentRound!;
-    const trick = round.currentTrick;
-
-    if (!trick || trick.currentPlayer !== playerId) return;
-    if (trick.cards.length !== 0) return; // Must be leading
-
-    const playerState = round.players[playerId];
-    const validation = canDeclareMarriage(
-      playerState.hand,
-      suit,
-      playerState.declaredMarriages,
-      true
-    );
-
-    if (!validation.isValid) {
-      this.sendError(playerId, validation.reason!);
-      return;
-    }
-
-    // Declare marriage
-    playerState.declaredMarriages.push(suit);
-    playerState.marriagePoints += MARRIAGE_VALUES[suit];
-
-    // Track marriage for statistics
-    const stats = this.playerStats.get(playerId);
-    if (stats) {
-      stats.marriageCount++;
-    }
-
-    // Set trump
-    round.trumpSuit = suit;
-
-    // Emit marriage declared event
-    this.io.to(this.roomId).emit('game:marriageDeclared', { playerId, suit });
-
-    this.broadcastState();
-
-    // Auto-play the Queen of the marriage suit
-    const queen: Card = { suit, rank: 'Q' };
-    this.handlePlayCard(playerId, queen);
-  }
-
-  handlePlayCard(playerId: string, card: Card): void {
-    if (this.isCleanedUp) return;
-    if (this.game.phase !== 'trickPlaying') return;
-
-    const round = this.game.currentRound!;
-    const trick = round.currentTrick;
-
-    if (!trick || trick.currentPlayer !== playerId) return;
-
-    const playerState = round.players[playerId];
-    const validation = validateCardPlay(card, playerState.hand, trick, round.trumpSuit, this.game);
-
-    if (!validation.isValid) {
-      this.sendError(playerId, validation.reason!);
-      return;
-    }
-
-    // Auto-declare marriage when playing Q while leading
-    if (card.rank === 'Q' && trick.cards.length === 0) {
-      const suit = card.suit;
-      const declared = playerState.declaredMarriages;
-      const hasMarriageInSuit = hasMarriage(playerState.hand, suit);
-
-      logDebug({
-        gameId: this.game.id,
-        roomId: this.roomId,
-        playerId,
-        eventType: 'marriage:check',
-        eventData: {
-          cardRank: card.rank,
-          cardSuit: card.suit,
-          trickCardsLength: trick.cards.length,
-          hasMarriageResult: hasMarriageInSuit,
-          alreadyDeclared: declared,
-          handSummary: playerState.hand.map(c => `${c.rank}${c.suit}`),
-        },
-        result: 'success',
-      });
-
-      // Check if player has undeclared marriage in this suit
-      if (hasMarriageInSuit && !declared.includes(suit)) {
-        // Declare the marriage
-        playerState.declaredMarriages.push(suit);
-        playerState.marriagePoints += MARRIAGE_VALUES[suit];
-        round.trumpSuit = suit;
-        // Track marriage for statistics
-        const stats = this.playerStats.get(playerId);
-        if (stats) {
-          stats.marriageCount++;
-        }
-        // Emit marriage declared event
-        this.io.to(this.roomId).emit('game:marriageDeclared', { playerId, suit });
-        logDebug({
-          gameId: this.game.id,
-          roomId: this.roomId,
-          playerId,
-          eventType: 'marriage:declared',
-          eventData: { suit, trumpSuit: round.trumpSuit, marriagePoints: playerState.marriagePoints },
-          result: 'success',
-        });
-      }
-    }
-
-    // Play card
-    trick.cards.push({ playerId, card });
-    if (trick.cards.length === 1) {
-      trick.leadSuit = card.suit;
-    }
-
-    // Remove from hand
-    const index = playerState.hand.findIndex(c => c.suit === card.suit && c.rank === card.rank);
-    playerState.hand.splice(index, 1);
-
-    this.io.to(this.roomId).emit('game:cardPlayed', { playerId, card });
-
-    // Check if trick is complete
-    if (trick.cards.length === 3) {
-      // Force immediate broadcast so clients see all 3 cards before trick clears.
-      // broadcastState() uses queueMicrotask which would fire AFTER completeTrick()
-      // resets currentTrick, so clients would never see the 3rd card.
-      this.doBroadcast();
-      // Delay trick completion so all 3 cards are visible for ~1s
-      this.safeSetTimeout(() => this.completeTrick(), 2000);
-    } else {
-      this.broadcastState();
-      // Next player
-      trick.currentPlayer = getNextPlayer(this.game, playerId);
-      this.promptCurrentPlayer();
-    }
-  }
-
-  private completeTrick(): void {
-    if (this.isCleanedUp) return;
-
-    const round = this.game.currentRound!;
-    const trick = round.currentTrick!;
-
-    const { winnerId, winningCard, reason } = getTrickWinnerWithReason(trick, round.trumpSuit);
-
-    // Safety check for winner
-    if (!winnerId) {
-      console.error('Failed to determine trick winner');
-      return;
-    }
-
-    const trickCards = trick.cards.map(c => c.card);
-
-    // Calculate points
-    const points = trickCards.reduce((sum, c) => {
-      const cardPoints: Record<string, number> = { '9': 0, 'J': 2, 'Q': 3, 'K': 4, '10': 10, 'A': 11 };
-      return sum + cardPoints[c.rank];
-    }, 0);
-
-    logDebug({
-      gameId: this.game.id,
-      roomId: this.roomId,
-      playerId: winnerId,
-      eventType: 'trick:completed',
-      eventData: {
-        trickNumber: trick.trickNumber,
-        cards: trick.cards.map(c => ({ playerId: c.playerId, card: `${c.card.rank}${c.card.suit}` })),
-        leadSuit: trick.leadSuit,
-        trumpSuit: round.trumpSuit,
-        winningCard: `${winningCard.rank}${winningCard.suit}`,
-        points,
-        reason,
-      },
-      result: 'success',
-    });
-
-    // Award to winner
-    round.players[winnerId].tricksWon.push(trickCards);
-    round.players[winnerId].pointsFromTricks += points;
-
-    this.io.to(this.roomId).emit('game:trickWon', { winnerId, cards: trickCards, points });
-
-    round.completedTricks++;
-
-    // Check if round is complete (8 tricks)
-    if (round.completedTricks >= 8) {
-      this.safeSetTimeout(() => this.endRound(), 1500);
-    } else {
-      // Start next trick — broadcast immediately since we already
-      // waited ~1s in handlePlayCard before calling completeTrick()
-      round.currentTrick = {
-        cards: [],
-        leadSuit: null,
-        currentPlayer: winnerId,
-        trickNumber: round.completedTricks + 1,
-      };
-
-      this.broadcastState();
-      this.promptCurrentPlayer();
-    }
-  }
-
-  private endRound(): void {
+  handleConfirmTalon(playerId: string): void { talon.handleConfirmTalon(this, playerId); }
+  public checkTalonConfirmations(): void { talon.checkTalonConfirmations(this); }
+  handleConfirmWykladana(playerId: string): void { talon.handleConfirmWykladana(this, playerId); }
+  public checkWykladanaConfirmations(): void { talon.checkWykladanaConfirmations(this); }
+  private promptPlayOrPassDecision(): void { talon.promptPlayOrPassDecision(this); }
+  handlePlayOrPass(playerId: string, decision: 'play' | 'pass'): void { talon.handlePlayOrPass(this, playerId, decision); }
+  handleDistributeTalon(playerId: string, distribution: { playerId: string; card: Card }[]): void { talon.handleDistributeTalon(this, playerId, distribution); }
+
+  // --- Trick playing phase (delegated to phases/trickPlaying.ts) ---
+
+  public startTrickPlaying(): void { trickPlaying.startTrickPlaying(this); }
+  handleDeclareMarriage(playerId: string, suit: Suit): void { trickPlaying.handleDeclareMarriage(this, playerId, suit); }
+  handlePlayCard(playerId: string, card: Card): void { trickPlaying.handlePlayCard(this, playerId, card); }
+
+  // --- Round lifecycle (kept in engine) ---
+
+  public endRound(): void {
     if (this.isCleanedUp) return;
 
     this.game.phase = 'roundScoring';
@@ -1346,7 +490,7 @@ export class GameEngine {
     this.game.currentRound.talonAddedToHand = this.talonAddedToHand;
   }
 
-  private broadcastState(): void {
+  public broadcastState(): void {
     if (this.isCleanedUp) return;
 
     // Coalesce multiple broadcastState() calls in the same synchronous flow.
@@ -1361,7 +505,7 @@ export class GameEngine {
     }
   }
 
-  private doBroadcast(): void {
+  public doBroadcast(): void {
     if (this.isCleanedUp) return;
 
     // Sync engine state to game object before broadcast/persist
@@ -1404,7 +548,7 @@ export class GameEngine {
     this.onPersist?.(this.game);
   }
 
-  private promptCurrentPlayer(): void {
+  public promptCurrentPlayer(): void {
     if (this.isCleanedUp) return;
 
     const round = this.game.currentRound;
@@ -1439,7 +583,7 @@ export class GameEngine {
     }
   }
 
-  private handleAITurn(playerId: string, actions: ValidAction[]): void {
+  public handleAITurn(playerId: string, actions: ValidAction[]): void {
     if (this.isCleanedUp) return;
 
     try {
@@ -1496,7 +640,7 @@ export class GameEngine {
     }
   }
 
-  private handleAIFallback(playerId: string, actions: ValidAction[]): void {
+  public handleAIFallback(playerId: string, actions: ValidAction[]): void {
     if (this.isCleanedUp) return;
 
     try {
@@ -1526,11 +670,11 @@ export class GameEngine {
     }
   }
 
-  private getSocketId(playerId: string): string | null {
+  public getSocketId(playerId: string): string | null {
     return this.socketLookup(playerId);
   }
 
-  private sendError(playerId: string, message: string): void {
+  public sendError(playerId: string, message: string): void {
     const socketId = this.getSocketId(playerId);
     if (socketId) {
       this.io.to(socketId).emit('game:error', { code: 'INVALID_ACTION', message });

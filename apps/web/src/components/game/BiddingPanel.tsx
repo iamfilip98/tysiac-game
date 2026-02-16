@@ -1,7 +1,7 @@
 'use client';
 
-import { useState, useMemo, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useMemo, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import type { ValidAction } from '@tysiac/shared';
@@ -23,15 +23,42 @@ export function BiddingPanel({
 }: BiddingPanelProps) {
   const [isBidding, setIsBidding] = useState(false);
   const [isPassing, setIsPassing] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
   const bidTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const passTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     return () => {
       if (bidTimeoutRef.current) clearTimeout(bidTimeoutRef.current);
       if (passTimeoutRef.current) clearTimeout(passTimeoutRef.current);
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
     };
   }, []);
+
+  const toggleTooltip = useCallback(() => {
+    setShowTooltip((prev) => {
+      if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+      if (!prev) {
+        tooltipTimeoutRef.current = setTimeout(() => setShowTooltip(false), 5000);
+      }
+      return !prev;
+    });
+  }, []);
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    if (!showTooltip) return;
+    const handler = (e: MouseEvent) => {
+      if (tooltipRef.current && !tooltipRef.current.contains(e.target as Node)) {
+        setShowTooltip(false);
+        if (tooltipTimeoutRef.current) clearTimeout(tooltipTimeoutRef.current);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [showTooltip]);
 
   const bidAction = validActions.find((a) => a.type === 'bid');
   const canPass = validActions.some((a) => a.type === 'pass');
@@ -132,10 +159,36 @@ export function BiddingPanel({
           </Button>
         )}
 
-        {/* Show max bid info */}
+        {/* Show max bid info with tooltip */}
         {bidAction && bidAction.type === 'bid' && (
-          <div className="mt-3 text-center text-xs text-white/50">
+          <div className="mt-3 text-center text-xs text-white/50 relative" ref={tooltipRef}>
             You can bid up to {bidAction.maxBid} based on your marriages
+            <button
+              onClick={toggleTooltip}
+              className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/70 text-[10px] font-bold transition-colors align-middle"
+              aria-label="Marriage bid values info"
+            >
+              i
+            </button>
+            <AnimatePresence>
+              {showTooltip && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  transition={{ duration: 0.15 }}
+                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-table-800 border border-white/10 rounded-lg p-2.5 text-xs text-white/70 whitespace-nowrap z-50 shadow-lg"
+                >
+                  Each King+Queen pair adds to max bid:
+                  <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-white/60">
+                    <span><span className="text-red-400">♥</span> Hearts: +100</span>
+                    <span><span className="text-red-400">♦</span> Diamonds: +80</span>
+                    <span><span className="text-white/80">♣</span> Clubs: +60</span>
+                    <span><span className="text-white/80">♠</span> Spades: +40</span>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         )}
       </div>

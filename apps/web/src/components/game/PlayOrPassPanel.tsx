@@ -28,7 +28,7 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, pla
   const isNoPenalty = bidAmount === 100;
   // Calculate points per player: 120 distributed among active players minus bidder
   // In 4-player mode, dealer sits out, so 2 active opponents. In 3-player, 2 opponents.
-  const pointsPerOpponent = playerCount === 4 ? 60 : 60;
+  const pointsPerOpponent = 60;
 
   return (
     <ElectricBorder active color="#fbbf24">
