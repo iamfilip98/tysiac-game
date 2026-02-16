@@ -27,26 +27,26 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
     // or 0 = self (bottom), 1 = left, 2 = right (for active player)
     const spectatorPositions = isMobile
       ? [
-          { x: -48, y: -18, rotate: -10 }, // Position 0 = left
-          { x: 48, y: -18, rotate: 10 },   // Position 1 = right
-          { x: 0, y: 36, rotate: 0 },      // Position 2 = bottom
+          { x: -48, y: -34, rotate: -10 }, // Position 0 = left
+          { x: 48, y: -34, rotate: 10 },   // Position 1 = right
+          { x: 0, y: 50, rotate: 0 },      // Position 2 = bottom
         ]
       : [
-          { x: -72, y: -24, rotate: -15 }, // Position 0 = left
-          { x: 72, y: -24, rotate: 15 },   // Position 1 = right
-          { x: 0, y: 50, rotate: 0 },      // Position 2 = bottom
+          { x: -72, y: -36, rotate: -15 }, // Position 0 = left
+          { x: 72, y: -36, rotate: 15 },   // Position 1 = right
+          { x: 0, y: 58, rotate: 0 },      // Position 2 = bottom
         ];
 
     const activePositions = isMobile
       ? [
-          { x: 0, y: 36, rotate: 0 },     // Self (bottom)
-          { x: -48, y: -18, rotate: -10 }, // Left
-          { x: 48, y: -18, rotate: 10 },   // Right
+          { x: 0, y: 50, rotate: 0 },     // Self (bottom)
+          { x: -48, y: -34, rotate: -10 }, // Left
+          { x: 48, y: -34, rotate: 10 },   // Right
         ]
       : [
-          { x: 0, y: 50, rotate: 0 },     // Self (bottom)
-          { x: -72, y: -24, rotate: -15 }, // Left
-          { x: 72, y: -24, rotate: 15 },   // Right
+          { x: 0, y: 58, rotate: 0 },     // Self (bottom)
+          { x: -72, y: -36, rotate: -15 }, // Left
+          { x: 72, y: -36, rotate: 15 },   // Right
         ];
 
     // When spectating, use fixed position mapping based on player index in the players array
@@ -72,7 +72,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
   return (
     <div className={cn(
       'relative flex items-center justify-center',
-      isMobile ? 'w-48 h-48' : 'w-60 h-60'
+      isMobile ? 'w-52 h-56' : 'w-64 h-64'
     )}>
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full" style={{
