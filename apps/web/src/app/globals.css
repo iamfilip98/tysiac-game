@@ -174,7 +174,7 @@ html,
 
   body {
     @apply text-white antialiased;
-    background-color: var(--felt-primary);
+    background-color: var(--felt-secondary);
     background-image:
       radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.4) 100%),
       radial-gradient(circle at 50% 50%, var(--felt-primary) 0%, var(--felt-secondary) 100%);

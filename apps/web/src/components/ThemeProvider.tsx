@@ -4,14 +4,14 @@ import { useEffect } from 'react';
 import { usePreferencesStore } from '@/stores/preferencesStore';
 import type { Theme } from '@/stores/preferencesStore';
 
-// Felt-primary colors per theme — used for meta theme-color (regular Safari toolbar)
+// Darkest color per theme — used for meta theme-color and iOS status bar
 export const THEME_COLORS: Record<Theme, string> = {
-  classic: '#1a3d2b',
-  dark: '#1c1c22',
-  chocolate: '#3d2517',
-  midnight: '#0f1a3d',
-  burgundy: '#3d1520',
-  purple: '#261540',
+  classic: '#052e16',
+  dark: '#08080c',
+  chocolate: '#1a0f07',
+  midnight: '#070b18',
+  burgundy: '#1a070c',
+  purple: '#0f0719',
 };
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
