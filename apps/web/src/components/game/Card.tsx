@@ -13,7 +13,7 @@ interface CardProps {
   isFaceDown?: boolean;
   isMarriageCard?: boolean;
   isTrumpCard?: boolean;
-  size?: 'sm' | 'md' | 'lg';
+  size?: 'xs' | 'sm' | 'md' | 'lg';
   onClick?: () => void;
   style?: React.CSSProperties;
   className?: string;
@@ -21,7 +21,8 @@ interface CardProps {
 }
 
 const sizeClasses = {
-  sm: 'w-12 h-[72px] text-xs',
+  xs: 'w-12 h-[72px] text-xs',
+  sm: 'w-14 h-[84px] text-xs',
   md: 'w-16 h-[96px] text-sm',
   lg: 'w-20 h-[120px] text-base',
 };
@@ -128,7 +129,7 @@ export function Card({
   const isFaceCard = ['K', 'Q', 'J'].includes(card.rank);
   const isHighCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
   const showCornerPips = true; // Show on all sizes
-  const showPortrait = isFaceCard && size !== 'sm';
+  const showPortrait = isFaceCard && size !== 'xs';
   const isDarkTheme = theme === 'dark';
 
   // Marriage card text color — dark theme needs white text for readability on gold
@@ -177,7 +178,32 @@ export function Card({
         style={{ ...style, willChange: 'opacity, transform' }}
         role="img"
         aria-label="Face-down card"
-      />
+      >
+        {/* Enchanted shimmer — desktop only, animations on */}
+        {!isMobile && animationsEnabled && (
+          <div
+            className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none"
+            style={{ zIndex: 1 }}
+            aria-hidden="true"
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                background: `linear-gradient(
+                  105deg,
+                  transparent 30%,
+                  rgba(212, 175, 55, 0.08) 42%,
+                  rgba(255, 255, 255, 0.12) 50%,
+                  rgba(212, 175, 55, 0.08) 58%,
+                  transparent 70%
+                )`,
+                backgroundSize: '250% 100%',
+                animation: 'cardBackShimmer 4s ease-in-out infinite',
+              }}
+            />
+          </div>
+        )}
+      </motion.div>
     );
   }
 
@@ -399,15 +425,15 @@ export function Card({
               className="absolute top-[2px] left-[3px] flex flex-col items-center leading-none"
               style={{ color: textColor, ...marriageTextStyle }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : 'text-[9px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : size === 'sm' ? 'text-[10px]' : 'text-[9px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]')}>{suitSymbol}</span>
             </div>
           )}
-          {/* Center: SVG portrait for face cards (md/lg), text for others */}
+          {/* Center: SVG portrait for face cards (md/lg/sm), text for others */}
           {showPortrait ? (
             <div className={cn(
               'flex items-center justify-center',
-              size === 'lg' ? 'w-[58px] h-[76px]' : 'w-[46px] h-[60px]'
+              size === 'lg' ? 'w-[58px] h-[76px]' : size === 'sm' ? 'w-[38px] h-[50px]' : 'w-[46px] h-[60px]'
             )}>
               {card.rank === 'K' && <KingPortrait color={color} isMarriage={isMarriageCard} />}
               {card.rank === 'Q' && <QueenPortrait color={color} isMarriage={isMarriageCard} />}
@@ -416,13 +442,13 @@ export function Card({
           ) : (
             <>
               <span
-                className={cn('font-bold', size === 'sm' ? 'text-lg' : isHighCard ? 'text-3xl' : 'text-2xl')}
+                className={cn('font-bold', size === 'xs' ? 'text-lg' : isHighCard ? 'text-3xl' : 'text-2xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {card.rank}
               </span>
               <span
-                className={cn(size === 'sm' ? 'text-xl' : 'text-4xl')}
+                className={cn(size === 'xs' ? 'text-xl' : 'text-4xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {suitSymbol}
@@ -435,8 +461,8 @@ export function Card({
               className="absolute bottom-[2px] right-[3px] flex flex-col items-center leading-none rotate-180"
               style={{ color: textColor, ...marriageTextStyle }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : 'text-[9px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : size === 'sm' ? 'text-[10px]' : 'text-[9px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]')}>{suitSymbol}</span>
             </div>
           )}
         </div>
@@ -446,7 +472,7 @@ export function Card({
 }
 
 // Card placeholder (empty spot)
-export function CardPlaceholder({ size = 'md', className }: { size?: 'sm' | 'md' | 'lg'; className?: string }) {
+export function CardPlaceholder({ size = 'md', className }: { size?: 'xs' | 'sm' | 'md' | 'lg'; className?: string }) {
   return (
     <div
       className={cn(

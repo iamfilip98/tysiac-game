@@ -173,10 +173,8 @@ html,
   }
 
   body {
-    @apply bg-table-950 text-white antialiased;
-    background-image:
-      radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.4) 100%),
-      radial-gradient(circle at 50% 50%, var(--felt-primary) 0%, var(--felt-secondary) 100%);
+    @apply text-white antialiased;
+    background-color: var(--felt-primary);
     height: 100%;
     height: 100dvh;
     overflow: hidden;
@@ -186,18 +184,6 @@ html,
     left: 0;
   }
 
-  /* iOS status bar theme strip — shows theme color behind the translucent status bar */
-  body::before {
-    content: '';
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: env(safe-area-inset-top, 0px);
-    background: var(--felt-primary);
-    z-index: 9999;
-    pointer-events: none;
-  }
 }
 
 @layer utilities {
@@ -209,11 +195,14 @@ html,
   }
 }
 
-/* Card table felt texture */
+/* Card table felt texture — includes the main gradient (moved off body so body bg-color is visible behind iOS status bar) */
 .felt-texture {
   background-image:
     radial-gradient(circle at 50% 50%, var(--felt-glow) 0%, transparent 50%),
-    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E");
+    url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.05'/%3E%3C/svg%3E"),
+    radial-gradient(ellipse at 50% 50%, transparent 60%, rgba(0, 0, 0, 0.4) 100%),
+    radial-gradient(circle at 50% 50%, var(--felt-primary) 0%, var(--felt-secondary) 100%);
+  background-color: var(--felt-secondary);
 }
 
 /* Electric border animation */
@@ -403,6 +392,16 @@ html,
   }
 }
 
+/* Enchanted shimmer for card backs */
+@keyframes cardBackShimmer {
+  0% {
+    background-position: 250% 0;
+  }
+  100% {
+    background-position: -250% 0;
+  }
+}
+
 /* Sparkle animation for marriage card particles */
 @keyframes sparkle {
   0%, 100% {
@@ -496,6 +495,12 @@ html,
     0%, 100% {
       opacity: 0.5;
       transform: scale(0.5);
+    }
+  }
+
+  @keyframes cardBackShimmer {
+    0%, 100% {
+      background-position: 0 0;
     }
   }
 }
