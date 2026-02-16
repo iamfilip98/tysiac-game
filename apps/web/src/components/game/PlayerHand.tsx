@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn, truncateName } from '@/lib/utils';
@@ -173,6 +173,11 @@ export function PlayerHand({
     }
   };
 
+  // Track card count changes to sync animations when talon cards are added
+  const prevCountRef = useRef(cards.length);
+  const isHandGrowing = cards.length > prevCountRef.current;
+  useEffect(() => { prevCountRef.current = cards.length; }, [cards.length]);
+
   const cardCount = sortedCards.length;
 
   // Card dimensions: sm=48px, md=64px, lg=80px
@@ -275,7 +280,7 @@ export function PlayerHand({
           const transition = {
             duration: isMobile ? 0.2 : 0.25,
             ease: [0.25, 0.1, 0.25, 1],
-            delay: index * 0.02
+            delay: isHandGrowing ? 0 : index * 0.02
           };
 
           // Determine if card is playable/selectable
@@ -300,7 +305,6 @@ export function PlayerHand({
                 position: 'absolute',
                 transformOrigin: 'bottom center',
                 zIndex: (distributionState ? isDistSelected : selected) ? 100 : index,
-                willChange: 'opacity, transform',
               }}
               className="relative"
             >

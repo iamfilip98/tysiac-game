@@ -94,30 +94,43 @@ export function BiddingPanel({
           </div>
         </div>
 
-        {/* Simple two-button layout: Pass or Bid +10 */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Two-button layout when can bid, full-width pass when can't */}
+        {canBid ? (
+          <div className="grid grid-cols-2 gap-3">
+            <Button
+              variant="secondary"
+              onClick={handlePass}
+              disabled={isPassing || !canPass}
+              className="py-3 text-lg"
+              aria-busy={isPassing}
+            >
+              {isPassing ? 'Passing...' : 'Pass'}
+            </Button>
+            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+              <Button
+                variant="primary"
+                onClick={handleBid}
+                disabled={isBidding}
+                className="w-full py-3 text-lg"
+                glow={!isBidding}
+                aria-busy={isBidding}
+              >
+                {isBidding ? 'Bidding...' : `Bid ${nextBid}`}
+              </Button>
+            </motion.div>
+          </div>
+        ) : (
           <Button
-            variant="secondary"
+            variant="primary"
             onClick={handlePass}
             disabled={isPassing || !canPass}
-            className="py-3 text-lg"
+            className="w-full py-3 text-lg"
+            glow={!isPassing && canPass}
             aria-busy={isPassing}
           >
             {isPassing ? 'Passing...' : 'Pass'}
           </Button>
-          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-            <Button
-              variant="primary"
-              onClick={handleBid}
-              disabled={isBidding || !canBid}
-              className="w-full py-3 text-lg"
-              glow={!isBidding && canBid}
-              aria-busy={isBidding}
-            >
-              {isBidding ? 'Bidding...' : `Bid ${nextBid}`}
-            </Button>
-          </motion.div>
-        </div>
+        )}
 
         {/* Show max bid info */}
         {bidAction && bidAction.type === 'bid' && (

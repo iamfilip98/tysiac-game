@@ -11,6 +11,24 @@ import { DetailedStatsPanel } from './DetailedStatsPanel';
 import { RoundHistoryGraph } from './RoundHistoryGraph';
 import { WhatIfPanel } from './WhatIfPanel';
 
+function MedalIcon({ place }: { place: 0 | 1 | 2 }) {
+  const colors = {
+    0: { fill: '#d4af37', stroke: '#b8941f', ribbon: '#c41e3a' },
+    1: { fill: '#b8bcc8', stroke: '#838791', ribbon: '#2563eb' },
+    2: { fill: '#cd7f32', stroke: '#a0522d', ribbon: '#15803d' },
+  };
+  const c = colors[place];
+  return (
+    <svg className="w-full h-full" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M9 2 L12 8 L15 2" fill={c.ribbon} opacity="0.8" />
+      <circle cx="12" cy="14" r="8" fill={c.fill} stroke={c.stroke} strokeWidth="1" />
+      <circle cx="12" cy="14" r="5.5" fill="none" stroke={c.stroke} strokeWidth="0.6" />
+      <text x="12" y="17.5" textAnchor="middle" fontSize="8" fontWeight="bold" fontFamily="serif" fill={c.stroke}>{place + 1}</text>
+      <ellipse cx="10.5" cy="12" rx="3" ry="1.5" fill="rgba(255,255,255,0.15)" />
+    </svg>
+  );
+}
+
 interface GameEndModalProps {
   winnerId: string;
   players: { id: string; name: string }[];
@@ -80,11 +98,21 @@ export function GameEndModal({
             {isWinner ? (
               <>
                 <motion.div
-                  className="text-6xl mb-2"
+                  className="mb-2 flex justify-center"
                   animate={{ rotate: [0, -5, 5, -3, 3, 0] }}
                   transition={{ duration: 0.6, delay: 0.4 }}
                 >
-                  🏆
+                  <svg className="w-16 h-16" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <path d="M10 8 L6 20 Q10 24 16 24 L18 18 Z" fill="#d4af37" stroke="#b8941f" strokeWidth="0.8" />
+                    <path d="M38 8 L42 20 Q38 24 32 24 L30 18 Z" fill="#d4af37" stroke="#b8941f" strokeWidth="0.8" />
+                    <path d="M16 24 L14 38 L34 38 L32 24 Q28 26 24 26 Q20 26 16 24 Z" fill="#d4af37" stroke="#b8941f" strokeWidth="0.8" />
+                    <ellipse cx="24" cy="24" rx="10" ry="3" fill="#f5e7a3" opacity="0.4" />
+                    <rect x="18" y="38" width="12" height="3" rx="0.5" fill="#b8941f" />
+                    <rect x="15" y="41" width="18" height="3" rx="1" fill="#d4af37" stroke="#b8941f" strokeWidth="0.5" />
+                    <path d="M20 28 L24 32 L28 28" fill="none" stroke="#b8941f" strokeWidth="1" />
+                    <circle cx="24" cy="16" r="2" fill="#f5e7a3" opacity="0.6" />
+                    <ellipse cx="22" cy="30" rx="4" ry="2" fill="rgba(255,255,255,0.12)" />
+                  </svg>
                 </motion.div>
                 <h2 className="text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-amber-500">
                   You Win!
@@ -92,7 +120,18 @@ export function GameEndModal({
               </>
             ) : (
               <>
-                <div className="text-6xl mb-2">🎯</div>
+                <div className="mb-2 flex justify-center">
+                  <svg className="w-16 h-16" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+                    <circle cx="24" cy="24" r="18" stroke="#d4af37" strokeWidth="1.5" fill="none" />
+                    <circle cx="24" cy="24" r="13" stroke="#d4af37" strokeWidth="1" fill="none" />
+                    <circle cx="24" cy="24" r="8" stroke="#d4af37" strokeWidth="0.8" fill="none" />
+                    <circle cx="24" cy="24" r="3" fill="#d4af37" />
+                    <line x1="24" y1="2" x2="24" y2="10" stroke="#d4af37" strokeWidth="1.5" />
+                    <line x1="24" y1="38" x2="24" y2="46" stroke="#d4af37" strokeWidth="1.5" />
+                    <line x1="2" y1="24" x2="10" y2="24" stroke="#d4af37" strokeWidth="1.5" />
+                    <line x1="38" y1="24" x2="46" y2="24" stroke="#d4af37" strokeWidth="1.5" />
+                  </svg>
+                </div>
                 <h2 className="text-2xl font-bold text-white">
                   {winner?.name} Wins!
                 </h2>
@@ -120,8 +159,8 @@ export function GameEndModal({
                   )}
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className={cn('text-xl', index === 0 && 'text-2xl')}>
-                      {index === 0 ? '🥇' : index === 1 ? '🥈' : '🥉'}
+                    <span className={cn('flex items-center', index === 0 ? 'w-7 h-7' : 'w-6 h-6')}>
+                      <MedalIcon place={index as 0 | 1 | 2} />
                     </span>
                     <span
                       className={cn(

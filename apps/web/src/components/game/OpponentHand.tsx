@@ -77,7 +77,6 @@ export const OpponentHand = memo(function OpponentHand({
               cardDirection === 'vertical' && 'rotate-90'
             )}
             style={{
-              willChange: 'opacity',
               boxShadow: '0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
             }}
           />

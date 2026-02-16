@@ -208,8 +208,10 @@ export function GameBoard() {
     }
     // After distribution, everyone should have 8 (if tricks started)
     if (phase === 'trickPlaying' && round) {
-      // Count remaining cards based on completed tricks
-      return 8 - round.completedTricks;
+      const baseCount = 8 - round.completedTricks;
+      const hasPlayedInCurrentTrick = (round.currentTrick?.cards || [])
+        .some(c => c.playerId === opponentId);
+      return baseCount - (hasPlayedInCurrentTrick ? 1 : 0);
     }
     return 7;
   };

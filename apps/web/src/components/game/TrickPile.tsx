@@ -264,11 +264,8 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
 
       {/* Empty state */}
       {cards.length === 0 && (
-        <div className="flex flex-col items-center gap-1 text-white/25">
-          <svg className="w-8 h-10" viewBox="0 0 32 40" fill="none" aria-hidden="true">
-            <rect x="1" y="1" width="30" height="38" rx="3" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" />
-          </svg>
-          <span className="text-xs">Play a card</span>
+        <div className="flex items-center justify-center">
+          <span className="text-sm text-white/20 font-medium tracking-wide">Play a card</span>
         </div>
       )}
     </div>

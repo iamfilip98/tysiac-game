@@ -177,7 +177,7 @@ export const Card = memo(function Card({
           sizeClasses[size],
           className
         )}
-        style={{ ...style, willChange: 'opacity, transform' }}
+        style={style}
         role="img"
         aria-label="Face-down card"
       />
@@ -237,7 +237,7 @@ export const Card = memo(function Card({
           isMobile && isPlayable && 'active:scale-[0.97]',
           className
         )}
-        style={{ ...style, willChange: 'opacity, transform' }}
+        style={style}
       >
         {/* Paper texture overlay */}
         <div
@@ -402,15 +402,15 @@ export const Card = memo(function Card({
               className="absolute top-[2px] left-[3px] flex flex-col items-center leading-none"
               style={{ color: textColor }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : size === 'sm' ? 'text-[10px]' : 'text-[9px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[17px]' : size === 'md' ? 'text-[14px]' : size === 'sm' ? 'text-[12px]' : 'text-[10px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[16px]' : size === 'md' ? 'text-[13px]' : size === 'sm' ? 'text-[11px]' : 'text-[9px]')}>{suitSymbol}</span>
             </div>
           )}
           {/* Center: SVG portrait for face cards (md/lg/sm), text for others */}
           {showPortrait ? (
             <div className={cn(
               'flex items-center justify-center',
-              size === 'lg' ? 'w-[58px] h-[76px]' : size === 'sm' ? 'w-[38px] h-[50px]' : 'w-[46px] h-[60px]'
+              size === 'lg' ? 'w-[66px] h-[86px]' : size === 'sm' ? 'w-[42px] h-[55px]' : 'w-[52px] h-[68px]'
             )}>
               {card.rank === 'K' && <KingPortrait color={color} />}
               {card.rank === 'Q' && <QueenPortrait color={color} />}
@@ -419,16 +419,16 @@ export const Card = memo(function Card({
           ) : (
             <div className={cn(
               'flex flex-col items-center justify-center',
-              size === 'lg' ? 'w-[58px] h-[76px]' : size === 'sm' ? 'w-[38px] h-[50px]' : size === 'xs' ? 'w-[28px] h-[40px]' : 'w-[46px] h-[60px]'
+              size === 'lg' ? 'w-[66px] h-[86px]' : size === 'sm' ? 'w-[42px] h-[55px]' : size === 'xs' ? 'w-[28px] h-[40px]' : 'w-[52px] h-[68px]'
             )}>
               <span
-                className={cn('font-bold', size === 'xs' ? 'text-base' : size === 'sm' ? 'text-lg' : 'text-2xl')}
+                className={cn('font-bold', size === 'xs' ? 'text-lg' : size === 'sm' ? 'text-xl' : size === 'md' ? 'text-3xl' : 'text-4xl')}
                 style={{ color: textColor }}
               >
                 {card.rank}
               </span>
               <span
-                className={cn('-mt-1', size === 'xs' ? 'text-lg' : size === 'sm' ? 'text-xl' : 'text-3xl')}
+                className={cn('-mt-1', size === 'xs' ? 'text-xl' : size === 'sm' ? 'text-2xl' : size === 'md' ? 'text-4xl' : 'text-5xl')}
                 style={{ color: textColor }}
               >
                 {suitSymbol}
@@ -441,8 +441,8 @@ export const Card = memo(function Card({
               className="absolute bottom-[2px] right-[3px] flex flex-col items-center leading-none rotate-180"
               style={{ color: textColor }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : size === 'sm' ? 'text-[10px]' : 'text-[9px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[17px]' : size === 'md' ? 'text-[14px]' : size === 'sm' ? 'text-[12px]' : 'text-[10px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[16px]' : size === 'md' ? 'text-[13px]' : size === 'sm' ? 'text-[11px]' : 'text-[9px]')}>{suitSymbol}</span>
             </div>
           )}
         </div>

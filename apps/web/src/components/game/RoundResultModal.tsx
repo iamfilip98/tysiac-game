@@ -104,12 +104,15 @@ export function RoundResultModal({
                 {/* Barrel warnings */}
                 {pr.wasOnBarrel && (
                   <div className="mt-1 text-xs text-amber-400 flex items-center gap-1">
-                    <svg className="w-3 h-3 inline-block shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
-                      <rect x="3" y="2" width="10" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                      <line x1="3" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1" />
-                      <line x1="3" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="1" />
-                      <ellipse cx="8" cy="2" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-                      <ellipse cx="8" cy="14" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    <svg className="w-3 h-3 inline-block shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <path d="M4 3 Q3 8 4 13 L12 13 Q13 8 12 3 Z" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
+                      <path d="M3.8 4.5 Q8 4 12.2 4.5" fill="none" stroke="#d4af37" strokeWidth="0.8" />
+                      <path d="M3.5 8 Q8 7.3 12.5 8" fill="none" stroke="#d4af37" strokeWidth="0.8" />
+                      <path d="M3.8 11.5 Q8 12 12.2 11.5" fill="none" stroke="#d4af37" strokeWidth="0.8" />
+                      <ellipse cx="8" cy="3" rx="4" ry="1.3" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
+                      <ellipse cx="7.5" cy="2.8" rx="2" ry="0.5" fill="rgba(255,255,255,0.08)" />
+                      <line x1="6" y1="4.5" x2="5.8" y2="11.5" stroke="rgba(212,175,55,0.2)" strokeWidth="0.4" />
+                      <line x1="10" y1="4.5" x2="10.2" y2="11.5" stroke="rgba(212,175,55,0.2)" strokeWidth="0.4" />
                     </svg>
                     {pr.fellOffBarrel
                       ? 'Fell off the barrel!'
