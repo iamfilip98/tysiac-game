@@ -314,7 +314,7 @@ export function GameBoard() {
       {/* Center area - trick pile / talon */}
       <div className={cn(
         'absolute flex items-center justify-center',
-        isMobile ? 'inset-x-0 top-28 bottom-36' : 'inset-0'
+        isMobile ? 'inset-x-0 top-64 bottom-36' : 'inset-0'
       )}>
         <AnimatePresence mode="wait">
           {/* Dealing / Bidding - show talon */}
