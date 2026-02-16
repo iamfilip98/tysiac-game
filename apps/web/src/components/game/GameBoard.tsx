@@ -21,6 +21,7 @@ import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
 import { useIsMobile } from '@/hooks/useIsMobile';
+import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { cn } from '@/lib/utils';
 import type { Card as CardType } from '@tysiac/shared';
 
@@ -194,8 +195,14 @@ export function GameBoard() {
 
   return (
     <div className="relative h-full w-full overflow-hidden" style={{ height: '100dvh' }}>
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-radial from-table-800/50 to-transparent" />
+      {/* Background atmosphere */}
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse 70% 50% at 50% 50%, rgb(var(--table-700) / 0.3) 0%, transparent 70%)',
+      }} />
+      <div className="absolute inset-0" style={{
+        background: 'radial-gradient(ellipse at 50% 50%, transparent 50%, rgba(0,0,0,0.3) 100%)',
+      }} />
+      <AmbientParticles count={8} color="rgba(255,255,255,0.04)" />
 
       {/* Top-left button bar */}
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-2 sm:left-4 z-30 flex gap-1 sm:gap-2">
@@ -485,8 +492,13 @@ export function GameBoard() {
           role="status"
           aria-live="assertive"
         >
-          <div className="px-4 py-2 bg-gold-500/20 border border-gold-500/50 rounded-lg text-gold-400 text-sm font-medium">
-            Your turn - select a card to play
+          <div className="relative overflow-hidden px-4 py-2 rounded-lg text-gold-400 text-sm font-medium" style={{
+            background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.08))',
+            border: '1px solid rgba(251,191,36,0.4)',
+            boxShadow: '0 0 20px rgba(251,191,36,0.15)',
+          }}>
+            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold-400/10 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+            <span className="relative">Your turn - select a card to play</span>
           </div>
         </motion.div>
       )}

@@ -39,8 +39,10 @@ export function OpponentHand({
       {/* Player name */}
       <div
         className={cn(
-          'text-sm font-medium px-2 py-1 rounded-lg bg-table-800/80 border border-white/[0.06]',
-          isCurrentTurn ? 'text-gold-400 ring-2 ring-gold-400/50' : 'text-white/80'
+          'text-sm font-medium px-2 py-1 rounded-lg',
+          isCurrentTurn
+            ? 'text-gold-400 bg-gold-500/10 border border-gold-500/40 shadow-[0_0_12px_rgba(251,191,36,0.2)]'
+            : 'text-white/80 bg-table-800/80 border border-white/[0.06]'
         )}
         title={playerName}
       >
@@ -76,7 +78,10 @@ export function OpponentHand({
               'w-7 h-10 sm:w-10 sm:h-14 rounded-md card-back',
               cardDirection === 'vertical' && 'rotate-90'
             )}
-            style={{ willChange: 'opacity' }}
+            style={{
+              willChange: 'opacity',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2)',
+            }}
           />
         ))}
       </div>

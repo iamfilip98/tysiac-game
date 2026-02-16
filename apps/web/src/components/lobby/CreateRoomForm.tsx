@@ -26,7 +26,7 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
   };
 
   return (
-    <div className="rounded-xl border border-gold-500/20 shadow-glow-gold">
+    <div className="rounded-xl border border-gold-500/20 shadow-glow-gold transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)]">
       <form
         onSubmit={handleSubmit}
         className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl"
@@ -92,8 +92,8 @@ export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: Cre
               type="button"
               onClick={() => setIsPrivate(!isPrivate)}
               className={cn(
-                'relative w-12 h-6 rounded-full transition-colors',
-                isPrivate ? 'bg-gold-500' : 'bg-table-700'
+                'relative w-12 h-6 rounded-full transition-all',
+                isPrivate ? 'bg-gold-500 shadow-[0_0_10px_rgba(251,191,36,0.3)]' : 'bg-table-700'
               )}
             >
               <motion.div

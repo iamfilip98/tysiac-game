@@ -77,7 +77,8 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
 
                   return (
                     <div key={room.id}>
-                      <div className="flex items-center justify-between px-3 py-2.5 hover:bg-table-800/50 transition-colors">
+                      <div className="relative flex items-center justify-between px-3 py-2.5 hover:bg-table-800/50 hover:pl-4 transition-all duration-200 group">
+                        <div className="absolute left-0 top-0 bottom-0 w-0.5 bg-gold-500/0 group-hover:bg-gold-500/60 transition-all duration-200" />
                         <div className="flex-1 min-w-0 mr-3">
                           <div className="text-white text-sm font-medium truncate flex items-center gap-1.5">
                             {room.isPrivate && <span className="text-xs text-gold-400" title="Private room">🔒</span>}

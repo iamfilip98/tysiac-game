@@ -321,7 +321,7 @@ function EmptySlot({ isHost, canAddAI, isAddingAI, onAddAI }: EmptySlotProps) {
       className={cn(
         SLOT_HEIGHT,
         'flex items-center justify-center',
-        'rounded-lg border-2 border-dashed border-white/[0.12] text-white/40'
+        'rounded-lg border-2 border-dashed border-white/[0.12] text-white/40 animate-pulse-slow'
       )}
       role="listitem"
       aria-label="Empty player slot"
@@ -365,8 +365,9 @@ function PlayerSlot({
 }: PlayerSlotProps) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
+      initial={{ opacity: 0, x: -10, scale: 0.98 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      transition={{ type: 'spring', stiffness: 200, damping: 20 }}
       className={cn(
         SLOT_HEIGHT,
         'flex items-center justify-between px-3 rounded-lg',
@@ -382,8 +383,8 @@ function PlayerSlot({
           className={cn(
             'w-10 h-10 rounded-full flex items-center justify-center font-bold shrink-0',
             player.isAI
-              ? 'bg-purple-500/20 text-purple-400'
-              : 'bg-table-700 text-white'
+              ? 'bg-purple-500/20 text-purple-400 ring-1 ring-purple-500/20'
+              : 'bg-table-700 text-white ring-1 ring-white/10'
           )}
           aria-hidden="true"
         >

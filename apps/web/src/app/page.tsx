@@ -12,6 +12,7 @@ import { SettingsDropdown } from '@/components/game/SettingsDropdown';
 import { useSocket } from '@/hooks/useSocket';
 import { useRoomStore } from '@/stores/roomStore';
 import { useGameStore } from '@/stores/gameStore';
+import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
 
@@ -79,6 +80,9 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   // Show landing / create or join
   return (
     <main className="h-full flex flex-col items-center justify-center p-4 overflow-auto relative">
+      {/* Ambient particles */}
+      <AmbientParticles count={10} />
+
       {/* Settings */}
       <div className="absolute top-4 right-4 z-10">
         <SettingsDropdown />
@@ -90,24 +94,44 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         animate={{ opacity: 1, y: 0 }}
         className="text-center mb-4 sm:mb-8"
       >
-        <h1 className="text-4xl sm:text-5xl font-bold text-white mb-1 sm:mb-2 text-shadow-heading">
-          Tysi
-          <span className="text-gold-400">ą</span>c
+        <h1 className="text-4xl sm:text-5xl font-bold mb-1 sm:mb-2">
+          <span style={{
+            background: 'linear-gradient(135deg, #fff 0%, #fef3c7 30%, #fbbf24 50%, #fef3c7 70%, #fff 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            filter: 'drop-shadow(0 2px 8px rgba(0,0,0,0.3))',
+          }}>Tysi<span style={{
+            background: 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 50%, #fbbf24 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+          }}>ą</span>c</span>
         </h1>
         <p className="text-white/60 text-sm sm:text-base">Polish Card Game • 1000</p>
 
         {/* Connection status */}
         <div className="mt-2 sm:mt-4 flex items-center justify-center gap-2">
-          <span
-            className={cn(
-              'w-2 h-2 rounded-full',
-              isConnecting
-                ? 'bg-yellow-500 animate-pulse'
-                : isConnected
-                ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]'
-                : 'bg-red-500'
+          <span className="relative flex items-center justify-center w-2 h-2">
+            <span
+              className={cn(
+                'absolute inset-0 rounded-full',
+                isConnecting
+                  ? 'bg-yellow-500'
+                  : isConnected
+                  ? 'bg-green-500'
+                  : 'bg-red-500'
+              )}
+            />
+            {(isConnected || isConnecting) && (
+              <motion.span
+                className={cn(
+                  'absolute inset-0 rounded-full',
+                  isConnecting ? 'bg-yellow-500' : 'bg-green-500'
+                )}
+                animate={{ scale: [1, 2], opacity: [0.5, 0] }}
+                transition={{ duration: isConnecting ? 1 : 2, repeat: Infinity, ease: 'easeOut' }}
+              />
             )}
-          />
+          </span>
           <span className="text-xs text-white/60">
             {isConnecting
               ? 'Connecting...'
@@ -123,29 +147,41 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.2 }}
-        className="flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg backdrop-blur-sm border border-white/[0.06]"
+        className="relative flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg backdrop-blur-sm border border-white/[0.06]"
       >
         <button
           onClick={() => setTab('create')}
           className={cn(
-            'px-6 py-2 rounded-md font-medium transition-all',
+            'relative px-6 py-2 rounded-md font-medium transition-all z-10',
             tab === 'create'
-              ? 'bg-gold-500 text-table-950 shadow-[0_0_10px_rgba(251,191,36,0.25)]'
+              ? 'text-white font-semibold'
               : 'text-white/60 hover:text-white hover:bg-white/5'
           )}
         >
           Create Room
+          {tab === 'create' && (
+            <motion.div
+              layoutId="tab-indicator"
+              className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+            />
+          )}
         </button>
         <button
           onClick={() => setTab('join')}
           className={cn(
-            'px-6 py-2 rounded-md font-medium transition-all',
+            'relative px-6 py-2 rounded-md font-medium transition-all z-10',
             tab === 'join'
-              ? 'bg-gold-500 text-table-950 shadow-[0_0_10px_rgba(251,191,36,0.25)]'
+              ? 'text-white font-semibold'
               : 'text-white/60 hover:text-white hover:bg-white/5'
           )}
         >
           Browse Rooms
+          {tab === 'join' && (
+            <motion.div
+              layoutId="tab-indicator"
+              className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+            />
+          )}
         </button>
       </motion.div>
 

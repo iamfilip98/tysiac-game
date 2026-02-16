@@ -77,6 +77,9 @@ const config: Config = {
           '100%': { transform: 'scale(1)' },
         },
       },
+      backgroundImage: {
+        'gradient-radial': 'radial-gradient(ellipse at center, var(--tw-gradient-stops))',
+      },
       boxShadow: {
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)',
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)',

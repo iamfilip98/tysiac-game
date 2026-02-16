@@ -86,12 +86,11 @@ export function ScoreBoard({
                 {/* Dealer indicator */}
                 {isDealer && (
                   <span
-                    className="text-sm"
-                    role="img"
-                    aria-label="Dealer"
+                    className="w-5 h-5 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-bold text-white/60"
                     title="Dealer"
+                    aria-label="Dealer"
                   >
-                    🎱
+                    D
                   </span>
                 )}
 
@@ -121,10 +120,15 @@ export function ScoreBoard({
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className="text-xs text-amber-400 flex items-center gap-1"
-                    role="img"
                     aria-label="On the barrel (800+)"
                   >
-                    <span aria-hidden="true">🛢️</span>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <rect x="3" y="2" width="10" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                      <line x1="3" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1" />
+                      <line x1="3" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="1" />
+                      <ellipse cx="8" cy="2" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                      <ellipse cx="8" cy="14" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
                     <span className="sr-only">On barrel</span>
                   </motion.span>
                 )}
@@ -133,10 +137,25 @@ export function ScoreBoard({
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
                     className="text-xs text-emerald-400 flex items-center gap-1"
-                    role="img"
                     aria-label="Grunwald (410 points)"
                   >
-                    <span aria-hidden="true">🏰</span>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.2" aria-hidden="true">
+                      {/* Left tower */}
+                      <rect x="1" y="5" width="4" height="11" fill="currentColor" opacity="0.15" stroke="currentColor" />
+                      <rect x="1" y="3.5" width="1" height="1.5" fill="currentColor" />
+                      <rect x="4" y="3.5" width="1" height="1.5" fill="currentColor" />
+                      {/* Right tower */}
+                      <rect x="11" y="5" width="4" height="11" fill="currentColor" opacity="0.15" stroke="currentColor" />
+                      <rect x="11" y="3.5" width="1" height="1.5" fill="currentColor" />
+                      <rect x="14" y="3.5" width="1" height="1.5" fill="currentColor" />
+                      {/* Center wall + battlements */}
+                      <rect x="5" y="7" width="6" height="9" fill="currentColor" opacity="0.1" stroke="currentColor" />
+                      <rect x="5" y="5.5" width="1.5" height="1.5" fill="currentColor" />
+                      <rect x="7.25" y="5.5" width="1.5" height="1.5" fill="currentColor" />
+                      <rect x="9.5" y="5.5" width="1.5" height="1.5" fill="currentColor" />
+                      {/* Gate arch */}
+                      <path d="M6.5 16 V12 Q6.5 10 8 10 Q9.5 10 9.5 12 V16" fill="currentColor" opacity="0.3" stroke="currentColor" />
+                    </svg>
                     <span className="sr-only">Grunwald</span>
                   </motion.span>
                 )}
@@ -199,9 +218,14 @@ export function InlineScore({ score, isOnBarrel, className }: InlineScoreProps) 
     >
       {score}
       {isOnBarrel && (
-        <span role="img" aria-label="on barrel">
-          {' '}
-          <span aria-hidden="true">🛢️</span>
+        <span aria-label="on barrel" className="inline-flex items-center ml-1 text-amber-400">
+          <svg className="w-3 h-3" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <rect x="3" y="2" width="10" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <line x1="3" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1" />
+            <line x1="3" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="1" />
+            <ellipse cx="8" cy="2" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+            <ellipse cx="8" cy="14" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+          </svg>
         </span>
       )}
     </span>

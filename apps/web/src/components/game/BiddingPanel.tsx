@@ -69,7 +69,14 @@ export function BiddingPanel({
   if (!isMyTurn) {
     return (
       <div className="bg-gradient-to-b from-table-800/85 to-table-900/85 backdrop-blur-md border border-white/[0.08] rounded-xl p-4 text-center" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
-        <div className="text-white/60">Waiting for other players to bid...</div>
+        <div className="text-white/60 flex items-center justify-center gap-2">
+          <motion.div
+            animate={{ rotate: 360 }}
+            transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+            className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full"
+          />
+          Waiting for other players to bid...
+        </div>
         <div className="mt-2 text-lg font-medium text-gold-400">
           Current bid: {currentBid}
         </div>
@@ -98,7 +105,7 @@ export function BiddingPanel({
           >
             {isPassing ? 'Passing...' : 'Pass'}
           </Button>
-          <motion.div whileTap={{ scale: 0.98 }}>
+          <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
             <Button
               variant="primary"
               onClick={handleBid}

@@ -75,7 +75,10 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
       isMobile ? 'w-36 h-36' : 'w-48 h-48'
     )}>
       {/* Table felt center */}
-      <div className="absolute inset-4 rounded-full bg-table-800/50 border border-table-600/30" />
+      <div className="absolute inset-4 rounded-full" style={{
+        background: 'radial-gradient(circle, rgb(var(--table-700) / 0.4) 0%, rgb(var(--table-800) / 0.5) 60%, transparent 100%)',
+        boxShadow: 'inset 0 0 20px rgba(0,0,0,0.2), 0 0 15px rgb(var(--table-600) / 0.1)',
+      }} />
 
       {/* Marriage declared indicator */}
       {marriageCard && (
@@ -265,7 +268,12 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
 
       {/* Empty state */}
       {cards.length === 0 && (
-        <div className="text-white/30 text-sm">Play a card</div>
+        <div className="flex flex-col items-center gap-1 text-white/25">
+          <svg className="w-8 h-10" viewBox="0 0 32 40" fill="none" aria-hidden="true">
+            <rect x="1" y="1" width="30" height="38" rx="3" stroke="currentColor" strokeWidth="1.5" strokeDasharray="4 3" />
+          </svg>
+          <span className="text-xs">Play a card</span>
+        </div>
       )}
     </div>
   );
