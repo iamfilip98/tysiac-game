@@ -99,11 +99,11 @@ export function ScoreBoard({
                       <path d="M10,10 L10,19 A9,9 0 0,1 3.64,16.36Z" fill="#d4af37" />
                       <path d="M10,10 L1,10 A9,9 0 0,1 3.64,3.64Z" fill="#d4af37" />
                       <path d="M10,10 L10,1 A9,9 0 0,1 16.36,3.64Z" fill="#d4af37" />
-                      {/* Suit symbols on gold wedges */}
-                      <text x="16.9" y="12.9" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♠</text>
-                      <text x="7.1" y="16.9" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♥</text>
-                      <text x="3.1" y="7.1" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♣</text>
-                      <text x="12.9" y="3.1" fontSize="3" fill="#1a1a1a" textAnchor="middle" dominantBaseline="central">♦</text>
+                      {/* Dots on gold wedges — symmetrically placed */}
+                      <circle cx="16.9" cy="12.9" r="1.1" fill="#1a1a1a" />
+                      <circle cx="7.1" cy="16.9" r="1.1" fill="#1a1a1a" />
+                      <circle cx="3.1" cy="7.1" r="1.1" fill="#1a1a1a" />
+                      <circle cx="12.9" cy="3.1" r="1.1" fill="#1a1a1a" />
                       {/* Gold outer ring */}
                       <circle cx="10" cy="10" r="8.7" fill="none" stroke="#b8941f" strokeWidth="0.6" />
                       {/* Black inner circle */}
