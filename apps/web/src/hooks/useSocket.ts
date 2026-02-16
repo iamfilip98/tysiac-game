@@ -198,6 +198,19 @@ export function useSocket() {
       const myHand = playerId === myId
         ? gs.myHand.filter(c => !(c.suit === card.suit && c.rank === card.rank))
         : gs.myHand;
+      // Advance currentPlayer so the turn indicator updates immediately
+      const newCards = [...gs.round.currentTrick.cards, { playerId, card }];
+      let nextPlayer = gs.round.currentTrick.currentPlayer;
+      if (newCards.length < 3) {
+        const players = gs.players;
+        const idx = players.findIndex(p => p.id === playerId);
+        let nextIdx = (idx + 1) % players.length;
+        // Skip sitting-out dealer in 4-player mode
+        if (players.length === 4 && players[nextIdx].id === gs.round.dealer) {
+          nextIdx = (nextIdx + 1) % players.length;
+        }
+        nextPlayer = players[nextIdx].id;
+      }
       setGameState({
         ...gs,
         myHand,
@@ -205,7 +218,8 @@ export function useSocket() {
           ...gs.round,
           currentTrick: {
             ...gs.round.currentTrick,
-            cards: [...gs.round.currentTrick.cards, { playerId, card }],
+            cards: newCards,
+            currentPlayer: nextPlayer,
           },
         },
       });

@@ -1151,7 +1151,7 @@ export class GameEngine {
       // resets currentTrick, so clients would never see the 3rd card.
       this.doBroadcast();
       // Delay trick completion so all 3 cards are visible for ~1s
-      this.safeSetTimeout(() => this.completeTrick(), 1000);
+      this.safeSetTimeout(() => this.completeTrick(), 2000);
     } else {
       this.broadcastState();
       // Next player
