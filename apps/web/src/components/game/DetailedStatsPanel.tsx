@@ -46,10 +46,10 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
                       initial={{ width: 0 }}
                       animate={{ width: `${detail.bidSuccessRate}%` }}
                       transition={{ delay: 0.3, duration: 0.5 }}
-                      className={`h-full ${detail.bidSuccessRate >= 50 ? 'bg-green-500' : 'bg-red-500'}`}
+                      className={`h-full ${detail.bidSuccessRate >= 50 ? 'bg-gold-500' : 'bg-red-500'}`}
                     />
                   </div>
-                  <span className={`font-mono ${detail.bidSuccessRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`font-mono ${detail.bidSuccessRate >= 50 ? 'text-gold-400' : 'text-red-400'}`}>
                     {detail.bidSuccessRate}%
                   </span>
                 </div>
@@ -69,7 +69,7 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
               {/* Marriages */}
               <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
                 <div className="text-white/50 text-xs mb-1">Marriages Declared</div>
-                <div className="text-lg font-bold text-purple-400 mt-auto">
+                <div className="text-lg font-bold text-gold-400 mt-auto">
                   {detail.totalMarriages}
                 </div>
               </div>
@@ -77,7 +77,7 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
               {/* Best round */}
               <div className="bg-table-900/50 rounded p-2 flex flex-col min-h-[60px]">
                 <div className="text-white/50 text-xs mb-1">Best Round</div>
-                <div className="text-lg font-bold text-cyan-400 mt-auto">
+                <div className="text-lg font-bold text-amber-400 mt-auto">
                   {detail.highestSingleRound > 0 ? `+${detail.highestSingleRound}` : '-'}
                 </div>
               </div>

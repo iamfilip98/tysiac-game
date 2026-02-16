@@ -32,7 +32,7 @@ export function RoundResultModal({
           className={cn(
             'p-4 rounded-lg mb-4',
             result.bidderMadeBid
-              ? 'bg-green-500/20 border border-green-500/30'
+              ? 'bg-gold-500/20 border border-gold-500/30'
               : 'bg-red-500/20 border border-red-500/30'
           )}
         >
@@ -50,7 +50,7 @@ export function RoundResultModal({
           </div>
           <div className="mt-2 text-center">
             {result.bidderMadeBid ? (
-              <span className="text-green-400 font-medium">✓ Made the bid!</span>
+              <span className="text-gold-400 font-medium">✓ Made the bid!</span>
             ) : (
               <span className="text-red-400 font-medium">✗ Failed to make bid</span>
             )}
@@ -83,7 +83,7 @@ export function RoundResultModal({
                   <span
                     className={cn(
                       'font-bold',
-                      pr.scoreChange >= 0 ? 'text-green-400' : 'text-red-400'
+                      pr.scoreChange >= 0 ? 'text-gold-400' : 'text-red-400'
                     )}
                   >
                     {pr.scoreChange >= 0 ? '+' : ''}
@@ -103,10 +103,17 @@ export function RoundResultModal({
 
                 {/* Barrel warnings */}
                 {pr.wasOnBarrel && (
-                  <div className="mt-1 text-xs text-amber-400">
+                  <div className="mt-1 text-xs text-amber-400 flex items-center gap-1">
+                    <svg className="w-3 h-3 inline-block shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                      <rect x="3" y="2" width="10" height="12" rx="2" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                      <line x1="3" y1="6" x2="13" y2="6" stroke="currentColor" strokeWidth="1" />
+                      <line x1="3" y1="10" x2="13" y2="10" stroke="currentColor" strokeWidth="1" />
+                      <ellipse cx="8" cy="2" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                      <ellipse cx="8" cy="14" rx="5" ry="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+                    </svg>
                     {pr.fellOffBarrel
-                      ? '🛢️ Fell off the barrel!'
-                      : '🛢️ Still on the barrel'}
+                      ? 'Fell off the barrel!'
+                      : 'Still on the barrel'}
                   </div>
                 )}
               </motion.div>

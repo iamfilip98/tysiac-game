@@ -132,7 +132,7 @@ export function RoomLobby({
               >
                 {copied ? (
                   <svg
-                    className="w-4 h-4 text-green-400"
+                    className="w-4 h-4 text-gold-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -169,7 +169,7 @@ export function RoomLobby({
               >
                 {linkCopied ? (
                   <svg
-                    className="w-4 h-4 text-green-400"
+                    className="w-4 h-4 text-gold-400"
                     fill="none"
                     viewBox="0 0 24 24"
                     stroke="currentColor"
@@ -203,7 +203,7 @@ export function RoomLobby({
             {/* Reserve space for copy confirmation to prevent layout shift */}
             <p
               className={cn(
-                'text-sm text-green-400 mt-2 min-h-[20px] transition-opacity',
+                'text-sm text-gold-400 mt-2 min-h-[20px] transition-opacity',
                 copied || linkCopied ? 'opacity-100' : 'opacity-0'
               )}
               role="status"
@@ -424,7 +424,7 @@ function PlayerSlot({
         <span
           className={cn(
             'text-sm flex items-center gap-1 w-[75px] justify-end',
-            player.isReady ? 'text-green-400' : 'text-white/40'
+            player.isReady ? 'text-gold-400' : 'text-white/40'
           )}
           role="status"
           aria-label={`${player.name} is ${player.isReady ? 'ready' : 'not ready'}`}

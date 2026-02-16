@@ -234,13 +234,11 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
               key={`${card.suit}-${card.rank}`}
               initial={{
                 opacity: 0,
-                scale: 0.5,
-                x: position.x * 3,
-                y: position.y * 3,
+                x: position.x * 2.5,
+                y: position.y * 2.5,
               }}
               animate={{
                 opacity: 1,
-                scale: 1,
                 x: position.x,
                 y: position.y,
                 rotate: position.rotate,
@@ -256,7 +254,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
             >
               <Card
                 card={card}
-                size="md"
+                size="sm"
                 isPlayable={false}
                 isMarriageCard={marriageCard?.suit === card.suit && card.rank === 'Q'}
                 isTrumpCard={!!trumpSuit && card.suit === trumpSuit}

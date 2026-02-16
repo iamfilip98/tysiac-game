@@ -57,7 +57,7 @@ export function ThrewAnnouncement({ data, players, onComplete }: ThrewAnnounceme
               {Object.entries(data.scoreChanges).map(([playerId, change]) => (
                 <div
                   key={playerId}
-                  className={`text-sm ${change >= 0 ? 'text-green-400' : 'text-red-400'}`}
+                  className={`text-sm ${change >= 0 ? 'text-gold-400' : 'text-red-400'}`}
                 >
                   {getPlayerName(playerId)}: {change >= 0 ? '+' : ''}{change}
                 </div>

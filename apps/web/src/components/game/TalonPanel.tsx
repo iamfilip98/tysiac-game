@@ -78,7 +78,7 @@ export function TalonDistributionPanel({
   const canSubmit = selectedCards.size === 2;
 
   return (
-    <ElectricBorder active color="#22c55e">
+    <ElectricBorder active color="#fbbf24">
       <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-3 sm:p-4 rounded-xl" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-center mb-3">
           <h3 className="text-sm sm:text-base font-bold text-white">
@@ -106,7 +106,7 @@ export function TalonDistributionPanel({
                   isSelected
                     ? 'bg-gold-500 text-table-950 ring-2 ring-gold-300'
                     : 'bg-table-800 text-white hover:bg-table-700',
-                  assignedCard && !isSelected && 'ring-2 ring-green-500'
+                  assignedCard && !isSelected && 'ring-2 ring-gold-400'
                 )}
                 title={player.name}
               >

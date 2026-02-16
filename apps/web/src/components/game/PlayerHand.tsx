@@ -232,7 +232,7 @@ export function PlayerHand({
               />
               {distributionAssignee && (
                 <div
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
                   title={distributionAssignee}
                 >
                   → {truncateName(distributionAssignee)}
@@ -308,7 +308,7 @@ export function PlayerHand({
               />
               {distributionAssignee && (
                 <div
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-green-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
                   title={distributionAssignee}
                 >
                   → {truncateName(distributionAssignee)}

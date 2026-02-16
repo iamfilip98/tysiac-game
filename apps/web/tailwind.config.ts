@@ -84,7 +84,7 @@ const config: Config = {
         'card': '0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2)',
         'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2)',
         'glow': '0 0 20px rgba(251, 191, 36, 0.4)',
-        'glow-green': '0 0 20px rgba(34, 197, 94, 0.4)',
+
         'glow-gold': '0 0 20px rgba(251, 191, 36, 0.15)',
         'panel': '0 8px 32px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.2)',
       },

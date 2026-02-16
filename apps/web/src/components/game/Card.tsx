@@ -227,7 +227,7 @@ export function Card({
           'playing-card relative overflow-hidden',
           color === 'red' ? 'red' : 'black',
           sizeClasses[size],
-          isPlayable && 'cursor-pointer ring-2 ring-green-500',
+          isPlayable && 'cursor-pointer ring-2 ring-gold-400',
           !isPlayable && onClick && 'opacity-50 cursor-not-allowed',
           isSelected && 'ring-2 ring-gold-400 shadow-glow',
           isInteractive && 'focus:outline-none focus:ring-2 focus:ring-gold-500 focus:ring-offset-2 focus:ring-offset-table-900',
@@ -399,8 +399,8 @@ export function Card({
               className="absolute top-[2px] left-[3px] flex flex-col items-center leading-none"
               style={{ color: textColor, ...marriageTextStyle }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[12px]' : size === 'md' ? 'text-[10px]' : 'text-[7px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : 'text-[9px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{suitSymbol}</span>
             </div>
           )}
           {/* Center: SVG portrait for face cards (md/lg), text for others */}
@@ -416,13 +416,13 @@ export function Card({
           ) : (
             <>
               <span
-                className={cn('font-bold', size === 'sm' ? 'text-base' : isHighCard ? 'text-2xl' : 'text-xl')}
+                className={cn('font-bold', size === 'sm' ? 'text-lg' : isHighCard ? 'text-3xl' : 'text-2xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {card.rank}
               </span>
               <span
-                className={cn(size === 'sm' ? 'text-lg' : isHighCard ? 'text-3xl' : 'text-3xl')}
+                className={cn(size === 'sm' ? 'text-xl' : 'text-4xl')}
                 style={{ color: textColor, ...marriageTextStyle }}
               >
                 {suitSymbol}
@@ -435,8 +435,8 @@ export function Card({
               className="absolute bottom-[2px] right-[3px] flex flex-col items-center leading-none rotate-180"
               style={{ color: textColor, ...marriageTextStyle }}
             >
-              <span className={cn('font-bold', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{card.rank}</span>
-              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[12px]' : size === 'md' ? 'text-[10px]' : 'text-[7px]')}>{suitSymbol}</span>
+              <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : 'text-[9px]')}>{card.rank}</span>
+              <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : 'text-[8px]')}>{suitSymbol}</span>
             </div>
           )}
         </div>

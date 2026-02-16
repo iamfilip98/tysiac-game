@@ -85,7 +85,7 @@ export function BiddingPanel({
   }
 
   return (
-    <ElectricBorder active={isMyTurn} color="#22c55e">
+    <ElectricBorder active={isMyTurn} color="#fbbf24">
       <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-4 rounded-xl min-w-[280px]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-center mb-4">
           <div className="text-sm text-white/60 mb-1">Your turn to bid</div>

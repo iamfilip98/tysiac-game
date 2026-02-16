@@ -44,7 +44,7 @@ export function WhatIfPanel({ scenarios, closeCalls }: WhatIfPanelProps) {
       {/* What-if scenarios */}
       {scenarios.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-cyan-400 mb-2 flex items-center gap-2">
+          <h4 className="text-sm font-semibold text-gold-400 mb-2 flex items-center gap-2">
             <span>What If...?</span>
           </h4>
           <div className="space-y-3">
@@ -59,7 +59,7 @@ export function WhatIfPanel({ scenarios, closeCalls }: WhatIfPanelProps) {
                 <div className="text-sm text-white/80 mb-1">
                   {scenario.description}
                 </div>
-                <div className="text-xs text-cyan-400/80 italic">
+                <div className="text-xs text-gold-400/80 italic">
                   {scenario.hypotheticalOutcome}
                 </div>
               </motion.div>

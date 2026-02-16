@@ -31,8 +31,8 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ? 'bg-transparent text-white/30 border border-transparent'
         : 'bg-transparent text-white hover:bg-white/10 focus:ring-white/50 border border-transparent',
       danger: disabled
-        ? 'bg-gray-600 text-gray-400 border border-transparent'
-        : 'bg-red-600 text-white hover:bg-red-500 focus:ring-red-500 border border-transparent',
+        ? 'bg-table-900 text-white/30 border border-table-700'
+        : 'bg-red-900/80 text-red-200 hover:bg-red-800/80 focus:ring-red-500 border border-red-500/30 shadow-lg',
     };
 
     const sizes = {

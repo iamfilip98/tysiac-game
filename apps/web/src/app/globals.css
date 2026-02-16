@@ -417,7 +417,7 @@ html,
 
 /* Score display */
 .score-positive {
-  @apply text-green-400;
+  @apply text-gold-400;
 }
 
 .score-negative {

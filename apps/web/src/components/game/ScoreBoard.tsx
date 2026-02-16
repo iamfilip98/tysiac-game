@@ -86,11 +86,16 @@ export function ScoreBoard({
                 {/* Dealer indicator */}
                 {isDealer && (
                   <span
-                    className="w-5 h-5 rounded-full bg-white/10 border border-white/20 flex items-center justify-center text-[10px] font-bold text-white/60"
+                    className="w-5 h-5 flex items-center justify-center"
                     title="Dealer"
                     aria-label="Dealer"
                   >
-                    D
+                    <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+                      <circle cx="10" cy="10" r="9" stroke="rgba(255,255,255,0.5)" strokeWidth="1.2" />
+                      <circle cx="10" cy="10" r="6.5" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" strokeDasharray="2.5 2" />
+                      <circle cx="10" cy="10" r="3.5" fill="rgba(255,255,255,0.15)" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+                      <text x="10" y="13" textAnchor="middle" fontSize="7" fontWeight="bold" fill="rgba(255,255,255,0.7)" fontFamily="system-ui">D</text>
+                    </svg>
                   </span>
                 )}
 
@@ -212,7 +217,7 @@ export function InlineScore({ score, isOnBarrel, className }: InlineScoreProps) 
           ? 'text-amber-400'
           : score < 0
           ? 'text-red-400'
-          : 'text-green-400',
+          : 'text-gold-400',
         className
       )}
     >
