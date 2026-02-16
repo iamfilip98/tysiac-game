@@ -3,7 +3,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn, truncateName } from '@/lib/utils';
-import { useScreenSize } from '@/hooks/useIsMobile';
 
 // Smooth easing for all devices (no springs)
 const smoothTransition = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] };
@@ -21,8 +20,6 @@ export const OpponentHand = memo(function OpponentHand({
   playerName,
   isCurrentTurn = false,
 }: OpponentHandProps) {
-  const { isMobile } = useScreenSize();
-
   const positionClasses = {
     left: 'flex-col items-start',
     right: 'flex-col items-end',
@@ -64,7 +61,7 @@ export const OpponentHand = memo(function OpponentHand({
       {/* Cards */}
       <div
         className={cn(
-          'relative flex opponent-hand',
+          'relative flex',
           cardDirection === 'vertical' ? 'flex-col -space-y-6 sm:-space-y-8' : '-space-x-4 sm:-space-x-6'
         )}
         aria-hidden="true"
@@ -85,12 +82,6 @@ export const OpponentHand = memo(function OpponentHand({
             }}
           />
         ))}
-        {/* Unified shimmer sweep across all cards */}
-        {!isMobile && (
-          <div
-            className="absolute inset-0 pointer-events-none opponent-hand-shimmer rounded-md"
-          />
-        )}
       </div>
     </div>
   );

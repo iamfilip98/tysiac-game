@@ -29,10 +29,8 @@ const sizeClasses = {
 };
 
 // Face card SVG portraits
-function KingPortrait({ color, isMarriage, isDarkCards }: { color: string; isMarriage: boolean; isDarkCards: boolean }) {
-  const fill = isMarriage && isDarkCards
-    ? (color === 'red' ? '#e0e0e0' : '#ffffff')
-    : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
+function KingPortrait({ color }: { color: string }) {
+  const fill = color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
       {/* Crown */}
@@ -53,10 +51,8 @@ function KingPortrait({ color, isMarriage, isDarkCards }: { color: string; isMar
   );
 }
 
-function QueenPortrait({ color, isMarriage, isDarkCards }: { color: string; isMarriage: boolean; isDarkCards: boolean }) {
-  const fill = isMarriage && isDarkCards
-    ? (color === 'red' ? '#e0e0e0' : '#ffffff')
-    : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
+function QueenPortrait({ color }: { color: string }) {
+  const fill = color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
       {/* Tiara/crown */}
@@ -78,10 +74,8 @@ function QueenPortrait({ color, isMarriage, isDarkCards }: { color: string; isMa
   );
 }
 
-function JackPortrait({ color, isMarriage, isDarkCards }: { color: string; isMarriage: boolean; isDarkCards: boolean }) {
-  const fill = isMarriage && isDarkCards
-    ? (color === 'red' ? '#e0e0e0' : '#ffffff')
-    : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
+function JackPortrait({ color }: { color: string }) {
+  const fill = color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
       {/* Helmet */}
@@ -138,20 +132,28 @@ export const Card = memo(function Card({
   const showPortrait = isFaceCard && size !== 'xs';
   const isDarkCards = cardStyle === 'black' || (cardStyle === 'auto' && theme === 'dark');
 
-  // Marriage card text color — dark cards need white text for readability on gold
-  const getTextColor = () => {
-    if (isMarriageCard && isDarkCards) return '#ffffff';
-    return color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
-  };
-
-  const marriageTextStyle = isMarriageCard && isDarkCards
+  // Silver palette for dark/black card mode, gold for light
+  const marriageColors = isDarkCards
     ? {
-        WebkitTextStroke: '0.5px rgba(0,0,0,0.7)',
-        textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-      } as React.CSSProperties
-    : {};
+        primary: '#b8bcc8',
+        highlight: '#e4e7ed',
+        dark: '#838791',
+        glowPrimary: 'rgba(184,188,200,0.7)',
+        glowSecondary: 'rgba(228,231,237,0.3)',
+        borderOuter: 'rgba(228,231,237,0.5)',
+        borderInner: 'rgba(140,145,160,0.25)',
+      }
+    : {
+        primary: '#d4af37',
+        highlight: '#f5e7a3',
+        dark: '#b8941f',
+        glowPrimary: 'rgba(212,175,55,0.7)',
+        glowSecondary: 'rgba(245,231,163,0.3)',
+        borderOuter: 'rgba(245,231,163,0.5)',
+        borderInner: 'rgba(120,90,20,0.25)',
+      };
 
-  const textColor = getTextColor();
+  const textColor = color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if ((e.key === 'Enter' || e.key === ' ') && isPlayable && onClick) {
@@ -191,8 +193,8 @@ export const Card = memo(function Card({
         <div
           className="absolute -inset-[4px] rounded-xl"
           style={{
-            boxShadow: '0 0 20px 4px rgba(212, 175, 55, 0.7), 0 0 40px 8px rgba(245, 231, 163, 0.3)',
-            border: '1px solid rgba(245, 231, 163, 0.5)',
+            boxShadow: `0 0 20px 4px ${marriageColors.glowPrimary}, 0 0 40px 8px ${marriageColors.glowSecondary}`,
+            border: `1px solid ${marriageColors.borderOuter}`,
           }}
           aria-hidden="true"
         />
@@ -257,13 +259,13 @@ export const Card = memo(function Card({
               style={{
                 background: `linear-gradient(
                   135deg,
-                  #d4af37 0%,
-                  #f5e7a3 15%,
-                  #d4af37 30%,
-                  #b8941f 45%,
-                  #d4af37 60%,
-                  #f5e7a3 75%,
-                  #d4af37 100%
+                  ${marriageColors.primary} 0%,
+                  ${marriageColors.highlight} 15%,
+                  ${marriageColors.primary} 30%,
+                  ${marriageColors.dark} 45%,
+                  ${marriageColors.primary} 60%,
+                  ${marriageColors.highlight} 75%,
+                  ${marriageColors.primary} 100%
                 )`,
                 opacity: 0.92,
               }}
@@ -377,7 +379,7 @@ export const Card = memo(function Card({
           className="absolute inset-[5px] rounded border pointer-events-none"
           style={{
             borderColor: isMarriageCard
-              ? 'rgba(120, 90, 20, 0.25)'
+              ? marriageColors.borderInner
               : isHighCard
                 ? 'rgba(128, 128, 128, 0.18)'
                 : 'rgba(128, 128, 128, 0.1)',
@@ -398,7 +400,7 @@ export const Card = memo(function Card({
           {showCornerPips && (
             <div
               className="absolute top-[2px] left-[3px] flex flex-col items-center leading-none"
-              style={{ color: textColor, ...marriageTextStyle }}
+              style={{ color: textColor }}
             >
               <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : size === 'sm' ? 'text-[10px]' : 'text-[9px]')}>{card.rank}</span>
               <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]')}>{suitSymbol}</span>
@@ -410,9 +412,9 @@ export const Card = memo(function Card({
               'flex items-center justify-center',
               size === 'lg' ? 'w-[58px] h-[76px]' : size === 'sm' ? 'w-[38px] h-[50px]' : 'w-[46px] h-[60px]'
             )}>
-              {card.rank === 'K' && <KingPortrait color={color} isMarriage={isMarriageCard} isDarkCards={isDarkCards} />}
-              {card.rank === 'Q' && <QueenPortrait color={color} isMarriage={isMarriageCard} isDarkCards={isDarkCards} />}
-              {card.rank === 'J' && <JackPortrait color={color} isMarriage={isMarriageCard} isDarkCards={isDarkCards} />}
+              {card.rank === 'K' && <KingPortrait color={color} />}
+              {card.rank === 'Q' && <QueenPortrait color={color} />}
+              {card.rank === 'J' && <JackPortrait color={color} />}
             </div>
           ) : (
             <div className={cn(
@@ -421,13 +423,13 @@ export const Card = memo(function Card({
             )}>
               <span
                 className={cn('font-bold', size === 'xs' ? 'text-base' : size === 'sm' ? 'text-lg' : 'text-2xl')}
-                style={{ color: textColor, ...marriageTextStyle }}
+                style={{ color: textColor }}
               >
                 {card.rank}
               </span>
               <span
                 className={cn('-mt-1', size === 'xs' ? 'text-lg' : size === 'sm' ? 'text-xl' : 'text-3xl')}
-                style={{ color: textColor, ...marriageTextStyle }}
+                style={{ color: textColor }}
               >
                 {suitSymbol}
               </span>
@@ -437,7 +439,7 @@ export const Card = memo(function Card({
           {showCornerPips && (
             <div
               className="absolute bottom-[2px] right-[3px] flex flex-col items-center leading-none rotate-180"
-              style={{ color: textColor, ...marriageTextStyle }}
+              style={{ color: textColor }}
             >
               <span className={cn('font-bold', size === 'lg' ? 'text-[14px]' : size === 'md' ? 'text-[12px]' : size === 'sm' ? 'text-[10px]' : 'text-[9px]')}>{card.rank}</span>
               <span className={cn('-mt-[1px]', size === 'lg' ? 'text-[13px]' : size === 'md' ? 'text-[11px]' : size === 'sm' ? 'text-[9px]' : 'text-[8px]')}>{suitSymbol}</span>
