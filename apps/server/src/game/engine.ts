@@ -1143,12 +1143,17 @@ export class GameEngine {
     playerState.hand.splice(index, 1);
 
     this.io.to(this.roomId).emit('game:cardPlayed', { playerId, card });
-    this.broadcastState();
 
     // Check if trick is complete
     if (trick.cards.length === 3) {
-      this.completeTrick();
+      // Force immediate broadcast so clients see all 3 cards before trick clears.
+      // broadcastState() uses queueMicrotask which would fire AFTER completeTrick()
+      // resets currentTrick, so clients would never see the 3rd card.
+      this.doBroadcast();
+      // Delay trick completion so all 3 cards are visible for ~1s
+      this.safeSetTimeout(() => this.completeTrick(), 1000);
     } else {
+      this.broadcastState();
       // Next player
       trick.currentPlayer = getNextPlayer(this.game, playerId);
       this.promptCurrentPlayer();
@@ -1206,7 +1211,8 @@ export class GameEngine {
     if (round.completedTricks >= 8) {
       this.safeSetTimeout(() => this.endRound(), 1500);
     } else {
-      // Start next trick
+      // Start next trick — broadcast immediately since we already
+      // waited ~1s in handlePlayCard before calling completeTrick()
       round.currentTrick = {
         cards: [],
         leadSuit: null,
@@ -1214,11 +1220,8 @@ export class GameEngine {
         trickNumber: round.completedTricks + 1,
       };
 
-      this.safeSetTimeout(() => {
-        if (this.isCleanedUp) return;
-        this.broadcastState();
-        this.promptCurrentPlayer();
-      }, 1000);
+      this.broadcastState();
+      this.promptCurrentPlayer();
     }
   }
 
