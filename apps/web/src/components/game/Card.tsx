@@ -179,8 +179,8 @@ export function Card({
         role="img"
         aria-label="Face-down card"
       >
-        {/* Enchanted shimmer — desktop only, animations on */}
-        {!isMobile && animationsEnabled && (
+        {/* Enchanted shimmer */}
+        {animationsEnabled && (
           <div
             className="absolute inset-0 rounded-lg overflow-hidden pointer-events-none"
             style={{ zIndex: 1 }}
@@ -191,14 +191,14 @@ export function Card({
               style={{
                 background: `linear-gradient(
                   105deg,
-                  transparent 30%,
-                  rgba(212, 175, 55, 0.08) 42%,
-                  rgba(255, 255, 255, 0.12) 50%,
-                  rgba(212, 175, 55, 0.08) 58%,
-                  transparent 70%
+                  transparent 25%,
+                  rgba(212, 175, 55, 0.2) 38%,
+                  rgba(255, 255, 255, 0.35) 50%,
+                  rgba(212, 175, 55, 0.2) 62%,
+                  transparent 75%
                 )`,
                 backgroundSize: '250% 100%',
-                animation: 'cardBackShimmer 4s ease-in-out infinite',
+                animation: 'cardBackShimmer 3.5s ease-in-out infinite',
               }}
             />
           </div>
