@@ -29,9 +29,9 @@ const sizeClasses = {
 };
 
 // Face card SVG portraits
-function KingPortrait({ color, isMarriage }: { color: string; isMarriage: boolean }) {
-  const fill = isMarriage
-    ? (color === 'red' ? '#7a2020' : '#3a3a3a')
+function KingPortrait({ color, isMarriage, isDarkCards }: { color: string; isMarriage: boolean; isDarkCards: boolean }) {
+  const fill = isMarriage && isDarkCards
+    ? (color === 'red' ? '#e0e0e0' : '#ffffff')
     : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
@@ -53,9 +53,9 @@ function KingPortrait({ color, isMarriage }: { color: string; isMarriage: boolea
   );
 }
 
-function QueenPortrait({ color, isMarriage }: { color: string; isMarriage: boolean }) {
-  const fill = isMarriage
-    ? (color === 'red' ? '#7a2020' : '#3a3a3a')
+function QueenPortrait({ color, isMarriage, isDarkCards }: { color: string; isMarriage: boolean; isDarkCards: boolean }) {
+  const fill = isMarriage && isDarkCards
+    ? (color === 'red' ? '#e0e0e0' : '#ffffff')
     : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
@@ -78,9 +78,9 @@ function QueenPortrait({ color, isMarriage }: { color: string; isMarriage: boole
   );
 }
 
-function JackPortrait({ color, isMarriage }: { color: string; isMarriage: boolean }) {
-  const fill = isMarriage
-    ? (color === 'red' ? '#7a2020' : '#3a3a3a')
+function JackPortrait({ color, isMarriage, isDarkCards }: { color: string; isMarriage: boolean; isDarkCards: boolean }) {
+  const fill = isMarriage && isDarkCards
+    ? (color === 'red' ? '#e0e0e0' : '#ffffff')
     : (color === 'red' ? 'var(--card-red)' : 'var(--card-black)');
   return (
     <svg viewBox="0 0 40 56" className="w-full h-full" aria-hidden="true">
@@ -140,12 +140,7 @@ export const Card = memo(function Card({
 
   // Marriage card text color — dark cards need white text for readability on gold
   const getTextColor = () => {
-    if (isMarriageCard) {
-      if (isDarkCards) {
-        return '#ffffff';
-      }
-      return color === 'red' ? '#991b1b' : '#1a1a1a';
-    }
+    if (isMarriageCard && isDarkCards) return '#ffffff';
     return color === 'red' ? 'var(--card-red)' : 'var(--card-black)';
   };
 
@@ -415,9 +410,9 @@ export const Card = memo(function Card({
               'flex items-center justify-center',
               size === 'lg' ? 'w-[58px] h-[76px]' : size === 'sm' ? 'w-[38px] h-[50px]' : 'w-[46px] h-[60px]'
             )}>
-              {card.rank === 'K' && <KingPortrait color={color} isMarriage={isMarriageCard} />}
-              {card.rank === 'Q' && <QueenPortrait color={color} isMarriage={isMarriageCard} />}
-              {card.rank === 'J' && <JackPortrait color={color} isMarriage={isMarriageCard} />}
+              {card.rank === 'K' && <KingPortrait color={color} isMarriage={isMarriageCard} isDarkCards={isDarkCards} />}
+              {card.rank === 'Q' && <QueenPortrait color={color} isMarriage={isMarriageCard} isDarkCards={isDarkCards} />}
+              {card.rank === 'J' && <JackPortrait color={color} isMarriage={isMarriageCard} isDarkCards={isDarkCards} />}
             </div>
           ) : (
             <div className={cn(

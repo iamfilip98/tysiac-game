@@ -62,10 +62,8 @@ export function MarriagePanel({
                 )}
               >
                 <span
-                  className={cn(
-                    'text-3xl',
-                    isRed ? 'text-red-500' : 'text-white'
-                  )}
+                  className="text-3xl"
+                  style={{ color: isRed ? 'var(--card-red)' : 'white' }}
                   aria-hidden="true"
                 >
                   {symbol}
@@ -110,10 +108,8 @@ export function DeclaredMarriages({
             key={suit}
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            className={cn(
-              'text-xl',
-              isRed ? 'text-red-500' : 'text-white'
-            )}
+            className="text-xl"
+            style={{ color: isRed ? 'var(--card-red)' : 'white' }}
           >
             {symbol}
           </motion.span>

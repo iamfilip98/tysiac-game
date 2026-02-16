@@ -32,7 +32,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         : 'bg-transparent text-white hover:bg-white/10 focus:ring-white/50 border border-transparent',
       danger: disabled
         ? 'bg-table-900 text-white/30 border border-table-700'
-        : 'bg-red-900/80 text-red-200 hover:bg-red-800/80 focus:ring-red-500 border border-red-500/30 shadow-lg',
+        : 'bg-table-800/90 text-red-400 hover:bg-table-700/90 hover:text-red-300 focus:ring-red-500 border border-red-500/20 shadow-lg',
     };
 
     const sizes = {
