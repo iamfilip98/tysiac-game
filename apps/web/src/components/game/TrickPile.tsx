@@ -72,7 +72,7 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
   return (
     <div className={cn(
       'relative flex items-center justify-center',
-      sizeTier === 'sm' ? 'w-44 h-44' : sizeTier === 'md' ? 'w-52 h-56' : 'w-64 h-64'
+      sizeTier === 'sm' ? 'w-44 h-44' : sizeTier === 'md' ? 'w-52 h-52' : 'w-64 h-64'
     )}>
       {/* Table felt center */}
       <div className="absolute inset-4 rounded-full" style={{

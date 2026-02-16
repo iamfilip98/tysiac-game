@@ -8,6 +8,13 @@
       "when": 1769953765743,
       "tag": "0000_sudden_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1771277466720,
+      "tag": "0001_wandering_serpent_society",
+      "breakpoints": true
     }
   ]
 }

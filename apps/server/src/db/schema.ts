@@ -81,7 +81,7 @@ export const sessions = pgTable('sessions', {
 // Debug logs table - tracks all game actions for last 10 games (internal debugging only)
 export const debugLogs = pgTable('debug_logs', {
   id: text('id').primaryKey(),
-  gameId: text('game_id').references(() => games.id, { onDelete: 'cascade' }),
+  gameId: text('game_id'),
   roomId: text('room_id'),
   sessionId: text('session_id'), // Groups logs for a game session even before gameId exists
   playerId: text('player_id'),
