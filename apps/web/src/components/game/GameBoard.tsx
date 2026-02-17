@@ -10,6 +10,7 @@ import { TalonDisplay } from './TalonPanel';
 import { GameActionPanels } from './GameActionPanels';
 import { GameOverlays } from './GameOverlays';
 import { SettingsDropdown } from './SettingsDropdown';
+import { Button } from '@/components/ui/Button';
 import { useGameStore } from '@/stores/gameStore';
 import { useRoomStore } from '@/stores/roomStore';
 import { useSocket } from '@/hooks/useSocket';
@@ -33,6 +34,7 @@ function getLayoutPositions(isMobile: boolean, height: number) {
     playerHand: isMobile ? 'bottom-2' : 'bottom-4',
     spectatingHand: isMobile ? 'bottom-16' : 'bottom-20',
     turnIndicator: isMobile ? (isCompact ? 'bottom-24' : 'bottom-28') : 'bottom-48',
+    playCardButton: isMobile ? (isCompact ? 'bottom-32' : 'bottom-36') : 'bottom-56',
     spectatingIndicator: isMobile ? 'bottom-2' : 'bottom-4',
     centerArea: isMobile ? (isCompact ? 'top-52 bottom-32' : 'top-64 bottom-36') : '',
   };
@@ -128,6 +130,18 @@ export function GameBoard() {
     }
   }, [gameState, playerId]);
 
+
+  // Check if selected card is playable (for Play Card button)
+  const isSelectedCardPlayable = useMemo(() => {
+    if (!selectedCard) return false;
+    const playAction = validActions.find((a) => a.type === 'playCard');
+    if (playAction && playAction.type === 'playCard') {
+      return playAction.validCards.some(
+        (c) => c.suit === selectedCard.suit && c.rank === selectedCard.rank
+      );
+    }
+    return false;
+  }, [selectedCard, validActions]);
 
   // Track talon confirmation state
   const [hasConfirmedTalon, setHasConfirmedTalon] = useState(false);
@@ -495,6 +509,31 @@ export function GameBoard() {
           />
         )}
       </div>
+
+      {/* Play Card button — fixed position above turn indicator */}
+      <AnimatePresence>
+        {isMyTurn && phase === 'trickPlaying' && selectedCard && isSelectedCardPlayable && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15 }}
+            className={cn(
+              'absolute left-1/2 -translate-x-1/2 z-30',
+              layout.playCardButton
+            )}
+          >
+            <Button
+              variant="primary"
+              glow
+              onClick={() => playCard(selectedCard)}
+              className="px-6 py-1.5 text-sm whitespace-nowrap"
+            >
+              Play Card
+            </Button>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Turn indicator */}
       {isMyTurn && phase === 'trickPlaying' && (

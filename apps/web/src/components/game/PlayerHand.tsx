@@ -3,7 +3,6 @@
 import { useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
-import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
 import { truncateName } from '@tysiac/shared';
 import { useScreenSize } from '@/hooks/useIsMobile';
@@ -20,7 +19,7 @@ interface PlayerHandProps {
   cards: CardType[];
   validActions: ValidAction[];
   selectedCard: CardType | null;
-  onSelectCard: (card: CardType) => void;
+  onSelectCard: (card: CardType | null) => void;
   onPlayCard: (card: CardType) => void;
   isMyTurn: boolean;
   declaredMarriages?: Suit[];
@@ -166,10 +165,8 @@ export function PlayerHand({
     if (!isMyTurn) return;
 
     if (isCardSelected(card)) {
-      // Double click / second click plays the card
-      if (isCardPlayable(card)) {
-        onPlayCard(card);
-      }
+      // Clicking selected card deselects it
+      onSelectCard(null);
     } else {
       onSelectCard(card);
     }
@@ -331,27 +328,6 @@ export function PlayerHand({
         })}
       </AnimatePresence>
 
-      {/* Play Card button — appears when a card is selected and playable */}
-      <AnimatePresence>
-        {!distributionState && selectedCard && isMyTurn && isCardPlayable(selectedCard) && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.15 }}
-            className="absolute -top-12 left-1/2 -translate-x-1/2 z-20"
-          >
-            <Button
-              variant="primary"
-              glow
-              onClick={() => onPlayCard(selectedCard)}
-              className="px-6 py-1.5 text-sm whitespace-nowrap"
-            >
-              Play Card
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </div>
   );
 }
