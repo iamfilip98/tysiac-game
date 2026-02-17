@@ -14,8 +14,13 @@
     "db:push": "pnpm --filter=@tysiac/server db:push"
   },
   "dependencies": {
-    "next": "^14.1.0",
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "18.3.1",
+      "react-dom": "18.3.1"
+    }
   }
 }
