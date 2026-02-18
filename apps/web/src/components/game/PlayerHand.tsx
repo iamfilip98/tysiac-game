@@ -25,6 +25,7 @@ interface PlayerHandProps {
   declaredMarriages?: Suit[];
   distributionState?: DistributionState;
   phase?: string;
+  trumpSuit?: Suit | null;
 }
 
 // Smooth easing for all devices (no springs)
@@ -40,6 +41,7 @@ export function PlayerHand({
   declaredMarriages = [],
   distributionState,
   phase,
+  trumpSuit,
 }: PlayerHandProps) {
   const { isMobile, width } = useScreenSize();
 
@@ -231,6 +233,7 @@ export function PlayerHand({
                 isSelected={isDistSelected}
                 isPlayable={isSelectableNow}
                 isMarriageCard={isMarriageCard(card)}
+                isTrumpCard={!!trumpSuit && card.suit === trumpSuit}
                 onClick={() => handleCardClick(card)}
                 size="md"
               />
@@ -311,6 +314,7 @@ export function PlayerHand({
                 isSelected={distributionState ? isDistSelected : selected}
                 isPlayable={isPlayableNow}
                 isMarriageCard={isMarriageCard(card)}
+                isTrumpCard={!!trumpSuit && card.suit === trumpSuit}
                 onClick={() => handleCardClick(card)}
                 size={isMobile ? 'md' : 'lg'}
               />

@@ -33,8 +33,7 @@ function getLayoutPositions(isMobile: boolean, height: number) {
     actionPanel: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
     playerHand: isMobile ? 'bottom-2' : 'bottom-4',
     spectatingHand: isMobile ? 'bottom-16' : 'bottom-20',
-    turnIndicator: isMobile ? (isCompact ? 'bottom-24' : 'bottom-28') : 'bottom-48',
-    playCardButton: isMobile ? (isCompact ? 'bottom-32' : 'bottom-36') : 'bottom-56',
+    turnArea: isMobile ? (isCompact ? 'bottom-24' : 'bottom-28') : 'bottom-48',
     spectatingIndicator: isMobile ? 'bottom-2' : 'bottom-4',
     centerArea: isMobile ? (isCompact ? 'top-52 bottom-32' : 'top-64 bottom-36') : '',
   };
@@ -447,6 +446,7 @@ export function GameBoard() {
           isBidWinner={round?.bidWinner === playerId}
           bidAmount={round?.finalBid || 100}
           playerCount={playerCount}
+          bidWinnerName={gameState.players.find(p => p.id === round?.bidWinner)?.name}
           hasCardsToDistribute={!!gameState.cardsToDistribute}
           otherPlayers={otherPlayers.slice(0, 2)}
           distributionCards={distributionCards}
@@ -495,6 +495,7 @@ export function GameBoard() {
             isMyTurn={isMyTurn && phase === 'trickPlaying'}
             declaredMarriages={round?.declaredMarriages?.[playerId] || []}
             phase={phase}
+            trumpSuit={round?.trumpSuit}
             distributionState={
               phase === 'talonDistribution' && round?.bidWinner === playerId
                 ? {
@@ -509,47 +510,41 @@ export function GameBoard() {
         )}
       </div>
 
-      {/* Play Card button — fixed position above turn indicator */}
-      {isMyTurn && phase === 'trickPlaying' && selectedCard && isSelectedCardPlayable && (
+      {/* Turn area — Play Card button + turn indicator in a single column */}
+      {isMyTurn && phase === 'trickPlaying' && (
         <div
           className={cn(
-            'absolute left-1/2 -translate-x-1/2 z-30',
-            layout.playCardButton
+            'absolute left-1/2 -translate-x-1/2 z-30 flex flex-col items-center gap-2',
+            layout.turnArea
           )}
         >
-          <Button
-            variant="primary"
-            glow
-            onClick={() => playCard(selectedCard)}
-            className="px-6 py-1.5 text-sm whitespace-nowrap"
+          {selectedCard && isSelectedCardPlayable && (
+            <Button
+              variant="primary"
+              glow
+              onClick={() => playCard(selectedCard)}
+              className="px-6 py-1.5 text-sm whitespace-nowrap"
+            >
+              Play Card
+            </Button>
+          )}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: [0.5, 1, 0.5] }}
+            transition={{ duration: 2, repeat: Infinity }}
+            role="status"
+            aria-live="assertive"
           >
-            Play Card
-          </Button>
+            <div className="relative overflow-hidden px-4 py-2 rounded-lg text-gold-400 text-sm font-medium" style={{
+              background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.08))',
+              border: '1px solid rgba(251,191,36,0.4)',
+              boxShadow: '0 0 20px rgba(251,191,36,0.15)',
+            }}>
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold-400/10 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
+              <span className="relative">Your turn - select a card to play</span>
+            </div>
+          </motion.div>
         </div>
-      )}
-
-      {/* Turn indicator */}
-      {isMyTurn && phase === 'trickPlaying' && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className={cn(
-            'absolute left-1/2 -translate-x-1/2 z-20',
-            layout.turnIndicator
-          )}
-          role="status"
-          aria-live="assertive"
-        >
-          <div className="relative overflow-hidden px-4 py-2 rounded-lg text-gold-400 text-sm font-medium" style={{
-            background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.08))',
-            border: '1px solid rgba(251,191,36,0.4)',
-            boxShadow: '0 0 20px rgba(251,191,36,0.15)',
-          }}>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-gold-400/10 to-transparent animate-shimmer" style={{ backgroundSize: '200% 100%' }} />
-            <span className="relative">Your turn - select a card to play</span>
-          </div>
-        </motion.div>
       )}
 
       {/* Modals and announcements */}

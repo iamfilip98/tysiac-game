@@ -6,6 +6,37 @@ import { cn } from '@/lib/utils';
 import { getSuitSymbol, getSuitName, truncateName } from '@tysiac/shared';
 import type { Suit } from '@tysiac/shared';
 
+function BarrelIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      {/* Barrel body — dark wood */}
+      <path d="M4 3 Q2.8 8 4 13 L12 13 Q13.2 8 12 3 Z" fill="#2a1f0a" stroke="#d4af37" strokeWidth="0.6" />
+      {/* Wood staves */}
+      <line x1="6" y1="3.2" x2="5.7" y2="12.8" stroke="#3d2e10" strokeWidth="0.5" />
+      <line x1="8" y1="3" x2="8" y2="13" stroke="#3d2e10" strokeWidth="0.5" />
+      <line x1="10" y1="3.2" x2="10.3" y2="12.8" stroke="#3d2e10" strokeWidth="0.5" />
+      {/* Metal bands — thick with rivets */}
+      <path d="M3.6 4.5 Q8 3.8 12.4 4.5" fill="none" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="4.5" cy="4.3" r="0.4" fill="#b8941f" />
+      <circle cx="11.5" cy="4.3" r="0.4" fill="#b8941f" />
+      <path d="M3.2 8 Q8 7.2 12.8 8" fill="none" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="4" cy="7.8" r="0.4" fill="#b8941f" />
+      <circle cx="12" cy="7.8" r="0.4" fill="#b8941f" />
+      <path d="M3.6 11.5 Q8 12.2 12.4 11.5" fill="none" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
+      <circle cx="4.5" cy="11.7" r="0.4" fill="#b8941f" />
+      <circle cx="11.5" cy="11.7" r="0.4" fill="#b8941f" />
+      {/* Top lid ellipse */}
+      <ellipse cx="8" cy="3" rx="4" ry="1.3" fill="#2a1f0a" stroke="#d4af37" strokeWidth="0.6" />
+      {/* Bung hole */}
+      <ellipse cx="8" cy="2.8" rx="0.8" ry="0.4" fill="#1a1200" stroke="#b8941f" strokeWidth="0.3" />
+      {/* Body highlight for 3D depth */}
+      <path d="M5.5 5 Q6.5 7.5 5.5 11" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.8" strokeLinecap="round" />
+      {/* Lid highlight */}
+      <ellipse cx="7" cy="2.6" rx="1.8" ry="0.4" fill="rgba(255,255,255,0.08)" />
+    </svg>
+  );
+}
+
 interface ScoreBoardProps {
   players: { id: string; name: string; isAI: boolean }[];
   scores: Record<
@@ -38,7 +69,7 @@ export const ScoreBoard = memo(function ScoreBoard({
 
   return (
     <div className={cn(
-      "bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md border border-white/[0.08] rounded-xl w-[180px] sm:w-[220px]",
+      "bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md border border-white/[0.08] rounded-xl w-[220px] sm:w-[280px]",
       isFourPlayer ? "p-2" : "p-4"
     )} style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
       {/* Header */}
@@ -149,20 +180,7 @@ export const ScoreBoard = memo(function ScoreBoard({
                     className="text-xs text-amber-400 flex items-center gap-1"
                     aria-label="On the barrel (800+)"
                   >
-                    <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      {/* Barrel body */}
-                      <path d="M4 3 Q3 8 4 13 L12 13 Q13 8 12 3 Z" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
-                      {/* Band hoops */}
-                      <path d="M3.8 4.5 Q8 4 12.2 4.5" fill="none" stroke="#d4af37" strokeWidth="0.8" />
-                      <path d="M3.5 8 Q8 7.3 12.5 8" fill="none" stroke="#d4af37" strokeWidth="0.8" />
-                      <path d="M3.8 11.5 Q8 12 12.2 11.5" fill="none" stroke="#d4af37" strokeWidth="0.8" />
-                      {/* Top ellipse */}
-                      <ellipse cx="8" cy="3" rx="4" ry="1.3" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
-                      <ellipse cx="7.5" cy="2.8" rx="2" ry="0.5" fill="rgba(255,255,255,0.08)" />
-                      {/* Wood grain highlights */}
-                      <line x1="6" y1="4.5" x2="5.8" y2="11.5" stroke="rgba(212,175,55,0.2)" strokeWidth="0.4" />
-                      <line x1="10" y1="4.5" x2="10.2" y2="11.5" stroke="rgba(212,175,55,0.2)" strokeWidth="0.4" />
-                    </svg>
+                    <BarrelIcon className="w-3.5 h-3.5" />
                     <span className="sr-only">On barrel</span>
                   </motion.span>
                 )}
@@ -262,16 +280,7 @@ export function InlineScore({ score, isOnBarrel, className }: InlineScoreProps) 
       {score}
       {isOnBarrel && (
         <span aria-label="on barrel" className="inline-flex items-center ml-1 text-amber-400">
-          <svg className="w-3 h-3" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-            <path d="M4 3 Q3 8 4 13 L12 13 Q13 8 12 3 Z" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
-            <path d="M3.8 4.5 Q8 4 12.2 4.5" fill="none" stroke="#d4af37" strokeWidth="0.8" />
-            <path d="M3.5 8 Q8 7.3 12.5 8" fill="none" stroke="#d4af37" strokeWidth="0.8" />
-            <path d="M3.8 11.5 Q8 12 12.2 11.5" fill="none" stroke="#d4af37" strokeWidth="0.8" />
-            <ellipse cx="8" cy="3" rx="4" ry="1.3" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
-            <ellipse cx="7.5" cy="2.8" rx="2" ry="0.5" fill="rgba(255,255,255,0.08)" />
-            <line x1="6" y1="4.5" x2="5.8" y2="11.5" stroke="rgba(212,175,55,0.2)" strokeWidth="0.4" />
-            <line x1="10" y1="4.5" x2="10.2" y2="11.5" stroke="rgba(212,175,55,0.2)" strokeWidth="0.4" />
-          </svg>
+          <BarrelIcon className="w-3 h-3" />
         </span>
       )}
     </span>
