@@ -264,7 +264,7 @@ export function PlayerHand({
       role="group"
       aria-label={`Your hand: ${cardCount} cards${isMyTurn ? '. Your turn to play.' : ''}`}
     >
-      <AnimatePresence mode="popLayout">
+      <AnimatePresence>
         {sortedCards.map((card, index) => {
           const playable = isCardPlayable(card);
           const selected = isCardSelected(card);
@@ -290,7 +290,6 @@ export function PlayerHand({
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
-              layoutId={`card-${card.suit}-${card.rank}`}
               initial={{ opacity: 0, y: 20 }}
               animate={{
                 opacity: 1,

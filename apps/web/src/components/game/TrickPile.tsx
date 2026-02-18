@@ -229,7 +229,6 @@ export function TrickPile({ cards, players, currentPlayerId, marriageCard, isSpe
           return (
             <motion.div
               key={`${card.suit}-${card.rank}`}
-              layoutId={`card-${card.suit}-${card.rank}`}
               initial={{
                 opacity: 0,
                 x: position.x * 2.5,

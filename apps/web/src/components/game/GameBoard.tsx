@@ -1,7 +1,7 @@
 'use client';
 
 import { useMemo, useState, useEffect } from 'react';
-import { motion, AnimatePresence, LayoutGroup } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PlayerHand } from './PlayerHand';
 import { OpponentHand } from './OpponentHand';
 import { TrickPile } from './TrickPile';
@@ -253,7 +253,6 @@ export function GameBoard() {
   };
 
   return (
-    <LayoutGroup>
     <div className="relative h-full w-full overflow-hidden" style={{ height: '100dvh' }}>
       {/* Background atmosphere */}
       <div className="absolute inset-0" style={{
@@ -511,29 +510,23 @@ export function GameBoard() {
       </div>
 
       {/* Play Card button — fixed position above turn indicator */}
-      <AnimatePresence>
-        {isMyTurn && phase === 'trickPlaying' && selectedCard && isSelectedCardPlayable && (
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.15 }}
-            className={cn(
-              'absolute left-1/2 -translate-x-1/2 z-30',
-              layout.playCardButton
-            )}
+      {isMyTurn && phase === 'trickPlaying' && selectedCard && isSelectedCardPlayable && (
+        <div
+          className={cn(
+            'absolute left-1/2 -translate-x-1/2 z-30',
+            layout.playCardButton
+          )}
+        >
+          <Button
+            variant="primary"
+            glow
+            onClick={() => playCard(selectedCard)}
+            className="px-6 py-1.5 text-sm whitespace-nowrap"
           >
-            <Button
-              variant="primary"
-              glow
-              onClick={() => playCard(selectedCard)}
-              className="px-6 py-1.5 text-sm whitespace-nowrap"
-            >
-              Play Card
-            </Button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+            Play Card
+          </Button>
+        </div>
+      )}
 
       {/* Turn indicator */}
       {isMyTurn && phase === 'trickPlaying' && (
@@ -592,6 +585,5 @@ export function GameBoard() {
       />
 
     </div>
-    </LayoutGroup>
   );
 }
