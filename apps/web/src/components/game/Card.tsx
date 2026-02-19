@@ -20,6 +20,8 @@ interface CardProps {
   style?: React.CSSProperties;
   className?: string;
   delay?: number;
+  /** Skip the Card's own entry animation (opacity/scale). Use when a parent wrapper already animates entry. */
+  skipEntryAnimation?: boolean;
 }
 
 const sizeClasses = {
@@ -119,6 +121,7 @@ export const Card = memo(function Card({
   style,
   className,
   delay = 0,
+  skipEntryAnimation = false,
 }: CardProps) {
   const isMobile = useIsMobile();
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
@@ -170,7 +173,7 @@ export const Card = memo(function Card({
   if (isFaceDown) {
     return (
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
+        initial={skipEntryAnimation ? false : { scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         transition={transition}
         className={cn(
@@ -212,7 +215,7 @@ export const Card = memo(function Card({
         />
       )}
       <motion.div
-        initial={{ scale: 0.95, opacity: 0 }}
+        initial={skipEntryAnimation ? false : { scale: 0.95, opacity: 0 }}
         animate={{
           scale: 1,
           opacity: 1,
