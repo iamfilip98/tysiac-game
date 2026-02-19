@@ -117,6 +117,11 @@ export function useSocket() {
     });
 
     socket.on('room:updated', (room) => {
+      // Fallback: if we're still in "Creating Room" state and get room data, treat as success
+      if (useRoomStore.getState().isCreatingRoom) {
+        if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
+        setCreatingRoom(false);
+      }
       setRoom(room);
     });
 
@@ -372,7 +377,7 @@ export function useSocket() {
           setCreatingRoom(false);
           setError('Room creation timed out. Please try again.');
         }
-      }, 30000);
+      }, 15000);
     }
   }, [safeEmit, setCreatingRoom, setError]);
 

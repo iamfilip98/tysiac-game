@@ -33,7 +33,7 @@ function getLayoutPositions(isMobile: boolean, height: number) {
     actionPanel: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
     playerHand: isMobile ? 'bottom-2' : 'bottom-4',
     spectatingHand: isMobile ? 'bottom-16' : 'bottom-20',
-    turnArea: isMobile ? (isCompact ? 'bottom-24' : 'bottom-28') : 'bottom-48',
+    turnArea: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
     spectatingIndicator: isMobile ? 'bottom-2' : 'bottom-4',
     centerArea: isMobile ? (isCompact ? 'top-52 bottom-32' : 'top-64 bottom-36') : '',
   };

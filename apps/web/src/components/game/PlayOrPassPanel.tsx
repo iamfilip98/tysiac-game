@@ -46,11 +46,10 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, pla
             ? 'Throw = no points change.'
             : `Throw = you lose ${bidAmount}, others gain +${pointsPerOpponent} each.`}
         </p>
-        <div className="flex gap-3 justify-center">
+        <div className="grid grid-cols-2 gap-3">
           <Button
             variant="secondary"
             onClick={onPass}
-            className="px-8"
           >
             {isNoPenalty ? 'Throw' : `Throw (-${bidAmount})`}
           </Button>
@@ -58,7 +57,6 @@ export function PlayOrPassPanel({ onPlay, onPass, isMyTurn, bidAmount = 100, pla
             variant="primary"
             onClick={onPlay}
             glow
-            className="px-8"
           >
             Play!
           </Button>

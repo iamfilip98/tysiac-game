@@ -128,7 +128,7 @@ export function RoundResultModal({
 
       <ModalFooter className="justify-center">
         <Button variant="primary" onClick={onClose} glow>
-          Continue to Next Round
+          {result.gameWinner ? 'Show Results' : 'Continue to Next Round'}
         </Button>
       </ModalFooter>
     </Modal>

@@ -161,7 +161,7 @@ export function BiddingPanel({
 
         {/* Show max bid info with tooltip */}
         {bidAction && bidAction.type === 'bid' && (
-          <div className="mt-3 text-center text-xs text-white/50 relative" ref={tooltipRef}>
+          <div className="mt-3 text-center text-xs text-white/50 relative px-2" ref={tooltipRef}>
             You can bid up to {bidAction.maxBid} based on your marriages
             <button
               onClick={toggleTooltip}

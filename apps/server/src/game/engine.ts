@@ -396,10 +396,28 @@ export class GameEngine {
         if (playerResult.playerId === round.bidWinner) {
           stats.bidCount++;
           stats.totalBidAmount += round.finalBid; // Track the final winning bid amount
+          stats.highestSingleBid = Math.max(stats.highestSingleBid, round.finalBid);
           if (scoreResult.bidderMadeBid) {
             stats.successfulBidCount++;
+            // Track low bid wins (bidding exactly 100 and making it)
+            if (round.finalBid === 100) {
+              stats.lowBidWins++;
+            }
           } else {
             stats.failedBidCount++;
+          }
+        }
+
+        // Track tricks won
+        const playerState = round.players[playerResult.playerId];
+        if (playerState) {
+          const tricksThisRound = playerState.tricksWon.length;
+          stats.totalTricksWon += tricksThisRound;
+
+          // Track clean sweep (won all 8 tricks = 120 trick points)
+          if (tricksThisRound === 8 && !stats.hadCleanSweep) {
+            stats.hadCleanSweep = true;
+            stats.cleanSweepRound = round.roundNumber;
           }
         }
 
@@ -436,6 +454,11 @@ export class GameEngine {
     }
 
     this.roundHistory.push(roundHistoryEntry);
+
+    // Attach game winner to round result so client can show correct button text
+    if (this.game.winner) {
+      roundResult.gameWinner = this.game.winner;
+    }
 
     this.io.to(this.roomId).emit('game:roundEnd', roundResult);
     this.broadcastState();

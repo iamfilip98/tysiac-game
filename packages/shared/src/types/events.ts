@@ -171,6 +171,7 @@ export interface RoundResult {
   bidWinner: string;
   bid: number;
   bidderMadeBid: boolean;
+  gameWinner?: string;
   playerResults: {
     playerId: string;
     trickPoints: number;

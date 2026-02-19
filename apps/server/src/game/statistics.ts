@@ -13,6 +13,11 @@ export interface PlayerGameStats {
   highestRoundPoints: number;
   reachedGrunwald: boolean;
   grunwaldRound: number | null;
+  totalTricksWon: number;
+  highestSingleBid: number;
+  lowBidWins: number;
+  hadCleanSweep: boolean;
+  cleanSweepRound: number | null;
 }
 
 // Round history for statistics calculation
@@ -82,6 +87,36 @@ const AWARDS = {
     titlePl: 'Grunwald',
     emoji: '🏰',
   },
+  cardShark: {
+    id: 'cardShark',
+    titleEn: 'Card Shark',
+    titlePl: 'Rekin Kart',
+    emoji: '🦈',
+  },
+  overbidder: {
+    id: 'overbidder',
+    titleEn: 'Overbidder',
+    titlePl: 'Licytator',
+    emoji: '📈',
+  },
+  lowRoller: {
+    id: 'lowRoller',
+    titleEn: 'Low Roller',
+    titlePl: 'Skromny Gracz',
+    emoji: '🎱',
+  },
+  cleanSweep: {
+    id: 'cleanSweep',
+    titleEn: 'Clean Sweep',
+    titlePl: 'Czyste Konto',
+    emoji: '🧹',
+  },
+  underdog: {
+    id: 'underdog',
+    titleEn: 'Underdog',
+    titlePl: 'Czarny Koń',
+    emoji: '🐕',
+  },
 } as const;
 
 /**
@@ -130,6 +165,26 @@ export function calculateGameStatistics(
   // 8. Grunwald - Reached exactly 410 points
   const grunwaldAward = calculateGrunwaldAward(playerStats, playerNames);
   if (grunwaldAward) potentialAwards.push(grunwaldAward);
+
+  // 9. Card Shark - Most tricks won across all rounds
+  const cardSharkAward = calculateCardSharkAward(playerStats, playerNames);
+  if (cardSharkAward) potentialAwards.push(cardSharkAward);
+
+  // 10. Overbidder - Placed the highest single bid
+  const overbidderAward = calculateOverbidderAward(playerStats, playerNames);
+  if (overbidderAward) potentialAwards.push(overbidderAward);
+
+  // 11. Low Roller - Won the most rounds bidding exactly 100
+  const lowRollerAward = calculateLowRollerAward(playerStats, playerNames);
+  if (lowRollerAward) potentialAwards.push(lowRollerAward);
+
+  // 12. Clean Sweep - Won all tricks in a round (120 trick pts)
+  const cleanSweepAward = calculateCleanSweepAward(playerStats, playerNames);
+  if (cleanSweepAward) potentialAwards.push(cleanSweepAward);
+
+  // 13. Underdog - Was in last place but finished 2nd or better
+  const underdogAward = calculateUnderdogAward(roundHistory, playerNames, game);
+  if (underdogAward) potentialAwards.push(underdogAward);
 
   // Select 3-4 best awards, prioritizing variety
   const selectedAwards = selectBestAwards(potentialAwards);
@@ -358,6 +413,148 @@ function calculateGrunwaldAward(
   };
 }
 
+function calculateCardSharkAward(
+  playerStats: Map<string, PlayerGameStats>,
+  playerNames: Map<string, string>
+): GameAward | null {
+  let maxTricks = 0;
+  let winnerId = '';
+
+  for (const [playerId, stats] of playerStats) {
+    if (stats.totalTricksWon > maxTricks) {
+      maxTricks = stats.totalTricksWon;
+      winnerId = playerId;
+    }
+  }
+
+  if (!winnerId || maxTricks < 5) return null;
+
+  return {
+    ...AWARDS.cardShark,
+    playerId: winnerId,
+    value: maxTricks,
+    description: `Won ${maxTricks} tricks total`,
+  };
+}
+
+function calculateOverbidderAward(
+  playerStats: Map<string, PlayerGameStats>,
+  playerNames: Map<string, string>
+): GameAward | null {
+  let maxBid = 0;
+  let winnerId = '';
+
+  for (const [playerId, stats] of playerStats) {
+    if (stats.highestSingleBid > maxBid && stats.highestSingleBid >= 120) {
+      maxBid = stats.highestSingleBid;
+      winnerId = playerId;
+    }
+  }
+
+  if (!winnerId) return null;
+
+  return {
+    ...AWARDS.overbidder,
+    playerId: winnerId,
+    value: maxBid,
+    description: `Highest bid: ${maxBid}`,
+  };
+}
+
+function calculateLowRollerAward(
+  playerStats: Map<string, PlayerGameStats>,
+  playerNames: Map<string, string>
+): GameAward | null {
+  let maxLowWins = 0;
+  let winnerId = '';
+
+  for (const [playerId, stats] of playerStats) {
+    if (stats.lowBidWins > maxLowWins && stats.lowBidWins >= 2) {
+      maxLowWins = stats.lowBidWins;
+      winnerId = playerId;
+    }
+  }
+
+  if (!winnerId) return null;
+
+  return {
+    ...AWARDS.lowRoller,
+    playerId: winnerId,
+    value: maxLowWins,
+    description: `Won ${maxLowWins} rounds at 100 bid`,
+  };
+}
+
+function calculateCleanSweepAward(
+  playerStats: Map<string, PlayerGameStats>,
+  playerNames: Map<string, string>
+): GameAward | null {
+  let winnerId = '';
+  let earliestRound = Infinity;
+
+  for (const [playerId, stats] of playerStats) {
+    if (stats.hadCleanSweep && stats.cleanSweepRound !== null && stats.cleanSweepRound < earliestRound) {
+      earliestRound = stats.cleanSweepRound;
+      winnerId = playerId;
+    }
+  }
+
+  if (!winnerId) return null;
+
+  return {
+    ...AWARDS.cleanSweep,
+    playerId: winnerId,
+    value: 120,
+    description: `Won all tricks in round ${earliestRound}`,
+  };
+}
+
+function calculateUnderdogAward(
+  roundHistory: RoundHistory[],
+  playerNames: Map<string, string>,
+  game: GameState
+): GameAward | null {
+  if (roundHistory.length < 3) return null;
+
+  const playerIds = Object.keys(roundHistory[0].playerScores);
+
+  // Check each player: were they ever in last place?
+  for (const playerId of playerIds) {
+    let wasInLastPlace = false;
+
+    // Check round-by-round scores for when this player was in last place
+    for (const round of roundHistory) {
+      const scores = Object.entries(round.playerScores)
+        .map(([pid, s]) => ({ pid, score: s.newTotalScore }));
+      scores.sort((a, b) => a.score - b.score);
+      if (scores[0].pid === playerId && scores[0].score < scores[1].score) {
+        wasInLastPlace = true;
+        break;
+      }
+    }
+
+    if (!wasInLastPlace) continue;
+
+    // Check final standings: did they finish 2nd or better?
+    const finalScores = Object.entries(game.scores)
+      .map(([pid, s]) => ({ pid, score: s.totalScore }));
+    finalScores.sort((a, b) => b.score - a.score);
+    const finalRank = finalScores.findIndex(s => s.pid === playerId);
+
+    if (finalRank <= 1) { // 0 = 1st, 1 = 2nd
+      const rankLabel = finalRank === 0 ? '1st' : '2nd';
+      return {
+        ...AWARDS.underdog,
+        playerId,
+        value: finalScores[finalRank].score,
+        description: `Was last, finished ${rankLabel}!`,
+      };
+    }
+  }
+
+  return null;
+}
+
 /**
  * Select the best 3-4 awards, prioritizing variety (different players)
  */
@@ -366,11 +563,16 @@ function selectBestAwards(awards: GameAward[]): GameAward[] {
 
   // Priority order for award types
   const priorityOrder = [
+    'cleanSweep',      // Extremely rare
     'consistent',      // Rare and impressive
     'perfectStorm',    // Big achievement
     'grunwald',        // Rare milestone
+    'underdog',        // Dramatic comeback
     'comebackKing',    // Dramatic
+    'overbidder',      // Bold play
     'marriageCounselor', // Interesting
+    'cardShark',       // Fun stat
+    'lowRoller',       // Fun strategy
     'barrelRider',     // Fun
     'riskyBusiness',   // Entertaining
     'gambler',         // Common fallback
@@ -424,6 +626,11 @@ export function createInitialPlayerStats(): PlayerGameStats {
     highestRoundPoints: 0,
     reachedGrunwald: false,
     grunwaldRound: null,
+    totalTricksWon: 0,
+    highestSingleBid: 0,
+    lowBidWins: 0,
+    hadCleanSweep: false,
+    cleanSweepRound: null,
   };
 }
 

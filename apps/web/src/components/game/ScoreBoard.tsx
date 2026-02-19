@@ -9,30 +9,14 @@ import type { Suit } from '@tysiac/shared';
 function BarrelIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      {/* Barrel body — dark wood */}
-      <path d="M4 3 Q2.8 8 4 13 L12 13 Q13.2 8 12 3 Z" fill="#2a1f0a" stroke="#d4af37" strokeWidth="0.6" />
-      {/* Wood staves */}
-      <line x1="6" y1="3.2" x2="5.7" y2="12.8" stroke="#3d2e10" strokeWidth="0.5" />
-      <line x1="8" y1="3" x2="8" y2="13" stroke="#3d2e10" strokeWidth="0.5" />
-      <line x1="10" y1="3.2" x2="10.3" y2="12.8" stroke="#3d2e10" strokeWidth="0.5" />
-      {/* Metal bands — thick with rivets */}
-      <path d="M3.6 4.5 Q8 3.8 12.4 4.5" fill="none" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
-      <circle cx="4.5" cy="4.3" r="0.4" fill="#b8941f" />
-      <circle cx="11.5" cy="4.3" r="0.4" fill="#b8941f" />
-      <path d="M3.2 8 Q8 7.2 12.8 8" fill="none" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
-      <circle cx="4" cy="7.8" r="0.4" fill="#b8941f" />
-      <circle cx="12" cy="7.8" r="0.4" fill="#b8941f" />
-      <path d="M3.6 11.5 Q8 12.2 12.4 11.5" fill="none" stroke="#d4af37" strokeWidth="1" strokeLinecap="round" />
-      <circle cx="4.5" cy="11.7" r="0.4" fill="#b8941f" />
-      <circle cx="11.5" cy="11.7" r="0.4" fill="#b8941f" />
-      {/* Top lid ellipse */}
-      <ellipse cx="8" cy="3" rx="4" ry="1.3" fill="#2a1f0a" stroke="#d4af37" strokeWidth="0.6" />
-      {/* Bung hole */}
-      <ellipse cx="8" cy="2.8" rx="0.8" ry="0.4" fill="#1a1200" stroke="#b8941f" strokeWidth="0.3" />
-      {/* Body highlight for 3D depth */}
-      <path d="M5.5 5 Q6.5 7.5 5.5 11" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="0.8" strokeLinecap="round" />
-      {/* Lid highlight */}
-      <ellipse cx="7" cy="2.6" rx="1.8" ry="0.4" fill="rgba(255,255,255,0.08)" />
+      {/* Barrel body */}
+      <path d="M4 3 Q2.8 8 4 13 L12 13 Q13.2 8 12 3 Z" fill="#2a1f0a" stroke="#d4af37" strokeWidth="0.7" />
+      {/* Metal bands */}
+      <path d="M3.6 4.5 Q8 3.8 12.4 4.5" fill="none" stroke="#d4af37" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M3.2 8 Q8 7.2 12.8 8" fill="none" stroke="#d4af37" strokeWidth="1.2" strokeLinecap="round" />
+      <path d="M3.6 11.5 Q8 12.2 12.4 11.5" fill="none" stroke="#d4af37" strokeWidth="1.2" strokeLinecap="round" />
+      {/* Top lid */}
+      <ellipse cx="8" cy="3" rx="4" ry="1.3" fill="#2a1f0a" stroke="#d4af37" strokeWidth="0.7" />
     </svg>
   );
 }
@@ -82,12 +66,10 @@ export const ScoreBoard = memo(function ScoreBoard({
           <div className="flex items-center gap-1 text-sm">
             <span className="text-white/60 text-xs">Trump:</span>
             <span
-              className={cn(
-                'text-base w-4 text-center',
-                trumpSuit === 'hearts' || trumpSuit === 'diamonds'
-                  ? 'text-red-500'
-                  : 'text-white'
-              )}
+              className="text-base w-4 text-center"
+              style={trumpSuit === 'hearts' || trumpSuit === 'diamonds'
+                ? { color: 'var(--card-red)' }
+                : { color: 'white' }}
               aria-label={getSuitName(trumpSuit)}
             >
               {getSuitSymbol(trumpSuit)}
@@ -180,7 +162,7 @@ export const ScoreBoard = memo(function ScoreBoard({
                     className="text-xs text-amber-400 flex items-center gap-1"
                     aria-label="On the barrel (800+)"
                   >
-                    <BarrelIcon className="w-3.5 h-3.5" />
+                    <BarrelIcon className="w-5 h-5" />
                     <span className="sr-only">On barrel</span>
                   </motion.span>
                 )}
