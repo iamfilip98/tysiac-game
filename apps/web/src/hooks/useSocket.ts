@@ -408,32 +408,40 @@ export function useSocket() {
     safeEmit('room:startGame');
   }, [safeEmit]);
 
-  // Game actions
+  // Game actions — each guards against stale emissions (e.g. double-click)
+  // by checking the current phase before emitting. Without this, a second
+  // emission after the server has already advanced the phase would clear
+  // validActions and leave the player stuck.
   const bid = useCallback((amount: number) => {
+    if (useGameStore.getState().gameState?.phase !== 'bidding') return;
     if (safeEmit('game:bid', amount)) {
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
 
   const pass = useCallback(() => {
+    if (useGameStore.getState().gameState?.phase !== 'bidding') return;
     if (safeEmit('game:pass')) {
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
 
   const distributeTalon = useCallback((distribution: { playerId: string; card: Card }[]) => {
+    if (useGameStore.getState().gameState?.phase !== 'talonDistribution') return;
     if (safeEmit('game:distributeTalon', distribution)) {
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
 
   const playCard = useCallback((card: Card) => {
+    if (useGameStore.getState().gameState?.phase !== 'trickPlaying') return;
     if (safeEmit('game:playCard', card)) {
       setValidActions([]);
     }
   }, [safeEmit, setValidActions]);
 
   const declareMarriage = useCallback((suit: Suit) => {
+    if (useGameStore.getState().gameState?.phase !== 'trickPlaying') return;
     safeEmit('game:declareMarriage', suit);
   }, [safeEmit]);
 
@@ -446,6 +454,7 @@ export function useSocket() {
   }, [safeEmit]);
 
   const playOrPass = useCallback((decision: 'play' | 'pass') => {
+    if (useGameStore.getState().gameState?.phase !== 'playOrPassDecision') return;
     if (safeEmit('game:playOrPass', decision)) {
       setValidActions([]);
     }

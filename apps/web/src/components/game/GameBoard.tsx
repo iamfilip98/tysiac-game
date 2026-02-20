@@ -151,6 +151,7 @@ export function GameBoard() {
   // Talon distribution state
   const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
   const [distributionCards, setDistributionCards] = useState<Map<string, CardType>>(new Map());
+  const [distributionSubmitted, setDistributionSubmitted] = useState(false);
 
   // Reset confirmation state when phase changes
   useEffect(() => {
@@ -164,6 +165,7 @@ export function GameBoard() {
     if (gameState?.phase !== 'talonDistribution') {
       setDistributionTarget(null);
       setDistributionCards(new Map());
+      setDistributionSubmitted(false);
     }
   }, [gameState?.phase]);
 
@@ -192,6 +194,8 @@ export function GameBoard() {
 
   // Handle distribution submit
   const handleDistributeSubmit = () => {
+    if (distributionSubmitted) return;
+    setDistributionSubmitted(true);
     const distribution: { playerId: string; card: CardType }[] = [];
     distributionCards.forEach((card, pId) => {
       distribution.push({ playerId: pId, card });
