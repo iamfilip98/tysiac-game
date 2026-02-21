@@ -125,7 +125,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
       <AmbientParticles count={10} />
 
       {/* Settings + User badge */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-10 flex items-center gap-2">
         {isAuthenticated && authDisplayName && (
           <UserBadge
             displayName={authDisplayName}
