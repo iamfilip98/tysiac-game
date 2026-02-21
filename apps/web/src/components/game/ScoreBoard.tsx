@@ -3,7 +3,7 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { getSuitSymbol, getSuitName, truncateName } from '@tysiac/shared';
+import { getSuitSymbol, getSuitName } from '@tysiac/shared';
 import type { Suit } from '@tysiac/shared';
 
 function BarrelIcon({ className }: { className?: string }) {
@@ -97,7 +97,7 @@ export const ScoreBoard = memo(function ScoreBoard({
                 isBidder && !isMe && 'bg-white/5'
               )}
             >
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 min-w-0">
                 {/* Dealer indicator */}
                 {isDealer && (
                   <span
@@ -136,13 +136,13 @@ export const ScoreBoard = memo(function ScoreBoard({
                 {/* Player name */}
                 <span
                   className={cn(
-                    'font-medium overflow-hidden text-ellipsis whitespace-nowrap',
-                    isFourPlayer ? 'text-[11px] sm:text-sm max-w-[60px] sm:max-w-none' : 'text-sm',
+                    'font-medium overflow-hidden text-ellipsis whitespace-nowrap min-w-0',
+                    isFourPlayer ? 'text-[11px] sm:text-sm' : 'text-sm',
                     isMe ? 'text-gold-400' : 'text-white'
                   )}
                   title={player.name}
                 >
-                  {truncateName(player.name)}
+                  {player.name}
                 </span>
 
                 {/* Bid indicator */}
@@ -154,7 +154,7 @@ export const ScoreBoard = memo(function ScoreBoard({
               </div>
 
               {/* Score */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-shrink-0">
                 {score?.isOnBarrel && (
                   <motion.span
                     animate={{ opacity: [0.5, 1, 0.5] }}
