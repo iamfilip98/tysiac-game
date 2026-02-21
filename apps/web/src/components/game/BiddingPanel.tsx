@@ -29,6 +29,14 @@ export function BiddingPanel({
   const tooltipTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
 
+  // Reset loading states when new validActions arrive (next turn)
+  useEffect(() => {
+    if (bidTimeoutRef.current) clearTimeout(bidTimeoutRef.current);
+    if (passTimeoutRef.current) clearTimeout(passTimeoutRef.current);
+    setIsBidding(false);
+    setIsPassing(false);
+  }, [validActions]);
+
   useEffect(() => {
     return () => {
       if (bidTimeoutRef.current) clearTimeout(bidTimeoutRef.current);
