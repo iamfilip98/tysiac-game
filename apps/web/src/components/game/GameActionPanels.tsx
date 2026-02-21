@@ -106,20 +106,12 @@ export function GameActionPanels({
       {phase === 'talonDistribution' && !isBidWinner && (
         <motion.div
           key="distribution-waiting"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          className="bg-gradient-to-b from-table-800/85 to-table-900/85 backdrop-blur-md border border-white/[0.08] rounded-xl p-4 text-center"
-          style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="text-center text-white/60 py-4"
         >
-          <div className="text-white/60 flex items-center justify-center gap-2">
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
-              className="w-4 h-4 border-2 border-white/20 border-t-white/60 rounded-full"
-            />
-            Waiting for {bidWinnerName || 'bid winner'} to distribute cards...
-          </div>
+          Waiting for {bidWinnerName || 'bid winner'} to distribute cards...
         </motion.div>
       )}
 
