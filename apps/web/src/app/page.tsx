@@ -126,13 +126,25 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
       {/* Settings + User badge */}
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-10 flex items-center gap-2">
-        {isAuthenticated && authDisplayName && (
+        {isAuthenticated && authDisplayName ? (
           <UserBadge
             displayName={authDisplayName}
             stats={authStats}
             onLogout={() => signOut()}
           />
-        )}
+        ) : isGuest ? (
+          <button
+            onClick={() => setIsGuest(false)}
+            className="btn-toolbar min-h-[44px] px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center gap-1.5"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
+              <polyline points="10 17 15 12 10 7" />
+              <line x1="15" y1="12" x2="3" y2="12" />
+            </svg>
+            <span className="hidden sm:inline">Sign in</span>
+          </button>
+        ) : null}
         <SettingsDropdown />
       </div>
 
