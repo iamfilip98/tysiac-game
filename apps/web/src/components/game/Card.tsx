@@ -125,7 +125,6 @@ export const Card = memo(function Card({
 }: CardProps) {
   const isMobile = useIsMobile();
   const animationsEnabled = usePreferencesStore((s) => s.animationsEnabled);
-  const theme = usePreferencesStore((s) => s.theme);
   const cardStyle = usePreferencesStore((s) => s.cardStyle);
   const suitSymbol = getSuitSymbol(card.suit);
   const color = getSuitColor(card.suit);
@@ -134,7 +133,7 @@ export const Card = memo(function Card({
   const isHighCard = ['A', 'K', 'Q', 'J'].includes(card.rank);
   const showCornerPips = true; // Show on all sizes
   const showPortrait = isFaceCard && size !== 'xs';
-  const isDarkCards = cardStyle === 'black' || (cardStyle === 'auto' && theme === 'dark');
+  const isDarkCards = cardStyle === 'black';
 
   // Silver palette for dark/black card mode, gold for light
   const marriageColors = isDarkCards

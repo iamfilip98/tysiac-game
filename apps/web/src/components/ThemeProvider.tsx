@@ -43,11 +43,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [animationsEnabled]);
 
   useEffect(() => {
-    if (cardStyle === 'auto') {
-      document.documentElement.removeAttribute('data-card-style');
-    } else {
-      document.documentElement.setAttribute('data-card-style', cardStyle);
-    }
+    document.documentElement.setAttribute('data-card-style', cardStyle);
   }, [cardStyle]);
 
   return <>{children}</>;

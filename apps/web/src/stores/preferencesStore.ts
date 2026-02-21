@@ -2,10 +2,10 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
 export type Theme = 'classic' | 'dark' | 'chocolate' | 'midnight' | 'burgundy' | 'purple';
-export type CardStyle = 'auto' | 'white' | 'black';
+export type CardStyle = 'white' | 'black';
 
 export const THEME_ORDER: Theme[] = ['classic', 'dark', 'chocolate', 'midnight', 'burgundy', 'purple'];
-export const CARD_STYLE_ORDER: CardStyle[] = ['auto', 'white', 'black'];
+export const CARD_STYLE_ORDER: CardStyle[] = ['white', 'black'];
 
 interface PreferencesState {
   theme: Theme;
@@ -24,7 +24,7 @@ export const usePreferencesStore = create<PreferencesState>()(
       theme: 'classic',
       soundEnabled: true,
       animationsEnabled: true,
-      cardStyle: 'auto',
+      cardStyle: 'white',
       toggleTheme: () =>
         set((s) => {
           const idx = THEME_ORDER.indexOf(s.theme);

@@ -16,7 +16,6 @@ const THEME_LABELS: Record<Theme, string> = {
 };
 
 const CARD_STYLE_LABELS: Record<CardStyle, string> = {
-  auto: 'Auto',
   white: 'White',
   black: 'Dark',
 };
@@ -129,7 +128,7 @@ export function SettingsDropdown() {
               <path d="M12 8 L13.5 11.5 L12 15 L10.5 11.5 Z" fill="currentColor" opacity="0.5" />
             </svg>
             <span className="flex-1 text-left">Cards</span>
-            <span className={`text-xs ${cardStyle === 'auto' ? 'text-white/40' : 'text-gold-400'}`}>{CARD_STYLE_LABELS[cardStyle]}</span>
+            <span className="text-xs text-gold-400">{CARD_STYLE_LABELS[cardStyle]}</span>
           </button>
 
           {/* Game Rules */}
