@@ -121,7 +121,7 @@ export function BiddingPanel({
 
   return (
     <ElectricBorder active={isMyTurn} color="#fbbf24">
-      <div className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-4 rounded-xl min-w-[280px]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+      <div className="relative bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-4 rounded-xl min-w-[280px]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
         <div className="text-center mb-4">
           <div className="text-sm text-white/60 mb-1">Your turn to bid</div>
           <div className="text-2xl font-bold text-gold-400">
@@ -169,7 +169,7 @@ export function BiddingPanel({
 
         {/* Show max bid info with tooltip */}
         {bidAction && bidAction.type === 'bid' && (
-          <div className="mt-3 text-center text-xs text-white/50 relative px-2" ref={tooltipRef}>
+          <div className="mt-3 text-center text-xs text-white/50 px-2" ref={tooltipRef}>
             {bidAction.maxBid > 120
               ? `Max bid allowed: ${bidAction.maxBid} (120 + marriages)`
               : `Max bid allowed: ${bidAction.maxBid}`}
@@ -187,7 +187,7 @@ export function BiddingPanel({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
                   transition={{ duration: 0.15 }}
-                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-table-800 border border-white/10 rounded-lg p-3 text-xs text-white/70 z-50 shadow-xl"
+                  className="absolute bottom-[calc(100%+8px)] left-1/2 -translate-x-1/2 bg-table-800 border border-white/10 rounded-lg p-3 text-xs text-white/70 whitespace-nowrap z-50 shadow-xl"
                 >
                   Each King+Queen pair adds to max bid:
                   <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-white/60">
