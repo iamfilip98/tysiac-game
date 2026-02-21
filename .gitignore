@@ -38,9 +38,6 @@ test-results
 # Storybook
 storybook-static
 
-# Expo
-.expo
-
 # Database
 *.db
 *.sqlite

@@ -201,7 +201,7 @@ export function handlePlayCard(engine: GameEngine, playerId: string, card: Card)
     // resets currentTrick, so clients would never see the 3rd card.
     engine.doBroadcast();
     // Delay trick completion so all 3 cards are visible for ~1s
-    engine.safeSetTimeout(() => completeTrick(engine), 2000);
+    engine.safeSetTimeout(() => completeTrick(engine), 1500);
   } else {
     engine.broadcastState();
     // Next player

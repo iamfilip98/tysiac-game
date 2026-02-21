@@ -1,6 +1,5 @@
 .git
 .github
-.expo
 .next
 .turbo
 .vscode
@@ -8,7 +7,6 @@ node_modules
 test-results
 
 apps/web
-apps/mobile
 
 *.md
 *.log
