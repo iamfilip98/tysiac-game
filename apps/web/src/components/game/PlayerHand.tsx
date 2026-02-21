@@ -208,7 +208,7 @@ export function PlayerHand({
   if (distributionState && isMobile) {
     return (
       <div
-        className="overflow-x-auto flex gap-2 pb-4 px-4 snap-x snap-mandatory"
+        className="overflow-x-auto flex gap-2 pb-10 px-4 snap-x snap-mandatory"
         style={{
           width: '100vw',
           marginLeft: '-16px',
