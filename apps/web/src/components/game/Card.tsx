@@ -192,28 +192,6 @@ export const Card = memo(function Card({
 
   return (
     <div className="relative">
-      {/* Outer glow for marriage cards */}
-      {isMarriageCard && (
-        <div
-          className="absolute -inset-[4px] rounded-xl"
-          style={{
-            boxShadow: `0 0 20px 4px ${marriageColors.glowPrimary}, 0 0 40px 8px ${marriageColors.glowSecondary}`,
-            border: `1px solid ${marriageColors.borderOuter}`,
-          }}
-          aria-hidden="true"
-        />
-      )}
-      {/* Outer glow for trump cards (marriage gold takes priority) */}
-      {isTrumpCard && !isMarriageCard && (
-        <div
-          className="absolute -inset-[4px] rounded-xl"
-          style={{
-            boxShadow: '0 0 20px 4px rgba(96,165,250,0.7), 0 0 40px 8px rgba(147,197,253,0.3)',
-            border: '1px solid rgba(147,197,253,0.5)',
-          }}
-          aria-hidden="true"
-        />
-      )}
       <motion.div
         initial={skipEntryAnimation ? false : { scale: 0.95, opacity: 0 }}
         animate={{
@@ -241,7 +219,19 @@ export const Card = memo(function Card({
           isMobile && isPlayable && 'active:scale-[0.97]',
           className
         )}
-        style={style}
+        style={{
+          ...style,
+          ...(isMarriageCard && {
+            boxShadow: `0 0 20px 4px ${marriageColors.glowPrimary}, 0 0 40px 8px ${marriageColors.glowSecondary}`,
+            outline: `1px solid ${marriageColors.borderOuter}`,
+            outlineOffset: '3px',
+          }),
+          ...(isTrumpCard && !isMarriageCard && {
+            boxShadow: '0 0 20px 4px rgba(96,165,250,0.7), 0 0 40px 8px rgba(147,197,253,0.3)',
+            outline: '1px solid rgba(147,197,253,0.5)',
+            outlineOffset: '3px',
+          }),
+        }}
       >
         {/* Paper texture overlay */}
         <div
