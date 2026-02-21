@@ -8,63 +8,54 @@ import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '
 import { soundManager } from '@/lib/sounds';
 import type { Card, Suit } from '@tysiac/shared';
 
+// Module-level ref count: listeners are set up once and only cleaned up
+// when the last consumer unmounts. This prevents GameBoard's unmount from
+// tearing down listeners that page.tsx still needs.
+let listenerRefCount = 0;
+let trickWonTimeout: NodeJS.Timeout | null = null;
+let marriageClearTimeout: NodeJS.Timeout | null = null;
+let createRoomTimeout: NodeJS.Timeout | null = null;
+let isAutoReconnecting = false;
+
 export function useSocket() {
   const socketRef = useRef<TypedSocket | null>(null);
-  const isAutoReconnectingRef = useRef(false);
-  const trickWonTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const marriageClearTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const createRoomTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const setRoom = useRoomStore((s) => s.setRoom);
-  const setPlayerId = useRoomStore((s) => s.setPlayerId);
-  const setConnected = useRoomStore((s) => s.setConnected);
-  const setConnecting = useRoomStore((s) => s.setConnecting);
-  const setCreatingRoom = useRoomStore((s) => s.setCreatingRoom);
-  const setError = useRoomStore((s) => s.setError);
-  const setPublicRooms = useRoomStore((s) => s.setPublicRooms);
-  const clearRoom = useRoomStore((s) => s.clearRoom);
-  const resetRoom = useRoomStore((s) => s.reset);
-
-  const setGameState = useGameStore((s) => s.setGameState);
-  const setValidActions = useGameStore((s) => s.setValidActions);
-  const setRoundResult = useGameStore((s) => s.setRoundResult);
-  const setShowGameEnd = useGameStore((s) => s.setShowGameEnd);
-  const setLastMarriageDeclared = useGameStore((s) => s.setLastMarriageDeclared);
-  const setWykladanaData = useGameStore((s) => s.setWykladanaData);
-  const setGameStatistics = useGameStore((s) => s.setGameStatistics);
-  const setPassedAt100Notification = useGameStore((s) => s.setPassedAt100Notification);
-  const setThrewNotification = useGameStore((s) => s.setThrewNotification);
-  const setPauseData = useGameStore((s) => s.setPauseData);
-  const setTrickWonData = useGameStore((s) => s.setTrickWonData);
-  const resetGame = useGameStore((s) => s.reset);
-
-  // Connect and set up listeners
+  // Connect and set up listeners (ref-counted: only the first mount sets up
+  // listeners, only the last unmount tears them down). This prevents GameBoard's
+  // unmount from destroying listeners that page.tsx still needs.
   useEffect(() => {
     const socket = getSocket();
     socketRef.current = socket;
 
+    listenerRefCount++;
+    if (listenerRefCount > 1) {
+      // Listeners already set up by another consumer — just grab the socket ref
+      return () => { listenerRefCount--; };
+    }
+
     async function connect() {
-      setConnecting(true);
+      useRoomStore.getState().setConnecting(true);
       try {
         await connectSocket();
-        setConnected(true);
+        useRoomStore.getState().setConnected(true);
       } catch (err) {
-        setError('Failed to connect to server');
+        useRoomStore.getState().setError('Failed to connect to server');
       } finally {
-        setConnecting(false);
+        useRoomStore.getState().setConnecting(false);
       }
     }
 
-    // Socket event handlers
+    // Socket event handlers — use store.getState() for all state access
+    // so handlers never go stale (they close over nothing from React).
     socket.on('connect', () => {
-      setConnected(true);
-      setError(null);
+      useRoomStore.getState().setConnected(true);
+      useRoomStore.getState().setError(null);
       startKeepAlive();
 
       // Attempt auto-reconnect if session exists
       const storedSession = loadSession();
       if (storedSession) {
-        isAutoReconnectingRef.current = true;
+        isAutoReconnecting = true;
         socket.emit('player:reconnect', {
           roomId: storedSession.roomId,
           playerId: storedSession.playerId,
@@ -74,8 +65,8 @@ export function useSocket() {
     });
 
     socket.on('disconnect', (reason) => {
-      setConnected(false);
-      setCreatingRoom(false);
+      useRoomStore.getState().setConnected(false);
+      useRoomStore.getState().setCreatingRoom(false);
       // If server forcefully closed the connection, it won't auto-reconnect
       // Manually trigger reconnect for transport-level disconnects
       if (reason === 'transport close' || reason === 'ping timeout') {
@@ -84,15 +75,15 @@ export function useSocket() {
     });
 
     socket.on('connect_error', () => {
-      setConnected(false);
+      useRoomStore.getState().setConnected(false);
     });
 
     // Room events
     socket.on('room:created', (room) => {
-      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
-      setCreatingRoom(false);
-      setRoom(room);
-      setPlayerId(room.hostId);
+      if (createRoomTimeout) clearTimeout(createRoomTimeout);
+      useRoomStore.getState().setCreatingRoom(false);
+      useRoomStore.getState().setRoom(room);
+      useRoomStore.getState().setPlayerId(room.hostId);
 
       // Save session to localStorage
       saveSession({
@@ -104,8 +95,8 @@ export function useSocket() {
     });
 
     socket.on('room:joined', ({ room, playerId, sessionToken }) => {
-      setRoom(room);
-      setPlayerId(playerId);
+      useRoomStore.getState().setRoom(room);
+      useRoomStore.getState().setPlayerId(playerId);
 
       // Save session to localStorage
       const player = room.players.find(p => p.id === playerId);
@@ -120,70 +111,70 @@ export function useSocket() {
     socket.on('room:updated', (room) => {
       // Fallback: if we're still in "Creating Room" state and get room data, treat as success
       if (useRoomStore.getState().isCreatingRoom) {
-        if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
-        setCreatingRoom(false);
+        if (createRoomTimeout) clearTimeout(createRoomTimeout);
+        useRoomStore.getState().setCreatingRoom(false);
       }
-      setRoom(room);
+      useRoomStore.getState().setRoom(room);
     });
 
     socket.on('room:error', ({ code, message }) => {
-      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
-      setCreatingRoom(false);
+      if (createRoomTimeout) clearTimeout(createRoomTimeout);
+      useRoomStore.getState().setCreatingRoom(false);
       // If INVALID_SESSION during auto-reconnect on page load (no active game), fail silently
-      if (code === 'INVALID_SESSION' && isAutoReconnectingRef.current) {
+      if (code === 'INVALID_SESSION' && isAutoReconnecting) {
         const hasActiveGame = useGameStore.getState().gameState !== null;
         const hasActiveRoom = useRoomStore.getState().room !== null;
 
         // Only fail silently if user wasn't actively in a game/room
         if (!hasActiveGame && !hasActiveRoom) {
-          isAutoReconnectingRef.current = false;
+          isAutoReconnecting = false;
           clearSession();
           return;
         }
       }
 
-      isAutoReconnectingRef.current = false;
-      setError(message);
+      isAutoReconnecting = false;
+      useRoomStore.getState().setError(message);
     });
 
     // Game events
     socket.on('game:started', (state) => {
-      resetGame();
-      setGameState(state);
+      useGameStore.getState().reset();
+      useGameStore.getState().setGameState(state);
       startKeepAlive();
       // Also update room with gameId since room:updated might not arrive in time
       const currentRoom = useRoomStore.getState().room;
       if (currentRoom && state?.id) {
-        setRoom({ ...currentRoom, gameId: state.id });
+        useRoomStore.getState().setRoom({ ...currentRoom, gameId: state.id });
       }
     });
 
     socket.on('game:stateUpdate', (state) => {
-      setGameState(state);
+      useGameStore.getState().setGameState(state);
       // Clear wykladana modal when phase changes away from wykladana
       if (state?.phase !== 'wykladana') {
-        setWykladanaData(null);
+        useGameStore.getState().setWykladanaData(null);
       }
     });
 
     socket.on('game:yourTurn', ({ validActions }) => {
-      setValidActions(validActions);
+      useGameStore.getState().setValidActions(validActions);
       soundManager.yourTurn();
     });
 
     socket.on('game:roundEnd', (result) => {
       // Skip round summary when the game is over — go straight to game end modal
       if (!result.gameWinner) {
-        setRoundResult(result);
+        useGameStore.getState().setRoundResult(result);
       }
       soundManager.roundEnd();
     });
 
     socket.on('game:ended', ({ winnerId, statistics }) => {
       stopKeepAlive();
-      setShowGameEnd(true);
+      useGameStore.getState().setShowGameEnd(true);
       if (statistics) {
-        setGameStatistics(statistics);
+        useGameStore.getState().setGameStatistics(statistics);
       }
       soundManager.gameWin();
       // Don't clear session here - player may want to click "Play Again"
@@ -220,7 +211,7 @@ export function useSocket() {
         }
         nextPlayer = players[nextIdx].id;
       }
-      setGameState({
+      useGameStore.getState().setGameState({
         ...gs,
         myHand,
         round: {
@@ -235,12 +226,12 @@ export function useSocket() {
     });
 
     socket.on('game:error', ({ message }) => {
-      setError(message);
+      useRoomStore.getState().setError(message);
     });
 
     socket.on('game:marriageDeclared', ({ playerId, suit }) => {
-      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
-      setLastMarriageDeclared({ playerId, suit });
+      if (marriageClearTimeout) clearTimeout(marriageClearTimeout);
+      useGameStore.getState().setLastMarriageDeclared({ playerId, suit });
       soundManager.marriage();
       // Marriage indicator will be cleared when trick completes (game:trickWon)
     });
@@ -248,8 +239,8 @@ export function useSocket() {
     socket.on('game:trickWon', (data: { winnerId: string; cards: Card[]; points: number }) => {
       // Delay clearing marriage indicator so the queen keeps its gold glow
       // during the trick exit animation (prevents blue trump flash)
-      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
-      marriageClearTimeoutRef.current = setTimeout(() => setLastMarriageDeclared(null), 1500);
+      if (marriageClearTimeout) clearTimeout(marriageClearTimeout);
+      marriageClearTimeout = setTimeout(() => useGameStore.getState().setLastMarriageDeclared(null), 1500);
       soundManager.trickWon();
 
       // Determine if trump was used to win (trump card played into a non-trump lead)
@@ -259,62 +250,62 @@ export function useSocket() {
         const hasTrumpCard = data.cards.some(c => c.suit === trumpSuit);
         const wasTrumpWin = hasTrumpCard && leadSuit !== trumpSuit;
         if (wasTrumpWin) {
-          setTrickWonData({ winnerId: data.winnerId, wasTrumpWin: true });
-          if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
-          trickWonTimeoutRef.current = setTimeout(() => setTrickWonData(null), 1500);
+          useGameStore.getState().setTrickWonData({ winnerId: data.winnerId, wasTrumpWin: true });
+          if (trickWonTimeout) clearTimeout(trickWonTimeout);
+          trickWonTimeout = setTimeout(() => useGameStore.getState().setTrickWonData(null), 1500);
         }
       }
     });
 
     socket.on('game:wykladana', (data: { playerId: string; playerName: string; bid: number; marriagePoints?: number; cards: Card[] }) => {
-      setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints, cards: data.cards });
+      useGameStore.getState().setWykladanaData({ playerName: data.playerName, bid: data.bid, marriagePoints: data.marriagePoints, cards: data.cards });
       soundManager.wykladana();
     });
 
     socket.on('game:playerPassedAt100', (data: { playerId: string; playerName: string }) => {
-      setPassedAt100Notification({ playerName: data.playerName });
+      useGameStore.getState().setPassedAt100Notification({ playerName: data.playerName });
     });
 
     socket.on('game:playerThrew', (data: { playerId: string; playerName: string; bidAmount: number; scoreChanges: Record<string, number> }) => {
-      setThrewNotification({ playerName: data.playerName, bidAmount: data.bidAmount, scoreChanges: data.scoreChanges });
+      useGameStore.getState().setThrewNotification({ playerName: data.playerName, bidAmount: data.bidAmount, scoreChanges: data.scoreChanges });
     });
 
     socket.on('game:paused', (data: { pausedBy: string; pausedByName: string; pausedAt: number; expiresAt: number }) => {
-      setPauseData({ pausedByName: data.pausedByName, pausedAt: data.pausedAt, expiresAt: data.expiresAt });
+      useGameStore.getState().setPauseData({ pausedByName: data.pausedByName, pausedAt: data.pausedAt, expiresAt: data.expiresAt });
     });
 
     socket.on('game:resumed', () => {
-      setPauseData(null);
+      useGameStore.getState().setPauseData(null);
     });
 
     socket.on('game:pauseExpired', () => {
-      setPauseData(null);
+      useGameStore.getState().setPauseData(null);
       // The game will end and be handled through normal game end flow
     });
 
     // Lobby
     socket.on('lobby:roomList', (rooms) => {
-      setPublicRooms(rooms);
+      useRoomStore.getState().setPublicRooms(rooms);
     });
 
     // Reconnection
     socket.on('connection:restored', ({ room, gameState, validActions }) => {
       // Clear auto-reconnect flag on successful restore
-      isAutoReconnectingRef.current = false;
+      isAutoReconnecting = false;
 
       // Restore playerId from session
       const storedSession = loadSession();
       if (storedSession) {
-        setPlayerId(storedSession.playerId);
+        useRoomStore.getState().setPlayerId(storedSession.playerId);
       }
 
-      setRoom(room);
+      useRoomStore.getState().setRoom(room);
       if (gameState) {
-        setGameState(gameState);
+        useGameStore.getState().setGameState(gameState);
         startKeepAlive();
       }
       if (validActions && validActions.length > 0) {
-        setValidActions(validActions);
+        useGameStore.getState().setValidActions(validActions);
       }
       updateSessionTimestamp();
     });
@@ -325,10 +316,13 @@ export function useSocket() {
     connect();
 
     return () => {
+      listenerRefCount--;
+      if (listenerRefCount > 0) return; // Other consumers still mounted
+
       stopKeepAlive();
-      if (trickWonTimeoutRef.current) clearTimeout(trickWonTimeoutRef.current);
-      if (marriageClearTimeoutRef.current) clearTimeout(marriageClearTimeoutRef.current);
-      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
+      if (trickWonTimeout) clearTimeout(trickWonTimeout);
+      if (marriageClearTimeout) clearTimeout(marriageClearTimeout);
+      if (createRoomTimeout) clearTimeout(createRoomTimeout);
       socket.off('connect');
       socket.off('disconnect');
       socket.off('connect_error');
@@ -363,27 +357,27 @@ export function useSocket() {
   ): boolean => {
     const socket = socketRef.current;
     if (!socket?.connected) {
-      setError('Not connected to server. Please refresh the page.');
+      useRoomStore.getState().setError('Not connected to server. Please refresh the page.');
       return false;
     }
     (socket.emit as (event: string, ...args: unknown[]) => void)(event, ...args);
     return true;
-  }, [setError]);
+  }, []);
 
   // Room actions
   const createRoom = useCallback((playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4 = 3) => {
     if (safeEmit('room:create', { playerName, roomName, isPrivate, maxPlayers })) {
-      setCreatingRoom(true);
+      useRoomStore.getState().setCreatingRoom(true);
       // Failsafe: clear creating state if server never responds
-      if (createRoomTimeoutRef.current) clearTimeout(createRoomTimeoutRef.current);
-      createRoomTimeoutRef.current = setTimeout(() => {
+      if (createRoomTimeout) clearTimeout(createRoomTimeout);
+      createRoomTimeout = setTimeout(() => {
         if (useRoomStore.getState().isCreatingRoom) {
-          setCreatingRoom(false);
-          setError('Room creation timed out. Please try again.');
+          useRoomStore.getState().setCreatingRoom(false);
+          useRoomStore.getState().setError('Room creation timed out. Please try again.');
         }
       }, 15000);
     }
-  }, [safeEmit, setCreatingRoom, setError]);
+  }, [safeEmit]);
 
   const joinRoom = useCallback((playerName: string, roomCode: string) => {
     safeEmit('room:join', { playerName, roomCode });
@@ -392,9 +386,9 @@ export function useSocket() {
   const leaveRoom = useCallback(() => {
     safeEmit('room:leave');
     clearSession(); // Clear localStorage when intentionally leaving
-    clearRoom();
-    resetGame();
-  }, [safeEmit, clearRoom, resetGame]);
+    useRoomStore.getState().clearRoom();
+    useGameStore.getState().reset();
+  }, [safeEmit]);
 
   const setReady = useCallback((isReady: boolean) => {
     safeEmit('room:ready', isReady);
@@ -419,30 +413,30 @@ export function useSocket() {
   const bid = useCallback((amount: number) => {
     if (useGameStore.getState().gameState?.phase !== 'bidding') return;
     if (safeEmit('game:bid', amount)) {
-      setValidActions([]);
+      useGameStore.getState().setValidActions([]);
     }
-  }, [safeEmit, setValidActions]);
+  }, [safeEmit]);
 
   const pass = useCallback(() => {
     if (useGameStore.getState().gameState?.phase !== 'bidding') return;
     if (safeEmit('game:pass')) {
-      setValidActions([]);
+      useGameStore.getState().setValidActions([]);
     }
-  }, [safeEmit, setValidActions]);
+  }, [safeEmit]);
 
   const distributeTalon = useCallback((distribution: { playerId: string; card: Card }[]) => {
     if (useGameStore.getState().gameState?.phase !== 'talonDistribution') return;
     if (safeEmit('game:distributeTalon', distribution)) {
-      setValidActions([]);
+      useGameStore.getState().setValidActions([]);
     }
-  }, [safeEmit, setValidActions]);
+  }, [safeEmit]);
 
   const playCard = useCallback((card: Card) => {
     if (useGameStore.getState().gameState?.phase !== 'trickPlaying') return;
     if (safeEmit('game:playCard', card)) {
-      setValidActions([]);
+      useGameStore.getState().setValidActions([]);
     }
-  }, [safeEmit, setValidActions]);
+  }, [safeEmit]);
 
   const declareMarriage = useCallback((suit: Suit) => {
     if (useGameStore.getState().gameState?.phase !== 'trickPlaying') return;
@@ -460,17 +454,17 @@ export function useSocket() {
   const playOrPass = useCallback((decision: 'play' | 'pass') => {
     if (useGameStore.getState().gameState?.phase !== 'playOrPassDecision') return;
     if (safeEmit('game:playOrPass', decision)) {
-      setValidActions([]);
+      useGameStore.getState().setValidActions([]);
     }
-  }, [safeEmit, setValidActions]);
+  }, [safeEmit]);
 
   const leaveGame = useCallback(() => {
     if (safeEmit('game:leave')) {
       clearSession();
-      clearRoom();
-      resetGame();
+      useRoomStore.getState().clearRoom();
+      useGameStore.getState().reset();
     }
-  }, [safeEmit, clearRoom, resetGame]);
+  }, [safeEmit]);
 
   const pauseGame = useCallback(() => {
     safeEmit('game:pause');
