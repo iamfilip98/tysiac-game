@@ -165,22 +165,19 @@ html,
   --card-bg-from: #ffffff;
   --card-bg-to: #f5f5f5;
   --card-shadow-inset: rgba(255, 255, 255, 0.5);
-  --card-red: #e81224;
-  --card-black: #1a1a1a;
 }
 
 [data-card-style="black"] {
   --card-bg-from: #2a2a2a;
   --card-bg-to: #1f1f1f;
   --card-shadow-inset: rgba(255, 255, 255, 0.08);
-  --card-red: #ff1a1a;
   --card-black: #e5e5e5;
 }
 
 [data-card-style="black"] .card-text {
   text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.5),
-    0 1px 2px rgba(0, 0, 0, 0.3);
+    0 0 2px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 :root {
@@ -265,9 +262,9 @@ html,
   aspect-ratio: 2.5 / 3.5;
   background: linear-gradient(135deg, var(--card-bg-from) 0%, var(--card-bg-to) 100%);
   box-shadow:
-    0 6px 10px -2px rgba(0, 0, 0, 0.35),
-    0 3px 5px -1px rgba(0, 0, 0, 0.25),
-    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 4px 8px -2px rgba(0, 0, 0, 0.25),
+    0 2px 4px -1px rgba(0, 0, 0, 0.15),
+    0 1px 2px rgba(0, 0, 0, 0.1),
     inset 0 1px 0 var(--card-shadow-inset);
 }
 
@@ -282,15 +279,15 @@ html,
 .playing-card:hover {
   transform: translateY(-8px);
   box-shadow:
-    0 10px 15px -3px rgba(0, 0, 0, 0.3),
-    0 4px 6px -2px rgba(0, 0, 0, 0.2);
+    0 8px 12px -3px rgba(0, 0, 0, 0.2),
+    0 3px 5px -2px rgba(0, 0, 0, 0.12);
 }
 
 .playing-card.selected {
   transform: translateY(-16px);
   box-shadow:
-    0 15px 20px -5px rgba(0, 0, 0, 0.4),
-    0 0 20px rgba(251, 191, 36, 0.5);
+    0 10px 16px -4px rgba(0, 0, 0, 0.25),
+    0 0 16px rgba(251, 191, 36, 0.4);
 }
 
 
@@ -370,14 +367,13 @@ html,
 /* Card text shadow for readability over overlays */
 .card-text {
   text-shadow:
-    0 0 3px rgba(255, 255, 255, 0.4),
-    0 1px 2px rgba(0, 0, 0, 0.15);
+    0 1px 1px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme="dark"] .card-text {
   text-shadow:
-    0 0 3px rgba(0, 0, 0, 0.5),
-    0 1px 2px rgba(0, 0, 0, 0.3);
+    0 0 2px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 /* Glowing button */
