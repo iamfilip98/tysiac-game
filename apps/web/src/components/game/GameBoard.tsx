@@ -33,7 +33,7 @@ function getLayoutPositions(isMobile: boolean, height: number) {
     actionPanel: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
     playerHand: isMobile ? 'bottom-2' : 'bottom-4',
     spectatingHand: isMobile ? 'bottom-16' : 'bottom-20',
-    turnArea: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
+    turnArea: isMobile ? (isCompact ? 'bottom-32' : 'bottom-36') : 'bottom-40',
     spectatingIndicator: isMobile ? 'bottom-2' : 'bottom-4',
     centerArea: isMobile ? (isCompact ? 'top-52 bottom-32' : 'top-64 bottom-36') : '',
   };
@@ -539,7 +539,7 @@ export function GameBoard() {
             role="status"
             aria-live="assertive"
           >
-            <div className="relative overflow-hidden px-4 py-2 rounded-lg text-gold-400 text-sm font-medium" style={{
+            <div className="relative overflow-hidden px-4 py-2 rounded-lg text-gold-400 text-sm font-medium whitespace-nowrap" style={{
               background: 'linear-gradient(135deg, rgba(251,191,36,0.15), rgba(251,191,36,0.08))',
               border: '1px solid rgba(251,191,36,0.4)',
               boxShadow: '0 0 20px rgba(251,191,36,0.15)',
