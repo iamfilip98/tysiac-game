@@ -82,18 +82,36 @@ export function stopKeepAlive(): void {
   }
 }
 
-// Detect tab becoming visible again and reconnect if needed
-// Browsers can silently kill WebSocket connections when tab is backgrounded
+// Detect tab becoming visible again and reconnect if needed.
+// Browsers silently kill WebSocket connections when tabs are backgrounded,
+// but socket.io may not detect this — socket.connected stays true on a
+// dead connection. We track when the tab was hidden and force a fresh
+// disconnect/reconnect if it was backgrounded for more than 5 seconds.
 let visibilityHandlerActive = false;
+let hiddenAt = 0;
 
 export function startVisibilityHandler(): void {
   if (visibilityHandlerActive || typeof document === 'undefined') return;
   visibilityHandlerActive = true;
 
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && socket && !socket.connected) {
-      console.log('[Socket] Tab became visible, reconnecting...');
-      socket.connect();
+    if (document.visibilityState === 'hidden') {
+      hiddenAt = Date.now();
+      return;
+    }
+
+    if (document.visibilityState === 'visible' && socket) {
+      const backgroundDuration = Date.now() - hiddenAt;
+
+      if (!socket.connected) {
+        console.log('[Socket] Tab became visible, reconnecting...');
+        socket.connect();
+      } else if (backgroundDuration > 5000) {
+        // Socket claims connected but was backgrounded long enough for the
+        // browser to have killed the transport. Force a fresh connection.
+        console.log(`[Socket] Tab was backgrounded for ${Math.round(backgroundDuration / 1000)}s, forcing reconnect...`);
+        socket.disconnect().connect();
+      }
     }
   });
 }
