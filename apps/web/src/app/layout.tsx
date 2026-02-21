@@ -58,7 +58,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <ToastProvider>
               <ThemeProvider>
-                <div className="felt-texture h-full overflow-auto">
+                <div className="felt-texture h-[100dvh] overflow-auto">
                   {children}
                 </div>
               </ThemeProvider>
