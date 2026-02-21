@@ -97,20 +97,115 @@ export class AIPlayer {
       return { shouldBid: true, amount: minBid };
     }
 
-    // With a strong hand, might bid anyway
+    // With a strong hand, might bid anyway (but conservatively)
     const handStrength = this.evaluateHandStrength(hand);
-    if (handStrength > 0.6 && minBid <= 130) {
+    if (handStrength > 0.7 && minBid <= 120) {
       return { shouldBid: true, amount: minBid };
     }
 
     return { shouldBid: false };
   }
 
+  // ─── Play or Pass Decision ───────────────────────────────────
+
+  /**
+   * Decide whether to play or pass after winning the bid and seeing the talon.
+   * Evaluates the full 9-card hand (7 original + 3 talon, before distribution)
+   * against the bid amount.
+   */
+  decidePlayOrPass(
+    hand: Card[],
+    finalBid: number,
+    isOnBarrel: boolean
+  ): 'play' | 'pass' {
+    const expected = this.calculatePostTalonExpectedPoints(hand);
+
+    if (finalBid <= 100) {
+      // Passing at 100 is free (no penalty). Playing and failing costs -100.
+      // Only play if we're reasonably confident we can make 100.
+      return expected >= 80 ? 'play' : 'pass';
+    }
+
+    if (isOnBarrel) {
+      // On barrel at >100: passing loses the bid amount anyway,
+      // so playing at least gives a chance. Always play.
+      return 'play';
+    }
+
+    // Use a sliding threshold: higher bids need more confidence
+    // At 110-130: 80% confidence needed
+    // At 140+: 85% confidence needed
+    // At 180+: 90% confidence needed
+    let threshold: number;
+    if (finalBid <= 130) {
+      threshold = 0.80;
+    } else if (finalBid <= 170) {
+      threshold = 0.85;
+    } else {
+      threshold = 0.90;
+    }
+
+    return expected >= finalBid * threshold ? 'play' : 'pass';
+  }
+
+  /**
+   * More accurate point estimate for the 9-card post-talon hand.
+   * We know all 9 cards so no talon guessing needed.
+   */
+  private calculatePostTalonExpectedPoints(hand: Card[]): number {
+    let points = 0;
+
+    // Marriage points (guaranteed if we lead the right trick)
+    points += getTotalMarriageValue(hand);
+
+    // Count trick-winning potential
+    for (const card of hand) {
+      if (card.rank === 'A') {
+        // Aces are almost guaranteed trick winners
+        points += 11;
+      } else if (card.rank === '10') {
+        const hasAce = hand.some(c => c.suit === card.suit && c.rank === 'A');
+        // 10 with ace: very safe (both win tricks), ~19 points from the pair
+        // 10 without ace: risky, ~40% chance of winning
+        points += hasAce ? 10 : 4;
+      } else if (card.rank === 'K') {
+        // Kings occasionally win tricks (especially as trump or late game)
+        points += 2;
+      } else if (card.rank === 'Q') {
+        // Queens rarely win but have some value
+        points += 1;
+      }
+    }
+
+    // Bonus for trump length (strong trump suit = more control)
+    const marriages = countMarriagesInHand(hand);
+    for (const { suit } of marriages) {
+      const trumpCards = hand.filter(c => c.suit === suit);
+      if (trumpCards.length >= 4) points += 10;
+      else if (trumpCards.length >= 3) points += 5;
+    }
+
+    // Bonus for voids (can trump opponents' aces)
+    const suitCounts = SUITS.map(suit => hand.filter(c => c.suit === suit).length);
+    const voids = suitCounts.filter(c => c === 0).length;
+    points += voids * 8;
+
+    // Bonus for A-10 combos (guaranteed ~21 points from that suit)
+    for (const suit of SUITS) {
+      const hasAce = hand.some(c => c.suit === suit && c.rank === 'A');
+      const hasTen = hand.some(c => c.suit === suit && c.rank === '10');
+      if (hasAce && hasTen) points += 5;
+    }
+
+    return points;
+  }
+
   // ─── Talon Distribution ───────────────────────────────────────
 
   decideDistribution(
     hand: Card[],
-    otherPlayerIds: string[]
+    otherPlayerIds: string[],
+    scores?: Record<string, { totalScore: number }>
   ): { playerId: string; card: Card }[] {
     // Score each card for "give away" priority (higher = more likely to give)
     const scored = hand.map(card => ({
@@ -121,9 +216,31 @@ export class AIPlayer {
     // Sort by give-away score descending (best to give first)
     scored.sort((a, b) => b.score - a.score);
 
+    const card1 = scored[0].card;
+    const card2 = scored[1].card;
+
+    // If we have score data, give the relatively better card to the weaker opponent
+    if (scores && otherPlayerIds.length === 2) {
+      const score0 = scores[otherPlayerIds[0]]?.totalScore ?? 0;
+      const score1 = scores[otherPlayerIds[1]]?.totalScore ?? 0;
+      const value1 = CARD_POINTS[card1.rank] + RANK_STRENGTH[card1.rank];
+      const value2 = CARD_POINTS[card2.rank] + RANK_STRENGTH[card2.rank];
+
+      // Better card (higher value) → weaker opponent (lower score)
+      const [betterCard, worseCard] = value1 >= value2 ? [card1, card2] : [card2, card1];
+      const [weakerPlayer, strongerPlayer] = score0 <= score1
+        ? [otherPlayerIds[0], otherPlayerIds[1]]
+        : [otherPlayerIds[1], otherPlayerIds[0]];
+
+      return [
+        { playerId: weakerPlayer, card: betterCard },
+        { playerId: strongerPlayer, card: worseCard },
+      ];
+    }
+
     return [
-      { playerId: otherPlayerIds[0], card: scored[0].card },
-      { playerId: otherPlayerIds[1], card: scored[1].card },
+      { playerId: otherPlayerIds[0], card: card1 },
+      { playerId: otherPlayerIds[1], card: card2 },
     ];
   }
 
@@ -250,12 +367,22 @@ export class AIPlayer {
         if (!aceStillOut && ten.suit !== trumpSuit) return ten;
       }
 
-      // Lead strong non-trump cards
-      const sorted = [...validCards].sort((a, b) =>
-        (CARD_POINTS[b.rank] + RANK_STRENGTH[b.rank]) -
-        (CARD_POINTS[a.rank] + RANK_STRENGTH[a.rank])
-      );
-      return sorted[0];
+      // No guaranteed winners left — lead low from longest non-trump suit to probe
+      const nonTrump = validCards.filter(c => c.suit !== trumpSuit);
+      if (nonTrump.length > 0) {
+        const suitGroups = this.groupBySuit(nonTrump);
+        let longestSuit: Card[] | null = null;
+        let longestLen = 0;
+        for (const cards of suitGroups.values()) {
+          if (cards.length > longestLen) {
+            longestLen = cards.length;
+            longestSuit = cards;
+          }
+        }
+        if (longestSuit) return this.lowestValue(longestSuit);
+      }
+      // Only trumps left — lead lowest
+      return this.lowestValue(validCards);
     } else {
       // Defender leading: aggressive — lead aces/10s to grab points
 
@@ -284,23 +411,29 @@ export class AIPlayer {
         }
       }
 
-      // Lead from longest non-trump suit
+      // Lead from non-trump suit where opponents still have cards
+      // Score each suit: myCards × 2 + opponentCards (avoid leading into voids)
       const nonTrumpCards = validCards.filter(c => c.suit !== trumpSuit);
       if (nonTrumpCards.length > 0) {
-        // Group by suit, find longest
         const suitGroups = this.groupBySuit(nonTrumpCards);
         let bestSuit: Card[] | null = null;
-        let bestLen = 0;
-        for (const cards of suitGroups.values()) {
-          if (cards.length > bestLen) {
-            bestLen = cards.length;
+        let bestScore = -1;
+        for (const [suit, cards] of suitGroups.entries()) {
+          const opponentCards = remaining.filter(c => c.suit === suit).length;
+          // Skip suits where opponents have no cards (they'll trump us)
+          if (opponentCards === 0) continue;
+          const score = cards.length * 2 + opponentCards;
+          if (score > bestScore) {
+            bestScore = score;
             bestSuit = cards;
           }
         }
         if (bestSuit) {
-          // Lead highest from longest suit
-          return this.highestValue(bestSuit);
+          // Lead lowest from chosen suit to probe safely
+          return this.lowestValue(bestSuit);
         }
+        // All non-trump suits are void for opponents — lead lowest non-trump
+        return this.lowestValue(nonTrumpCards);
       }
 
       // Last resort: lead lowest card (9s)

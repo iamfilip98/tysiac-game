@@ -64,6 +64,7 @@ export function RulesContent() {
           Each player receives 7 cards, and 3 cards go to the talon (hidden pile).
           Players bid for the right to pick up the talon. Minimum bid is 100, and bids
           increase by 10. Maximum bid is 120 plus the value of any marriages in your hand.
+          For example, if you hold a Hearts marriage (K+Q), your max bid is 220.
         </p>
         <p className="text-white/70">
           The highest bidder picks up the 3 talon cards, then gives 1 card to each opponent

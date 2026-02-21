@@ -9,35 +9,28 @@ import type { Suit } from '@tysiac/shared';
 function BarrelIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      {/* Black base */}
-      <circle cx="10" cy="10" r="9" fill="#1a1a1a" />
-      {/* Gold alternating wedges */}
-      <path d="M10,10 L19,10 A9,9 0 0,1 16.36,16.36Z" fill="#d4af37" />
-      <path d="M10,10 L10,19 A9,9 0 0,1 3.64,16.36Z" fill="#d4af37" />
-      <path d="M10,10 L1,10 A9,9 0 0,1 3.64,3.64Z" fill="#d4af37" />
-      <path d="M10,10 L10,1 A9,9 0 0,1 16.36,3.64Z" fill="#d4af37" />
-      {/* Dots on gold wedges */}
-      <circle cx="16.9" cy="12.9" r="1.1" fill="#1a1a1a" />
-      <circle cx="7.1" cy="16.9" r="1.1" fill="#1a1a1a" />
-      <circle cx="3.1" cy="7.1" r="1.1" fill="#1a1a1a" />
-      <circle cx="12.9" cy="3.1" r="1.1" fill="#1a1a1a" />
-      {/* Gold outer ring */}
-      <circle cx="10" cy="10" r="8.7" fill="none" stroke="#b8941f" strokeWidth="0.6" />
-      {/* Black inner circle */}
-      <circle cx="10" cy="10" r="5.8" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.4" />
-      {/* Gold center */}
-      <circle cx="10" cy="10" r="4.8" fill="#d4af37" />
-      {/* Barrel silhouette */}
-      <path d="M8.2 7 Q7.4 10 8.2 13 L11.8 13 Q12.6 10 11.8 7 Z" fill="#1a1a1a" />
-      <ellipse cx="10" cy="7" rx="1.8" ry="0.7" fill="#1a1a1a" />
-      {/* Barrel bands */}
-      <line x1="7.9" y1="8.5" x2="12.1" y2="8.5" stroke="#d4af37" strokeWidth="0.5" strokeLinecap="round" />
-      <line x1="7.7" y1="10" x2="12.3" y2="10" stroke="#d4af37" strokeWidth="0.5" strokeLinecap="round" />
-      <line x1="7.9" y1="11.5" x2="12.1" y2="11.5" stroke="#d4af37" strokeWidth="0.5" strokeLinecap="round" />
+      {/* Barrel body — curved sides */}
+      <path
+        d="M6.5 4.5 Q4.5 10 6.5 15.5 L13.5 15.5 Q15.5 10 13.5 4.5 Z"
+        fill="#8B5E3C"
+      />
+      {/* Top ellipse */}
+      <ellipse cx="10" cy="4.5" rx="3.5" ry="1.8" fill="#A0713C" />
+      {/* Top ellipse rim */}
+      <ellipse cx="10" cy="4.5" rx="3.5" ry="1.8" fill="none" stroke="#d4af37" strokeWidth="0.5" />
+      {/* Bottom ellipse (partial, visible rim) */}
+      <ellipse cx="10" cy="15.5" rx="3.5" ry="1.5" fill="#6B4226" />
+      <ellipse cx="10" cy="15.5" rx="3.5" ry="1.5" fill="none" stroke="#d4af37" strokeWidth="0.4" />
+      {/* Gold bands */}
+      <line x1="5.8" y1="7" x2="14.2" y2="7" stroke="#d4af37" strokeWidth="0.7" strokeLinecap="round" />
+      <line x1="5.2" y1="10" x2="14.8" y2="10" stroke="#d4af37" strokeWidth="0.7" strokeLinecap="round" />
+      <line x1="5.8" y1="13" x2="14.2" y2="13" stroke="#d4af37" strokeWidth="0.7" strokeLinecap="round" />
+      {/* Subtle wood grain lines */}
+      <line x1="8" y1="5.5" x2="7.6" y2="14.5" stroke="#6B4226" strokeWidth="0.3" opacity="0.5" />
+      <line x1="10" y1="5" x2="10" y2="15" stroke="#6B4226" strokeWidth="0.3" opacity="0.5" />
+      <line x1="12" y1="5.5" x2="12.4" y2="14.5" stroke="#6B4226" strokeWidth="0.3" opacity="0.5" />
       {/* Highlight for 3D feel */}
-      <ellipse cx="9" cy="8.5" rx="3" ry="2.5" fill="rgba(255,255,255,0.12)" />
-      {/* Center ring detail */}
-      <circle cx="10" cy="10" r="4.8" fill="none" stroke="#b8941f" strokeWidth="0.3" />
+      <ellipse cx="8.5" cy="8" rx="2" ry="3.5" fill="rgba(255,255,255,0.1)" />
     </svg>
   );
 }

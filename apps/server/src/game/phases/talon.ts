@@ -110,18 +110,21 @@ export function promptPlayOrPassDecision(engine: GameEngine): void {
   const round = engine.game.currentRound!;
   const bidWinnerId = round.bidWinner!;
 
-  // Check if AI player - AI always chooses to play
+  // Check if AI player - AI evaluates whether to play or pass
   if (isAIPlayer(engine.game, bidWinnerId)) {
+    const aiHand = round.players[bidWinnerId].hand;
+    const isOnBarrel = engine.game.scores[bidWinnerId]?.isOnBarrel || false;
+    const aiDecision = engine.ai.decidePlayOrPass(aiHand, round.finalBid, isOnBarrel);
     logDebug({
       gameId: engine.game.id,
       roomId: engine.roomId,
       playerId: bidWinnerId,
       eventType: 'playOrPass:prompt:ai',
-      eventData: { decision: 'auto_play' },
+      eventData: { decision: aiDecision, finalBid: round.finalBid, isOnBarrel },
       result: 'success',
     });
     engine.safeSetTimeout(() => {
-      engine.handlePlayOrPass(bidWinnerId, 'play');
+      engine.handlePlayOrPass(bidWinnerId, aiDecision);
     }, 800);
     return;
   }

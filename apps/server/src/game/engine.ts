@@ -647,7 +647,7 @@ export class GameEngine {
         const otherPlayerIds = this.game.players
           .filter(p => p.id !== playerId && !(round.isDealerSittingOut && p.id === round.dealer))
           .map(p => p.id);
-        const distribution = this.ai.decideDistribution(hand, otherPlayerIds);
+        const distribution = this.ai.decideDistribution(hand, otherPlayerIds, this.game.scores);
         this.handleDistributeTalon(playerId, distribution);
       } else if (this.game.phase === 'trickPlaying') {
         const trick = round.currentTrick!;
@@ -831,17 +831,21 @@ export class GameEngine {
       this.checkTalonConfirmations();
     }
 
-    // Handle playOrPassDecision phase - AI always plays
+    // Handle playOrPassDecision phase - AI evaluates whether to play or pass
     if (this.game.phase === 'playOrPassDecision' && round.bidWinner === playerId) {
+      const aiHand = round.players[playerId].hand;
+      const isOnBarrel = this.game.scores[playerId]?.isOnBarrel || false;
+      const aiDecision = this.ai.decidePlayOrPass(aiHand, round.finalBid, isOnBarrel);
       logDebug({
         gameId: this.game.id,
         roomId: this.roomId,
         playerId,
         eventType: 'playOrPass:aiAutoPlay',
+        eventData: { decision: aiDecision, finalBid: round.finalBid, isOnBarrel },
         result: 'success',
       });
       this.safeSetTimeout(() => {
-        this.handlePlayOrPass(playerId, 'play');
+        this.handlePlayOrPass(playerId, aiDecision);
       }, 500);
     }
 
