@@ -59,6 +59,7 @@ export function useSocket() {
     socket.on('connect', () => {
       setConnected(true);
       setError(null);
+      startKeepAlive();
 
       // Attempt auto-reconnect if session exists
       const storedSession = loadSession();

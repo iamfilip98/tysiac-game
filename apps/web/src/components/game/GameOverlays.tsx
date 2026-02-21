@@ -37,6 +37,9 @@ interface GameOverlaysProps {
   // Pause
   pauseData: { pausedByName: string; pausedAt: number; expiresAt: number } | null;
   onResume: () => void;
+  // Screen reader announcements
+  marriageAnnouncement?: string | null;
+  trickWonAnnouncement?: string | null;
 }
 
 export function GameOverlays({
@@ -63,9 +66,25 @@ export function GameOverlays({
   onClearThrew,
   pauseData,
   onResume,
+  marriageAnnouncement,
+  trickWonAnnouncement,
 }: GameOverlaysProps) {
   return (
     <>
+      {/* Screen reader announcements for game events */}
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {marriageAnnouncement}
+      </div>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {trickWonAnnouncement}
+      </div>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {passedAt100Notification && `${passedAt100Notification.playerName} passed at 100`}
+      </div>
+      <div className="sr-only" aria-live="polite" aria-atomic="true">
+        {threwNotification && `${threwNotification.playerName} threw at ${threwNotification.bidAmount}`}
+      </div>
+
       {/* WYKLADANA celebration */}
       {showWykladana && wykladanaData && (
         <WykladanaModal

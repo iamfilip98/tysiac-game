@@ -24,6 +24,8 @@ interface GameState {
   pauseData: { pausedByName: string; pausedAt: number; expiresAt: number } | null;
   // Trump trick win effect
   trickWonData: { winnerId: string; wasTrumpWin: boolean } | null;
+  // Buffered state update while round result modal is open
+  pendingGameState: ClientGameState | null;
 
   // Actions
   setGameState: (state: ClientGameState | null) => void;
@@ -60,12 +62,15 @@ export const useGameStore = create<GameState>((set) => ({
   threwNotification: null,
   pauseData: null,
   trickWonData: null,
+  pendingGameState: null,
 
   setGameState: (gameState) =>
-    set({
-      gameState,
-      // Clear selection when state changes
-      selectedCard: null,
+    set((state) => {
+      // Buffer state updates while round result modal is showing
+      if (state.showRoundResult) {
+        return { pendingGameState: gameState };
+      }
+      return { gameState, selectedCard: null, pendingGameState: null };
     }),
 
   setValidActions: (validActions) =>
@@ -82,7 +87,19 @@ export const useGameStore = create<GameState>((set) => ({
       showRoundResult: lastRoundResult !== null,
     }),
 
-  setShowRoundResult: (showRoundResult) => set({ showRoundResult }),
+  setShowRoundResult: (showRoundResult) =>
+    set((state) => {
+      // When closing the modal, flush any buffered game state
+      if (!showRoundResult && state.pendingGameState) {
+        return {
+          showRoundResult,
+          gameState: state.pendingGameState,
+          pendingGameState: null,
+          selectedCard: null,
+        };
+      }
+      return { showRoundResult };
+    }),
 
   setShowGameEnd: (showGameEnd) => set({ showGameEnd }),
 
@@ -125,5 +142,6 @@ export const useGameStore = create<GameState>((set) => ({
       threwNotification: null,
       pauseData: null,
       trickWonData: null,
+      pendingGameState: null,
     }),
 }));

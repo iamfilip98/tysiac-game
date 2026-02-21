@@ -93,7 +93,7 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
                             onClick={() => toggleUnlock(room.id)}
                             disabled={!isConnected || isLoading || !playerName.trim() || isFull}
                             className={cn(
-                              'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
+                              'px-3 py-2 rounded-md text-xs font-medium transition-all shrink-0 min-w-[52px]',
                               !isFull && playerName.trim()
                                 ? isUnlocking
                                   ? 'bg-gold-500 text-table-950'
@@ -108,7 +108,7 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
                             onClick={() => handleJoinPublic(room.code)}
                             disabled={!isConnected || isLoading || !playerName.trim() || isFull}
                             className={cn(
-                              'px-3 py-1 rounded-md text-xs font-medium transition-all shrink-0',
+                              'px-3 py-2 rounded-md text-xs font-medium transition-all shrink-0 min-w-[52px]',
                               !isFull && playerName.trim()
                                 ? 'bg-gold-500 hover:bg-gold-400 text-table-950'
                                 : 'bg-table-700 text-white/30 cursor-not-allowed'

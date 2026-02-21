@@ -218,17 +218,6 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         </div>
       </motion.div>
 
-      {/* Error display */}
-      {error && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mt-4 px-4 py-2 bg-red-500/20 border border-red-500/30 rounded-lg text-red-400 text-sm"
-        >
-          {error}
-        </motion.div>
-      )}
-
       {/* Rules summary - hidden on small mobile screens */}
       <motion.div
         initial={{ opacity: 0 }}

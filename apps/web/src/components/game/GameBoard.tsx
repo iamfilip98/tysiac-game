@@ -18,6 +18,7 @@ import { useScreenSize } from '@/hooks/useIsMobile';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { cn } from '@/lib/utils';
 import { useShallow } from 'zustand/react/shallow';
+import { truncateName } from '@tysiac/shared';
 import type { Card as CardType } from '@tysiac/shared';
 
 // Layout positions based on screen dimensions
@@ -127,6 +128,14 @@ export function GameBoard() {
       const rightPlayer = gameState.players[(myIndex + 2) % 3];
       return [leftPlayer, rightPlayer];
     }
+  }, [gameState, playerId]);
+
+  // Find the dealer opponent (for 4-player mode, to show at their position)
+  const dealerOpponent = useMemo(() => {
+    if (!gameState || !playerId || gameState.players.length !== 4) return null;
+    const dealerId = gameState.round?.dealer;
+    if (!dealerId || dealerId === playerId) return null;
+    return gameState.players.find(p => p.id === dealerId) || null;
   }, [gameState, playerId]);
 
 
@@ -270,7 +279,7 @@ export function GameBoard() {
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-2 sm:left-4 z-30 flex gap-1 sm:gap-2">
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="btn-toolbar min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center gap-1.5"
+          className="btn-toolbar min-w-[44px] min-h-[44px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5"
           title="Leave game"
         >
           <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -283,7 +292,7 @@ export function GameBoard() {
         {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
           <button
             onClick={pauseGame}
-            className="btn-toolbar btn-toolbar-gold min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-gold-400 text-[13px] font-medium tracking-wide transition-colors flex items-center gap-1.5"
+            className="btn-toolbar btn-toolbar-gold min-w-[44px] min-h-[44px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-gold-400 text-[13px] font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5"
             title="Pause game"
           >
             <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -352,6 +361,21 @@ export function GameBoard() {
           />
         )}
       </div>
+
+      {/* Dealer spectating indicator (4-player mode, when another player is dealer) */}
+      {dealerOpponent && (
+        <div className={cn(
+          'absolute z-10 left-1/2 -translate-x-1/2',
+          isMobile ? 'top-32' : 'top-36'
+        )}>
+          <div className="flex flex-col items-center gap-1 opacity-50">
+            <div className="text-xs font-medium px-2 py-1 rounded-lg text-white/60 bg-table-800/80 border border-white/[0.06]">
+              {truncateName(dealerOpponent.name)}
+              <span className="ml-1.5 text-amber-400/80 text-[10px]">Dealing</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Center area - trick pile / talon */}
       <div className={cn(
@@ -466,10 +490,15 @@ export function GameBoard() {
           'absolute left-1/2 -translate-x-1/2 z-20',
           layout.spectatingIndicator
         )}>
-          <div className="px-4 py-2 bg-table-800/90 border border-amber-500/50 rounded-lg text-center">
-            <div className="text-amber-400 text-sm font-medium">
+          <div className="px-5 py-3 bg-table-800/95 border border-amber-500/50 rounded-xl text-center shadow-lg" style={{ boxShadow: '0 0 20px rgba(245,158,11,0.15)' }}>
+            <div className="text-amber-400 font-medium">
               You are the dealer — spectating this round
             </div>
+            {round && (
+              <div className="text-white/50 text-xs mt-1">
+                Trick {round.completedTricks + 1}/8 · {round.trumpSuit ? `Trump: ${round.trumpSuit}` : 'No trump'}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -581,6 +610,14 @@ export function GameBoard() {
         onClearThrew={() => setThrewNotification(null)}
         pauseData={pauseData}
         onResume={resumeGame}
+        marriageAnnouncement={lastMarriageDeclared
+          ? `${gameState.players.find(p => p.id === lastMarriageDeclared.playerId)?.name || 'Player'} declared ${lastMarriageDeclared.suit} marriage`
+          : null
+        }
+        trickWonAnnouncement={trickWonData
+          ? `${gameState.players.find(p => p.id === trickWonData.winnerId)?.name || 'Player'} won the trick${trickWonData.wasTrumpWin ? ' with trump' : ''}`
+          : null
+        }
       />
 
     </div>
