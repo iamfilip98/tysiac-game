@@ -10,10 +10,11 @@ interface CreateRoomFormProps {
   onSubmit: (playerName: string, roomName: string, isPrivate: boolean, maxPlayers: 3 | 4) => void;
   isLoading?: boolean;
   isConnected?: boolean;
+  defaultPlayerName?: string;
 }
 
-export function CreateRoomForm({ onSubmit, isLoading, isConnected = false }: CreateRoomFormProps) {
-  const [playerName, setPlayerName] = useState('');
+export function CreateRoomForm({ onSubmit, isLoading, isConnected = false, defaultPlayerName = '' }: CreateRoomFormProps) {
+  const [playerName, setPlayerName] = useState(defaultPlayerName);
   const [roomName, setRoomName] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
   const [maxPlayers, setMaxPlayers] = useState<3 | 4>(3);

@@ -78,7 +78,41 @@ export function cleanupRateLimits(): void {
 }
 
 // Run cleanup every minute
-setInterval(cleanupRateLimits, 60000);
+setInterval(() => {
+  cleanupRateLimits();
+  cleanupAuthRateLimits();
+}, 60000);
+
+// --- IP-based auth rate limiting ---
+const ipAuthLimits = new Map<string, RateLimitEntry>();
+const AUTH_RATE_LIMIT: RateLimitConfig = { maxRequests: 10, windowMs: 60000 }; // 10 attempts per minute
+
+export function checkAuthRateLimit(ip: string): { allowed: boolean; retryAfter?: number } {
+  const now = Date.now();
+
+  let entry = ipAuthLimits.get(ip);
+  if (!entry || now > entry.resetTime) {
+    entry = { count: 0, resetTime: now + AUTH_RATE_LIMIT.windowMs };
+    ipAuthLimits.set(ip, entry);
+  }
+
+  if (entry.count >= AUTH_RATE_LIMIT.maxRequests) {
+    return { allowed: false, retryAfter: entry.resetTime - now };
+  }
+
+  entry.count++;
+  return { allowed: true };
+}
+
+// Clean up auth rate limits (called by existing cleanup interval)
+function cleanupAuthRateLimits(): void {
+  const now = Date.now();
+  for (const [ip, entry] of ipAuthLimits) {
+    if (now > entry.resetTime) {
+      ipAuthLimits.delete(ip);
+    }
+  }
+}
 
 // --- IP connection limiting ---
 const ipConnectionCount = new Map<string, number>();

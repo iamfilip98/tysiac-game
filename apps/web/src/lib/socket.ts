@@ -7,7 +7,7 @@ export type TypedSocket = Socket<ServerToClientEvents, ClientToServerEvents>;
 
 let socket: TypedSocket | null = null;
 
-export function getSocket(): TypedSocket {
+export function getSocket(authToken?: string): TypedSocket {
   if (!socket) {
     socket = io(SOCKET_URL, {
       autoConnect: false,
@@ -18,9 +18,30 @@ export function getSocket(): TypedSocket {
       reconnectionDelayMax: 5000,
       timeout: 20000,
       transports: ['websocket', 'polling'],
+      ...(authToken ? { auth: { token: authToken } } : {}),
     }) as TypedSocket;
   }
   return socket;
+}
+
+export function reconnectWithAuth(authToken?: string): void {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
+  // Next getSocket() call will create a new socket with the auth token
+  // Force creation now so listeners can be attached
+  socket = io(SOCKET_URL, {
+    autoConnect: false,
+    withCredentials: true,
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+    timeout: 20000,
+    transports: ['websocket', 'polling'],
+    ...(authToken ? { auth: { token: authToken } } : {}),
+  }) as TypedSocket;
 }
 
 export function connectSocket(): Promise<void> {

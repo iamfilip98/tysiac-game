@@ -13,6 +13,7 @@ export interface HandlerContext {
   gameCreationLocks: Set<string>;
   disconnectTimeouts: Map<string, NodeJS.Timeout>;
   socketToIP: Map<string, string>;
+  authenticatedPlayerId: string | null;
   DISCONNECT_GRACE_PERIOD: number;
   ROOM_GRACE_PERIOD: number;
   logEvent(params: {

@@ -49,6 +49,7 @@ export function createRoom(hostId: string, hostName: string, roomName: string, i
         isReady: false,
         isHost: true,
         isAI: false,
+        isRegistered: hostId.startsWith('user-'),
       },
     ],
     maxPlayers,
@@ -99,6 +100,7 @@ export function joinRoom(roomId: string, playerId: string, playerName: string): 
     isReady: false,
     isHost: false,
     isAI: false,
+    isRegistered: playerId.startsWith('user-'),
   });
 
   playerRooms.set(playerId, roomId);

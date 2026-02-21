@@ -2,7 +2,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { getSocket, connectSocket, startKeepAlive, stopKeepAlive, startVisibilityHandler, TypedSocket } from '@/lib/socket';
-import { useRoomStore, useGameStore } from '@tysiac/game-logic';
+import { useRoomStore, useGameStore, useAuthStore } from '@tysiac/game-logic';
 import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
 import { soundManager } from '@/lib/sounds';
 import type { Card, Suit } from '@tysiac/shared';
@@ -23,7 +23,9 @@ export function useSocket() {
   // listeners, only the last unmount tears them down). This prevents GameBoard's
   // unmount from destroying listeners that page.tsx still needs.
   useEffect(() => {
-    const socket = getSocket();
+    // Pass auth token if user is authenticated so the server can resolve their persistent playerId
+    const authToken = useAuthStore.getState().authToken;
+    const socket = getSocket(authToken || undefined);
     socketRef.current = socket;
 
     listenerRefCount++;

@@ -5,6 +5,7 @@ import * as debugService from '../services/debugService.js';
 import { GameEngine } from '../game/engine.js';
 import { checkRateLimit, trackIPConnection } from '../security/rateLimit.js';
 import { invalidatePlayerSession } from '../security/session.js';
+import { validateAuthToken } from '../security/auth.js';
 import { removePersistedGame } from '../services/persistenceService.js';
 import { registerRoomHandlers } from './roomHandlers.js';
 import { registerGameHandlers } from './gameHandlers.js';
@@ -231,6 +232,16 @@ export function setupSocketHandlers(io: TypedServer) {
     }
     socketToIP.set(socket.id, clientIP);
 
+    // Resolve authenticated player from auth token (if provided)
+    let authenticatedPlayerId: string | null = null;
+    const authToken = socket.handshake.auth?.token as string | undefined;
+    if (authToken) {
+      const validated = validateAuthToken(authToken);
+      if (validated) {
+        authenticatedPlayerId = validated.playerId;
+      }
+    }
+
     // Send current room list to newly connected client
     socket.emit('lobby:roomList', roomService.getJoinableRooms());
 
@@ -243,6 +254,7 @@ export function setupSocketHandlers(io: TypedServer) {
       gameCreationLocks,
       disconnectTimeouts,
       socketToIP,
+      authenticatedPlayerId,
       DISCONNECT_GRACE_PERIOD,
       ROOM_GRACE_PERIOD,
       logEvent,

@@ -8,6 +8,7 @@ import { AIPlayer } from '../ai/index.js';
 import { detectWykladana } from './wykladana.js';
 import { logDebug } from '../services/debugService.js';
 import { calculateGameStatistics, createInitialPlayerStats, type PlayerGameStats, type RoundHistory } from './statistics.js';
+import { updateStatsAfterGame } from '../services/statsService.js';
 import * as bidding from './phases/bidding.js';
 import * as talon from './phases/talon.js';
 import * as trickPlaying from './phases/trickPlaying.js';
@@ -491,6 +492,26 @@ export class GameEngine {
     });
 
     this.broadcastState();
+
+    // Update cumulative stats for registered players (fire-and-forget)
+    const gameResults = this.game.players.map(p => {
+      const ps = this.playerStats.get(p.id);
+      return {
+        playerId: p.id,
+        finalScore: finalScores[p.id] || 0,
+        isWinner: p.id === this.game.winner,
+        bidsWon: ps?.successfulBidCount || 0,
+        bidsFailed: ps?.failedBidCount || 0,
+        marriages: ps?.marriageCount || 0,
+      };
+    });
+    const roundScores: Record<string, number[]> = {};
+    for (const [playerId, score] of Object.entries(this.game.scores)) {
+      roundScores[playerId] = score.roundScores;
+    }
+    updateStatsAfterGame(this.game.id, this.roomId, gameResults, roundScores).catch((err) => {
+      console.error('[Engine] Failed to update stats after game:', err);
+    });
 
     // Trigger cleanup callback
     if (this.onCleanup) {

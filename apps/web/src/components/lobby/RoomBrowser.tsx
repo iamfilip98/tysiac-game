@@ -11,11 +11,12 @@ interface RoomBrowserProps {
   isLoading?: boolean;
   isConnected?: boolean;
   initialCode?: string;
+  defaultPlayerName?: string;
 }
 
 // "Blue Box" — Browse Rooms panel (matches Green Box height via grid layout in page.tsx)
-export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = false, initialCode = '' }: RoomBrowserProps) {
-  const [playerName, setPlayerName] = useState('');
+export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = false, initialCode = '', defaultPlayerName = '' }: RoomBrowserProps) {
+  const [playerName, setPlayerName] = useState(defaultPlayerName);
   const [unlockingRoomId, setUnlockingRoomId] = useState<string | null>(null);
   const [codeInput, setCodeInput] = useState(initialCode);
 

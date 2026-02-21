@@ -21,6 +21,28 @@ export interface RoomPlayer {
   isReady: boolean;
   isHost: boolean;
   isAI: boolean;
+  isRegistered?: boolean;
+}
+
+// Auth types
+export interface AuthResponse {
+  playerId: string;
+  authToken: string;
+  displayName: string;
+}
+
+export interface PlayerStatsPublic {
+  gamesPlayed: number;
+  gamesWon: number;
+  gamesLost: number;
+  winRate: number;
+  totalBidsWon: number;
+  totalBidsFailed: number;
+  totalMarriages: number;
+  highestGameScore: number;
+  currentWinStreak: number;
+  longestWinStreak: number;
+  rating: number;
 }
 
 // Client -> Server events

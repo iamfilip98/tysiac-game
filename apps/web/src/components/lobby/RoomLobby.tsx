@@ -431,6 +431,11 @@ function PlayerSlot({
                 AI
               </span>
             )}
+            {player.isRegistered && !player.isAI && (
+              <span className="text-xs bg-blue-500/20 text-blue-400 px-1.5 py-0.5 rounded shrink-0" title="Registered player">
+                &#x2713;
+              </span>
+            )}
           </div>
           <div className="text-xs text-white/40">
             {isCurrentPlayer ? 'You' : player.isAI ? 'Computer' : 'Player'}

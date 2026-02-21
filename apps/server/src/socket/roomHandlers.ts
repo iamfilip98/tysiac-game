@@ -18,7 +18,7 @@ export function registerRoomHandlers(socket: TypedSocket, ctx: HandlerContext): 
         }
 
         const { playerName, roomName, isPrivate, maxPlayers } = parsed.data;
-        const playerId = `player-${socket.id}`;
+        const playerId = ctx.authenticatedPlayerId || `player-${socket.id}`;
 
         // Reject if this socket already has a player in a room
         const existingPlayer = ctx.socketToPlayer.get(socket.id);
@@ -83,7 +83,7 @@ export function registerRoomHandlers(socket: TypedSocket, ctx: HandlerContext): 
           return;
         }
 
-        const playerId = `player-${socket.id}`;
+        const playerId = ctx.authenticatedPlayerId || `player-${socket.id}`;
 
         // Clear any existing mappings for this socket
         const existingPlayer = ctx.socketToPlayer.get(socket.id);

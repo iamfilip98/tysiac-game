@@ -30,11 +30,17 @@ export function registerConnectionHandlers(socket: TypedSocket, ctx: HandlerCont
           ctx.disconnectTimeouts.delete(playerId);
         }
 
-        // Validate session token
+        // Validate session token — fall back to auth token if session invalid
         if (!validateSession(sessionToken, playerId)) {
-          ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'rejected', errorMessage: 'Invalid or expired session' });
-          socket.emit('room:error', { code: 'INVALID_SESSION', message: 'Invalid or expired session' });
-          return;
+          // If the player is authenticated and the playerId matches, allow reconnect
+          if (ctx.authenticatedPlayerId && ctx.authenticatedPlayerId === playerId) {
+            // Auth token is valid — create a fresh game session for this connection
+            ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'success', metadata: { authFallback: true } });
+          } else {
+            ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'rejected', errorMessage: 'Invalid or expired session' });
+            socket.emit('room:error', { code: 'INVALID_SESSION', message: 'Invalid or expired session' });
+            return;
+          }
         }
 
         const room = roomService.getRoom(roomId);

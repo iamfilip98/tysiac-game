@@ -5,6 +5,9 @@ export type { GameState } from './stores/gameStore.js';
 export { useRoomStore } from './stores/roomStore.js';
 export type { RoomState } from './stores/roomStore.js';
 
+export { useAuthStore } from './stores/authStore.js';
+export type { AuthState } from './stores/authStore.js';
+
 export { usePreferencesStore, createPreferencesStore } from './stores/preferencesStore.js';
 export { THEME_ORDER, CARD_STYLE_ORDER } from './stores/preferencesStore.js';
 export type { Theme, CardStyle, PreferencesState } from './stores/preferencesStore.js';

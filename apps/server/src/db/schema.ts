@@ -4,6 +4,9 @@ import { pgTable, text, timestamp, boolean, integer, jsonb, primaryKey } from 'd
 export const players = pgTable('players', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
+  email: text('email').unique(),
+  passwordHash: text('password_hash'),
+  isRegistered: boolean('is_registered').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   lastSeen: timestamp('last_seen').defaultNow().notNull(),
 });
@@ -69,6 +72,31 @@ export const rounds = pgTable('rounds', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
+// Auth tokens table - persistent login tokens for registered users
+export const authTokens = pgTable('auth_tokens', {
+  token: text('token').primaryKey(),
+  playerId: text('player_id').references(() => players.id, { onDelete: 'cascade' }).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  lastActivity: timestamp('last_activity').defaultNow().notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+});
+
+// Player stats table - cumulative stats for registered players
+export const playerStats = pgTable('player_stats', {
+  playerId: text('player_id').primaryKey().references(() => players.id, { onDelete: 'cascade' }),
+  gamesPlayed: integer('games_played').default(0).notNull(),
+  gamesWon: integer('games_won').default(0).notNull(),
+  gamesLost: integer('games_lost').default(0).notNull(),
+  totalBidsWon: integer('total_bids_won').default(0).notNull(),
+  totalBidsFailed: integer('total_bids_failed').default(0).notNull(),
+  totalMarriages: integer('total_marriages').default(0).notNull(),
+  highestGameScore: integer('highest_game_score').default(0).notNull(),
+  currentWinStreak: integer('current_win_streak').default(0).notNull(),
+  longestWinStreak: integer('longest_win_streak').default(0).notNull(),
+  rating: integer('rating').default(1000).notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
+});
+
 // Sessions table - stores player sessions for reconnection
 export const sessions = pgTable('sessions', {
   token: text('token').primaryKey(),
@@ -108,3 +136,5 @@ export type DebugLog = typeof debugLogs.$inferSelect;
 export type NewDebugLog = typeof debugLogs.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
+export type AuthToken = typeof authTokens.$inferSelect;
+export type PlayerStats = typeof playerStats.$inferSelect;

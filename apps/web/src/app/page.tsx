@@ -9,7 +9,10 @@ import { RoomLobby } from '@/components/lobby/RoomLobby';
 import { GameBoard } from '@/components/game/GameBoard';
 import { RulesModal } from '@/components/game/RulesModal';
 import { SettingsDropdown } from '@/components/game/SettingsDropdown';
+import { AuthGate } from '@/components/auth/AuthGate';
+import { UserBadge } from '@/components/auth/UserBadge';
 import { useSocket } from '@/hooks/useSocket';
+import { useAuth } from '@/hooks/useAuth';
 import { useRoomStore, useGameStore } from '@tysiac/game-logic';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { useToast } from '@/components/ui/Toast';
@@ -19,10 +22,22 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   const [tab, setTab] = useState<'create' | 'join'>(roomCodeFromUrl ? 'join' : 'create');
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [isGuest, setIsGuest] = useState(false);
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
   const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms } = useRoomStore();
+
+  const {
+    isAuthenticated,
+    displayName: authDisplayName,
+    stats: authStats,
+    isLoading: authLoading,
+    error: authError,
+    register,
+    login,
+    logout,
+  } = useAuth();
 
   // Clean up URL after reading room code (removes ?room= from URL)
   useEffect(() => {
@@ -76,14 +91,27 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     );
   }
 
-  // Show landing / create or join
+  // Default player name for authenticated users
+  const defaultPlayerName = isAuthenticated && authDisplayName ? authDisplayName : '';
+
+  // Show landing page
+  // If not authenticated and not guest, show auth gate above room tabs
+  const showAuthGate = !isAuthenticated && !isGuest;
+
   return (
     <main className="h-full flex flex-col items-center justify-center p-4 overflow-auto relative">
       {/* Ambient particles */}
       <AmbientParticles count={10} />
 
-      {/* Settings */}
-      <div className="absolute top-4 right-4 z-10">
+      {/* Settings + User badge */}
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        {isAuthenticated && authDisplayName && (
+          <UserBadge
+            displayName={authDisplayName}
+            stats={authStats}
+            onLogout={logout}
+          />
+        )}
         <SettingsDropdown />
       </div>
 
@@ -141,117 +169,138 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         </div>
       </motion.div>
 
-      {/* Tab switcher */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.2 }}
-        className="relative flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg backdrop-blur-sm border border-white/[0.06]"
-      >
-        <button
-          onClick={() => setTab('create')}
-          className={cn(
-            'relative px-6 py-2 rounded-md font-medium transition-all z-10',
-            tab === 'create'
-              ? 'text-white font-semibold'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
-          )}
+      {/* Auth gate — shown when user is neither authenticated nor playing as guest */}
+      {showAuthGate ? (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
         >
-          Create Room
-          {tab === 'create' && (
-            <motion.div
-              layoutId="tab-indicator"
-              className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
-            />
-          )}
-        </button>
-        <button
-          onClick={() => setTab('join')}
-          className={cn(
-            'relative px-6 py-2 rounded-md font-medium transition-all z-10',
-            tab === 'join'
-              ? 'text-white font-semibold'
-              : 'text-white/60 hover:text-white hover:bg-white/5'
-          )}
-        >
-          Browse Rooms
-          {tab === 'join' && (
-            <motion.div
-              layoutId="tab-indicator"
-              className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
-            />
-          )}
-        </button>
-      </motion.div>
-
-      {/* Green Box + Blue Box — stacked in same grid cell so they always match height */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-        className="w-full max-w-sm grid grid-cols-1 grid-rows-1"
-      >
-        {/* Green Box: Create Room */}
-        <div className={cn(
-          'col-start-1 row-start-1 transition-opacity duration-150',
-          tab === 'create' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}>
-          <CreateRoomForm
-            onSubmit={createRoom}
-            isLoading={isConnecting || isCreatingRoom}
-            isConnected={isConnected}
+          <AuthGate
+            onLogin={login}
+            onRegister={register}
+            onPlayAsGuest={() => setIsGuest(true)}
+            isLoading={authLoading}
+            error={authError}
           />
-        </div>
-        {/* Blue Box: Browse Rooms */}
-        <div className={cn(
-          'col-start-1 row-start-1 transition-opacity duration-150',
-          tab === 'join' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-        )}>
-          <RoomBrowser
-            publicRooms={publicRooms}
-            onJoin={joinRoom}
-            isLoading={isConnecting}
-            isConnected={isConnected}
-            initialCode={roomCodeFromUrl}
-          />
-        </div>
-      </motion.div>
-
-      {/* Rules summary - hidden on small mobile screens */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        className="mt-6 sm:mt-12 text-center max-w-md hidden sm:block"
-      >
-        <div className="flex items-center justify-center gap-2 mb-3">
-          <h3 className="text-white/60 font-medium">Quick Rules</h3>
-          <button
-            onClick={() => setShowRulesModal(true)}
-            className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs font-bold transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold-500"
-            aria-label="View full rules"
+        </motion.div>
+      ) : (
+        <>
+          {/* Tab switcher */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="relative flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg backdrop-blur-sm border border-white/[0.06]"
           >
-            i
-          </button>
-        </div>
-        <ul className="text-sm text-white/60 space-y-1">
-          <li>• 3-4 players, 24-card deck (9-A in each suit)</li>
-          <li>• Bid for the right to pick up the talon</li>
-          <li>• Declare marriages (K+Q) for bonus points</li>
-          <li>• First to 1000 points wins!</li>
-        </ul>
-      </motion.div>
+            <button
+              onClick={() => setTab('create')}
+              className={cn(
+                'relative px-6 py-2 rounded-md font-medium transition-all z-10',
+                tab === 'create'
+                  ? 'text-white font-semibold'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              )}
+            >
+              Create Room
+              {tab === 'create' && (
+                <motion.div
+                  layoutId="tab-indicator"
+                  className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                />
+              )}
+            </button>
+            <button
+              onClick={() => setTab('join')}
+              className={cn(
+                'relative px-6 py-2 rounded-md font-medium transition-all z-10',
+                tab === 'join'
+                  ? 'text-white font-semibold'
+                  : 'text-white/60 hover:text-white hover:bg-white/5'
+              )}
+            >
+              Browse Rooms
+              {tab === 'join' && (
+                <motion.div
+                  layoutId="tab-indicator"
+                  className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                />
+              )}
+            </button>
+          </motion.div>
 
-      {/* Mobile rules link */}
-      <motion.button
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-        onClick={() => setShowRulesModal(true)}
-        className="mt-4 sm:hidden text-white/60 hover:text-white text-sm underline"
-      >
-        View Game Rules
-      </motion.button>
+          {/* Green Box + Blue Box — stacked in same grid cell so they always match height */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="w-full max-w-sm grid grid-cols-1 grid-rows-1"
+          >
+            {/* Green Box: Create Room */}
+            <div className={cn(
+              'col-start-1 row-start-1 transition-opacity duration-150',
+              tab === 'create' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}>
+              <CreateRoomForm
+                onSubmit={createRoom}
+                isLoading={isConnecting || isCreatingRoom}
+                isConnected={isConnected}
+                defaultPlayerName={defaultPlayerName}
+              />
+            </div>
+            {/* Blue Box: Browse Rooms */}
+            <div className={cn(
+              'col-start-1 row-start-1 transition-opacity duration-150',
+              tab === 'join' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+            )}>
+              <RoomBrowser
+                publicRooms={publicRooms}
+                onJoin={joinRoom}
+                isLoading={isConnecting}
+                isConnected={isConnected}
+                initialCode={roomCodeFromUrl}
+                defaultPlayerName={defaultPlayerName}
+              />
+            </div>
+          </motion.div>
+
+          {/* Rules summary - hidden on small mobile screens */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="mt-6 sm:mt-12 text-center max-w-md hidden sm:block"
+          >
+            <div className="flex items-center justify-center gap-2 mb-3">
+              <h3 className="text-white/60 font-medium">Quick Rules</h3>
+              <button
+                onClick={() => setShowRulesModal(true)}
+                className="w-5 h-5 rounded-full bg-white/10 hover:bg-white/20 text-white/60 hover:text-white text-xs font-bold transition-all flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-gold-500"
+                aria-label="View full rules"
+              >
+                i
+              </button>
+            </div>
+            <ul className="text-sm text-white/60 space-y-1">
+              <li>• 3-4 players, 24-card deck (9-A in each suit)</li>
+              <li>• Bid for the right to pick up the talon</li>
+              <li>• Declare marriages (K+Q) for bonus points</li>
+              <li>• First to 1000 points wins!</li>
+            </ul>
+          </motion.div>
+
+          {/* Mobile rules link */}
+          <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            onClick={() => setShowRulesModal(true)}
+            className="mt-4 sm:hidden text-white/60 hover:text-white text-sm underline"
+          >
+            View Game Rules
+          </motion.button>
+        </>
+      )}
 
       {/* Full Rules Modal */}
       <RulesModal isOpen={showRulesModal} onClose={() => setShowRulesModal(false)} />
