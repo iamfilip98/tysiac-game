@@ -171,7 +171,10 @@ export function useSocket() {
     });
 
     socket.on('game:roundEnd', (result) => {
-      setRoundResult(result);
+      // Skip round summary when the game is over — go straight to game end modal
+      if (!result.gameWinner) {
+        setRoundResult(result);
+      }
       soundManager.roundEnd();
     });
 
