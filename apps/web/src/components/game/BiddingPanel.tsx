@@ -171,8 +171,8 @@ export function BiddingPanel({
         {bidAction && bidAction.type === 'bid' && (
           <div className="mt-3 text-center text-xs text-white/50 relative px-2" ref={tooltipRef}>
             {bidAction.maxBid > 120
-              ? `Max bid: ${bidAction.maxBid} (120 + marriages)`
-              : `Max bid: ${bidAction.maxBid}`}
+              ? `Max bid allowed: ${bidAction.maxBid} (120 + marriages)`
+              : `Max bid allowed: ${bidAction.maxBid}`}
             <button
               onClick={toggleTooltip}
               className="ml-1 inline-flex items-center justify-center w-4 h-4 rounded-full bg-white/10 hover:bg-white/20 text-white/40 hover:text-white/70 text-[10px] font-bold transition-colors align-middle"
@@ -187,7 +187,7 @@ export function BiddingPanel({
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: 4 }}
                   transition={{ duration: 0.15 }}
-                  className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-table-800 border border-white/10 rounded-lg p-2.5 text-xs text-white/70 whitespace-nowrap z-50 shadow-lg"
+                  className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-table-800 border border-white/10 rounded-lg p-3 text-xs text-white/70 z-50 shadow-xl"
                 >
                   Each King+Queen pair adds to max bid:
                   <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5 text-white/60">
