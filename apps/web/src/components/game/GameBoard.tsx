@@ -490,15 +490,10 @@ export function GameBoard() {
           'absolute left-1/2 -translate-x-1/2 z-20',
           layout.spectatingIndicator
         )}>
-          <div className="px-5 py-3 bg-table-800/95 border border-amber-500/50 rounded-xl text-center shadow-lg" style={{ boxShadow: '0 0 20px rgba(245,158,11,0.15)' }}>
-            <div className="text-amber-400 font-medium">
+          <div className="px-4 py-2 bg-table-800/95 border border-amber-500/50 rounded-lg text-center shadow-lg" style={{ boxShadow: '0 0 20px rgba(245,158,11,0.15)' }}>
+            <div className="text-amber-400 text-sm font-medium">
               You are the dealer — spectating this round
             </div>
-            {round && (
-              <div className="text-white/50 text-xs mt-1">
-                Trick {round.completedTricks + 1}/8 · {round.trumpSuit ? `Trump: ${round.trumpSuit}` : 'No trump'}
-              </div>
-            )}
           </div>
         </div>
       )}
