@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  transpilePackages: ['@tysiac/shared'],
+  transpilePackages: ['@tysiac/shared', '@tysiac/game-logic'],
 
   // Cache headers: immutable for hashed static assets, no-cache for everything else
   async headers() {

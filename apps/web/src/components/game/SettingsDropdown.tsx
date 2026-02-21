@@ -1,10 +1,8 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePreferencesStore } from '@/stores/preferencesStore';
-import { useGameStore } from '@/stores/gameStore';
+import { usePreferencesStore, useGameStore, type Theme, type CardStyle } from '@tysiac/game-logic';
 import { RulesModal } from './RulesModal';
-import type { Theme, CardStyle } from '@/stores/preferencesStore';
 
 const THEME_LABELS: Record<Theme, string> = {
   classic: 'Classic',

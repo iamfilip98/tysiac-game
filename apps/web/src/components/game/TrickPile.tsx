@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
 import { useScreenSize } from '@/hooks/useIsMobile';
-import { usePreferencesStore } from '@/stores/preferencesStore';
+import { usePreferencesStore } from '@tysiac/game-logic';
 import type { Card as CardType, Suit } from '@tysiac/shared';
 
 interface TrickPileProps {

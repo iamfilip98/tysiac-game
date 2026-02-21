@@ -1,6 +1,6 @@
 'use client';
 
-import { usePreferencesStore } from '@/stores/preferencesStore';
+import { usePreferencesStore } from '@tysiac/game-logic';
 
 class SoundManager {
   private ctx: AudioContext | null = null;

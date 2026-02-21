@@ -1,7 +1,7 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { useRoomStore } from '@/stores/roomStore';
+import { useRoomStore } from '@tysiac/game-logic';
 import { cn } from '@/lib/utils';
 
 export function ConnectionStatus() {

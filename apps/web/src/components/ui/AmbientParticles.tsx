@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import { useMemo } from 'react';
-import { usePreferencesStore } from '@/stores/preferencesStore';
+import { usePreferencesStore } from '@tysiac/game-logic';
 
 interface AmbientParticlesProps {
   count?: number;

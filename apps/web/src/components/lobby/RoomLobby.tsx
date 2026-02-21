@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn, copyToClipboard } from '@/lib/utils';
 import { truncateName } from '@tysiac/shared';
-import { useRoomStore } from '@/stores/roomStore';
+import { useRoomStore } from '@tysiac/game-logic';
 import type { Room, RoomPlayer } from '@tysiac/shared';
 
 interface RoomLobbyProps {

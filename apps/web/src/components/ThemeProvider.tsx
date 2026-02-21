@@ -1,8 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { usePreferencesStore } from '@/stores/preferencesStore';
-import type { Theme } from '@/stores/preferencesStore';
+import { usePreferencesStore, type Theme } from '@tysiac/game-logic';
 
 // Darkest color per theme — used for meta theme-color and iOS status bar
 export const THEME_COLORS: Record<Theme, string> = {

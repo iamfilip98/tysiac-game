@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { cn, getCardDescription } from '@/lib/utils';
 import { getSuitSymbol, getSuitColor } from '@tysiac/shared';
 import { useIsMobile } from '@/hooks/useIsMobile';
-import { usePreferencesStore } from '@/stores/preferencesStore';
+import { usePreferencesStore } from '@tysiac/game-logic';
 import type { Card as CardType } from '@tysiac/shared';
 
 interface CardProps {

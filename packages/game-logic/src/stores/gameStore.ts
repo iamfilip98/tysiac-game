@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { ClientGameState, ValidAction, Card, Suit, RoundResult, GameStatistics } from '@tysiac/shared';
 
-interface GameState {
+export interface GameState {
   gameState: ClientGameState | null;
   validActions: ValidAction[];
   selectedCard: Card | null;

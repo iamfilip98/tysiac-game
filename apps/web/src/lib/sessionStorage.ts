@@ -1,13 +1,9 @@
+import type { StoredSession } from '@tysiac/game-logic';
+
+export type { StoredSession } from '@tysiac/game-logic';
+
 const SESSION_KEY = 'tysiac_session';
 const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
-
-export interface StoredSession {
-  playerId: string;
-  roomId: string;
-  sessionToken: string;
-  playerName: string;
-  timestamp: number;
-}
 
 export function saveSession(session: Omit<StoredSession, 'timestamp'>): void {
   try {

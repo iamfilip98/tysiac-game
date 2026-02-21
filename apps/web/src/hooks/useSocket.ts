@@ -2,8 +2,7 @@
 
 import { useEffect, useCallback, useRef } from 'react';
 import { getSocket, connectSocket, startKeepAlive, stopKeepAlive, startVisibilityHandler, TypedSocket } from '@/lib/socket';
-import { useRoomStore } from '@/stores/roomStore';
-import { useGameStore } from '@/stores/gameStore';
+import { useRoomStore, useGameStore } from '@tysiac/game-logic';
 import { saveSession, loadSession, clearSession, updateSessionTimestamp } from '@/lib/sessionStorage';
 import { soundManager } from '@/lib/sounds';
 import type { Card, Suit } from '@tysiac/shared';

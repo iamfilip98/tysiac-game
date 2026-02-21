@@ -26,6 +26,9 @@ jobs:
       - name: Build shared package
         run: pnpm --filter @tysiac/shared build
 
+      - name: Build game-logic package
+        run: pnpm --filter @tysiac/game-logic build
+
       - name: Type-check server
         run: pnpm --filter @tysiac/server exec tsc --noEmit
 
@@ -53,6 +56,9 @@ jobs:
 
       - name: Build shared package
         run: pnpm --filter @tysiac/shared build
+
+      - name: Build game-logic package
+        run: pnpm --filter @tysiac/game-logic build
 
       - name: Run server tests
         run: pnpm --filter @tysiac/server test

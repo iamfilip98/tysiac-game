@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import type { Room, RoomPlayer } from '@tysiac/shared';
 
-interface RoomState {
+export interface RoomState {
   room: Room | null;
   playerId: string | null;
   isConnected: boolean;
