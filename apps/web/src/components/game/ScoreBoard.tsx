@@ -76,16 +76,16 @@ export const ScoreBoard = memo(function ScoreBoard({
     <div className={cn(
       "bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md border border-white/[0.08] rounded-xl w-[220px] sm:w-[280px]",
       isFourPlayer ? "p-2" : "p-4"
-    )} style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}>
+    )} style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 4px 12px rgba(0,0,0,0.3)' }}>
       {/* Header */}
       <div className={cn(
         "flex items-center justify-between border-b border-white/[0.08]",
         isFourPlayer ? "mb-1.5 pb-1" : "mb-3 pb-2"
       )}>
-        <h3 className="text-sm font-semibold text-white/80">Scores</h3>
+        <h3 className="text-[13px] font-semibold text-white/90 tracking-wide" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>Scores</h3>
         {trumpSuit && (
           <div className="flex items-center gap-1 text-sm">
-            <span className="text-white/60 text-xs">Trump:</span>
+            <span className="text-white/60 text-xs tracking-wide">Trump:</span>
             <span
               className="text-base w-4 text-center"
               style={trumpSuit === 'hearts' || trumpSuit === 'diamonds'
@@ -158,9 +158,10 @@ export const ScoreBoard = memo(function ScoreBoard({
                 <span
                   className={cn(
                     'font-medium overflow-hidden text-ellipsis whitespace-nowrap min-w-0',
-                    isFourPlayer ? 'text-[11px] sm:text-sm' : 'text-sm',
-                    isMe ? 'text-gold-400' : 'text-white'
+                    isFourPlayer ? 'text-[11px] sm:text-[13px]' : 'text-[13px]',
+                    isMe ? 'text-gold-400' : 'text-white/95'
                   )}
+                  style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}
                   title={player.name}
                 >
                   {player.name}
@@ -168,7 +169,7 @@ export const ScoreBoard = memo(function ScoreBoard({
 
                 {/* Bid indicator */}
                 {isBidder && finalBid && (
-                  <span className="px-1.5 py-0.5 text-xs bg-gold-500/20 text-gold-400 rounded">
+                  <span className="px-1.5 py-0.5 text-xs font-medium bg-gold-500/20 text-gold-400 rounded" style={{ textShadow: '0 0 6px rgba(251,191,36,0.3)' }}>
                     {finalBid}
                   </span>
                 )}
@@ -234,13 +235,14 @@ export const ScoreBoard = memo(function ScoreBoard({
                 )}
                 <span
                   className={cn(
-                    'font-mono font-bold',
+                    'font-mono font-bold text-[13px]',
                     score?.totalScore >= 800
                       ? 'text-amber-400'
                       : score?.totalScore < 0
                       ? 'text-red-400'
                       : 'text-white'
                   )}
+                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}
                 >
                   {score?.totalScore ?? 0}
                 </span>
@@ -253,9 +255,9 @@ export const ScoreBoard = memo(function ScoreBoard({
       {/* Round info */}
       {roundNumber && (
         <div className={cn(
-          "border-t border-white/[0.08] flex items-center justify-center gap-2 text-xs text-white/60",
+          "border-t border-white/[0.08] flex items-center justify-center gap-2 text-xs text-white/65 tracking-wide",
           isFourPlayer ? "mt-1.5 pt-1" : "mt-3 pt-2"
-        )}>
+        )} style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>
           <span>Round {roundNumber}</span>
           {phase === 'trickPlaying' && completedTricks !== undefined && (
             <>

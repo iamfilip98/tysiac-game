@@ -270,10 +270,10 @@ export function GameBoard() {
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-2 sm:left-4 z-30 flex gap-1 sm:gap-2">
         <button
           onClick={() => setShowLeaveModal(true)}
-          className="btn-toolbar min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-sm transition-colors flex items-center gap-1.5"
+          className="btn-toolbar min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center gap-1.5"
           title="Leave game"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M15 21h4a2 2 0 002-2V5a2 2 0 00-2-2h-4" />
             <polyline points="8 17 3 12 8 7" />
             <line x1="3" y1="12" x2="15" y2="12" />
@@ -283,10 +283,10 @@ export function GameBoard() {
         {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
           <button
             onClick={pauseGame}
-            className="btn-toolbar btn-toolbar-gold min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-gold-400 text-sm transition-colors flex items-center gap-1.5"
+            className="btn-toolbar btn-toolbar-gold min-w-[36px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-gold-400 text-[13px] font-medium tracking-wide transition-colors flex items-center gap-1.5"
             title="Pause game"
           >
-            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+            <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
               <rect x="6" y="4" width="4" height="16" rx="1" />
               <rect x="14" y="4" width="4" height="16" rx="1" />
             </svg>
