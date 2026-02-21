@@ -1,4 +1,4 @@
-import { db, playerStats, gameScores } from '../db/index.js';
+import { db, playerStats, players, gameScores } from '../db/index.js';
 import { eq, sql } from 'drizzle-orm';
 
 interface PlayerStatsCache {
@@ -65,8 +65,8 @@ export async function updateStatsAfterGame(
   roundScores: Record<string, number[]>
 ): Promise<void> {
   for (const result of results) {
-    // Only track stats for registered users (user-* prefix)
-    if (!result.playerId.startsWith('user-')) continue;
+    // Only track stats for registered users (Clerk user_* prefix)
+    if (!result.playerId.startsWith('user_')) continue;
 
     let stats = statsCache.get(result.playerId);
     if (!stats) {
@@ -140,5 +140,44 @@ export async function updateStatsAfterGame(
           console.error(`[Stats] Failed to persist game score for ${result.playerId}:`, error);
         });
     }
+  }
+}
+
+/**
+ * Ensure a Clerk user has a player + playerStats row in the database.
+ * Called fire-and-forget on socket connection for authenticated users.
+ */
+export async function ensureClerkPlayer(clerkUserId: string): Promise<void> {
+  if (!db) return;
+
+  try {
+    // Check if player already exists
+    const existing = await db.select({ id: players.id })
+      .from(players)
+      .where(eq(players.clerkId, clerkUserId))
+      .limit(1);
+
+    if (existing.length > 0) return;
+
+    // Create player row (use clerkUserId as the player ID for consistency)
+    const now = new Date();
+    await db.insert(players).values({
+      id: clerkUserId,
+      name: clerkUserId, // Will be overridden by display name from client
+      clerkId: clerkUserId,
+      isRegistered: true,
+      createdAt: now,
+      lastSeen: now,
+    }).onConflictDoNothing();
+
+    // Create empty stats row
+    await db.insert(playerStats).values({
+      playerId: clerkUserId,
+      updatedAt: now,
+    }).onConflictDoNothing();
+
+    console.log(`[Stats] Created player + stats for Clerk user ${clerkUserId}`);
+  } catch (error) {
+    console.error(`[Stats] Failed to ensure Clerk player ${clerkUserId}:`, error);
   }
 }

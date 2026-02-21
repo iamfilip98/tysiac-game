@@ -9,15 +9,15 @@ import * as debugService from './services/debugService.js';
 import * as gameService from './services/gameService.js';
 import * as roomService from './services/roomService.js';
 import { initializeSessions, startSessionCleanup, stopSessionCleanup } from './security/session.js';
-import { initializeAuth, startAuthCleanup, stopAuthCleanup, registerPlayer, loginPlayer, invalidateAuthToken, validateAuthToken, getPlayerProfile, RegisterSchema, LoginSchema } from './security/auth.js';
-import { checkAuthRateLimit } from './security/rateLimit.js';
-import { initializeStats } from './services/statsService.js';
+import { initializeStats, getStats } from './services/statsService.js';
+import { verifyToken } from '@clerk/backend';
 import { initPersistence, loadActiveGames, flushAllGames } from './services/persistenceService.js';
 
 const PORT = parseInt(process.env.PORT || '3001', 10);
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 const DEBUG_API_KEY = process.env.DEBUG_API_KEY || '';
 const DEBUG_ENABLED = DEBUG_API_KEY.length > 0;
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY || '';
 
 // Parse comma-separated CORS origins into array (or single string)
 function parseCorsOrigin(origin: string): string | string[] {
@@ -184,105 +184,47 @@ async function main() {
     }
   });
 
-  // --- Auth API endpoints ---
+  // --- Stats API endpoint ---
 
-  // Helper to extract client IP from request
-  const getClientIP = (request: { headers: Record<string, string | string[] | undefined>; ip: string }) => {
-    const forwarded = request.headers['x-forwarded-for'];
-    return forwarded ? String(forwarded).split(',')[0].trim() : request.ip;
-  };
-
-  fastify.post('/auth/register', async (request, reply) => {
-    const ip = getClientIP(request);
-    const { allowed, retryAfter } = checkAuthRateLimit(ip);
-    if (!allowed) {
-      reply.code(429);
-      return { error: `Too many requests. Try again in ${Math.ceil((retryAfter || 1000) / 1000)} seconds` };
-    }
-
-    try {
-      const parsed = RegisterSchema.safeParse(request.body);
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: parsed.error.issues[0]?.message || 'Invalid input' };
-      }
-
-      const { email, password, displayName } = parsed.data;
-      const result = await registerPlayer(email, password, displayName);
-      return result;
-    } catch (error) {
-      const message = (error as Error).message;
-      if (message === 'Email already registered') {
-        reply.code(409);
-        return { error: message };
-      }
-      reply.code(500);
-      return { error: 'Registration failed' };
-    }
-  });
-
-  fastify.post('/auth/login', async (request, reply) => {
-    const ip = getClientIP(request);
-    const { allowed, retryAfter } = checkAuthRateLimit(ip);
-    if (!allowed) {
-      reply.code(429);
-      return { error: `Too many requests. Try again in ${Math.ceil((retryAfter || 1000) / 1000)} seconds` };
-    }
-
-    try {
-      const parsed = LoginSchema.safeParse(request.body);
-      if (!parsed.success) {
-        reply.code(400);
-        return { error: 'Invalid input' };
-      }
-
-      const { email, password } = parsed.data;
-      const result = await loginPlayer(email, password);
-      return result;
-    } catch (error) {
-      const message = (error as Error).message;
-      if (message === 'Invalid email or password') {
-        reply.code(401);
-        return { error: message };
-      }
-      reply.code(500);
-      return { error: 'Login failed' };
-    }
-  });
-
-  fastify.post('/auth/logout', async (request, reply) => {
+  fastify.get('/stats/me', async (request, reply) => {
     const authHeader = request.headers.authorization;
     if (!authHeader?.startsWith('Bearer ')) {
       reply.code(401);
       return { error: 'No token provided' };
     }
 
-    const token = authHeader.slice(7);
-    await invalidateAuthToken(token);
-    return { success: true };
-  });
-
-  fastify.get('/auth/me', async (request, reply) => {
-    const authHeader = request.headers.authorization;
-    if (!authHeader?.startsWith('Bearer ')) {
-      reply.code(401);
-      return { error: 'No token provided' };
+    if (!CLERK_SECRET_KEY) {
+      reply.code(500);
+      return { error: 'Auth not configured' };
     }
 
     const token = authHeader.slice(7);
-    const validated = validateAuthToken(token);
-    if (!validated) {
+    let clerkUserId: string;
+    try {
+      const decoded = await verifyToken(token, { secretKey: CLERK_SECRET_KEY });
+      clerkUserId = decoded.sub;
+    } catch {
       reply.code(401);
       return { error: 'Invalid or expired token' };
     }
 
-    const profile = await getPlayerProfile(validated.playerId);
-    if (!profile) {
-      reply.code(404);
-      return { error: 'Player not found' };
+    const stats = getStats(clerkUserId);
+    if (!stats) {
+      // No stats yet — return defaults
+      return {
+        gamesPlayed: 0, gamesWon: 0, gamesLost: 0, winRate: 0,
+        totalBidsWon: 0, totalBidsFailed: 0, totalMarriages: 0,
+        highestGameScore: 0, currentWinStreak: 0, longestWinStreak: 0,
+        rating: 1000,
+      };
     }
 
-    return profile;
+    return {
+      ...stats,
+      winRate: stats.gamesPlayed > 0
+        ? Math.round((stats.gamesWon / stats.gamesPlayed) * 100)
+        : 0,
+    };
   });
 
   // Create HTTP server
@@ -319,7 +261,6 @@ async function main() {
     forceExit.unref();
 
     stopSessionCleanup();
-    stopAuthCleanup();
     debugService.stopPeriodicCleanup();
 
     // 1. HIGHEST PRIORITY: Sync engine state + flush games to DB
@@ -394,16 +335,11 @@ async function main() {
     startSessionCleanup(); // Still start cleanup for in-memory sessions
   });
 
-  // Initialize auth system (tokens, tables)
-  initializeAuth().then(() => {
-    console.log('Auth system initialized');
-    startAuthCleanup();
-    // Load stats after auth tables are ready
-    return initializeStats();
-  }).then(() => {
+  // Initialize stats service
+  initializeStats().then(() => {
     console.log('Stats service initialized');
   }).catch((err) => {
-    console.error('Failed to initialize auth/stats (continuing without):', err);
+    console.error('Failed to initialize stats (continuing without):', err);
   });
 
   // Restore active games from database

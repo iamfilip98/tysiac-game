@@ -1,9 +1,13 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { ClerkProvider } from '@clerk/nextjs';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
 import './globals.css';
+
+// Force dynamic rendering — ClerkProvider needs env vars at runtime
+export const dynamic = 'force-dynamic';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -50,15 +54,17 @@ export default function RootLayout({
         />
       </head>
       <body className={`${inter.variable} font-sans h-full overflow-hidden`}>
-        <ErrorBoundary>
-          <ToastProvider>
-            <ThemeProvider>
-              <div className="felt-texture h-full overflow-auto">
-                {children}
-              </div>
-            </ThemeProvider>
-          </ToastProvider>
-        </ErrorBoundary>
+        <ClerkProvider>
+          <ErrorBoundary>
+            <ToastProvider>
+              <ThemeProvider>
+                <div className="felt-texture h-full overflow-auto">
+                  {children}
+                </div>
+              </ThemeProvider>
+            </ToastProvider>
+          </ErrorBoundary>
+        </ClerkProvider>
       </body>
     </html>
   );

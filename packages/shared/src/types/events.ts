@@ -24,13 +24,6 @@ export interface RoomPlayer {
   isRegistered?: boolean;
 }
 
-// Auth types
-export interface AuthResponse {
-  playerId: string;
-  authToken: string;
-  displayName: string;
-}
-
 export interface PlayerStatsPublic {
   gamesPlayed: number;
   gamesWon: number;

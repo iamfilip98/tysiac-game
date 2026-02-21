@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
 import { CreateRoomForm } from '@/components/lobby/CreateRoomForm';
 import { RoomBrowser } from '@/components/lobby/RoomBrowser';
@@ -12,32 +13,52 @@ import { SettingsDropdown } from '@/components/game/SettingsDropdown';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { UserBadge } from '@/components/auth/UserBadge';
 import { useSocket } from '@/hooks/useSocket';
-import { useAuth } from '@/hooks/useAuth';
 import { useRoomStore, useGameStore } from '@tysiac/game-logic';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
+import type { PlayerStatsPublic } from '@tysiac/shared';
 
 function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   const [tab, setTab] = useState<'create' | 'join'>(roomCodeFromUrl ? 'join' : 'create');
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
+  const [authStats, setAuthStats] = useState<PlayerStatsPublic | null>(null);
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
   const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms } = useRoomStore();
 
-  const {
-    isAuthenticated,
-    displayName: authDisplayName,
-    stats: authStats,
-    isLoading: authLoading,
-    error: authError,
-    register,
-    login,
-    logout,
-  } = useAuth();
+  const { isSignedIn, getToken } = useAuth();
+  const { user } = useUser();
+  const { signOut } = useClerk();
+
+  const isAuthenticated = !!isSignedIn;
+  const authDisplayName = user?.firstName || user?.username || null;
+
+  // Fetch stats from server when signed in
+  useEffect(() => {
+    if (!isSignedIn) {
+      setAuthStats(null);
+      return;
+    }
+    const fetchStats = async () => {
+      try {
+        const token = await getToken();
+        if (!token) return;
+        const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
+        const res = await fetch(`${API_URL}/stats/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAuthStats(data);
+        }
+      } catch { /* stats fetch not critical */ }
+    };
+    fetchStats();
+  }, [isSignedIn, getToken]);
 
   // Clean up URL after reading room code (removes ?room= from URL)
   useEffect(() => {
@@ -109,7 +130,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           <UserBadge
             displayName={authDisplayName}
             stats={authStats}
-            onLogout={logout}
+            onLogout={() => signOut()}
           />
         )}
         <SettingsDropdown />
@@ -177,11 +198,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           transition={{ delay: 0.2 }}
         >
           <AuthGate
-            onLogin={login}
-            onRegister={register}
             onPlayAsGuest={() => setIsGuest(true)}
-            isLoading={authLoading}
-            error={authError}
           />
         </motion.div>
       ) : (

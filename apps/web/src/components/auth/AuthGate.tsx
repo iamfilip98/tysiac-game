@@ -2,19 +2,14 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LoginForm } from './LoginForm';
-import { RegisterForm } from './RegisterForm';
+import { SignIn, SignUp } from '@clerk/nextjs';
 import { Button } from '@/components/ui/Button';
 
 interface AuthGateProps {
-  onLogin: (email: string, password: string) => Promise<void>;
-  onRegister: (email: string, password: string, displayName: string) => Promise<void>;
   onPlayAsGuest: () => void;
-  isLoading: boolean;
-  error: string | null;
 }
 
-export function AuthGate({ onLogin, onRegister, onPlayAsGuest, isLoading, error }: AuthGateProps) {
+export function AuthGate({ onPlayAsGuest }: AuthGateProps) {
   const [mode, setMode] = useState<'choice' | 'login' | 'register'>('choice');
 
   if (mode === 'login') {
@@ -24,26 +19,34 @@ export function AuthGate({ onLogin, onRegister, onPlayAsGuest, isLoading, error 
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
-        <div className="rounded-xl border border-gold-500/20 shadow-glow-gold">
-          <div
-            className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl"
-            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
-          >
-            <h2 className="text-xl font-bold text-white mb-4">Log In</h2>
-            <LoginForm
-              onLogin={onLogin}
-              onSwitchToRegister={() => setMode('register')}
-              isLoading={isLoading}
-              error={error}
-            />
-            <button
-              onClick={() => setMode('choice')}
-              className="mt-3 w-full text-center text-sm text-white/40 hover:text-white/60"
-            >
-              Back
-            </button>
-          </div>
-        </div>
+        <SignIn
+          routing="hash"
+          appearance={{
+            elements: {
+              rootBox: 'w-full',
+              card: 'bg-transparent shadow-none border-0 p-0',
+              headerTitle: 'text-white',
+              headerSubtitle: 'text-white/60',
+              formFieldLabel: 'text-white/80',
+              formFieldInput: 'bg-white/10 border-white/20 text-white placeholder:text-white/40',
+              formButtonPrimary: 'bg-gold-500 hover:bg-gold-600 text-black font-semibold',
+              footerActionLink: 'text-gold-400 hover:text-gold-300',
+              identityPreviewEditButton: 'text-gold-400',
+              formFieldAction: 'text-gold-400',
+              footerAction: 'text-white/50',
+              dividerLine: 'bg-white/10',
+              dividerText: 'text-white/40',
+              socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20',
+              socialButtonsBlockButtonText: 'text-white',
+            },
+          }}
+        />
+        <button
+          onClick={() => setMode('choice')}
+          className="mt-3 w-full text-center text-sm text-white/40 hover:text-white/60"
+        >
+          Back
+        </button>
       </motion.div>
     );
   }
@@ -55,26 +58,34 @@ export function AuthGate({ onLogin, onRegister, onPlayAsGuest, isLoading, error 
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-sm"
       >
-        <div className="rounded-xl border border-gold-500/20 shadow-glow-gold">
-          <div
-            className="bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6 rounded-xl"
-            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
-          >
-            <h2 className="text-xl font-bold text-white mb-4">Create Account</h2>
-            <RegisterForm
-              onRegister={onRegister}
-              onSwitchToLogin={() => setMode('login')}
-              isLoading={isLoading}
-              error={error}
-            />
-            <button
-              onClick={() => setMode('choice')}
-              className="mt-3 w-full text-center text-sm text-white/40 hover:text-white/60"
-            >
-              Back
-            </button>
-          </div>
-        </div>
+        <SignUp
+          routing="hash"
+          appearance={{
+            elements: {
+              rootBox: 'w-full',
+              card: 'bg-transparent shadow-none border-0 p-0',
+              headerTitle: 'text-white',
+              headerSubtitle: 'text-white/60',
+              formFieldLabel: 'text-white/80',
+              formFieldInput: 'bg-white/10 border-white/20 text-white placeholder:text-white/40',
+              formButtonPrimary: 'bg-gold-500 hover:bg-gold-600 text-black font-semibold',
+              footerActionLink: 'text-gold-400 hover:text-gold-300',
+              identityPreviewEditButton: 'text-gold-400',
+              formFieldAction: 'text-gold-400',
+              footerAction: 'text-white/50',
+              dividerLine: 'bg-white/10',
+              dividerText: 'text-white/40',
+              socialButtonsBlockButton: 'bg-white/10 border-white/20 text-white hover:bg-white/20',
+              socialButtonsBlockButtonText: 'text-white',
+            },
+          }}
+        />
+        <button
+          onClick={() => setMode('choice')}
+          className="mt-3 w-full text-center text-sm text-white/40 hover:text-white/60"
+        >
+          Back
+        </button>
       </motion.div>
     );
   }

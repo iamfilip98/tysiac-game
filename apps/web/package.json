@@ -11,6 +11,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.38.1",
     "@tysiac/game-logic": "workspace:*",
     "@tysiac/shared": "workspace:*",
     "clsx": "^2.1.0",

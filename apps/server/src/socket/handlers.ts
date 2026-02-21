@@ -5,7 +5,8 @@ import * as debugService from '../services/debugService.js';
 import { GameEngine } from '../game/engine.js';
 import { checkRateLimit, trackIPConnection } from '../security/rateLimit.js';
 import { invalidatePlayerSession } from '../security/session.js';
-import { validateAuthToken } from '../security/auth.js';
+import { verifyToken } from '@clerk/backend';
+import { ensureClerkPlayer } from '../services/statsService.js';
 import { removePersistedGame } from '../services/persistenceService.js';
 import { registerRoomHandlers } from './roomHandlers.js';
 import { registerGameHandlers } from './gameHandlers.js';
@@ -217,8 +218,10 @@ export function syncAllEnginesForShutdown(): void {
   console.log(`[Shutdown] Synced ${gameEngines.size} engine(s)`);
 }
 
+const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY || '';
+
 export function setupSocketHandlers(io: TypedServer) {
-  io.on('connection', (socket: TypedSocket) => {
+  io.on('connection', async (socket: TypedSocket) => {
     // IP connection limiting
     const clientIP = socket.handshake.headers['x-forwarded-for']
       ? String(socket.handshake.headers['x-forwarded-for']).split(',')[0].trim()
@@ -232,14 +235,16 @@ export function setupSocketHandlers(io: TypedServer) {
     }
     socketToIP.set(socket.id, clientIP);
 
-    // Resolve authenticated player from auth token (if provided)
+    // Resolve authenticated player from Clerk JWT (if provided)
     let authenticatedPlayerId: string | null = null;
     const authToken = socket.handshake.auth?.token as string | undefined;
-    if (authToken) {
-      const validated = validateAuthToken(authToken);
-      if (validated) {
-        authenticatedPlayerId = validated.playerId;
-      }
+    if (authToken && CLERK_SECRET_KEY) {
+      try {
+        const decoded = await verifyToken(authToken, { secretKey: CLERK_SECRET_KEY });
+        authenticatedPlayerId = decoded.sub; // Clerk user ID like "user_2xABC..."
+        // Fire-and-forget: ensure player + stats rows exist
+        ensureClerkPlayer(decoded.sub).catch(() => {});
+      } catch { /* guest — no auth */ }
     }
 
     // Send current room list to newly connected client

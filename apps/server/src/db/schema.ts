@@ -5,7 +5,7 @@ export const players = pgTable('players', {
   id: text('id').primaryKey(),
   name: text('name').notNull(),
   email: text('email').unique(),
-  passwordHash: text('password_hash'),
+  clerkId: text('clerk_id').unique(),
   isRegistered: boolean('is_registered').default(false).notNull(),
   createdAt: timestamp('created_at').defaultNow().notNull(),
   lastSeen: timestamp('last_seen').defaultNow().notNull(),
@@ -72,15 +72,6 @@ export const rounds = pgTable('rounds', {
   createdAt: timestamp('created_at').defaultNow().notNull(),
 });
 
-// Auth tokens table - persistent login tokens for registered users
-export const authTokens = pgTable('auth_tokens', {
-  token: text('token').primaryKey(),
-  playerId: text('player_id').references(() => players.id, { onDelete: 'cascade' }).notNull(),
-  createdAt: timestamp('created_at').defaultNow().notNull(),
-  lastActivity: timestamp('last_activity').defaultNow().notNull(),
-  expiresAt: timestamp('expires_at').notNull(),
-});
-
 // Player stats table - cumulative stats for registered players
 export const playerStats = pgTable('player_stats', {
   playerId: text('player_id').primaryKey().references(() => players.id, { onDelete: 'cascade' }),
@@ -136,5 +127,4 @@ export type DebugLog = typeof debugLogs.$inferSelect;
 export type NewDebugLog = typeof debugLogs.$inferInsert;
 export type Session = typeof sessions.$inferSelect;
 export type NewSession = typeof sessions.$inferInsert;
-export type AuthToken = typeof authTokens.$inferSelect;
 export type PlayerStats = typeof playerStats.$inferSelect;
