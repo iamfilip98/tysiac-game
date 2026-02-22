@@ -23,8 +23,86 @@ interface GameResult {
   marriages: number;
 }
 
+interface EloInput {
+  playerId: string;
+  rating: number;
+  gamesPlayed: number;
+  finalScore: number;
+  isWinner: boolean;
+  bidsWon: number;
+  bidsFailed: number;
+  marriages: number;
+}
+
 // In-memory cache for registered player stats
 const statsCache = new Map<string, PlayerStatsCache>();
+
+function getKFactor(gamesPlayed: number): number {
+  if (gamesPlayed < 30) return 40;
+  if (gamesPlayed < 100) return 25;
+  return 16;
+}
+
+function expectedScore(ratingA: number, ratingB: number): number {
+  return 1 / (1 + Math.pow(10, (ratingB - ratingA) / 400));
+}
+
+function calculatePerformanceMultiplier(result: EloInput, allResults: EloInput[]): number {
+  const totalBids = result.bidsWon + result.bidsFailed;
+  const bidSuccessBonus = totalBids > 0 ? (result.bidsWon / totalBids) * 0.2 : 0;
+  const marriageBonus = Math.min(0.1, result.marriages * 0.025);
+
+  let marginBonus = 0;
+  if (result.isWinner) {
+    const otherScores = allResults
+      .filter(r => r.playerId !== result.playerId)
+      .map(r => r.finalScore);
+    const bestLoser = Math.max(...otherScores);
+    const margin = result.finalScore - bestLoser;
+    marginBonus = Math.min(0.3, margin / 1000);
+  }
+
+  return 1.0 + marginBonus + bidSuccessBonus + marriageBonus;
+}
+
+export function calculateEloChanges(inputs: EloInput[]): Map<string, number> {
+  const changes = new Map<string, number>();
+
+  for (const player of inputs) {
+    const opponents = inputs.filter(p => p.playerId !== player.playerId);
+    const K = getKFactor(player.gamesPlayed);
+
+    let totalExpected = 0;
+    let totalActual = 0;
+
+    for (const opp of opponents) {
+      totalExpected += expectedScore(player.rating, opp.rating);
+      if (player.finalScore > opp.finalScore) {
+        totalActual += 1.0;
+      } else if (player.finalScore === opp.finalScore) {
+        totalActual += 0.5;
+      }
+    }
+
+    // Normalize over number of opponents
+    totalExpected /= opponents.length;
+    totalActual /= opponents.length;
+
+    const baseChange = K * (totalActual - totalExpected);
+    const multiplier = calculatePerformanceMultiplier(player, inputs);
+
+    let finalChange: number;
+    if (baseChange >= 0) {
+      finalChange = baseChange * multiplier;
+    } else {
+      finalChange = baseChange / multiplier;
+    }
+
+    changes.set(player.playerId, Math.round(finalChange));
+  }
+
+  return changes;
+}
 
 export async function initializeStats(): Promise<void> {
   if (!db) {
@@ -93,13 +171,40 @@ export async function updateStatsAfterGame(
       if (stats.currentWinStreak > stats.longestWinStreak) {
         stats.longestWinStreak = stats.currentWinStreak;
       }
-      stats.rating += 25;
     } else {
       stats.gamesLost++;
       stats.currentWinStreak = 0;
-      stats.rating = Math.max(100, stats.rating - 15);
     }
 
+    statsCache.set(result.playerId, stats);
+  }
+
+  // Calculate Elo changes for all players (including AI for pairwise)
+  const eloInputs: EloInput[] = results.map(result => {
+    const isAI = result.playerId.startsWith('ai-');
+    const cached = statsCache.get(result.playerId);
+    return {
+      playerId: result.playerId,
+      rating: isAI ? 1000 : (cached?.rating ?? 1000),
+      gamesPlayed: isAI ? 100 : (cached?.gamesPlayed ?? 0),
+      finalScore: result.finalScore,
+      isWinner: result.isWinner,
+      bidsWon: result.bidsWon,
+      bidsFailed: result.bidsFailed,
+      marriages: result.marriages,
+    };
+  });
+
+  const eloChanges = calculateEloChanges(eloInputs);
+
+  // Apply Elo changes only to registered (Clerk) users
+  for (const result of results) {
+    if (!result.playerId.startsWith('user_')) continue;
+    const stats = statsCache.get(result.playerId);
+    if (!stats) continue;
+
+    const change = eloChanges.get(result.playerId) ?? 0;
+    stats.rating = Math.max(100, stats.rating + change);
     statsCache.set(result.playerId, stats);
 
     // Persist to database (fire-and-forget)
