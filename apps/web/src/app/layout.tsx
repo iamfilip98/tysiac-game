@@ -53,7 +53,7 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className={`${inter.variable} font-sans h-full overflow-hidden`}>
+      <body className={`${inter.variable} font-sans overflow-hidden`}>
         <ClerkProvider>
           <ErrorBoundary>
             <ToastProvider>

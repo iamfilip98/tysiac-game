@@ -41,6 +41,13 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const isAuthenticated = !!isSignedIn;
   const authDisplayName = user?.firstName || user?.username || null;
 
+  // Close profile modal when auth state changes (e.g., unexpected logout in web clips)
+  useEffect(() => {
+    if (!isAuthenticated && !isGuest) {
+      setShowProfile(false);
+    }
+  }, [isAuthenticated, isGuest]);
+
   // Fetch stats from server when signed in
   useEffect(() => {
     if (!isSignedIn) {
