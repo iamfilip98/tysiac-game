@@ -128,7 +128,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   const tabs = [
     { key: 'quick' as const, label: 'Quick Play' },
-    { key: 'create' as const, label: 'Create Room' },
+    { key: 'create' as const, label: 'Create' },
     { key: 'join' as const, label: 'Browse' },
   ];
 
@@ -285,17 +285,18 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
                     key={t.key}
                     onClick={() => setTab(t.key)}
                     className={cn(
-                      'relative flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all z-10',
+                      'relative flex-1 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap transition-colors z-10',
                       tab === t.key
                         ? 'text-white font-semibold'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                        : 'text-white/60 hover:text-white'
                     )}
                   >
                     {t.label}
                     {tab === t.key && (
                       <motion.div
                         layoutId="tab-indicator"
-                        className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                        className="absolute inset-0 rounded-md bg-white/10"
+                        transition={{ type: 'spring', bounce: 0.15, duration: 0.4 }}
                       />
                     )}
                   </button>
@@ -306,7 +307,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
               <div className="grid grid-cols-1 grid-rows-1">
                 {/* Quick Play */}
                 <div className={cn(
-                  'col-start-1 row-start-1 transition-opacity duration-150',
+                  'col-start-1 row-start-1',
                   tab === 'quick' ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 )}>
                   <QuickPlayButton
@@ -320,7 +321,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
                 </div>
                 {/* Create Room */}
                 <div className={cn(
-                  'col-start-1 row-start-1 transition-opacity duration-150',
+                  'col-start-1 row-start-1',
                   tab === 'create' ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 )}>
                   <CreateRoomForm
@@ -332,7 +333,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
                 </div>
                 {/* Browse Rooms */}
                 <div className={cn(
-                  'col-start-1 row-start-1 transition-opacity duration-150',
+                  'col-start-1 row-start-1',
                   tab === 'join' ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 )}>
                   <RoomBrowser
