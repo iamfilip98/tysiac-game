@@ -123,7 +123,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const showAuthGate = !isAuthenticated && !isGuest;
 
   return (
-    <main className="h-full flex flex-col items-center justify-center p-4 overflow-auto relative">
+    <main className="h-full flex flex-col items-center p-4 overflow-auto relative">
       {/* Ambient particles */}
       <AmbientParticles count={10} />
 
@@ -150,6 +150,9 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         ) : null}
         <SettingsDropdown />
       </div>
+
+      {/* Wrapper for safe vertical centering (my-auto avoids justify-center scroll clipping) */}
+      <div className="my-auto flex flex-col items-center w-full py-4">
 
       {/* Logo / Title */}
       <motion.div
@@ -375,6 +378,8 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           </motion.button>
         </>
       )}
+
+      </div>{/* end safe-center wrapper */}
 
       {/* Full Rules Modal */}
       <RulesModal isOpen={showRulesModal} onClose={() => setShowRulesModal(false)} />
