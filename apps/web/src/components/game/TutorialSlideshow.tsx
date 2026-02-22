@@ -44,7 +44,7 @@ function SlideValues({ cardSize }: { cardSize: 'xs' | 'sm' }) {
     { points: '0 pts', ranks: ['9'] },
   ];
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       {groups.map((g) => (
         <div key={g.points} className="flex items-center gap-3 justify-center">
           <div className="flex gap-1">
@@ -61,7 +61,7 @@ function SlideValues({ cardSize }: { cardSize: 'xs' | 'sm' }) {
           <span className="text-gold-400 font-semibold text-sm w-14">{g.points}</span>
         </div>
       ))}
-      <p className="text-white/50 text-xs text-center mt-2">Total per round: 120 points</p>
+      <p className="text-white/50 text-xs text-center mt-1.5">Total per round: 120 points</p>
     </div>
   );
 }
@@ -143,9 +143,7 @@ function SlideBidding() {
             >
               {s.bid}
             </div>
-            {i < steps.length - 1 && (
-              <span className="text-white/30 text-xs">&#x2193;</span>
-            )}
+            <span className={cn('text-xs w-3', i < steps.length - 1 ? 'text-white/30' : 'invisible')}>&#x2193;</span>
           </div>
         ))}
       </div>
@@ -172,18 +170,18 @@ function SlideTalon({ cardSize }: { cardSize: 'xs' | 'sm' }) {
         <span className="text-lg">&#x2193;</span>
       </div>
       <div className="flex justify-center gap-8">
-        <div className="text-center">
+        <div className="flex flex-col items-center">
           <p className="text-white/60 text-xs mb-1.5">Give to Opp 1</p>
           <Card card={c('clubs', '9')} size={cardSize} isPlayable={false} skipEntryAnimation />
         </div>
-        <div className="text-center">
+        <div className="flex flex-col items-center">
           <p className="text-white/60 text-xs mb-1.5">Keep</p>
           <div className="flex gap-1">
             <Card card={c('hearts', 'Q')} size={cardSize} isPlayable={false} skipEntryAnimation />
             <Card card={c('diamonds', 'A')} size={cardSize} isPlayable={false} skipEntryAnimation />
           </div>
         </div>
-        <div className="text-center">
+        <div className="flex flex-col items-center">
           <p className="text-white/60 text-xs mb-1.5">Give to Opp 2</p>
           <Card card={c('clubs', '9')} size={cardSize} isPlayable={false} skipEntryAnimation />
         </div>
@@ -203,7 +201,7 @@ function SlideMarriages({ cardSize }: { cardSize: 'xs' | 'sm' }) {
     { suit: 'spades', value: MARRIAGE_VALUES.spades },
   ];
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pt-3">
       {marriages.map((m) => {
         const symbol = getSuitSymbol(m.suit);
         const color = getSuitColor(m.suit);
@@ -213,7 +211,10 @@ function SlideMarriages({ cardSize }: { cardSize: 'xs' | 'sm' }) {
               <Card card={c(m.suit, 'K')} size={cardSize} isPlayable={false} isMarriageCard skipEntryAnimation />
               <Card card={c(m.suit, 'Q')} size={cardSize} isPlayable={false} isMarriageCard skipEntryAnimation />
             </div>
-            <span className={cn('text-sm font-semibold', color === 'red' ? 'text-red-400' : 'text-white/80')}>
+            <span
+              className="text-sm font-semibold"
+              style={{ color: color === 'red' ? 'var(--card-red)' : 'rgba(255,255,255,0.8)' }}
+            >
               {symbol} {m.value} pts
             </span>
           </div>
@@ -285,15 +286,15 @@ function SlideScoring() {
         <p className="text-white/60 text-xs text-center">Progress to 1000</p>
         <div className="relative h-6 bg-white/10 rounded-full overflow-hidden">
           <div className="absolute inset-y-0 left-0 bg-gradient-to-r from-green-600 to-green-500 rounded-full" style={{ width: '65%' }} />
-          <div className="absolute inset-y-0 right-0 bg-red-500/20 rounded-r-full" style={{ width: '20%' }} />
-          <span className="absolute right-[21%] top-0 bottom-0 w-px bg-red-400/60" />
+          <div className="absolute inset-y-0 right-0 rounded-r-full" style={{ width: '20%', backgroundColor: 'color-mix(in srgb, var(--card-red) 20%, transparent)' }} />
+          <span className="absolute right-[21%] top-0 bottom-0 w-px" style={{ backgroundColor: 'color-mix(in srgb, var(--card-red) 60%, transparent)' }} />
           <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
             650 / 1000
           </span>
         </div>
         <div className="flex justify-between text-xs text-white/40 px-1">
           <span>0</span>
-          <span className="text-red-400/80">800 (Barrel)</span>
+          <span style={{ color: 'var(--card-red)', opacity: 0.8 }}>800 (Barrel)</span>
           <span>1000</span>
         </div>
       </div>

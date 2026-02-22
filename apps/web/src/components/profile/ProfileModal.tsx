@@ -22,7 +22,7 @@ const AVATAR_EMOJIS = [
   '\u2660', '\u2665', '\u2666', '\u2663', '\uD83D\uDC51', '\uD83C\uDFAF',
   '\uD83C\uDFB2', '\uD83C\uDCCF', '\uD83E\uDD8A', '\uD83D\uDC3A',
   '\uD83E\uDD81', '\uD83D\uDC3B', '\uD83E\uDD85', '\uD83D\uDC09',
-  '\u2B50', '\uD83D\uDD25',
+  '\u2B50',
 ];
 
 interface ProfileModalProps {
