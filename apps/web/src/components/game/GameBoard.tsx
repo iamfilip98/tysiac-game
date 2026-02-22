@@ -273,7 +273,7 @@ export function GameBoard() {
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden" style={{ height: '100dvh' }}>
+    <div className="relative h-full w-full overflow-hidden">
       {/* Background atmosphere */}
       <div className="absolute inset-0" style={{
         background: 'radial-gradient(ellipse 70% 50% at 50% 50%, rgb(var(--table-700) / 0.3) 0%, transparent 70%)',

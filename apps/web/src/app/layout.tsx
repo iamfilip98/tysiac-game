@@ -49,7 +49,7 @@ export default function RootLayout({
         <meta name="theme-color" content="#052e16" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var c={classic:'#052e16',dark:'#08080c',chocolate:'#1a0f07',midnight:'#070b18',burgundy:'#1a070c',purple:'#0f0719'};var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){var t=p.state.theme;document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m&&c[t])m.content=c[t];document.addEventListener('DOMContentLoaded',function(){if(c[t])document.body.style.backgroundColor=c[t]})}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off');if(p.state.cardStyle)document.documentElement.setAttribute('data-card-style',p.state.cardStyle)}}catch(e){}})()`,
+            __html: `(function(){try{var c={classic:'#052e16',dark:'#08080c',chocolate:'#1a0f07',midnight:'#070b18',burgundy:'#1a070c',purple:'#0f0719'};var p=JSON.parse(localStorage.getItem('tysiac-preferences'));if(p&&p.state){if(p.state.theme){var t=p.state.theme;document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m&&c[t])m.content=c[t];if(c[t])document.documentElement.style.backgroundColor=c[t];document.addEventListener('DOMContentLoaded',function(){if(c[t])document.body.style.backgroundColor=c[t]})}if(p.state.animationsEnabled===false)document.documentElement.setAttribute('data-animations','off');if(p.state.cardStyle)document.documentElement.setAttribute('data-card-style',p.state.cardStyle)}}catch(e){}})()`,
           }}
         />
       </head>
@@ -58,7 +58,7 @@ export default function RootLayout({
           <ErrorBoundary>
             <ToastProvider>
               <ThemeProvider>
-                <div className="felt-texture h-[100dvh] overflow-auto">
+                <div className="felt-texture h-full overflow-auto">
                   {children}
                 </div>
               </ThemeProvider>

@@ -29,8 +29,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       meta.setAttribute('content', color);
     }
 
-    // Force body background-color with felt-primary hex — iOS web clips sample this for the status bar.
-    // Must be a literal value (not CSS variable) for iOS to pick up dynamic changes.
+    // Force background-color with literal hex — iOS web clips sample this for the status bar.
+    // Set on both html and body to prevent any gaps on iOS safe areas.
+    document.documentElement.style.backgroundColor = color;
     document.body.style.backgroundColor = color;
   }, [theme]);
 
