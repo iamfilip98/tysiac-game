@@ -471,13 +471,19 @@ html,
 }
 
 .score-negative {
-  @apply text-red-400;
+  color: var(--card-red);
 }
 
 .score-barrel {
   @apply text-amber-400;
   animation: pulse 2s ease-in-out infinite;
 }
+
+/* Card-red utility classes — match --card-red across all themes */
+.text-card-red { color: var(--card-red); }
+.bg-card-red\/20 { background-color: color-mix(in srgb, var(--card-red) 20%, transparent); }
+.border-card-red\/30 { border-color: color-mix(in srgb, var(--card-red) 30%, transparent); }
+.border-card-red\/50 { border-color: color-mix(in srgb, var(--card-red) 50%, transparent); }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {

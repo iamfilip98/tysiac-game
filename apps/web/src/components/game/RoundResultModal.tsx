@@ -34,7 +34,7 @@ export function RoundResultModal({
             'p-4 rounded-lg mb-4',
             result.bidderMadeBid
               ? 'bg-gold-500/20 border border-gold-500/30'
-              : 'bg-red-500/20 border border-red-500/30'
+              : 'bg-card-red/20 border border-card-red/30'
           )}
         >
           <div className="flex items-center justify-between">
@@ -53,7 +53,7 @@ export function RoundResultModal({
             {result.bidderMadeBid ? (
               <span className="text-gold-400 font-medium">✓ Made the bid!</span>
             ) : (
-              <span className="text-red-400 font-medium">✗ Failed to make bid</span>
+              <span className="text-card-red font-medium">✗ Failed to make bid</span>
             )}
           </div>
         </div>
@@ -84,7 +84,7 @@ export function RoundResultModal({
                   <span
                     className={cn(
                       'font-bold',
-                      pr.scoreChange >= 0 ? 'text-gold-400' : 'text-red-400'
+                      pr.scoreChange >= 0 ? 'text-gold-400' : 'text-card-red'
                     )}
                   >
                     {pr.scoreChange >= 0 ? '+' : ''}

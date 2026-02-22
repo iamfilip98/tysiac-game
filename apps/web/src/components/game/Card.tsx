@@ -462,7 +462,8 @@ export function MiniCard({ card, className }: { card: CardType; className?: stri
 
   return (
     <span
-      className={cn('inline-flex items-center gap-0.5 font-mono text-sm', color === 'red' ? 'text-red-400' : 'text-white', className)}
+      className={cn('inline-flex items-center gap-0.5 font-mono text-sm', color === 'red' ? '' : 'text-white', className)}
+      style={color === 'red' ? { color: 'var(--card-red)' } : undefined}
       role="img"
       aria-label={description}
     >

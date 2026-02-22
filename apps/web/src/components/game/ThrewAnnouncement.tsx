@@ -44,10 +44,10 @@ export function ThrewAnnouncement({ data, players, onComplete }: ThrewAnnounceme
         <motion.div
           initial={{ y: 20 }}
           animate={{ y: 0 }}
-          className="bg-table-800/95 border-2 border-red-500/50 rounded-xl px-8 py-6 shadow-2xl max-w-sm"
+          className="bg-table-800/95 border-2 border-card-red/50 rounded-xl px-8 py-6 shadow-2xl max-w-sm"
         >
           <div className="text-center">
-            <div className="text-red-400 text-lg font-semibold mb-2">
+            <div className="text-card-red text-lg font-semibold mb-2">
               {data.playerName} threw at {data.bidAmount}
             </div>
             <div className="text-white/70 text-sm mb-4">
@@ -57,7 +57,7 @@ export function ThrewAnnouncement({ data, players, onComplete }: ThrewAnnounceme
               {Object.entries(data.scoreChanges).map(([playerId, change]) => (
                 <div
                   key={playerId}
-                  className={`text-sm ${change >= 0 ? 'text-gold-400' : 'text-red-400'}`}
+                  className={`text-sm ${change >= 0 ? 'text-gold-400' : 'text-card-red'}`}
                 >
                   {getPlayerName(playerId)}: {change >= 0 ? '+' : ''}{change}
                 </div>

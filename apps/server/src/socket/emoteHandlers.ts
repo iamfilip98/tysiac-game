@@ -24,6 +24,7 @@ export function registerEmoteHandlers(socket: TypedSocket, ctx: HandlerContext):
     lastEmoteTime.set(playerId, now);
 
     // Broadcast to others in the room (sender shows own emote locally)
+    console.log(`[Emote] Broadcasting emote '${emoteId}' from ${playerId} to room ${room.id}`);
     socket.to(room.id).emit('game:emoteReceived', { playerId, emoteId });
   });
 }

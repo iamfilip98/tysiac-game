@@ -239,7 +239,7 @@ export const ScoreBoard = memo(function ScoreBoard({
                     score?.totalScore >= 800
                       ? 'text-amber-400'
                       : score?.totalScore < 0
-                      ? 'text-red-400'
+                      ? 'text-card-red'
                       : 'text-white'
                   )}
                   style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}
@@ -286,7 +286,7 @@ export function InlineScore({ score, isOnBarrel, className }: InlineScoreProps) 
         score >= 800
           ? 'text-amber-400'
           : score < 0
-          ? 'text-red-400'
+          ? 'text-card-red'
           : 'text-gold-400',
         className
       )}

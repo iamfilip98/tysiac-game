@@ -190,6 +190,14 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
   socket.on('game:marriageDeclared', ({ playerId, suit }: { playerId: string; suit: Suit }) => {
     if (marriageClearTimeout) clearTimeout(marriageClearTimeout);
     useGameStore.getState().setLastMarriageDeclared({ playerId, suit });
+    // Immediately update trump suit so card glow reflects new marriage
+    const gs = useGameStore.getState().gameState;
+    if (gs?.round) {
+      useGameStore.getState().setGameState({
+        ...gs,
+        round: { ...gs.round, trumpSuit: suit },
+      });
+    }
     deps.sound.play('marriage');
   });
 
@@ -266,6 +274,7 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
   // --- Emotes ---
 
   socket.on('game:emoteReceived', ({ playerId, emoteId }: { playerId: string; emoteId: string }) => {
+    console.log(`[Emote] Received emote '${emoteId}' from ${playerId}`);
     useGameStore.getState().setEmote(playerId, emoteId);
     setTimeout(() => useGameStore.getState().clearEmote(playerId), 3000);
   });

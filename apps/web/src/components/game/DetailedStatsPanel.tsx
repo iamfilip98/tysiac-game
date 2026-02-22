@@ -46,10 +46,11 @@ export function DetailedStatsPanel({ playerDetails, players, currentPlayerId }: 
                       initial={{ width: 0 }}
                       animate={{ width: `${detail.bidSuccessRate}%` }}
                       transition={{ delay: 0.3, duration: 0.5 }}
-                      className={`h-full ${detail.bidSuccessRate >= 50 ? 'bg-gold-500' : 'bg-red-500'}`}
+                      className={`h-full ${detail.bidSuccessRate >= 50 ? 'bg-gold-500' : ''}`}
+                      style={detail.bidSuccessRate < 50 ? { backgroundColor: 'var(--card-red)' } : undefined}
                     />
                   </div>
-                  <span className={`font-mono ${detail.bidSuccessRate >= 50 ? 'text-gold-400' : 'text-red-400'}`}>
+                  <span className={`font-mono ${detail.bidSuccessRate >= 50 ? 'text-gold-400' : 'text-card-red'}`}>
                     {detail.bidSuccessRate}%
                   </span>
                 </div>
