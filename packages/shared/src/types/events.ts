@@ -66,6 +66,9 @@ export interface ClientToServerEvents {
   'matchmaking:join': (data: { playerName: string }) => void;
   'matchmaking:leave': () => void;
 
+  // Emote events
+  'game:emote': (emoteId: string) => void;
+
   // Connection events
   'player:reconnect': (data: { roomId: string; playerId: string; sessionToken: string }) => void;
 }
@@ -128,6 +131,9 @@ export interface ServerToClientEvents {
   'matchmaking:searching': (data: { playersFound: number }) => void;
   'matchmaking:found': (data: { room: Room; playerId: string; sessionToken: string }) => void;
   'matchmaking:error': (error: { code: string; message: string }) => void;
+
+  // Emote events
+  'game:emoteReceived': (data: { playerId: string; emoteId: string }) => void;
 
   // Lobby events
   'lobby:roomList': (rooms: Room[]) => void;

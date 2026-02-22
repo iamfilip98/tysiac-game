@@ -27,6 +27,9 @@ export interface GameState {
   // Buffered state update while round result modal is open
   pendingGameState: ClientGameState | null;
 
+  // Emote state
+  activeEmotes: Record<string, { emoteId: string; timestamp: number }>;
+
   // Actions
   setGameState: (state: ClientGameState | null) => void;
   setValidActions: (actions: ValidAction[]) => void;
@@ -43,6 +46,8 @@ export interface GameState {
   setThrewNotification: (data: { playerName: string; bidAmount: number; scoreChanges: Record<string, number> } | null) => void;
   setPauseData: (data: { pausedByName: string; pausedAt: number; expiresAt: number } | null) => void;
   setTrickWonData: (data: { winnerId: string; wasTrumpWin: boolean } | null) => void;
+  setEmote: (playerId: string, emoteId: string) => void;
+  clearEmote: (playerId: string) => void;
   reset: () => void;
 }
 
@@ -63,6 +68,7 @@ export const useGameStore = create<GameState>((set) => ({
   pauseData: null,
   trickWonData: null,
   pendingGameState: null,
+  activeEmotes: {},
 
   setGameState: (gameState) =>
     set((state) => {
@@ -125,6 +131,17 @@ export const useGameStore = create<GameState>((set) => ({
 
   setTrickWonData: (trickWonData) => set({ trickWonData }),
 
+  setEmote: (playerId, emoteId) =>
+    set((state) => ({
+      activeEmotes: { ...state.activeEmotes, [playerId]: { emoteId, timestamp: Date.now() } },
+    })),
+
+  clearEmote: (playerId) =>
+    set((state) => {
+      const { [playerId]: _, ...rest } = state.activeEmotes;
+      return { activeEmotes: rest };
+    }),
+
   reset: () =>
     set({
       gameState: null,
@@ -143,5 +160,6 @@ export const useGameStore = create<GameState>((set) => ({
       pauseData: null,
       trickWonData: null,
       pendingGameState: null,
+      activeEmotes: {},
     }),
 }));

@@ -324,6 +324,12 @@ export function useSocket() {
         useRoomStore.getState().setError(message);
       });
 
+      // Emotes
+      socket.on('game:emoteReceived', ({ playerId, emoteId }) => {
+        useGameStore.getState().setEmote(playerId, emoteId);
+        setTimeout(() => useGameStore.getState().clearEmote(playerId), 3000);
+      });
+
       // Lobby
       socket.on('lobby:roomList', (rooms) => {
         useRoomStore.getState().setPublicRooms(rooms);
@@ -396,6 +402,7 @@ export function useSocket() {
       socket.off('matchmaking:searching');
       socket.off('matchmaking:found');
       socket.off('matchmaking:error');
+      socket.off('game:emoteReceived');
       socket.off('lobby:roomList');
       socket.off('connection:restored');
     };
@@ -539,6 +546,17 @@ export function useSocket() {
     safeEmit('game:resume');
   }, [safeEmit]);
 
+  const sendEmote = useCallback((emoteId: string) => {
+    if (safeEmit('game:emote', emoteId)) {
+      // Show own emote locally (server doesn't echo back to sender)
+      const myId = useRoomStore.getState().playerId;
+      if (myId) {
+        useGameStore.getState().setEmote(myId, emoteId);
+        setTimeout(() => useGameStore.getState().clearEmote(myId), 3000);
+      }
+    }
+  }, [safeEmit]);
+
   return {
     // Room actions
     createRoom,
@@ -565,5 +583,6 @@ export function useSocket() {
     leaveGame,
     pauseGame,
     resumeGame,
+    sendEmote,
   };
 }

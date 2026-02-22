@@ -12,6 +12,7 @@ import { registerRoomHandlers } from './roomHandlers.js';
 import { registerGameHandlers } from './gameHandlers.js';
 import { registerConnectionHandlers } from './connectionHandlers.js';
 import { registerMatchmakingHandlers, initMatchmaking } from './matchmakingHandlers.js';
+import { registerEmoteHandlers } from './emoteHandlers.js';
 import * as matchmakingService from '../services/matchmakingService.js';
 import type { HandlerContext, TypedSocket, TypedServer } from './handlerContext.js';
 
@@ -287,6 +288,7 @@ export function setupSocketHandlers(io: TypedServer) {
     registerGameHandlers(socket, ctx);
     registerConnectionHandlers(socket, ctx);
     registerMatchmakingHandlers(socket, ctx);
+    registerEmoteHandlers(socket, ctx);
 
     // Initialize matchmaking fill-timeout callback (once)
     initMatchmaking(ctx);
