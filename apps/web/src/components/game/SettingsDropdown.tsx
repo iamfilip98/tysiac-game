@@ -23,7 +23,7 @@ export function SettingsDropdown() {
   const [showRules, setShowRules] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  const { theme, soundEnabled, animationsEnabled, cardStyle, toggleTheme, toggleSound, toggleAnimations, toggleCardStyle } =
+  const { theme, soundEnabled, animationsEnabled, cardStyle, emotesEnabled, toggleTheme, toggleSound, toggleAnimations, toggleCardStyle, toggleEmotes } =
     usePreferencesStore();
 
   const isMyTurn = useGameStore((s) => s.isMyTurn);
@@ -144,6 +144,22 @@ export function SettingsDropdown() {
             </svg>
             <span className="flex-1 text-left">Cards</span>
             <span className="text-xs text-gold-400">{CARD_STYLE_LABELS[cardStyle]}</span>
+          </button>
+
+          {/* Emotes */}
+          <button
+            role="menuitem"
+            onClick={toggleEmotes}
+            className="w-full flex items-center gap-3 px-3 py-3 text-[13px] text-white/85 hover:bg-white/[0.06] transition-colors border-b border-white/[0.04]"
+          >
+            <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+              <line x1="9" y1="9" x2="9.01" y2="9" />
+              <line x1="15" y1="9" x2="15.01" y2="9" />
+            </svg>
+            <span className="flex-1 text-left">Emotes</span>
+            <span className={`text-xs ${emotesEnabled ? 'text-gold-400' : 'text-white/40'}`}>{emotesEnabled ? 'On' : 'Off'}</span>
           </button>
 
           {/* Game Rules */}

@@ -12,10 +12,12 @@ export interface PreferencesState {
   soundEnabled: boolean;
   animationsEnabled: boolean;
   cardStyle: CardStyle;
+  emotesEnabled: boolean;
   toggleTheme: () => void;
   toggleSound: () => void;
   toggleAnimations: () => void;
   toggleCardStyle: () => void;
+  toggleEmotes: () => void;
 }
 
 const preferencesSlice = (set: (fn: (s: PreferencesState) => Partial<PreferencesState>) => void): PreferencesState => ({
@@ -23,6 +25,7 @@ const preferencesSlice = (set: (fn: (s: PreferencesState) => Partial<Preferences
   soundEnabled: true,
   animationsEnabled: true,
   cardStyle: 'white',
+  emotesEnabled: true,
   toggleTheme: () =>
     set((s) => {
       const idx = THEME_ORDER.indexOf(s.theme);
@@ -38,6 +41,7 @@ const preferencesSlice = (set: (fn: (s: PreferencesState) => Partial<Preferences
       const next = CARD_STYLE_ORDER[(idx + 1) % CARD_STYLE_ORDER.length];
       return { cardStyle: next };
     }),
+  toggleEmotes: () => set((s) => ({ emotesEnabled: !s.emotesEnabled })),
 });
 
 /** Create a preferences store with a custom storage backend (e.g. AsyncStorage for mobile) */

@@ -13,6 +13,7 @@ import { RulesModal } from '@/components/game/RulesModal';
 import { SettingsDropdown } from '@/components/game/SettingsDropdown';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { UserBadge } from '@/components/auth/UserBadge';
+import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Input } from '@/components/ui/Input';
 import { useSocket } from '@/hooks/useSocket';
 import { useRoomStore, useGameStore } from '@tysiac/game-logic';
@@ -26,6 +27,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const [tab, setTab] = useState<'quick' | 'create' | 'join'>(roomCodeFromUrl ? 'join' : 'quick');
   const [guestName, setGuestName] = useState('');
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [authStats, setAuthStats] = useState<PlayerStatsPublic | null>(null);
   const { showToast } = useToast();
@@ -142,20 +144,19 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         {isAuthenticated && authDisplayName ? (
           <UserBadge
             displayName={authDisplayName}
-            stats={authStats}
-            onLogout={() => signOut()}
+            onProfileClick={() => setShowProfile(true)}
           />
         ) : isGuest ? (
           <button
-            onClick={() => setIsGuest(false)}
-            className="btn-toolbar min-h-[44px] px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center gap-1.5"
+            onClick={() => setShowProfile(true)}
+            className="btn-toolbar min-w-[44px] min-h-[44px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5"
+            title="Profile & Settings"
           >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4" />
-              <polyline points="10 17 15 12 10 7" />
-              <line x1="15" y1="12" x2="3" y2="12" />
+            <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
             </svg>
-            <span className="hidden sm:inline">Sign in</span>
+            <span className="hidden sm:inline">{guestName.trim() || 'Guest'}</span>
           </button>
         ) : null}
         <SettingsDropdown />
@@ -391,6 +392,18 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
       {/* Full Rules Modal */}
       <RulesModal isOpen={showRulesModal} onClose={() => setShowRulesModal(false)} />
+
+      {/* Profile Modal */}
+      <ProfileModal
+        isOpen={showProfile}
+        onClose={() => setShowProfile(false)}
+        isAuthenticated={isAuthenticated}
+        displayName={isAuthenticated && authDisplayName ? authDisplayName : (guestName.trim() || 'Guest')}
+        avatarUrl={user?.imageUrl}
+        stats={authStats}
+        onLogout={() => signOut()}
+        onSignUp={() => { setIsGuest(false); setShowProfile(false); }}
+      />
     </main>
   );
 }

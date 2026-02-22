@@ -13,7 +13,7 @@ import { SettingsDropdown } from './SettingsDropdown';
 import { EmoteButton } from './EmoteButton';
 import { EmoteBubble } from './EmoteBubble';
 import { Button } from '@/components/ui/Button';
-import { useGameStore, useRoomStore } from '@tysiac/game-logic';
+import { useGameStore, useRoomStore, usePreferencesStore } from '@tysiac/game-logic';
 import { useSocket } from '@/hooks/useSocket';
 import { useScreenSize } from '@/hooks/useIsMobile';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
@@ -46,6 +46,7 @@ function getLayoutPositions(isMobile: boolean, height: number, phase?: string) {
 
 export function GameBoard() {
   const { isMobile, height } = useScreenSize();
+  const emotesEnabled = usePreferencesStore((s) => s.emotesEnabled);
   const { playerId, room } = useRoomStore();
   const {
     gameState,
@@ -317,12 +318,14 @@ export function GameBoard() {
       </div>
 
       {/* Emote button — left-center on mobile (aligned with trick area), bottom-left on desktop */}
-      <div className={cn(
-        'absolute z-40',
-        isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'bottom-4 left-4'
-      )}>
-        <EmoteButton sendEmote={sendEmote} />
-      </div>
+      {emotesEnabled && (
+        <div className={cn(
+          'absolute z-40',
+          isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'bottom-4 left-4'
+        )}>
+          <EmoteButton sendEmote={sendEmote} />
+        </div>
+      )}
 
       {/* Score board - top center */}
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-20">
@@ -378,32 +381,34 @@ export function GameBoard() {
       </div>
 
       {/* Emote bubbles near opponents */}
-      <AnimatePresence>
-        {otherPlayers[0] && activeEmotes[otherPlayers[0].id] && (
-          <motion.div
-            key={`emote-left-${activeEmotes[otherPlayers[0].id].timestamp}`}
-            className={cn('absolute z-20', isMobile ? 'left-2 top-36' : 'left-8 top-40')}
-          >
-            <EmoteBubble emoteId={activeEmotes[otherPlayers[0].id].emoteId} playerName={otherPlayers[0].name} />
-          </motion.div>
-        )}
-        {otherPlayers[1] && activeEmotes[otherPlayers[1].id] && (
-          <motion.div
-            key={`emote-right-${activeEmotes[otherPlayers[1].id].timestamp}`}
-            className={cn('absolute z-20', isMobile ? 'right-2 top-36' : 'right-8 top-40')}
-          >
-            <EmoteBubble emoteId={activeEmotes[otherPlayers[1].id].emoteId} playerName={otherPlayers[1].name} />
-          </motion.div>
-        )}
-        {playerId && activeEmotes[playerId] && (
-          <motion.div
-            key={`emote-self-${activeEmotes[playerId].timestamp}`}
-            className={cn('absolute z-20', isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'left-1/2 -translate-x-1/2 bottom-40')}
-          >
-            <EmoteBubble emoteId={activeEmotes[playerId].emoteId} playerName="You" />
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {emotesEnabled && (
+        <AnimatePresence>
+          {otherPlayers[0] && activeEmotes[otherPlayers[0].id] && (
+            <motion.div
+              key={`emote-left-${activeEmotes[otherPlayers[0].id].timestamp}`}
+              className={cn('absolute z-20', isMobile ? 'left-2 top-36' : 'left-8 top-40')}
+            >
+              <EmoteBubble emoteId={activeEmotes[otherPlayers[0].id].emoteId} playerName={otherPlayers[0].name} />
+            </motion.div>
+          )}
+          {otherPlayers[1] && activeEmotes[otherPlayers[1].id] && (
+            <motion.div
+              key={`emote-right-${activeEmotes[otherPlayers[1].id].timestamp}`}
+              className={cn('absolute z-20', isMobile ? 'right-2 top-36' : 'right-8 top-40')}
+            >
+              <EmoteBubble emoteId={activeEmotes[otherPlayers[1].id].emoteId} playerName={otherPlayers[1].name} />
+            </motion.div>
+          )}
+          {playerId && activeEmotes[playerId] && (
+            <motion.div
+              key={`emote-self-${activeEmotes[playerId].timestamp}`}
+              className={cn('absolute z-20', isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'left-1/2 -translate-x-1/2 bottom-40')}
+            >
+              <EmoteBubble emoteId={activeEmotes[playerId].emoteId} playerName="You" />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      )}
 
       {/* Dealer spectating indicator (4-player mode, when another player is dealer) */}
       {dealerOpponent && (
