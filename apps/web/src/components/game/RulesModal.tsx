@@ -1,6 +1,9 @@
 'use client';
 
+import { useState } from 'react';
 import { Modal, ModalHeader, ModalBody } from '@/components/ui/Modal';
+import { TutorialSlideshow } from './TutorialSlideshow';
+import { cn } from '@/lib/utils';
 
 interface RulesModalProps {
   isOpen: boolean;
@@ -8,11 +11,15 @@ interface RulesModalProps {
   isMyTurn?: boolean;
 }
 
+type Tab = 'guide' | 'rules';
+
 export function RulesModal({ isOpen, onClose, isMyTurn }: RulesModalProps) {
+  const [tab, setTab] = useState<Tab>('guide');
+
   return (
     <Modal isOpen={isOpen} onClose={onClose} ariaLabel="Game Rules" className="max-w-lg">
       <ModalHeader onClose={onClose}>
-        Tysiąc - Complete Rules
+        Tysiąc - Game Rules
       </ModalHeader>
 
       {isMyTurn && (
@@ -21,7 +28,33 @@ export function RulesModal({ isOpen, onClose, isMyTurn }: RulesModalProps) {
         </div>
       )}
 
-      <RulesContent />
+      {/* Tab switcher */}
+      <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-1">
+        <button
+          onClick={() => setTab('guide')}
+          className={cn(
+            'flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+            tab === 'guide'
+              ? 'bg-gold-500/20 text-gold-400'
+              : 'text-white/50 hover:text-white/70'
+          )}
+        >
+          Visual Guide
+        </button>
+        <button
+          onClick={() => setTab('rules')}
+          className={cn(
+            'flex-1 px-3 py-1.5 rounded-md text-sm font-medium transition-colors',
+            tab === 'rules'
+              ? 'bg-gold-500/20 text-gold-400'
+              : 'text-white/50 hover:text-white/70'
+          )}
+        >
+          Rules
+        </button>
+      </div>
+
+      {tab === 'guide' ? <TutorialSlideshow /> : <RulesContent />}
     </Modal>
   );
 }
