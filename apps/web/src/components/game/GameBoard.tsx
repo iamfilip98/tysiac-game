@@ -24,13 +24,16 @@ import type { Card as CardType } from '@tysiac/shared';
 // Compact: very small phones (<600px height, e.g. iPhone SE)
 // Normal: standard mobile (600-900px, e.g. iPhone 16 Pro at 852px)
 // Large: desktop/tablets (>900px)
-function getLayoutPositions(isMobile: boolean, height: number) {
+function getLayoutPositions(isMobile: boolean, height: number, phase?: string) {
   const isCompact = isMobile && height < 600;
+  const isDistribution = phase === 'talonDistribution';
 
   return {
     opponents: isMobile ? (isCompact ? 'top-16' : 'top-20') : 'top-24',
     opponentsLeftRight: isMobile ? (isCompact ? 'left-1 right-1' : 'left-2 right-2') : 'left-8 right-8',
-    actionPanel: isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36',
+    actionPanel: isDistribution
+      ? (isMobile ? (isCompact ? 'bottom-36' : 'bottom-40') : 'bottom-44')
+      : (isMobile ? (isCompact ? 'bottom-28' : 'bottom-32') : 'bottom-36'),
     playerHand: isMobile ? 'bottom-2' : 'bottom-4',
     spectatingHand: isMobile ? 'bottom-16' : 'bottom-20',
     turnArea: isMobile ? (isCompact ? 'bottom-32' : 'bottom-36') : 'bottom-40',
@@ -41,7 +44,6 @@ function getLayoutPositions(isMobile: boolean, height: number) {
 
 export function GameBoard() {
   const { isMobile, height } = useScreenSize();
-  const layout = getLayoutPositions(isMobile, height);
   const { playerId, room } = useRoomStore();
   const {
     gameState,
@@ -246,6 +248,7 @@ export function GameBoard() {
   }
 
   const { phase, round, myHand, talon, scores } = gameState;
+  const layout = getLayoutPositions(isMobile, height, phase);
 
   // Calculate opponent hand sizes
   const getOpponentHandSize = (opponentId: string) => {
