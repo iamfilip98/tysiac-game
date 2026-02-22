@@ -165,6 +165,8 @@ html,
   --card-bg-from: #ffffff;
   --card-bg-to: #f5f5f5;
   --card-shadow-inset: rgba(255, 255, 255, 0.5);
+  --card-black: #1a1a1a;
+  --card-red: #e81224;
 }
 
 [data-card-style="black"] {

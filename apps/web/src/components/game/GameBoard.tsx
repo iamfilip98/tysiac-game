@@ -395,7 +395,7 @@ export function GameBoard() {
         {playerId && activeEmotes[playerId] && (
           <motion.div
             key={`emote-self-${activeEmotes[playerId].timestamp}`}
-            className={cn('absolute z-20 left-1/2 -translate-x-1/2', isMobile ? 'bottom-36' : 'bottom-40')}
+            className={cn('absolute z-20', isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'left-1/2 -translate-x-1/2 bottom-40')}
           >
             <EmoteBubble emoteId={activeEmotes[playerId].emoteId} playerName="You" />
           </motion.div>

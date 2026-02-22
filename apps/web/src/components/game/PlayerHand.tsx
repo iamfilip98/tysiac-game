@@ -200,8 +200,8 @@ export function PlayerHand({
         isMobile ? 52 : 70 // Max spread for aesthetic reasons
       );
 
-  // Fan angle - minimal on mobile for cleaner look, more on desktop
-  const fanAngle = isMobile ? 0 : Math.min(cardCount * 3, 24);
+  // No fan angle — flat layout on both desktop and mobile for consistency
+  const fanAngle = 0;
   const startAngle = -fanAngle / 2;
 
   // Mobile distribution mode: horizontal scroll layout for easier card selection
