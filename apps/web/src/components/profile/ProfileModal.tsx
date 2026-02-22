@@ -18,15 +18,26 @@ const CARD_STYLE_LABELS: Record<CardStyle, string> = {
   black: 'Dark',
 };
 
+const AVATAR_EMOJIS = [
+  '\u2660', '\u2665', '\u2666', '\u2663', '\uD83D\uDC51', '\uD83C\uDFAF',
+  '\uD83C\uDFB2', '\uD83C\uDCCF', '\uD83E\uDD8A', '\uD83D\uDC3A',
+  '\uD83E\uDD81', '\uD83D\uDC3B', '\uD83E\uDD85', '\uD83D\uDC09',
+  '\u2B50', '\uD83D\uDD25',
+];
+
 interface ProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   isAuthenticated: boolean;
   displayName: string;
   avatarUrl?: string | null;
+  avatarEmoji?: string | null;
+  onAvatarChange?: (emoji: string | null) => void;
+  onNameChange?: (name: string) => void;
   stats: PlayerStatsPublic | null;
   onLogout: () => void;
   onSignUp: () => void;
+  onShowRules?: () => void;
 }
 
 export function ProfileModal({
@@ -35,9 +46,13 @@ export function ProfileModal({
   isAuthenticated,
   displayName,
   avatarUrl,
+  avatarEmoji,
+  onAvatarChange,
+  onNameChange,
   stats,
   onLogout,
   onSignUp,
+  onShowRules,
 }: ProfileModalProps) {
   const {
     theme,
@@ -57,25 +72,74 @@ export function ProfileModal({
       <ModalHeader onClose={onClose}>Profile</ModalHeader>
       <ModalBody>
         {/* Profile header */}
-        <div className="flex items-center gap-3 mb-5">
-          {avatarUrl ? (
+        <div className="flex items-center gap-3 mb-4">
+          {avatarUrl && !avatarEmoji ? (
             <img
               src={avatarUrl}
               alt={displayName}
               className="w-12 h-12 rounded-full ring-2 ring-gold-500/40"
             />
+          ) : avatarEmoji ? (
+            <div className="w-12 h-12 rounded-full bg-gold-500/20 ring-2 ring-gold-500/40 flex items-center justify-center text-2xl">
+              {avatarEmoji}
+            </div>
           ) : (
             <div className="w-12 h-12 rounded-full bg-gold-500/20 ring-2 ring-gold-500/40 flex items-center justify-center text-gold-400 text-lg font-bold">
               {displayName[0]?.toUpperCase() || '?'}
             </div>
           )}
-          <div>
-            <div className="text-white font-semibold">{displayName}</div>
-            {isAuthenticated && stats ? (
-              <div className="text-sm text-white/50">{stats.rating} rating</div>
-            ) : !isAuthenticated ? (
-              <div className="text-xs text-white/40">Guest</div>
-            ) : null}
+          <div className="flex-1 min-w-0">
+            {isAuthenticated ? (
+              <>
+                <div className="text-white font-semibold">{displayName}</div>
+                {stats ? (
+                  <div className="text-sm text-white/50">{stats.rating} rating</div>
+                ) : null}
+              </>
+            ) : (
+              <input
+                type="text"
+                value={displayName === 'Guest' ? '' : displayName}
+                onChange={(e) => onNameChange?.(e.target.value)}
+                placeholder="Enter your name"
+                maxLength={20}
+                className="w-full bg-white/[0.06] border border-white/[0.1] rounded-lg px-3 py-1.5 text-white text-sm placeholder:text-white/30 focus:outline-none focus:border-gold-500/50 focus:ring-1 focus:ring-gold-500/30"
+              />
+            )}
+          </div>
+        </div>
+
+        {/* Avatar picker */}
+        <div className="mb-4">
+          <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Avatar</div>
+          <div className="grid grid-cols-8 gap-1.5">
+            {/* Clear option */}
+            <button
+              onClick={() => onAvatarChange?.(null)}
+              className={`w-8 h-8 rounded-lg flex items-center justify-center text-xs transition-all ${
+                !avatarEmoji
+                  ? 'bg-gold-500/20 ring-2 ring-gold-500/50'
+                  : 'bg-white/[0.06] hover:bg-white/[0.1]'
+              }`}
+              title="Default"
+            >
+              <span className="text-white/50 text-[10px] font-bold">
+                {displayName[0]?.toUpperCase() || '?'}
+              </span>
+            </button>
+            {AVATAR_EMOJIS.map((emoji) => (
+              <button
+                key={emoji}
+                onClick={() => onAvatarChange?.(emoji)}
+                className={`w-8 h-8 rounded-lg flex items-center justify-center text-base transition-all ${
+                  avatarEmoji === emoji
+                    ? 'bg-gold-500/20 ring-2 ring-gold-500/50'
+                    : 'bg-white/[0.06] hover:bg-white/[0.1]'
+                }`}
+              >
+                {emoji}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -100,7 +164,7 @@ export function ProfileModal({
 
         {/* Settings section */}
         <div className="text-xs text-white/40 uppercase tracking-wider mb-2">Settings</div>
-        <div className="space-y-0.5 mb-5">
+        <div className="space-y-0.5 mb-4">
           <SettingsRow
             icon={
               soundEnabled ? (
@@ -174,6 +238,20 @@ export function ProfileModal({
             onClick={toggleEmotes}
           />
         </div>
+
+        {/* Game Rules */}
+        {onShowRules && (
+          <button
+            onClick={() => { onShowRules(); onClose(); }}
+            className="w-full flex items-center gap-3 px-3 py-2.5 text-[13px] text-white/85 hover:bg-white/[0.06] transition-colors rounded-lg mb-4"
+          >
+            <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <path d="M4 19.5A2.5 2.5 0 016.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 014 19.5v-15A2.5 2.5 0 016.5 2z" />
+            </svg>
+            <span className="flex-1 text-left">Game Rules</span>
+          </button>
+        )}
 
         <div className="border-t border-white/[0.06] mb-4" />
 

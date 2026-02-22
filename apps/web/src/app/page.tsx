@@ -10,13 +10,12 @@ import { RoomBrowser } from '@/components/lobby/RoomBrowser';
 import { RoomLobby } from '@/components/lobby/RoomLobby';
 import { GameBoard } from '@/components/game/GameBoard';
 import { RulesModal } from '@/components/game/RulesModal';
-import { SettingsDropdown } from '@/components/game/SettingsDropdown';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { UserBadge } from '@/components/auth/UserBadge';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Input } from '@/components/ui/Input';
 import { useSocket } from '@/hooks/useSocket';
-import { useRoomStore, useGameStore } from '@tysiac/game-logic';
+import { useRoomStore, useGameStore, usePreferencesStore } from '@tysiac/game-logic';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { useToast } from '@/components/ui/Toast';
 import { cn } from '@/lib/utils';
@@ -25,7 +24,6 @@ import type { PlayerStatsPublic } from '@tysiac/shared';
 function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
   const [tab, setTab] = useState<'quick' | 'create' | 'join'>(roomCodeFromUrl ? 'join' : 'quick');
-  const [guestName, setGuestName] = useState('');
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
@@ -34,6 +32,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const previousError = useRef<string | null>(null);
 
   const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms, isSearching, searchPlayerCount } = useRoomStore();
+  const { guestName, setGuestName, avatarEmoji, setAvatarEmoji } = usePreferencesStore();
 
   const { isSignedIn, getToken } = useAuth();
   const { user } = useUser();
@@ -119,7 +118,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     );
   }
 
-  // Shared player name: authenticated users use their display name, guests use the input
+  // Shared player name: authenticated users use their display name, guests use the persisted name
   const defaultPlayerName = isAuthenticated && authDisplayName ? authDisplayName : '';
   const playerName = isAuthenticated ? defaultPlayerName : guestName.trim();
   const nameReady = playerName.length > 0;
@@ -139,28 +138,16 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
       {/* Ambient particles */}
       <AmbientParticles count={10} />
 
-      {/* Settings + User badge */}
-      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-10 flex items-center gap-2">
-        {isAuthenticated && authDisplayName ? (
+      {/* User badge / Profile button */}
+      {(isAuthenticated || isGuest) && (
+        <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-10">
           <UserBadge
-            displayName={authDisplayName}
+            displayName={isAuthenticated && authDisplayName ? authDisplayName : (guestName.trim() || 'Guest')}
+            avatarEmoji={avatarEmoji}
             onProfileClick={() => setShowProfile(true)}
           />
-        ) : isGuest ? (
-          <button
-            onClick={() => setShowProfile(true)}
-            className="btn-toolbar min-w-[44px] min-h-[44px] px-2 sm:px-3 py-1.5 rounded-lg text-white/70 hover:text-white text-[13px] font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5"
-            title="Profile & Settings"
-          >
-            <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span className="hidden sm:inline">{guestName.trim() || 'Guest'}</span>
-          </button>
-        ) : null}
-        <SettingsDropdown />
-      </div>
+        </div>
+      )}
 
       {/* Wrapper for safe vertical centering (my-auto avoids justify-center scroll clipping) */}
       <div className="my-auto flex flex-col items-center w-full py-4">
@@ -400,9 +387,13 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         isAuthenticated={isAuthenticated}
         displayName={isAuthenticated && authDisplayName ? authDisplayName : (guestName.trim() || 'Guest')}
         avatarUrl={user?.imageUrl}
+        avatarEmoji={avatarEmoji}
+        onAvatarChange={setAvatarEmoji}
+        onNameChange={setGuestName}
         stats={authStats}
         onLogout={() => signOut()}
         onSignUp={() => { setIsGuest(false); setShowProfile(false); }}
+        onShowRules={() => setShowRulesModal(true)}
       />
     </main>
   );
