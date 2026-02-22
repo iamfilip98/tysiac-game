@@ -316,8 +316,11 @@ export function GameBoard() {
         <SettingsDropdown />
       </div>
 
-      {/* Bottom-left emote button */}
-      <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-2 sm:left-4 z-40">
+      {/* Emote button — left-center on mobile (aligned with trick area), bottom-left on desktop */}
+      <div className={cn(
+        'absolute z-40',
+        isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'bottom-4 left-4'
+      )}>
         <EmoteButton sendEmote={sendEmote} />
       </div>
 
