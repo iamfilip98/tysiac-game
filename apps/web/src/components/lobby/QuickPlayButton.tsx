@@ -86,7 +86,11 @@ export function QuickPlayButton({
   }
 
   return (
-    <div className="flex flex-col items-center gap-3 py-2">
+    <div className="flex flex-col items-center h-full py-2">
+      <p className="text-white/40 text-xs text-center mb-3">
+        Find a match instantly. AI fills empty spots after 30s.
+      </p>
+      <div className="flex-1" />
       <Button
         variant="primary"
         className="w-full"
@@ -96,9 +100,6 @@ export function QuickPlayButton({
       >
         {!isConnected ? 'Waiting for connection...' : 'Quick Play'}
       </Button>
-      <p className="text-white/40 text-xs text-center">
-        Find a match instantly. AI fills empty spots after 30s.
-      </p>
     </div>
   );
 }

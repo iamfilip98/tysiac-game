@@ -48,9 +48,9 @@ export function RoomBrowser({ publicRooms, onJoin, isLoading, isConnected = fals
         <label className="block text-sm font-medium text-white/80 mb-2">
           Available Rooms
         </label>
-        <div className="overflow-y-auto rounded-lg border border-white/[0.08] bg-table-950/50 min-h-[140px] max-h-[220px]">
+        <div className="overflow-y-auto rounded-lg border border-white/[0.08] bg-table-950/50 h-[220px]">
           {publicRooms.length === 0 ? (
-            <div className="flex items-center justify-center h-[140px] text-white/40 text-sm px-4 text-center">
+            <div className="flex items-center justify-center h-full text-white/40 text-sm px-4 text-center">
               No rooms available. Create one!
             </div>
           ) : (

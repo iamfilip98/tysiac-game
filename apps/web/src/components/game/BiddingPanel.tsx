@@ -143,7 +143,7 @@ export function BiddingPanel({
         {/* Show max bid */}
         {bidAction && bidAction.type === 'bid' && (
           <div className="mt-3 text-center text-xs text-white/50">
-            Max bid: {bidAction.maxBid}
+            Max bid allowed: {bidAction.maxBid}
           </div>
         )}
       </div>

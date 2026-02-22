@@ -388,7 +388,7 @@ export function GameBoard() {
           {otherPlayers[0] && activeEmotes[otherPlayers[0].id] && (
             <motion.div
               key={`emote-left-${activeEmotes[otherPlayers[0].id].timestamp}`}
-              className={cn('absolute z-20', isMobile ? 'left-2 top-36' : 'left-8 top-40')}
+              className={cn('absolute z-50', isMobile ? 'left-2 top-36' : 'left-8 top-40')}
             >
               <EmoteBubble emoteId={activeEmotes[otherPlayers[0].id].emoteId} playerName={otherPlayers[0].name} />
             </motion.div>
@@ -396,7 +396,7 @@ export function GameBoard() {
           {otherPlayers[1] && activeEmotes[otherPlayers[1].id] && (
             <motion.div
               key={`emote-right-${activeEmotes[otherPlayers[1].id].timestamp}`}
-              className={cn('absolute z-20', isMobile ? 'right-2 top-36' : 'right-8 top-40')}
+              className={cn('absolute z-50', isMobile ? 'right-2 top-36' : 'right-8 top-40')}
             >
               <EmoteBubble emoteId={activeEmotes[otherPlayers[1].id].emoteId} playerName={otherPlayers[1].name} />
             </motion.div>
@@ -404,7 +404,7 @@ export function GameBoard() {
           {playerId && activeEmotes[playerId] && (
             <motion.div
               key={`emote-self-${activeEmotes[playerId].timestamp}`}
-              className={cn('absolute z-20', isMobile ? 'left-2 top-1/2 -translate-y-1/2' : 'left-1/2 -translate-x-1/2 bottom-40')}
+              className={cn('absolute z-50', isMobile ? 'left-14 top-1/2 -translate-y-1/2' : 'left-1/2 -translate-x-1/2 bottom-40')}
             >
               <EmoteBubble emoteId={activeEmotes[playerId].emoteId} playerName="You" />
             </motion.div>
