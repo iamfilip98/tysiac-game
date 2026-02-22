@@ -13,6 +13,7 @@ import { RulesModal } from '@/components/game/RulesModal';
 import { SettingsDropdown } from '@/components/game/SettingsDropdown';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { UserBadge } from '@/components/auth/UserBadge';
+import { Input } from '@/components/ui/Input';
 import { useSocket } from '@/hooks/useSocket';
 import { useRoomStore, useGameStore } from '@tysiac/game-logic';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
@@ -22,7 +23,8 @@ import type { PlayerStatsPublic } from '@tysiac/shared';
 
 function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
-  const [tab, setTab] = useState<'create' | 'join'>(roomCodeFromUrl ? 'join' : 'create');
+  const [tab, setTab] = useState<'quick' | 'create' | 'join'>(roomCodeFromUrl ? 'join' : 'quick');
+  const [guestName, setGuestName] = useState('');
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [isGuest, setIsGuest] = useState(false);
   const [authStats, setAuthStats] = useState<PlayerStatsPublic | null>(null);
@@ -115,12 +117,20 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     );
   }
 
-  // Default player name for authenticated users
+  // Shared player name: authenticated users use their display name, guests use the input
   const defaultPlayerName = isAuthenticated && authDisplayName ? authDisplayName : '';
+  const playerName = isAuthenticated ? defaultPlayerName : guestName.trim();
+  const nameReady = playerName.length > 0;
 
   // Show landing page
   // If not authenticated and not guest, show auth gate above room tabs
   const showAuthGate = !isAuthenticated && !isGuest;
+
+  const tabs = [
+    { key: 'quick' as const, label: 'Quick Play' },
+    { key: 'create' as const, label: 'Create Room' },
+    { key: 'join' as const, label: 'Browse' },
+  ];
 
   return (
     <main className="h-full flex flex-col items-center p-4 overflow-auto relative">
@@ -220,124 +230,121 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
           />
         </motion.div>
       ) : isSearching ? (
-        /* Searching state — replaces tabs and forms */
+        /* Searching state — replaces the entire card */
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
+          className="w-full max-w-sm"
         >
-          <QuickPlayButton
-            onJoin={joinMatchmaking}
-            onCancel={leaveMatchmaking}
-            isSearching={true}
-            searchPlayerCount={searchPlayerCount}
-            isConnected={isConnected}
-            defaultPlayerName={defaultPlayerName}
-            isAuthenticated={isAuthenticated}
-          />
+          <div
+            className="rounded-xl border border-gold-500/20 bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6"
+            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
+          >
+            <QuickPlayButton
+              onJoin={() => joinMatchmaking(playerName)}
+              onCancel={leaveMatchmaking}
+              isSearching={true}
+              searchPlayerCount={searchPlayerCount}
+              isConnected={isConnected}
+            />
+          </div>
         </motion.div>
       ) : (
         <>
-          {/* Quick Play button */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            className="w-full max-w-sm"
-          >
-            <QuickPlayButton
-              onJoin={joinMatchmaking}
-              onCancel={leaveMatchmaking}
-              isSearching={false}
-              searchPlayerCount={0}
-              isConnected={isConnected}
-              defaultPlayerName={defaultPlayerName}
-              isAuthenticated={isAuthenticated}
-            />
-          </motion.div>
-
-          {/* "or" divider */}
-          <div className="flex items-center gap-3 w-full max-w-sm my-3 sm:my-4">
-            <div className="flex-1 h-px bg-white/10" />
-            <span className="text-white/40 text-xs uppercase tracking-wider">or</span>
-            <div className="flex-1 h-px bg-white/10" />
-          </div>
-
-          {/* Tab switcher */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="relative flex gap-2 mb-4 sm:mb-6 bg-table-900/50 p-1 rounded-lg backdrop-blur-sm border border-white/[0.06]"
-          >
-            <button
-              onClick={() => setTab('create')}
-              className={cn(
-                'relative px-6 py-2 rounded-md font-medium transition-all z-10',
-                tab === 'create'
-                  ? 'text-white font-semibold'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              )}
-            >
-              Create Room
-              {tab === 'create' && (
-                <motion.div
-                  layoutId="tab-indicator"
-                  className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
-                />
-              )}
-            </button>
-            <button
-              onClick={() => setTab('join')}
-              className={cn(
-                'relative px-6 py-2 rounded-md font-medium transition-all z-10',
-                tab === 'join'
-                  ? 'text-white font-semibold'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
-              )}
-            >
-              Browse Rooms
-              {tab === 'join' && (
-                <motion.div
-                  layoutId="tab-indicator"
-                  className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
-                />
-              )}
-            </button>
-          </motion.div>
-
-          {/* Green Box + Blue Box — stacked in same grid cell so they always match height */}
+          {/* Single tabbed card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="w-full max-w-sm grid grid-cols-1 grid-rows-1"
+            transition={{ delay: 0.2 }}
+            className="w-full max-w-sm"
           >
-            {/* Green Box: Create Room */}
-            <div className={cn(
-              'col-start-1 row-start-1 transition-opacity duration-150',
-              tab === 'create' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            )}>
-              <CreateRoomForm
-                onSubmit={createRoom}
-                isLoading={isConnecting || isCreatingRoom}
-                isConnected={isConnected}
-                defaultPlayerName={defaultPlayerName}
-              />
-            </div>
-            {/* Blue Box: Browse Rooms */}
-            <div className={cn(
-              'col-start-1 row-start-1 transition-opacity duration-150',
-              tab === 'join' ? 'opacity-100' : 'opacity-0 pointer-events-none'
-            )}>
-              <RoomBrowser
-                publicRooms={publicRooms}
-                onJoin={joinRoom}
-                isLoading={isConnecting}
-                isConnected={isConnected}
-                initialCode={roomCodeFromUrl}
-                defaultPlayerName={defaultPlayerName}
-              />
+            <div
+              className="rounded-xl border border-gold-500/20 shadow-glow-gold transition-shadow duration-300 hover:shadow-[0_0_30px_rgba(251,191,36,0.2)] bg-gradient-to-b from-table-800/90 to-table-900/90 backdrop-blur-md p-6"
+              style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.06)' }}
+            >
+              {/* Shared guest name input — only for non-authenticated users */}
+              {!isAuthenticated && (
+                <div className="mb-5">
+                  <Input
+                    id="guestName"
+                    label="Your Name"
+                    placeholder="Enter your name"
+                    value={guestName}
+                    onChange={(e) => setGuestName(e.target.value)}
+                    maxLength={20}
+                    required
+                  />
+                </div>
+              )}
+
+              {/* Tab switcher */}
+              <div className="relative flex gap-1 mb-5 bg-table-900/50 p-1 rounded-lg border border-white/[0.06]">
+                {tabs.map((t) => (
+                  <button
+                    key={t.key}
+                    onClick={() => setTab(t.key)}
+                    className={cn(
+                      'relative flex-1 px-3 py-2 rounded-md text-sm font-medium transition-all z-10',
+                      tab === t.key
+                        ? 'text-white font-semibold'
+                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                    )}
+                  >
+                    {t.label}
+                    {tab === t.key && (
+                      <motion.div
+                        layoutId="tab-indicator"
+                        className="absolute bottom-0 left-1 right-1 h-0.5 bg-gold-500 rounded-full shadow-[0_0_8px_rgba(251,191,36,0.4)]"
+                      />
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab content — stacked in same grid cell for height matching */}
+              <div className="grid grid-cols-1 grid-rows-1">
+                {/* Quick Play */}
+                <div className={cn(
+                  'col-start-1 row-start-1 transition-opacity duration-150',
+                  tab === 'quick' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                )}>
+                  <QuickPlayButton
+                    onJoin={() => joinMatchmaking(playerName)}
+                    onCancel={leaveMatchmaking}
+                    isSearching={false}
+                    searchPlayerCount={0}
+                    isConnected={isConnected}
+                    disabled={!nameReady}
+                  />
+                </div>
+                {/* Create Room */}
+                <div className={cn(
+                  'col-start-1 row-start-1 transition-opacity duration-150',
+                  tab === 'create' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                )}>
+                  <CreateRoomForm
+                    onSubmit={(roomName, isPrivate, maxPlayers) => createRoom(playerName, roomName, isPrivate, maxPlayers)}
+                    isLoading={isConnecting || isCreatingRoom}
+                    isConnected={isConnected}
+                    disabled={!nameReady}
+                  />
+                </div>
+                {/* Browse Rooms */}
+                <div className={cn(
+                  'col-start-1 row-start-1 transition-opacity duration-150',
+                  tab === 'join' ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                )}>
+                  <RoomBrowser
+                    publicRooms={publicRooms}
+                    onJoin={(roomCode) => joinRoom(playerName, roomCode)}
+                    isLoading={isConnecting}
+                    isConnected={isConnected}
+                    initialCode={roomCodeFromUrl}
+                    disabled={!nameReady}
+                  />
+                </div>
+              </div>
             </div>
           </motion.div>
 
