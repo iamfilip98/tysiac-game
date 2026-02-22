@@ -125,19 +125,21 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
     if (tutorialStep === 'waitRoom' && room && room.name === 'Tutorial' && playerId) {
       setTutorialStep('waitPlayers');
-      // Small delay to let room stabilize
-      const t = setTimeout(() => { addAI(); setTimeout(() => addAI(), 300); }, 200);
-      return () => clearTimeout(t);
+      addAI();
+      setTimeout(() => addAI(), 500);
+      return;
     }
 
     if (tutorialStep === 'waitPlayers' && room && room.players.length >= 3) {
       setTutorialStep('waitReady');
-      setTimeout(() => setReady(true), 200);
+      setReady(true);
+      return;
     }
 
     if (tutorialStep === 'waitReady' && room && room.players.find(p => p.id === playerId)?.isReady) {
       setTutorialStep('waitStart');
-      setTimeout(() => startGame(), 300);
+      startGame();
+      return;
     }
 
     if (tutorialStep === 'waitStart' && gameState) {
