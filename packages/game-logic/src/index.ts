@@ -18,3 +18,8 @@ export { localStorageAdapter } from './session/localStorageAdapter.js';
 // Sound definitions
 export { SOUND_SPECS } from './sounds/soundDefinitions.js';
 export type { ToneSpec, SoundSpec, SoundName, OscType } from './sounds/soundDefinitions.js';
+
+// Socket (portable handlers + actions)
+export { registerSocketListeners } from './socket/index.js';
+export { createGameActions, clearCreateRoomTimeout } from './socket/index.js';
+export type { SocketLike, SoundAdapter, SyncSessionAdapter, KeepAliveAdapter, SocketDeps, EmitFn, GameActions } from './socket/index.js';
