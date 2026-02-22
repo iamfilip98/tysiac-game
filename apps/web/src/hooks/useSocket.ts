@@ -297,6 +297,33 @@ export function useSocket() {
         // The game will end and be handled through normal game end flow
       });
 
+      // Matchmaking
+      socket.on('matchmaking:searching', ({ playersFound }) => {
+        useRoomStore.getState().setSearchPlayerCount(playersFound);
+      });
+
+      socket.on('matchmaking:found', ({ room, playerId, sessionToken }) => {
+        useRoomStore.getState().setSearching(false);
+        useRoomStore.getState().setSearchPlayerCount(0);
+        useRoomStore.getState().setRoom(room);
+        useRoomStore.getState().setPlayerId(playerId);
+
+        // Save session to localStorage (same as room:joined)
+        const player = room.players.find(p => p.id === playerId);
+        saveSession({
+          playerId,
+          roomId: room.id,
+          sessionToken,
+          playerName: player?.name || 'Player',
+        });
+      });
+
+      socket.on('matchmaking:error', ({ message }) => {
+        useRoomStore.getState().setSearching(false);
+        useRoomStore.getState().setSearchPlayerCount(0);
+        useRoomStore.getState().setError(message);
+      });
+
       // Lobby
       socket.on('lobby:roomList', (rooms) => {
         useRoomStore.getState().setPublicRooms(rooms);
@@ -366,6 +393,9 @@ export function useSocket() {
       socket.off('game:paused');
       socket.off('game:resumed');
       socket.off('game:pauseExpired');
+      socket.off('matchmaking:searching');
+      socket.off('matchmaking:found');
+      socket.off('matchmaking:error');
       socket.off('lobby:roomList');
       socket.off('connection:restored');
     };
@@ -479,6 +509,20 @@ export function useSocket() {
     }
   }, [safeEmit]);
 
+  // Matchmaking actions
+  const joinMatchmaking = useCallback((playerName: string) => {
+    if (safeEmit('matchmaking:join', { playerName })) {
+      useRoomStore.getState().setSearching(true);
+      useRoomStore.getState().setSearchPlayerCount(1); // optimistic: at least self
+    }
+  }, [safeEmit]);
+
+  const leaveMatchmaking = useCallback(() => {
+    safeEmit('matchmaking:leave');
+    useRoomStore.getState().setSearching(false);
+    useRoomStore.getState().setSearchPlayerCount(0);
+  }, [safeEmit]);
+
   const leaveGame = useCallback(() => {
     if (safeEmit('game:leave')) {
       clearSession();
@@ -504,6 +548,10 @@ export function useSocket() {
     addAI,
     removeAI,
     startGame,
+
+    // Matchmaking actions
+    joinMatchmaking,
+    leaveMatchmaking,
 
     // Game actions
     bid,

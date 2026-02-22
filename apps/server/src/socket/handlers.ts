@@ -11,6 +11,8 @@ import { removePersistedGame } from '../services/persistenceService.js';
 import { registerRoomHandlers } from './roomHandlers.js';
 import { registerGameHandlers } from './gameHandlers.js';
 import { registerConnectionHandlers } from './connectionHandlers.js';
+import { registerMatchmakingHandlers, initMatchmaking } from './matchmakingHandlers.js';
+import * as matchmakingService from '../services/matchmakingService.js';
 import type { HandlerContext, TypedSocket, TypedServer } from './handlerContext.js';
 
 // Module-level state
@@ -103,6 +105,17 @@ function broadcastRoomList(io: TypedServer) {
 }
 
 function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: boolean) {
+  // Remove from matchmaking queue if queued
+  const removedFromQueue = matchmakingService.removeBySocketId(socket.id);
+  if (removedFromQueue) {
+    socket.leave('matchmaking-queue');
+    if (matchmakingService.getQueueSize() === 0) {
+      matchmakingService.cancelFillTimer();
+    } else {
+      io.to('matchmaking-queue').emit('matchmaking:searching', { playersFound: matchmakingService.getQueueSize() });
+    }
+  }
+
   const playerId = socketToPlayer.get(socket.id);
   if (!playerId) return;
 
@@ -273,5 +286,9 @@ export function setupSocketHandlers(io: TypedServer) {
     registerRoomHandlers(socket, ctx);
     registerGameHandlers(socket, ctx);
     registerConnectionHandlers(socket, ctx);
+    registerMatchmakingHandlers(socket, ctx);
+
+    // Initialize matchmaking fill-timeout callback (once)
+    initMatchmaking(ctx);
   });
 }

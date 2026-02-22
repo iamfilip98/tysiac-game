@@ -62,6 +62,10 @@ export interface ClientToServerEvents {
   'game:pause': () => void;
   'game:resume': () => void;
 
+  // Matchmaking events
+  'matchmaking:join': (data: { playerName: string }) => void;
+  'matchmaking:leave': () => void;
+
   // Connection events
   'player:reconnect': (data: { roomId: string; playerId: string; sessionToken: string }) => void;
 }
@@ -119,6 +123,11 @@ export interface ServerToClientEvents {
   }) => void;
   'player:disconnected': (playerId: string) => void;
   'player:reconnected': (playerId: string) => void;
+
+  // Matchmaking events
+  'matchmaking:searching': (data: { playersFound: number }) => void;
+  'matchmaking:found': (data: { room: Room; playerId: string; sessionToken: string }) => void;
+  'matchmaking:error': (error: { code: string; message: string }) => void;
 
   // Lobby events
   'lobby:roomList': (rooms: Room[]) => void;

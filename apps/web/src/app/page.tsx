@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
 import { CreateRoomForm } from '@/components/lobby/CreateRoomForm';
+import { QuickPlayButton } from '@/components/lobby/QuickPlayButton';
 import { RoomBrowser } from '@/components/lobby/RoomBrowser';
 import { RoomLobby } from '@/components/lobby/RoomLobby';
 import { GameBoard } from '@/components/game/GameBoard';
@@ -28,7 +29,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
-  const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms } = useRoomStore();
+  const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms, isSearching, searchPlayerCount } = useRoomStore();
 
   const { isSignedIn, getToken } = useAuth();
   const { user } = useUser();
@@ -88,6 +89,8 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     addAI,
     removeAI,
     startGame,
+    joinMatchmaking,
+    leaveMatchmaking,
   } = useSocket();
 
   // If there's an active game, show the game board
@@ -213,8 +216,50 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
             onPlayAsGuest={() => setIsGuest(true)}
           />
         </motion.div>
+      ) : isSearching ? (
+        /* Searching state — replaces tabs and forms */
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <QuickPlayButton
+            onJoin={joinMatchmaking}
+            onCancel={leaveMatchmaking}
+            isSearching={true}
+            searchPlayerCount={searchPlayerCount}
+            isConnected={isConnected}
+            defaultPlayerName={defaultPlayerName}
+            isAuthenticated={isAuthenticated}
+          />
+        </motion.div>
       ) : (
         <>
+          {/* Quick Play button */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.15 }}
+            className="w-full max-w-sm"
+          >
+            <QuickPlayButton
+              onJoin={joinMatchmaking}
+              onCancel={leaveMatchmaking}
+              isSearching={false}
+              searchPlayerCount={0}
+              isConnected={isConnected}
+              defaultPlayerName={defaultPlayerName}
+              isAuthenticated={isAuthenticated}
+            />
+          </motion.div>
+
+          {/* "or" divider */}
+          <div className="flex items-center gap-3 w-full max-w-sm my-3 sm:my-4">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-white/40 text-xs uppercase tracking-wider">or</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
           {/* Tab switcher */}
           <motion.div
             initial={{ opacity: 0 }}

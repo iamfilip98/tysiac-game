@@ -9,6 +9,8 @@ export interface RoomState {
   isCreatingRoom: boolean;
   error: string | null;
   publicRooms: Room[];
+  isSearching: boolean;
+  searchPlayerCount: number;
 
   // Actions
   setRoom: (room: Room | null) => void;
@@ -18,6 +20,8 @@ export interface RoomState {
   setCreatingRoom: (creating: boolean) => void;
   setError: (error: string | null) => void;
   setPublicRooms: (rooms: Room[]) => void;
+  setSearching: (searching: boolean) => void;
+  setSearchPlayerCount: (count: number) => void;
   updatePlayer: (playerId: string, updates: Partial<RoomPlayer>) => void;
   clearRoom: () => void;
   reset: () => void;
@@ -31,6 +35,8 @@ export const useRoomStore = create<RoomState>((set) => ({
   isCreatingRoom: false,
   error: null,
   publicRooms: [],
+  isSearching: false,
+  searchPlayerCount: 0,
 
   setRoom: (room) => set({ room, error: null }),
   setPlayerId: (playerId) => set({ playerId }),
@@ -39,6 +45,8 @@ export const useRoomStore = create<RoomState>((set) => ({
   setCreatingRoom: (isCreatingRoom) => set({ isCreatingRoom }),
   setError: (error) => set({ error }),
   setPublicRooms: (publicRooms) => set({ publicRooms }),
+  setSearching: (isSearching) => set({ isSearching }),
+  setSearchPlayerCount: (searchPlayerCount) => set({ searchPlayerCount }),
 
   updatePlayer: (playerId, updates) =>
     set((state) => {
@@ -56,6 +64,8 @@ export const useRoomStore = create<RoomState>((set) => ({
       room: null,
       playerId: null,
       error: null,
+      isSearching: false,
+      searchPlayerCount: 0,
     }),
 
   reset: () =>
@@ -67,5 +77,7 @@ export const useRoomStore = create<RoomState>((set) => ({
       isCreatingRoom: false,
       error: null,
       publicRooms: [],
+      isSearching: false,
+      searchPlayerCount: 0,
     }),
 }));

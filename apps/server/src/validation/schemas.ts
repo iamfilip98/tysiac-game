@@ -41,6 +41,11 @@ export const ReconnectSchema = z.object({
   sessionToken: z.string().min(1),
 });
 
+// Matchmaking events
+export const MatchmakingJoinSchema = z.object({
+  playerName: z.string().min(1).max(20).trim().regex(playerNameRegex, 'Player name contains invalid characters'),
+});
+
 // Type exports
 export type Card = z.infer<typeof CardSchema>;
 export type Suit = z.infer<typeof SuitSchema>;
