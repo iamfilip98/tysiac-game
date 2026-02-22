@@ -277,7 +277,14 @@ export function setupSocketHandlers(io: TypedServer) {
       DISCONNECT_GRACE_PERIOD,
       ROOM_GRACE_PERIOD,
       logEvent,
-      cleanupGame: (gameId, roomId) => cleanupGame(gameId, roomId),
+      cleanupGame: (gameId, roomId) => {
+        cleanupGame(gameId, roomId);
+        // Broadcast updated room so clients know gameId is cleared and can "Play Again"
+        const updatedRoom = roomService.getRoom(roomId);
+        if (updatedRoom) {
+          io.to(roomId).emit('room:updated', updatedRoom);
+        }
+      },
       broadcastRoomList: () => broadcastRoomList(io),
       handlePlayerLeave: (s, immediate) => handlePlayerLeave(io, s, immediate),
       withRateLimit,

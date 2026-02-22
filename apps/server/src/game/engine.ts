@@ -513,13 +513,9 @@ export class GameEngine {
       console.error('[Engine] Failed to update stats after game:', err);
     });
 
-    // Trigger cleanup callback
+    // Trigger cleanup callback immediately so room is ready for "Play Again"
     if (this.onCleanup) {
-      this.safeSetTimeout(() => {
-        if (this.onCleanup) {
-          this.onCleanup();
-        }
-      }, 5000);
+      this.onCleanup();
     }
   }
 
