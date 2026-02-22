@@ -9,28 +9,30 @@ import type { Suit } from '@tysiac/shared';
 function BarrelIcon({ className }: { className?: string }) {
   return (
     <svg className={className} viewBox="0 0 20 20" fill="none" aria-hidden="true">
-      {/* Barrel body — curved sides */}
-      <path
-        d="M6.5 4.5 Q4.5 10 6.5 15.5 L13.5 15.5 Q15.5 10 13.5 4.5 Z"
-        fill="#8B5E3C"
-      />
-      {/* Top ellipse */}
-      <ellipse cx="10" cy="4.5" rx="3.5" ry="1.8" fill="#A0713C" />
-      {/* Top ellipse rim */}
-      <ellipse cx="10" cy="4.5" rx="3.5" ry="1.8" fill="none" stroke="#d4af37" strokeWidth="0.5" />
-      {/* Bottom ellipse (partial, visible rim) */}
-      <ellipse cx="10" cy="15.5" rx="3.5" ry="1.5" fill="#6B4226" />
-      <ellipse cx="10" cy="15.5" rx="3.5" ry="1.5" fill="none" stroke="#d4af37" strokeWidth="0.4" />
-      {/* Gold bands */}
-      <line x1="5.8" y1="7" x2="14.2" y2="7" stroke="#d4af37" strokeWidth="0.7" strokeLinecap="round" />
-      <line x1="5.2" y1="10" x2="14.8" y2="10" stroke="#d4af37" strokeWidth="0.7" strokeLinecap="round" />
-      <line x1="5.8" y1="13" x2="14.2" y2="13" stroke="#d4af37" strokeWidth="0.7" strokeLinecap="round" />
-      {/* Subtle wood grain lines */}
-      <line x1="8" y1="5.5" x2="7.6" y2="14.5" stroke="#6B4226" strokeWidth="0.3" opacity="0.5" />
-      <line x1="10" y1="5" x2="10" y2="15" stroke="#6B4226" strokeWidth="0.3" opacity="0.5" />
-      <line x1="12" y1="5.5" x2="12.4" y2="14.5" stroke="#6B4226" strokeWidth="0.3" opacity="0.5" />
-      {/* Highlight for 3D feel */}
-      <ellipse cx="8.5" cy="8" rx="2" ry="3.5" fill="rgba(255,255,255,0.1)" />
+      <defs>
+        <clipPath id="barrel-clip">
+          <path d="M5.5 4 Q3 10 5.5 16 L14.5 16 Q17 10 14.5 4 Z" />
+        </clipPath>
+      </defs>
+      {/* Barrel body */}
+      <path d="M5.5 4 Q3 10 5.5 16 L14.5 16 Q17 10 14.5 4 Z" fill="#1a1a1a" />
+      {/* Top rim */}
+      <ellipse cx="10" cy="4" rx="4.5" ry="2.2" fill="#222" stroke="#d4af37" strokeWidth="0.9" />
+      <ellipse cx="10" cy="4.2" rx="3" ry="1.2" fill="#111" stroke="#b8941f" strokeWidth="0.4" />
+      {/* Gold bands clipped to barrel shape */}
+      <g clipPath="url(#barrel-clip)">
+        <rect x="2" y="7" width="16" height="1.6" rx="0.3" fill="#d4af37" />
+        <rect x="2" y="11.4" width="16" height="1.6" rx="0.3" fill="#d4af37" />
+      </g>
+      {/* Diamond ornaments on bands */}
+      <polygon points="10,6.8 11,7.8 10,8.8 9,7.8" fill="#1a1a1a" stroke="#b8941f" strokeWidth="0.3" />
+      <polygon points="10,11.2 11,12.2 10,13.2 9,12.2" fill="#1a1a1a" stroke="#b8941f" strokeWidth="0.3" />
+      {/* Bottom rim */}
+      <ellipse cx="10" cy="16" rx="4.5" ry="1.2" fill="none" stroke="#d4af37" strokeWidth="0.5" />
+      {/* Barrel outline */}
+      <path d="M5.5 4 Q3 10 5.5 16 L14.5 16 Q17 10 14.5 4 Z" fill="none" stroke="#d4af37" strokeWidth="0.7" />
+      {/* Highlight */}
+      <ellipse cx="7.5" cy="9.5" rx="2" ry="4" fill="rgba(255,255,255,0.07)" />
     </svg>
   );
 }
@@ -185,43 +187,48 @@ export const ScoreBoard = memo(function ScoreBoard({
                   <motion.span
                     animate={{ opacity: [0.5, 1, 0.5] }}
                     transition={{ duration: 2, repeat: Infinity }}
-                    className="text-xs text-emerald-400 flex items-center gap-1"
+                    className="text-xs text-amber-400 flex items-center gap-1"
                     aria-label="Grunwald (410 points)"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                      {/* Black base */}
-                      <circle cx="10" cy="10" r="9" fill="#1a1a1a" />
-                      {/* Gold alternating wedges */}
-                      <path d="M10,10 L19,10 A9,9 0 0,1 16.36,16.36Z" fill="#d4af37" />
-                      <path d="M10,10 L10,19 A9,9 0 0,1 3.64,16.36Z" fill="#d4af37" />
-                      <path d="M10,10 L1,10 A9,9 0 0,1 3.64,3.64Z" fill="#d4af37" />
-                      <path d="M10,10 L10,1 A9,9 0 0,1 16.36,3.64Z" fill="#d4af37" />
-                      {/* Dots on gold wedges */}
-                      <circle cx="16.9" cy="12.9" r="1.1" fill="#1a1a1a" />
-                      <circle cx="7.1" cy="16.9" r="1.1" fill="#1a1a1a" />
-                      <circle cx="3.1" cy="7.1" r="1.1" fill="#1a1a1a" />
-                      <circle cx="12.9" cy="3.1" r="1.1" fill="#1a1a1a" />
-                      {/* Gold outer ring */}
-                      <circle cx="10" cy="10" r="8.7" fill="none" stroke="#b8941f" strokeWidth="0.6" />
-                      {/* Black inner circle */}
-                      <circle cx="10" cy="10" r="5.8" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.4" />
-                      {/* Gold center */}
-                      <circle cx="10" cy="10" r="4.8" fill="#d4af37" />
-                      {/* Castle silhouette */}
-                      <rect x="6.8" y="7.5" width="2.4" height="6" fill="#1a1a1a" />
-                      <rect x="10.8" y="7.5" width="2.4" height="6" fill="#1a1a1a" />
-                      <rect x="9.2" y="9" width="1.6" height="4.5" fill="#1a1a1a" />
-                      {/* Battlements */}
-                      <rect x="6.8" y="6.5" width="0.9" height="1" fill="#1a1a1a" />
-                      <rect x="8.3" y="6.5" width="0.9" height="1" fill="#1a1a1a" />
-                      <rect x="10.8" y="6.5" width="0.9" height="1" fill="#1a1a1a" />
-                      <rect x="12.3" y="6.5" width="0.9" height="1" fill="#1a1a1a" />
-                      {/* Gate arch */}
-                      <path d="M9.3 13.5 V11.5 Q9.3 10.3 10 10.3 Q10.7 10.3 10.7 11.5 V13.5" fill="#d4af37" />
-                      {/* Highlight for 3D feel */}
-                      <ellipse cx="9" cy="8.5" rx="3" ry="2.5" fill="rgba(255,255,255,0.12)" />
-                      {/* Center ring detail */}
-                      <circle cx="10" cy="10" r="4.8" fill="none" stroke="#b8941f" strokeWidth="0.3" />
+                      {/* Left tower */}
+                      <rect x="3" y="5" width="4.5" height="12" rx="0.3" fill="#d4af37" />
+                      {/* Right tower */}
+                      <rect x="12.5" y="5" width="4.5" height="12" rx="0.3" fill="#d4af37" />
+                      {/* Connecting wall */}
+                      <rect x="7.5" y="9" width="5" height="8" fill="#d4af37" />
+                      {/* Battlements — towers */}
+                      <rect x="3" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
+                      <rect x="6" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
+                      <rect x="12.5" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
+                      <rect x="15.5" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
+                      {/* Wall battlements */}
+                      <rect x="8" y="7.5" width="1" height="1.5" rx="0.1" fill="#d4af37" />
+                      <rect x="11" y="7.5" width="1" height="1.5" rx="0.1" fill="#d4af37" />
+                      {/* Tower outlines */}
+                      <rect x="3" y="5" width="4.5" height="12" rx="0.3" fill="none" stroke="#b8941f" strokeWidth="0.3" />
+                      <rect x="12.5" y="5" width="4.5" height="12" rx="0.3" fill="none" stroke="#b8941f" strokeWidth="0.3" />
+                      {/* Stone lines */}
+                      <line x1="3" y1="8" x2="7.5" y2="8" stroke="#b8941f" strokeWidth="0.3" />
+                      <line x1="3" y1="11" x2="7.5" y2="11" stroke="#b8941f" strokeWidth="0.3" />
+                      <line x1="3" y1="14" x2="7.5" y2="14" stroke="#b8941f" strokeWidth="0.3" />
+                      <line x1="12.5" y1="8" x2="17" y2="8" stroke="#b8941f" strokeWidth="0.3" />
+                      <line x1="12.5" y1="11" x2="17" y2="11" stroke="#b8941f" strokeWidth="0.3" />
+                      <line x1="12.5" y1="14" x2="17" y2="14" stroke="#b8941f" strokeWidth="0.3" />
+                      {/* Windows */}
+                      <rect x="4.5" y="6" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
+                      <rect x="14" y="6" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
+                      <rect x="4.5" y="12" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
+                      <rect x="14" y="12" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
+                      {/* Gate with portcullis */}
+                      <path d="M8.2 17 V13.5 Q8.2 10.8 10 10.8 Q11.8 10.8 11.8 13.5 V17" fill="#1a1a1a" stroke="#b8941f" strokeWidth="0.3" />
+                      <line x1="9.1" y1="11.5" x2="9.1" y2="17" stroke="#d4af37" strokeWidth="0.4" />
+                      <line x1="10" y1="11" x2="10" y2="17" stroke="#d4af37" strokeWidth="0.4" />
+                      <line x1="10.9" y1="11.5" x2="10.9" y2="17" stroke="#d4af37" strokeWidth="0.4" />
+                      <line x1="8.3" y1="14" x2="11.7" y2="14" stroke="#d4af37" strokeWidth="0.3" />
+                      <line x1="8.3" y1="15.5" x2="11.7" y2="15.5" stroke="#d4af37" strokeWidth="0.3" />
+                      {/* Highlight */}
+                      <ellipse cx="5.5" cy="8" rx="1.5" ry="3" fill="rgba(255,255,255,0.1)" />
                     </svg>
                     <span className="sr-only">Grunwald</span>
                   </motion.span>
