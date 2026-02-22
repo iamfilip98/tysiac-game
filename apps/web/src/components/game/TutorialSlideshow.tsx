@@ -66,13 +66,27 @@ function SlideValues({ cardSize }: { cardSize: 'xs' | 'sm' }) {
   );
 }
 
+function FannedCards({ count, cardSize }: { count: number; cardSize: 'xs' | 'sm' }) {
+  const offset = cardSize === 'xs' ? 14 : 16;
+  const width = offset * (count - 1) + (cardSize === 'xs' ? 48 : 56);
+  return (
+    <div className="relative" style={{ width, height: cardSize === 'xs' ? 72 : 84 }}>
+      {Array.from({ length: count }).map((_, i) => (
+        <div key={i} className="absolute top-0" style={{ left: i * offset }}>
+          <Card card={c('spades', '9')} size={cardSize} isFaceDown isPlayable={false} skipEntryAnimation />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function SlideDealing({ cardSize }: { cardSize: 'xs' | 'sm' }) {
   const yourHand: CardType[] = [
     c('hearts', 'A'), c('hearts', 'K'), c('diamonds', 'Q'),
     c('clubs', '10'), c('clubs', 'J'), c('spades', 'K'), c('spades', '9'),
   ];
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       <div>
         <p className="text-white/60 text-xs text-center mb-1.5">Your hand (7 cards)</p>
         <div className="flex justify-center gap-1 flex-wrap">
@@ -82,25 +96,17 @@ function SlideDealing({ cardSize }: { cardSize: 'xs' | 'sm' }) {
         </div>
       </div>
       <div className="flex justify-center gap-6">
-        <div>
-          <p className="text-white/60 text-xs text-center mb-1.5">Opponent 1</p>
-          <div className="flex justify-center gap-0.5">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Card key={i} card={c('spades', '9')} size={cardSize} isFaceDown isPlayable={false} skipEntryAnimation />
-            ))}
-          </div>
+        <div className="flex flex-col items-center">
+          <p className="text-white/60 text-xs text-center mb-1.5">Opponent 1 (7)</p>
+          <FannedCards count={7} cardSize={cardSize} />
         </div>
-        <div>
-          <p className="text-white/60 text-xs text-center mb-1.5">Opponent 2</p>
-          <div className="flex justify-center gap-0.5">
-            {Array.from({ length: 7 }).map((_, i) => (
-              <Card key={i} card={c('spades', '9')} size={cardSize} isFaceDown isPlayable={false} skipEntryAnimation />
-            ))}
-          </div>
+        <div className="flex flex-col items-center">
+          <p className="text-white/60 text-xs text-center mb-1.5">Opponent 2 (7)</p>
+          <FannedCards count={7} cardSize={cardSize} />
         </div>
       </div>
-      <div>
-        <p className="text-white/60 text-xs text-center mb-1.5">Talon (3 hidden cards)</p>
+      <div className="flex flex-col items-center">
+        <p className="text-white/60 text-xs text-center mb-1.5">Talon (3 hidden)</p>
         <div className="flex justify-center gap-1">
           {Array.from({ length: 3 }).map((_, i) => (
             <Card key={i} card={c('spades', '9')} size={cardSize} isFaceDown isPlayable={false} skipEntryAnimation />
@@ -214,7 +220,7 @@ function SlideMarriages({ cardSize }: { cardSize: 'xs' | 'sm' }) {
         );
       })}
       <p className="text-white/50 text-xs text-center mt-2">
-        Play K or Q when leading a trick to declare. Sets that suit as trump.
+        Play the Queen when leading a trick to declare. Sets that suit as trump.
       </p>
     </div>
   );
@@ -415,9 +421,9 @@ export function TutorialSlideshow() {
         {page + 1} / {SLIDES.length}
       </p>
 
-      {/* Slide content area */}
+      {/* Slide content area — fixed height prevents modal resizing between slides */}
       <div
-        className="relative overflow-hidden min-h-[320px]"
+        className="relative overflow-hidden h-[420px] sm:h-[460px]"
         onTouchStart={handleTouchStart}
         onTouchEnd={handleTouchEnd}
       >
@@ -430,11 +436,14 @@ export function TutorialSlideshow() {
             animate="center"
             exit="exit"
             transition={{ duration: 0.25, ease: 'easeInOut' }}
+            className="absolute inset-0 flex flex-col"
           >
-            <h3 className="text-gold-400 font-semibold text-center mb-3 text-base">
+            <h3 className="text-gold-400 font-semibold text-center mb-3 text-base shrink-0">
               {slide.title}
             </h3>
-            {slide.content(cardSize)}
+            <div className="flex-1 flex flex-col justify-center overflow-y-auto">
+              {slide.content(cardSize)}
+            </div>
           </motion.div>
         </AnimatePresence>
       </div>
