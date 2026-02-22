@@ -317,7 +317,7 @@ export function GameBoard() {
       </div>
 
       {/* Bottom-left emote button */}
-      <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-2 sm:left-4 z-30">
+      <div className="absolute bottom-[max(1rem,env(safe-area-inset-bottom))] left-2 sm:left-4 z-40">
         <EmoteButton sendEmote={sendEmote} />
       </div>
 

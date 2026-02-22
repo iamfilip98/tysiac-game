@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const EMOTES = [
   { id: 'thumbsup', emoji: '\u{1F44D}', label: 'Nice' },
@@ -21,7 +22,7 @@ export function EmoteButton({ sendEmote }: EmoteButtonProps) {
 
   useEffect(() => {
     if (!open) return;
-    const handleClick = (e: MouseEvent) => {
+    const handlePointerDown = (e: PointerEvent) => {
       if (ref.current && !ref.current.contains(e.target as Node)) {
         setOpen(false);
       }
@@ -29,10 +30,10 @@ export function EmoteButton({ sendEmote }: EmoteButtonProps) {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
     };
-    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('pointerdown', handlePointerDown);
     document.addEventListener('keydown', handleKeyDown);
     return () => {
-      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('pointerdown', handlePointerDown);
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [open]);
@@ -54,31 +55,37 @@ export function EmoteButton({ sendEmote }: EmoteButtonProps) {
         </svg>
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          aria-label="Emotes"
-          className="absolute left-0 bottom-full mb-1 bg-gradient-to-b from-table-800/95 to-table-900/95 backdrop-blur-lg border border-white/[0.12] rounded-lg shadow-xl z-50 p-2"
-          style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 40px rgba(0,0,0,0.5)' }}
-        >
-          <div className="grid grid-cols-3 gap-1">
-            {EMOTES.map((emote) => (
-              <button
-                key={emote.id}
-                role="menuitem"
-                onClick={() => {
-                  sendEmote(emote.id);
-                  setOpen(false);
-                }}
-                className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-md hover:bg-white/[0.08] transition-colors min-w-[56px]"
-              >
-                <span className="text-xl leading-none">{emote.emoji}</span>
-                <span className="text-[10px] text-white/50 leading-none">{emote.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            role="menu"
+            aria-label="Emotes"
+            initial={{ opacity: 0, scale: 0.85, y: 8 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.85, y: 8 }}
+            transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+            className="absolute left-0 bottom-full mb-2 bg-gradient-to-b from-table-800/95 to-table-900/95 backdrop-blur-lg border border-white/[0.12] rounded-xl shadow-xl p-2"
+            style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.08), 0 10px 40px rgba(0,0,0,0.5)' }}
+          >
+            <div className="grid grid-cols-3 gap-1">
+              {EMOTES.map((emote) => (
+                <button
+                  key={emote.id}
+                  role="menuitem"
+                  onClick={() => {
+                    sendEmote(emote.id);
+                    setOpen(false);
+                  }}
+                  className="flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg hover:bg-white/[0.1] active:bg-white/[0.15] active:scale-95 transition-all min-w-[56px]"
+                >
+                  <span className="text-2xl leading-none select-none">{emote.emoji}</span>
+                  <span className="text-[10px] text-white/50 leading-none">{emote.label}</span>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
