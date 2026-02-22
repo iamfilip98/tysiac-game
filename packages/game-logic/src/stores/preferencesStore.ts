@@ -15,6 +15,7 @@ export interface PreferencesState {
   emotesEnabled: boolean;
   guestName: string;
   avatarEmoji: string | null;
+  tutorialCompleted: boolean;
   toggleTheme: () => void;
   toggleSound: () => void;
   toggleAnimations: () => void;
@@ -22,6 +23,7 @@ export interface PreferencesState {
   toggleEmotes: () => void;
   setGuestName: (name: string) => void;
   setAvatarEmoji: (emoji: string | null) => void;
+  setTutorialCompleted: (done: boolean) => void;
 }
 
 const preferencesSlice = (set: (fn: (s: PreferencesState) => Partial<PreferencesState>) => void): PreferencesState => ({
@@ -32,6 +34,7 @@ const preferencesSlice = (set: (fn: (s: PreferencesState) => Partial<Preferences
   emotesEnabled: true,
   guestName: '',
   avatarEmoji: null,
+  tutorialCompleted: false,
   toggleTheme: () =>
     set((s) => {
       const idx = THEME_ORDER.indexOf(s.theme);
@@ -50,6 +53,7 @@ const preferencesSlice = (set: (fn: (s: PreferencesState) => Partial<Preferences
   toggleEmotes: () => set((s) => ({ emotesEnabled: !s.emotesEnabled })),
   setGuestName: (name: string) => set(() => ({ guestName: name })),
   setAvatarEmoji: (emoji: string | null) => set(() => ({ avatarEmoji: emoji })),
+  setTutorialCompleted: (done: boolean) => set(() => ({ tutorialCompleted: done })),
 });
 
 /** Create a preferences store with a custom storage backend (e.g. AsyncStorage for mobile) */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth, useUser, useClerk } from '@clerk/nextjs';
 import { motion } from 'framer-motion';
@@ -32,7 +32,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const previousError = useRef<string | null>(null);
 
   const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms, isSearching, searchPlayerCount } = useRoomStore();
-  const { guestName, setGuestName, avatarEmoji, setAvatarEmoji } = usePreferencesStore();
+  const { guestName, setGuestName, avatarEmoji, setAvatarEmoji, tutorialCompleted, setTutorialCompleted } = usePreferencesStore();
 
   const { isSignedIn, getToken } = useAuth();
   const { user } = useUser();
@@ -103,13 +103,68 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     leaveMatchmaking,
   } = useSocket();
 
+  // Tutorial flow — chains: createRoom → addAI x2 → setReady → startGame
+  type TutorialStep = 'idle' | 'waitRoom' | 'waitPlayers' | 'waitReady' | 'waitStart';
+  const [tutorialStep, setTutorialStep] = useState<TutorialStep>('idle');
+
+  const startTutorial = useCallback(() => {
+    if (!isConnected) return;
+    // Enter as guest if not authenticated
+    if (!isAuthenticated) {
+      setIsGuest(true);
+      if (!guestName.trim()) setGuestName('Player');
+    }
+    const name = isAuthenticated && authDisplayName ? authDisplayName : (guestName.trim() || 'Player');
+    setTutorialStep('waitRoom');
+    createRoom(name, 'Tutorial', true, 3);
+  }, [isConnected, isAuthenticated, authDisplayName, guestName, setGuestName, createRoom]);
+
+  // Chain tutorial steps based on room state changes
+  useEffect(() => {
+    if (tutorialStep === 'idle') return;
+
+    if (tutorialStep === 'waitRoom' && room && room.name === 'Tutorial' && playerId) {
+      setTutorialStep('waitPlayers');
+      // Small delay to let room stabilize
+      const t = setTimeout(() => { addAI(); setTimeout(() => addAI(), 300); }, 200);
+      return () => clearTimeout(t);
+    }
+
+    if (tutorialStep === 'waitPlayers' && room && room.players.length >= 3) {
+      setTutorialStep('waitReady');
+      setTimeout(() => setReady(true), 200);
+    }
+
+    if (tutorialStep === 'waitReady' && room && room.players.find(p => p.id === playerId)?.isReady) {
+      setTutorialStep('waitStart');
+      setTimeout(() => startGame(), 300);
+    }
+
+    if (tutorialStep === 'waitStart' && gameState) {
+      setTutorialStep('idle');
+    }
+  }, [tutorialStep, room, playerId, gameState, addAI, setReady, startGame]);
+
   // If there's an active game, show the game board
   if (gameState && room?.gameId) {
     return <GameBoard />;
   }
 
-  // If in a room, show the lobby
+  // If in a room, show the lobby (skip for tutorial — auto-setup in progress)
   if (room && playerId) {
+    if (tutorialStep !== 'idle') {
+      return (
+        <main className="h-full flex items-center justify-center p-4 overflow-auto">
+          <div className="text-white/80 flex items-center gap-3">
+            <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            </svg>
+            Setting up tutorial...
+          </div>
+        </main>
+      );
+    }
     return (
       <main className="h-full flex items-center justify-center p-4 overflow-auto">
         <RoomLobby
@@ -245,6 +300,26 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
             </div>
           </motion.div>
 
+          {/* Learn to Play button */}
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="w-full max-w-sm mb-4"
+          >
+            <button
+              onClick={startTutorial}
+              disabled={!isConnected || tutorialStep !== 'idle'}
+              className="w-full py-3 px-4 rounded-xl border border-gold-500/30 bg-gold-500/[0.08] hover:bg-gold-500/15 text-gold-400 font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              Learn to Play
+            </button>
+          </motion.div>
+
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -373,6 +448,29 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
                 </div>
               </div>
             </div>
+          </motion.div>
+
+          {/* Learn to Play / Replay Tutorial */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35 }}
+            className="mt-4 w-full max-w-sm"
+          >
+            <button
+              onClick={() => {
+                setTutorialCompleted(false);
+                startTutorial();
+              }}
+              disabled={!isConnected || tutorialStep !== 'idle'}
+              className="w-full py-2.5 px-4 rounded-lg border border-gold-500/20 bg-gold-500/[0.06] hover:bg-gold-500/12 text-gold-400/80 hover:text-gold-400 font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+              </svg>
+              {tutorialCompleted ? 'Replay Tutorial' : 'Learn to Play'}
+            </button>
           </motion.div>
 
           {/* Rules summary - hidden on small mobile screens */}

@@ -9,6 +9,7 @@ import { ScoreBoard } from './ScoreBoard';
 import { TalonDisplay } from './TalonPanel';
 import { GameActionPanels } from './GameActionPanels';
 import { GameOverlays } from './GameOverlays';
+import { TutorialOverlay } from './TutorialOverlay';
 import { SettingsDropdown } from './SettingsDropdown';
 import { EmoteButton } from './EmoteButton';
 import { EmoteBubble } from './EmoteBubble';
@@ -254,6 +255,7 @@ export function GameBoard() {
   }
 
   const { phase, round, myHand, talon, scores } = gameState;
+  const isTutorial = room?.name === 'Tutorial';
   const layout = getLayoutPositions(isMobile, height, phase);
 
   // Calculate opponent hand sizes
@@ -621,6 +623,15 @@ export function GameBoard() {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Tutorial hints */}
+      {isTutorial && (
+        <TutorialOverlay
+          phase={phase}
+          isMyTurn={isMyTurn}
+          completedTricks={round?.completedTricks}
+        />
       )}
 
       {/* Modals and announcements */}
