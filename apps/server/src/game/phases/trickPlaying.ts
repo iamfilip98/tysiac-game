@@ -196,15 +196,12 @@ export function handlePlayCard(engine: GameEngine, playerId: string, card: Card)
 
   // Check if trick is complete
   if (trick.cards.length === 3) {
-    // Force immediate broadcast so clients see all 3 cards before trick clears.
-    // broadcastState() uses queueMicrotask which would fire AFTER completeTrick()
-    // resets currentTrick, so clients would never see the 3rd card.
-    engine.doBroadcast();
-    // Delay trick completion so all 3 cards are visible for ~1s
+    // No broadcast needed — clients already have all 3 cards from game:cardPlayed events.
+    // Delay trick completion so all 3 cards are visible for ~1.5s
     engine.safeSetTimeout(() => completeTrick(engine), 1500);
   } else {
-    engine.broadcastState();
-    // Next player
+    // No full state broadcast needed — game:cardPlayed already gave clients the card.
+    // Just advance turn and prompt the next player.
     trick.currentPlayer = getNextPlayer(engine.game, playerId);
     engine.promptCurrentPlayer();
   }
