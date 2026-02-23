@@ -38,7 +38,10 @@ export function registerEmoteHandlers(socket: TypedSocket, ctx: HandlerContext):
     lastEmoteTime.set(playerId, now);
 
     // Broadcast to others in the room (sender shows own emote locally)
-    console.log(`[Emote] Broadcasting '${emoteId}' from ${playerId} to room ${room.id} (${room.players.length} players)`);
+    ctx.io.in(room.id).fetchSockets().then(sockets => {
+      const socketIds = sockets.map(s => s.id);
+      console.log(`[Emote] Broadcasting '${emoteId}' from ${playerId} to room ${room.id} (${room.players.length} players, ${socketIds.length} sockets: ${socketIds.join(', ')})`);
+    });
     socket.to(room.id).emit('game:emoteReceived', { playerId, emoteId });
   });
 }
