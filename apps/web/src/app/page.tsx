@@ -272,66 +272,16 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
       {/* Auth gate — shown when user is neither authenticated nor playing as guest */}
       {showAuthGate ? (
-        <>
-          {/* Feature highlights */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.15 }}
-            className="w-full max-w-sm mb-6"
-          >
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { icon: '🎯', title: 'Quick Match', desc: 'Find opponents instantly' },
-                { icon: '👥', title: 'Play with Friends', desc: 'Create private rooms' },
-                { icon: '🤖', title: 'AI Opponents', desc: 'Practice anytime' },
-                { icon: '📊', title: 'Track Rating', desc: 'Elo ranking system' },
-              ].map((f, i) => (
-                <motion.div
-                  key={f.title}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 + i * 0.08 }}
-                  className="rounded-lg bg-white/[0.04] border border-white/[0.06] p-3 text-center"
-                >
-                  <div className="text-xl mb-1">{f.icon}</div>
-                  <div className="text-white text-sm font-medium">{f.title}</div>
-                  <div className="text-white/50 text-xs">{f.desc}</div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          {/* Learn to Play button */}
-          <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.45 }}
-            className="w-full max-w-sm mb-4"
-          >
-            <button
-              onClick={startTutorial}
-              disabled={!isConnected || tutorialStep !== 'idle'}
-              className="w-full py-3 px-4 rounded-xl border border-gold-500/30 bg-gold-500/[0.08] hover:bg-gold-500/15 text-gold-400 font-medium text-sm transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-            >
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
-              Learn to Play
-            </button>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-          >
-            <AuthGate
-              onPlayAsGuest={() => setIsGuest(true)}
-            />
-          </motion.div>
-        </>
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="w-full max-w-sm"
+        >
+          <AuthGate
+            onPlayAsGuest={() => setIsGuest(true)}
+          />
+        </motion.div>
       ) : isSearching ? (
         /* Searching state — replaces the entire card */
         <motion.div
