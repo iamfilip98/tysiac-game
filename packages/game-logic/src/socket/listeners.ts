@@ -274,7 +274,6 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
   // --- Emotes ---
 
   socket.on('game:emoteReceived', ({ playerId, emoteId }: { playerId: string; emoteId: string }) => {
-    console.log(`[Emote] Received emote '${emoteId}' from ${playerId}`);
     useGameStore.getState().setEmote(playerId, emoteId);
     setTimeout(() => useGameStore.getState().clearEmote(playerId), 3000);
   });
