@@ -1,13 +1,13 @@
-import type { ClientToServerEvents, ServerToClientEvents } from '@tysiac/shared';
+import type { ClientToServerEvents, ServerToClientEvents, GameState, Room } from '@tysiac/shared';
 import * as roomService from '../services/roomService.js';
 import * as gameService from '../services/gameService.js';
 import * as debugService from '../services/debugService.js';
 import { GameEngine } from '../game/engine.js';
 import { checkRateLimit, trackIPConnection } from '../security/rateLimit.js';
-import { invalidatePlayerSession } from '../security/session.js';
+import { invalidatePlayerSession, refreshSession } from '../security/session.js';
 import { verifyToken } from '@clerk/backend';
 import { ensureClerkPlayer } from '../services/statsService.js';
-import { removePersistedGame } from '../services/persistenceService.js';
+import { removePersistedGame, persistGame } from '../services/persistenceService.js';
 import { registerRoomHandlers } from './roomHandlers.js';
 import { registerGameHandlers } from './gameHandlers.js';
 import { registerConnectionHandlers } from './connectionHandlers.js';
@@ -144,6 +144,9 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
       // Clear stale socket mapping so grace period timeout can detect non-reconnection
       playerToSocket.delete(playerId);
       socket.to(room.id).emit('player:disconnected', playerId);
+
+      // Extend session life through the grace period
+      refreshSession(playerId);
 
       // Set 60s AI replacement timer
       const aiTimeout = setTimeout(() => {
