@@ -386,6 +386,8 @@ export function registerRoomHandlers(socket: TypedSocket, ctx: HandlerContext): 
           const room = roomService.getRoomByPlayerId(playerId);
           if (room) {
             ctx.gameCreationLocks.delete(room.id);
+            // Clear stale gameId if it was set before the error
+            roomService.clearGameId(room.id);
           }
         }
       }
