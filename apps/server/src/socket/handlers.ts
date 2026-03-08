@@ -22,8 +22,10 @@ const playerToSocket = new Map<string, string>();
 const gameEngines = new Map<string, GameEngine>();
 const gameCreationLocks = new Set<string>();
 const disconnectTimeouts = new Map<string, NodeJS.Timeout>();
+const aiReplacementTimeouts = new Map<string, NodeJS.Timeout>();
 const DISCONNECT_GRACE_PERIOD = 300000; // 5 minutes for in-game (matches pre-game)
 const ROOM_GRACE_PERIOD = 300000; // 5 minutes for pre-game rooms
+const AI_REPLACEMENT_DELAY = 60_000; // 60s before AI takes over
 const socketToIP = new Map<string, string>();
 
 // Helper to log debug events with full context (wrapped in try-catch to never break game flow)
@@ -143,7 +145,34 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
       playerToSocket.delete(playerId);
       socket.to(room.id).emit('player:disconnected', playerId);
 
-      // Set timeout for cleanup
+      // Set 60s AI replacement timer
+      const aiTimeout = setTimeout(() => {
+        aiReplacementTimeouts.delete(playerId);
+
+        // Check if player reconnected
+        if (playerToSocket.has(playerId)) return;
+
+        const currentRoom = roomService.getRoomByPlayerId(playerId);
+        if (!currentRoom?.gameId) return;
+
+        const engine = gameEngines.get(currentRoom.gameId);
+        if (!engine) return;
+
+        engine.replacePlayerWithAI(playerId);
+        roomService.replacePlayerWithAI(currentRoom.id, playerId);
+
+        const updatedRoom = roomService.getRoom(currentRoom.id);
+        if (updatedRoom) {
+          io.to(currentRoom.id).emit('room:updated', updatedRoom);
+        }
+
+        console.log(`Player ${playerId} replaced with AI after ${AI_REPLACEMENT_DELAY / 1000}s disconnect`);
+        logEvent({ socketId: socket.id, eventType: 'player:aiReplacement', result: 'success', metadata: { playerId, roomId: currentRoom.id, gameId: currentRoom.gameId } });
+      }, AI_REPLACEMENT_DELAY);
+
+      aiReplacementTimeouts.set(playerId, aiTimeout);
+
+      // Set 5-minute session invalidation timeout
       const timeout = setTimeout(async () => {
         disconnectTimeouts.delete(playerId);
 
@@ -272,10 +301,12 @@ export function setupSocketHandlers(io: TypedServer) {
       gameEngines,
       gameCreationLocks,
       disconnectTimeouts,
+      aiReplacementTimeouts,
       socketToIP,
       authenticatedPlayerId,
       DISCONNECT_GRACE_PERIOD,
       ROOM_GRACE_PERIOD,
+      AI_REPLACEMENT_DELAY,
       logEvent,
       cleanupGame: (gameId, roomId) => {
         cleanupGame(gameId, roomId);

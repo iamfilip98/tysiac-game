@@ -30,6 +30,13 @@ export function registerConnectionHandlers(socket: TypedSocket, ctx: HandlerCont
           ctx.disconnectTimeouts.delete(playerId);
         }
 
+        // Cancel any pending AI replacement timer
+        const pendingAI = ctx.aiReplacementTimeouts.get(playerId);
+        if (pendingAI) {
+          clearTimeout(pendingAI);
+          ctx.aiReplacementTimeouts.delete(playerId);
+        }
+
         // Validate session token — fall back to auth token if session invalid
         if (!validateSession(sessionToken, playerId)) {
           // If the player is authenticated and the playerId matches, allow reconnect

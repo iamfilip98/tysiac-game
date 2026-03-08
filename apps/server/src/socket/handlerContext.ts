@@ -12,10 +12,12 @@ export interface HandlerContext {
   gameEngines: Map<string, GameEngine>;
   gameCreationLocks: Set<string>;
   disconnectTimeouts: Map<string, NodeJS.Timeout>;
+  aiReplacementTimeouts: Map<string, NodeJS.Timeout>;
   socketToIP: Map<string, string>;
   authenticatedPlayerId: string | null;
   DISCONNECT_GRACE_PERIOD: number;
   ROOM_GRACE_PERIOD: number;
+  AI_REPLACEMENT_DELAY: number;
   logEvent(params: {
     socketId: string;
     eventType: string;
