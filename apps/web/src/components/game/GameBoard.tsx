@@ -14,6 +14,7 @@ import { SettingsDropdown } from './SettingsDropdown';
 import { RulesModal } from './RulesModal';
 import { EmoteButton } from './EmoteButton';
 import { EmoteBubble } from './EmoteBubble';
+import { TrickHistoryButton } from './TrickHistoryButton';
 import { Button } from '@/components/ui/Button';
 import { useGameStore, useRoomStore, usePreferencesStore } from '@tysiac/game-logic';
 import { useSocket } from '@/hooks/useSocket';
@@ -334,6 +335,15 @@ export function GameBoard() {
         </div>
       )}
 
+      {/* Trick history button — right-center on mobile, bottom-right on desktop */}
+      {phase === 'trickPlaying' && (
+        <div className={cn(
+          'absolute z-40',
+          isMobile ? 'right-2 top-1/2 -translate-y-1/2' : 'bottom-4 right-4'
+        )}>
+          <TrickHistoryButton players={gameState.players} />
+        </div>
+      )}
 
       {/* Score board - top center */}
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] left-1/2 -translate-x-1/2 z-20">
