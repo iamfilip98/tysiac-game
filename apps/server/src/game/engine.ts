@@ -766,6 +766,11 @@ export class GameEngine {
     if (this.game.phase === 'talonReveal') {
       this.checkTalonConfirmations();
     }
+
+    // Same for wykladana phase
+    if (this.game.phase === 'wykladana') {
+      this.checkWykladanaConfirmations();
+    }
   }
 
   /**

@@ -425,6 +425,23 @@ export function handleConfirmWykladana(engine: GameEngine, playerId: string): vo
 export function checkWykladanaConfirmations(engine: GameEngine): void {
   if (engine.isCleanedUp) return;
 
+  // Auto-confirm disconnected players (no socket = disconnected)
+  for (const player of engine.game.players) {
+    if (player.isAI) continue; // AI already auto-confirmed
+    const socketId = engine.getSocketId(player.id);
+    if (!socketId && !engine.wykladanaConfirmations.has(player.id)) {
+      logDebug({
+        gameId: engine.game.id,
+        roomId: engine.roomId,
+        playerId: player.id,
+        eventType: 'wykladana:autoconfirm:disconnected',
+        eventData: { reason: 'no_socket' },
+        result: 'success',
+      });
+      engine.wykladanaConfirmations.add(player.id);
+    }
+  }
+
   const playerIds = engine.game.players.map(p => p.id);
   const allConfirmed = playerIds.every(id => engine.wykladanaConfirmations.has(id));
 
