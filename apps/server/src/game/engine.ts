@@ -405,7 +405,11 @@ export class GameEngine {
       this.distributionRevealConfirmations.add(round.dealer);
     }
 
-    this.broadcastState();
+    // Must use doBroadcast() (immediate) instead of broadcastState() (coalesced).
+    // With AI opponents, checkDistributionRevealConfirmations() may complete synchronously
+    // and transition to trickPlaying before the coalesced microtask fires, causing
+    // the client to never see the distributionReveal phase and the received card overlay.
+    this.doBroadcast();
     this.checkDistributionRevealConfirmations();
   }
 
