@@ -30,6 +30,9 @@ export class GameEngine {
   // Talon confirmation tracking
   public talonConfirmations: Set<string> = new Set();
 
+  // Distribution reveal confirmation tracking
+  public distributionRevealConfirmations: Set<string> = new Set();
+
   // Wykladana confirmation tracking
   public wykladanaConfirmations: Set<string> = new Set();
 
@@ -130,12 +133,18 @@ export class GameEngine {
     const round = this.game.currentRound;
     if (!round) return null;
 
-    // Confirmation-based phases: talonReveal and wykladana
+    // Confirmation-based phases: talonReveal, distributionReveal, and wykladana
     // These don't have a single "current player" — all non-confirmed players need a nudge
     if (this.game.phase === 'talonReveal') {
       if (isAIPlayer(this.game, playerId)) return null;
       if (this.talonConfirmations.has(playerId)) return null;
       // Client renders confirm button from game state; return empty actions
+      return [];
+    }
+
+    if (this.game.phase === 'distributionReveal') {
+      if (isAIPlayer(this.game, playerId)) return null;
+      if (this.distributionRevealConfirmations.has(playerId)) return null;
       return [];
     }
 
@@ -372,6 +381,58 @@ export class GameEngine {
 
     // Start bidding after a short delay (for dealing animation)
     this.safeSetTimeout(() => this.startBidding(), 500);
+  }
+
+  // --- Distribution reveal phase ---
+
+  public startDistributionReveal(): void {
+    if (this.isCleanedUp) return;
+
+    this.distributionRevealConfirmations.clear();
+    this.game.phase = 'distributionReveal';
+
+    // Auto-confirm bid winner (they chose the cards), AI players, and sitting-out dealer
+    const round = this.game.currentRound!;
+    if (round.bidWinner) {
+      this.distributionRevealConfirmations.add(round.bidWinner);
+    }
+    for (const player of this.game.players) {
+      if (player.isAI) {
+        this.distributionRevealConfirmations.add(player.id);
+      }
+    }
+    if (round.isDealerSittingOut && round.dealer) {
+      this.distributionRevealConfirmations.add(round.dealer);
+    }
+
+    this.broadcastState();
+    this.checkDistributionRevealConfirmations();
+  }
+
+  handleConfirmDistribution(playerId: string): void {
+    if (this.isCleanedUp) return;
+    if (this.game.phase !== 'distributionReveal') return;
+
+    this.distributionRevealConfirmations.add(playerId);
+    this.checkDistributionRevealConfirmations();
+  }
+
+  public checkDistributionRevealConfirmations(): void {
+    if (this.isCleanedUp) return;
+
+    // Auto-confirm disconnected players
+    for (const player of this.game.players) {
+      if (player.isAI) continue;
+      const socketId = this.getSocketId(player.id);
+      if (!socketId && !this.distributionRevealConfirmations.has(player.id)) {
+        this.distributionRevealConfirmations.add(player.id);
+      }
+    }
+
+    const allConfirmed = this.game.players.every(p => this.distributionRevealConfirmations.has(p.id));
+    if (allConfirmed) {
+      this.startTrickPlaying();
+    }
   }
 
   // --- Bidding phase (delegated to phases/bidding.ts) ---
@@ -851,6 +912,11 @@ export class GameEngine {
       }
     }
 
+    // If we're in distribution reveal phase, re-check confirmations
+    if (this.game.phase === 'distributionReveal') {
+      this.checkDistributionRevealConfirmations();
+    }
+
     // If we're in talon reveal phase, re-check confirmations
     // This will auto-confirm the disconnected player since they no longer have a socket
     if (this.game.phase === 'talonReveal') {
@@ -907,6 +973,12 @@ export class GameEngine {
 
       // Delay AI turn slightly so game state can update
       this.safeSetTimeout(() => this.handleAITurn(playerId, actions), 500);
+    }
+
+    // Handle distributionReveal phase - auto-confirm for AI player
+    if (this.game.phase === 'distributionReveal' && !this.distributionRevealConfirmations.has(playerId)) {
+      this.distributionRevealConfirmations.add(playerId);
+      this.checkDistributionRevealConfirmations();
     }
 
     // Handle talonReveal phase - auto-confirm for AI player
@@ -1089,6 +1161,8 @@ export class GameEngine {
       } else {
         this.promptCurrentPlayer();
       }
+    } else if (this.game.phase === 'distributionReveal') {
+      this.checkDistributionRevealConfirmations();
     } else if (['bidding', 'talonDistribution'].includes(this.game.phase)) {
       this.promptCurrentPlayer();
     } else if (this.game.phase === 'talonReveal') {
@@ -1161,6 +1235,23 @@ export class GameEngine {
 
       case 'talonDistribution':
         this.promptCurrentPlayer();
+        break;
+
+      case 'distributionReveal':
+        // Reset confirmations and re-check
+        this.distributionRevealConfirmations.clear();
+        for (const player of this.game.players) {
+          if (player.isAI) {
+            this.distributionRevealConfirmations.add(player.id);
+          }
+        }
+        if (this.game.currentRound?.bidWinner) {
+          this.distributionRevealConfirmations.add(this.game.currentRound.bidWinner);
+        }
+        if (this.game.currentRound?.isDealerSittingOut && this.game.currentRound.dealer) {
+          this.distributionRevealConfirmations.add(this.game.currentRound.dealer);
+        }
+        this.checkDistributionRevealConfirmations();
         break;
 
       case 'wykladana':

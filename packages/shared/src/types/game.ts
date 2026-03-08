@@ -60,6 +60,8 @@ export interface RoundState {
   dealerMarriagePoints: number;
   talonMarriages: Suit[];
   talonAces?: number; // Number of aces in talon (for 4-player dealer scoring)
+  // Cards distributed to each player (playerId -> card) — set during distributionReveal
+  distributedCards?: Record<string, Card>;
   // Engine state persisted for restore across server restarts
   currentBidder?: string;
   passedPlayers?: string[];
@@ -83,6 +85,7 @@ export type GamePhase =
   | 'talonReveal'
   | 'playOrPassDecision'  // When bid winner at 100 decides to play or pass
   | 'talonDistribution'
+  | 'distributionReveal'  // Players see the card they received from bid winner
   | 'wykladana'  // Celebration phase when bidder has perfect cards
   | 'trickPlaying'
   | 'roundScoring'

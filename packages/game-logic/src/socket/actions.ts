@@ -94,6 +94,10 @@ export function createGameActions(emit: EmitFn, session: SyncSessionAdapter): { 
     emit('game:declareMarriage', suit);
   }
 
+  function confirmDistribution(): void {
+    emit('game:confirmDistribution');
+  }
+
   function confirmTalon(): void {
     emit('game:confirmTalon');
   }
@@ -163,6 +167,7 @@ export function createGameActions(emit: EmitFn, session: SyncSessionAdapter): { 
     startGame,
     bid,
     pass,
+    confirmDistribution,
     confirmTalon,
     confirmWykladana,
     playOrPass,

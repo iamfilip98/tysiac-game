@@ -11,6 +11,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
   let myHand: Card[] = [];
   let talon: Card[] | null = null;
   let cardsToDistribute: Card[] | null = null;
+  let receivedCard: Card | null = null;
   let roundInfo = null;
   let isSpectating = false;
 
@@ -35,6 +36,11 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     // Cards to distribute (only visible to bid winner during distribution)
     if (game.phase === 'talonDistribution' && round.bidWinner === playerId) {
       cardsToDistribute = round.cardsToDistribute;
+    }
+
+    // Card received from bid winner (during distribution reveal)
+    if (game.phase === 'distributionReveal' && round.distributedCards?.[playerId]) {
+      receivedCard = round.distributedCards[playerId];
     }
 
     // Round info
@@ -79,6 +85,7 @@ export function getClientGameState(game: GameState, playerId: string): ClientGam
     isSpectating,
     talon,
     cardsToDistribute,
+    receivedCard,
     winner: game.winner,
     // Pause state
     isPaused: game.isPaused,

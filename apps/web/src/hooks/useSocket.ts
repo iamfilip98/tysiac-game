@@ -120,6 +120,7 @@ export function useSocket() {
   const startGame = useCallback(() => actionsInstance?.actions.startGame(), []);
   const bid = useCallback((...args: Parameters<GameActions['bid']>) => actionsInstance?.actions.bid(...args), []);
   const pass = useCallback(() => actionsInstance?.actions.pass(), []);
+  const confirmDistribution = useCallback(() => actionsInstance?.actions.confirmDistribution(), []);
   const confirmTalon = useCallback(() => actionsInstance?.actions.confirmTalon(), []);
   const confirmWykladana = useCallback(() => actionsInstance?.actions.confirmWykladana(), []);
   const playOrPass = useCallback((...args: Parameters<GameActions['playOrPass']>) => actionsInstance?.actions.playOrPass(...args), []);
@@ -145,6 +146,7 @@ export function useSocket() {
     leaveMatchmaking,
     bid,
     pass,
+    confirmDistribution,
     confirmTalon,
     confirmWykladana,
     playOrPass,

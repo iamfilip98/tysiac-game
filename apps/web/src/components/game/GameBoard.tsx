@@ -6,6 +6,7 @@ import { PlayerHand } from './PlayerHand';
 import { OpponentHand } from './OpponentHand';
 import { TrickPile } from './TrickPile';
 import { ScoreBoard } from './ScoreBoard';
+import { Card } from './Card';
 import { TalonDisplay } from './TalonPanel';
 import { GameActionPanels } from './GameActionPanels';
 import { GameOverlays } from './GameOverlays';
@@ -97,6 +98,7 @@ export function GameBoard() {
     pass,
     playCard,
     distributeTalon,
+    confirmDistribution,
     confirmTalon,
     confirmWykladana,
     playOrPass,
@@ -162,6 +164,9 @@ export function GameBoard() {
     return false;
   }, [selectedCard, validActions]);
 
+  // Track distribution reveal confirmation state
+  const [hasConfirmedDistribution, setHasConfirmedDistribution] = useState(false);
+
   // Track talon confirmation state
   const [hasConfirmedTalon, setHasConfirmedTalon] = useState(false);
 
@@ -177,6 +182,12 @@ export function GameBoard() {
   const [distributionSubmitted, setDistributionSubmitted] = useState(false);
 
   // Reset confirmation state when phase changes
+  useEffect(() => {
+    if (gameState?.phase !== 'distributionReveal') {
+      setHasConfirmedDistribution(false);
+    }
+  }, [gameState?.phase]);
+
   useEffect(() => {
     if (gameState?.phase !== 'talonReveal') {
       setHasConfirmedTalon(false);
@@ -225,6 +236,17 @@ export function GameBoard() {
     });
     distributeTalon(distribution);
   };
+
+  // Auto-confirm distribution for spectating players and bid winner (who chose the cards)
+  useEffect(() => {
+    if (gameState?.phase === 'distributionReveal' && !hasConfirmedDistribution) {
+      const shouldAutoConfirm = isSpectating || !gameState.receivedCard;
+      if (shouldAutoConfirm) {
+        setHasConfirmedDistribution(true);
+        confirmDistribution();
+      }
+    }
+  }, [isSpectating, gameState?.phase, gameState?.receivedCard, hasConfirmedDistribution, confirmDistribution]);
 
   // Auto-confirm talon for spectating players (dealer in 4-player mode)
   useEffect(() => {
@@ -649,6 +671,65 @@ export function GameBoard() {
           completedTricks={round?.completedTricks}
         />
       )}
+
+      {/* Distribution reveal overlay — shows the card received from bid winner */}
+      <AnimatePresence>
+        {phase === 'distributionReveal' && !isSpectating && gameState.receivedCard && (
+          <motion.div
+            key="distribution-reveal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ delay: 0.1, duration: 0.3 }}
+              className="flex flex-col items-center gap-5 px-6 sm:px-10 py-6 sm:py-8 rounded-xl sm:rounded-2xl max-w-sm w-full bg-gradient-to-b from-table-800 to-table-900 border border-table-600 shadow-2xl overflow-hidden"
+            >
+              <h3 className="text-white font-bold text-base sm:text-lg tracking-wide">
+                Card Received
+              </h3>
+              <p className="text-white/60 text-sm -mt-2">
+                from {gameState.players.find(p => p.id === round?.bidWinner)?.name || 'bid winner'}
+              </p>
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.35, type: 'spring', damping: 15 }}
+              >
+                <Card card={gameState.receivedCard} size="lg" isPlayable={false} />
+              </motion.div>
+              <div className="h-10 flex items-center justify-center">
+                {!hasConfirmedDistribution ? (
+                  <motion.button
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5 }}
+                    onClick={() => {
+                      setHasConfirmedDistribution(true);
+                      confirmDistribution();
+                    }}
+                    className="px-8 py-2.5 bg-gold-500 hover:bg-gold-400 text-black font-bold rounded-lg transition-colors shadow-lg"
+                  >
+                    Continue
+                  </motion.button>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="text-white/60 text-sm"
+                  >
+                    Waiting for other players...
+                  </motion.div>
+                )}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Rules modal — rendered at root level to avoid z-index stacking issues */}
       <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />

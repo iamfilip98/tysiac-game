@@ -52,6 +52,7 @@ export interface GameActions {
   startGame(): void;
   bid(amount: number): void;
   pass(): void;
+  confirmDistribution(): void;
   confirmTalon(): void;
   confirmWykladana(): void;
   playOrPass(decision: 'play' | 'pass'): void;

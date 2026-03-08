@@ -52,6 +52,7 @@ export interface ClientToServerEvents {
   // Game events
   'game:bid': (amount: number) => void;
   'game:pass': () => void;
+  'game:confirmDistribution': () => void;
   'game:confirmTalon': () => void;
   'game:confirmWykladana': () => void;
   'game:playOrPass': (decision: 'play' | 'pass') => void;
@@ -185,6 +186,9 @@ export interface ClientGameState {
 
   // For talon distribution phase
   cardsToDistribute: Card[] | null;
+
+  // Card received from bid winner (during distributionReveal phase)
+  receivedCard: Card | null;
 
   // Winner (if game ended)
   winner: string | null;

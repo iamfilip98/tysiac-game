@@ -368,8 +368,8 @@ export function handleDistributeTalon(engine: GameEngine, playerId: string, dist
   }
 
   // Check for duplicate cards in distribution
-  const distributedCards = distribution.map(d => `${d.card.suit}-${d.card.rank}`);
-  if (new Set(distributedCards).size !== distributedCards.length) {
+  const distributedCardKeys = distribution.map(d => `${d.card.suit}-${d.card.rank}`);
+  if (new Set(distributedCardKeys).size !== distributedCardKeys.length) {
     engine.sendError(playerId, 'Cannot give the same card twice');
     return;
   }
@@ -385,7 +385,8 @@ export function handleDistributeTalon(engine: GameEngine, playerId: string, dist
     }
   }
 
-  // Distribute cards
+  // Distribute cards and track what each player received
+  const distributedCards: Record<string, Card> = {};
   for (const { playerId: targetId, card } of distribution) {
     // Remove from bidder's hand
     const index = bidderHand.findIndex(c => c.suit === card.suit && c.rank === card.rank);
@@ -393,10 +394,14 @@ export function handleDistributeTalon(engine: GameEngine, playerId: string, dist
 
     // Add to target's hand
     round.players[targetId].hand.push(card);
+    distributedCards[targetId] = card;
   }
 
   round.cardsToDistribute = [];
-  engine.startTrickPlaying();
+  round.distributedCards = distributedCards;
+
+  // Show each player the card they received before starting trick play
+  engine.startDistributionReveal();
 }
 
 export function handleConfirmWykladana(engine: GameEngine, playerId: string): void {

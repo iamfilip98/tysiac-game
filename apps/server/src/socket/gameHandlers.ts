@@ -85,6 +85,35 @@ export function registerGameHandlers(socket: TypedSocket, ctx: HandlerContext): 
     });
   });
 
+  socket.on('game:confirmDistribution', () => {
+    ctx.withRateLimit(socket, 'game:confirmDistribution', () => {
+      try {
+        const playerId = ctx.socketToPlayer.get(socket.id);
+        if (!playerId) {
+          socket.emit('game:error', { code: 'NOT_IN_ROOM', message: 'You must be in a room' });
+          return;
+        }
+
+        const room = roomService.getRoomByPlayerId(playerId);
+        if (!room || !room.gameId) {
+          socket.emit('game:error', { code: 'NO_GAME', message: 'No active game' });
+          return;
+        }
+
+        const engine = ctx.gameEngines.get(room.gameId);
+        if (!engine) {
+          socket.emit('game:error', { code: 'NO_GAME', message: 'Game engine not found' });
+          return;
+        }
+
+        engine.handleConfirmDistribution(playerId);
+      } catch (error) {
+        console.error('Error confirming distribution:', error);
+        socket.emit('game:error', { code: 'SERVER_ERROR', message: 'Failed to confirm distribution' });
+      }
+    });
+  });
+
   socket.on('game:confirmTalon', () => {
     ctx.withRateLimit(socket, 'game:confirmTalon', () => {
       try {
