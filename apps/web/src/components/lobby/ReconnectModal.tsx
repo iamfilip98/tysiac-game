@@ -14,7 +14,6 @@ const API_URL = process.env.NEXT_PUBLIC_SOCKET_URL || 'http://localhost:3001';
 export function ReconnectModal() {
   const reconnectStatus = useRoomStore((s) => s.reconnectStatus);
   const setReconnectStatus = useRoomStore((s) => s.setReconnectStatus);
-  const room = useRoomStore((s) => s.room);
   const { getToken } = useAuth();
 
   const [sessionInfo, setSessionInfo] = useState<StoredSession | null>(null);
@@ -68,6 +67,9 @@ export function ReconnectModal() {
     if (!session) return;
     setReconnectStatus('reconnecting');
     const socket = getSocket();
+    if (!socket.connected) {
+      socket.connect();
+    }
     socket.emit('player:reconnect', {
       roomId: session.roomId,
       playerId: session.playerId,
@@ -92,7 +94,7 @@ export function ReconnectModal() {
     setSessionInfo(null);
   };
 
-  const isOpen = reconnectStatus !== 'idle' && sessionInfo !== null && room === null;
+  const isOpen = reconnectStatus !== 'idle' && sessionInfo !== null;
 
   return (
     <Modal isOpen={isOpen} ariaLabel="Reconnecting to game">

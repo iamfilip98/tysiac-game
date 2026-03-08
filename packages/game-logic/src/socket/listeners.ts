@@ -101,7 +101,6 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
 
     if (code === 'INVALID_SESSION' && isAutoReconnecting) {
       isAutoReconnecting = false;
-      useRoomStore.getState().setReconnectStatus('failed');
       deps.session.clear();
 
       const hasActiveGame = useGameStore.getState().gameState !== null;
@@ -113,13 +112,17 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
         useRoomStore.getState().clearRoom();
         useRoomStore.getState().setError('Your session expired. Please rejoin the game.');
       }
+      // Set failed AFTER clearRoom so it doesn't get reset to 'idle'
+      useRoomStore.getState().setReconnectStatus('failed');
       return;
     }
 
-    if (useRoomStore.getState().reconnectStatus === 'reconnecting') {
+    const wasReconnecting = useRoomStore.getState().reconnectStatus === 'reconnecting';
+    isAutoReconnecting = false;
+    if (wasReconnecting) {
+      deps.session.clear();
       useRoomStore.getState().setReconnectStatus('failed');
     }
-    isAutoReconnecting = false;
     useRoomStore.getState().setError(message);
   });
 
