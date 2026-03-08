@@ -191,44 +191,18 @@ export const ScoreBoard = memo(function ScoreBoard({
                     aria-label="Grunwald (410 points)"
                   >
                     <svg className="w-5 h-5" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-                      {/* Left tower */}
-                      <rect x="3" y="5" width="4.5" height="12" rx="0.3" fill="#d4af37" />
-                      {/* Right tower */}
-                      <rect x="12.5" y="5" width="4.5" height="12" rx="0.3" fill="#d4af37" />
-                      {/* Connecting wall */}
-                      <rect x="7.5" y="9" width="5" height="8" fill="#d4af37" />
-                      {/* Battlements — towers */}
-                      <rect x="3" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
-                      <rect x="6" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
-                      <rect x="12.5" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
-                      <rect x="15.5" y="3.5" width="1.5" height="1.5" rx="0.2" fill="#d4af37" />
-                      {/* Wall battlements */}
-                      <rect x="8" y="7.5" width="1" height="1.5" rx="0.1" fill="#d4af37" />
-                      <rect x="11" y="7.5" width="1" height="1.5" rx="0.1" fill="#d4af37" />
-                      {/* Tower outlines */}
-                      <rect x="3" y="5" width="4.5" height="12" rx="0.3" fill="none" stroke="#b8941f" strokeWidth="0.3" />
-                      <rect x="12.5" y="5" width="4.5" height="12" rx="0.3" fill="none" stroke="#b8941f" strokeWidth="0.3" />
-                      {/* Stone lines */}
-                      <line x1="3" y1="8" x2="7.5" y2="8" stroke="#b8941f" strokeWidth="0.3" />
-                      <line x1="3" y1="11" x2="7.5" y2="11" stroke="#b8941f" strokeWidth="0.3" />
-                      <line x1="3" y1="14" x2="7.5" y2="14" stroke="#b8941f" strokeWidth="0.3" />
-                      <line x1="12.5" y1="8" x2="17" y2="8" stroke="#b8941f" strokeWidth="0.3" />
-                      <line x1="12.5" y1="11" x2="17" y2="11" stroke="#b8941f" strokeWidth="0.3" />
-                      <line x1="12.5" y1="14" x2="17" y2="14" stroke="#b8941f" strokeWidth="0.3" />
-                      {/* Windows */}
-                      <rect x="4.5" y="6" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
-                      <rect x="14" y="6" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
-                      <rect x="4.5" y="12" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
-                      <rect x="14" y="12" width="1.5" height="2.2" rx="0.75" fill="#1a1a1a" />
-                      {/* Gate with portcullis */}
-                      <path d="M8.2 17 V13.5 Q8.2 10.8 10 10.8 Q11.8 10.8 11.8 13.5 V17" fill="#1a1a1a" stroke="#b8941f" strokeWidth="0.3" />
-                      <line x1="9.1" y1="11.5" x2="9.1" y2="17" stroke="#d4af37" strokeWidth="0.4" />
-                      <line x1="10" y1="11" x2="10" y2="17" stroke="#d4af37" strokeWidth="0.4" />
-                      <line x1="10.9" y1="11.5" x2="10.9" y2="17" stroke="#d4af37" strokeWidth="0.4" />
-                      <line x1="8.3" y1="14" x2="11.7" y2="14" stroke="#d4af37" strokeWidth="0.3" />
-                      <line x1="8.3" y1="15.5" x2="11.7" y2="15.5" stroke="#d4af37" strokeWidth="0.3" />
-                      {/* Highlight */}
-                      <ellipse cx="5.5" cy="8" rx="1.5" ry="3" fill="rgba(255,255,255,0.1)" />
+                      {/* Left sword */}
+                      <line x1="3" y1="17" x2="17" y2="3" stroke="#d4af37" strokeWidth="1.2" strokeLinecap="round" />
+                      <line x1="3.5" y1="16.2" x2="16.2" y2="3.5" stroke="#f5e6a3" strokeWidth="0.4" strokeLinecap="round" />
+                      <line x1="5" y1="12" x2="8.5" y2="15.5" stroke="#d4af37" strokeWidth="1.5" strokeLinecap="round" />
+                      <circle cx="2.5" cy="17.5" r="1" fill="#d4af37" />
+                      {/* Right sword */}
+                      <line x1="17" y1="17" x2="3" y2="3" stroke="#d4af37" strokeWidth="1.2" strokeLinecap="round" />
+                      <line x1="16.2" y1="16.2" x2="3.5" y2="3.5" stroke="#f5e6a3" strokeWidth="0.4" strokeLinecap="round" />
+                      <line x1="15" y1="12" x2="11.5" y2="15.5" stroke="#d4af37" strokeWidth="1.5" strokeLinecap="round" />
+                      <circle cx="17.5" cy="17.5" r="1" fill="#d4af37" />
+                      {/* Center accent */}
+                      <circle cx="10" cy="10" r="1.2" fill="#b8941f" stroke="#d4af37" strokeWidth="0.5" />
                     </svg>
                     <span className="sr-only">Grunwald</span>
                   </motion.span>
