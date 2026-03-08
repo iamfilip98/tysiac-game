@@ -126,10 +126,28 @@ export class GameEngine {
     const round = this.game.currentRound;
     if (!round) return null;
 
+    // Confirmation-based phases: talonReveal and wykladana
+    // These don't have a single "current player" — all non-confirmed players need a nudge
+    if (this.game.phase === 'talonReveal') {
+      if (isAIPlayer(this.game, playerId)) return null;
+      if (this.talonConfirmations.has(playerId)) return null;
+      // Client renders confirm button from game state; return empty actions
+      return [];
+    }
+
+    if (this.game.phase === 'wykladana') {
+      if (isAIPlayer(this.game, playerId)) return null;
+      if (this.wykladanaConfirmations.has(playerId)) return null;
+      // Client renders confirm button from game state; return empty actions
+      return [];
+    }
+
     let currentPlayerId: string;
 
     if (this.game.phase === 'bidding') {
       currentPlayerId = this.currentBidder;
+    } else if (this.game.phase === 'playOrPassDecision') {
+      currentPlayerId = round.bidWinner!;
     } else if (this.game.phase === 'talonDistribution') {
       currentPlayerId = round.bidWinner!;
     } else if (this.game.phase === 'trickPlaying') {
@@ -148,11 +166,17 @@ export class GameEngine {
       return null;
     }
 
-    const actions = getValidActions(this.game, currentPlayerId, {
-      currentBidder: this.currentBidder,
-      currentBid: round.finalBid,
-      passedPlayers: this.passedPlayers,
-    });
+    let actions: ValidAction[];
+
+    if (this.game.phase === 'playOrPassDecision') {
+      actions = [{ type: 'playOrPass' }];
+    } else {
+      actions = getValidActions(this.game, currentPlayerId, {
+        currentBidder: this.currentBidder,
+        currentBid: round.finalBid,
+        passedPlayers: this.passedPlayers,
+      });
+    }
 
     // Emit game:yourTurn to this player
     const socketId = this.getSocketId(playerId);
