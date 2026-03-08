@@ -18,7 +18,16 @@ const CARD_STYLE_LABELS: Record<CardStyle, string> = {
   black: 'Dark',
 };
 
-export function SettingsDropdown() {
+interface SettingsDropdownProps {
+  isPrivate?: boolean;
+  roomCode?: string | null;
+  isPaused?: boolean;
+  phase?: string;
+  onPause?: () => void;
+  onCopyCode?: () => void;
+}
+
+export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause, onCopyCode }: SettingsDropdownProps) {
   const [open, setOpen] = useState(false);
   const [showRules, setShowRules] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -161,6 +170,37 @@ export function SettingsDropdown() {
             <span className="flex-1 text-left">Emotes</span>
             <span className={`text-xs ${emotesEnabled ? 'text-gold-400' : 'text-white/40'}`}>{emotesEnabled ? 'On' : 'Off'}</span>
           </button>
+
+          {/* Pause — private rooms only */}
+          {isPrivate && phase !== 'gameEnd' && !isPaused && onPause && (
+            <button
+              role="menuitem"
+              onClick={() => { onPause(); setOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-3 text-[13px] text-white/85 hover:bg-white/[0.06] transition-colors border-b border-white/[0.04]"
+            >
+              <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <rect x="6" y="4" width="4" height="16" rx="1" />
+                <rect x="14" y="4" width="4" height="16" rx="1" />
+              </svg>
+              <span className="flex-1 text-left">Pause Game</span>
+            </button>
+          )}
+
+          {/* Room code — private rooms only */}
+          {isPrivate && roomCode && onCopyCode && (
+            <button
+              role="menuitem"
+              onClick={() => { onCopyCode(); setOpen(false); }}
+              className="w-full flex items-center gap-3 px-3 py-3 text-[13px] text-white/85 hover:bg-white/[0.06] transition-colors border-b border-white/[0.04]"
+            >
+              <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+              </svg>
+              <span className="flex-1 text-left">Room Code</span>
+              <span className="text-xs text-gold-400 font-mono">{roomCode}</span>
+            </button>
+          )}
 
           {/* Game Rules */}
           <button

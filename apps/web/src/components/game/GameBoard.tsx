@@ -301,36 +301,23 @@ export function GameBoard() {
           </svg>
           <span className="hidden sm:inline">Leave</span>
         </button>
-        {room?.isPrivate && phase !== 'gameEnd' && !gameState.isPaused && (
-          <button
-            onClick={pauseGame}
-            className="btn-toolbar btn-toolbar-gold min-w-[44px] min-h-[44px] px-2 sm:px-3 py-1.5 rounded-lg text-white/80 hover:text-gold-400 text-[13px] font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5"
-            title="Pause game"
-          >
-            <svg className="w-[18px] h-[18px] opacity-90" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-              <rect x="6" y="4" width="4" height="16" rx="1" />
-              <rect x="14" y="4" width="4" height="16" rx="1" />
-            </svg>
-            <span className="hidden sm:inline">Pause</span>
-          </button>
-        )}
-        {room?.isPrivate && room?.code && (
-          <button
-            onClick={() => {
-              navigator.clipboard?.writeText(room.code!);
-              showToast('Room code copied to clipboard', 'success');
-            }}
-            className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white/70 text-xs font-mono transition-colors"
-            title="Click to copy room code"
-          >
-            {room.code}
-          </button>
-        )}
       </div>
 
       {/* Top-right settings */}
       <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-30">
-        <SettingsDropdown />
+        <SettingsDropdown
+          isPrivate={room?.isPrivate}
+          roomCode={room?.code}
+          isPaused={gameState.isPaused}
+          phase={phase}
+          onPause={pauseGame}
+          onCopyCode={() => {
+            if (room?.code) {
+              navigator.clipboard?.writeText(room.code);
+              showToast('Room code copied to clipboard', 'success');
+            }
+          }}
+        />
       </div>
 
       {/* Emote button — left-center on mobile (aligned with trick area), bottom-left on desktop */}
