@@ -16,6 +16,7 @@ import { EmoteBubble } from './EmoteBubble';
 import { Button } from '@/components/ui/Button';
 import { useGameStore, useRoomStore, usePreferencesStore } from '@tysiac/game-logic';
 import { useSocket } from '@/hooks/useSocket';
+import { useToast } from '@/components/ui/Toast';
 import { useScreenSize } from '@/hooks/useIsMobile';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { cn } from '@/lib/utils';
@@ -46,6 +47,7 @@ function getLayoutPositions(isMobile: boolean, height: number, phase?: string) {
 
 export function GameBoard() {
   const { isMobile, height } = useScreenSize();
+  const { showToast } = useToast();
   const emotesEnabled = usePreferencesStore((s) => s.emotesEnabled);
   const { playerId, room } = useRoomStore();
   const {
@@ -309,6 +311,18 @@ export function GameBoard() {
               <rect x="14" y="4" width="4" height="16" rx="1" />
             </svg>
             <span className="hidden sm:inline">Pause</span>
+          </button>
+        )}
+        {room?.isPrivate && room?.code && (
+          <button
+            onClick={() => {
+              navigator.clipboard?.writeText(room.code!);
+              showToast('Room code copied to clipboard', 'success');
+            }}
+            className="px-2 py-1 rounded bg-white/5 hover:bg-white/10 border border-white/10 text-white/50 hover:text-white/70 text-xs font-mono transition-colors"
+            title="Click to copy room code"
+          >
+            {room.code}
           </button>
         )}
       </div>
