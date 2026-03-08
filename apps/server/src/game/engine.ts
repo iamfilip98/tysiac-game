@@ -785,6 +785,14 @@ export class GameEngine {
       result: 'success',
     });
 
+    // Clear playOrPass timer if disconnected player is the decision-maker
+    if (this.game.phase === 'playOrPassDecision') {
+      const bidWinner = this.game.currentRound?.bidWinner;
+      if (bidWinner === playerId) {
+        this.clearPlayOrPassTimer();
+      }
+    }
+
     // If we're in talon reveal phase, re-check confirmations
     // This will auto-confirm the disconnected player since they no longer have a socket
     if (this.game.phase === 'talonReveal') {
