@@ -90,6 +90,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     }
   }, [error, showToast]);
   const gameState = useGameStore((s) => s.gameState);
+  const showGameEnd = useGameStore((s) => s.showGameEnd);
 
   const {
     createRoom,
@@ -148,7 +149,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   }, [tutorialStep, room, playerId, gameState, addAI, setReady, startGame]);
 
   // If there's an active game, show the game board
-  if (gameState && room?.gameId) {
+  if (gameState && (room?.gameId || showGameEnd)) {
     return <GameBoard />;
   }
 

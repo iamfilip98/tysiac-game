@@ -126,9 +126,7 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
   });
 
   socket.on('game:roundEnd', (result: RoundResult) => {
-    if (!result.gameWinner) {
-      useGameStore.getState().setRoundResult(result);
-    }
+    useGameStore.getState().setRoundResult(result);
     deps.sound.play('roundEnd');
   });
 

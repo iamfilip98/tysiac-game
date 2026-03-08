@@ -651,8 +651,7 @@ export function GameBoard() {
         currentPlayerId={playerId}
         gameStatistics={gameStatistics}
         onPlayAgain={() => {
-          useGameStore.getState().setShowGameEnd(false);
-          startGame();
+          useGameStore.getState().reset();
         }}
         onLeaveRoom={leaveRoom}
         showLeaveModal={showLeaveModal}
