@@ -189,6 +189,53 @@ function handlePlayerLeave(io: TypedServer, socket: TypedSocket, immediate: bool
       }, DISCONNECT_GRACE_PERIOD);
 
       disconnectTimeouts.set(playerId, timeout);
+
+      // Check if any human players remain connected
+      const connectedHumans = room.players.filter(p =>
+        !p.isAI && playerToSocket.has(p.id)
+      );
+
+      if (connectedHumans.length === 0) {
+        // All humans disconnected — start 10-minute abandon timer
+        const abandonKey = `abandon:${room.id}`;
+        if (!disconnectTimeouts.has(abandonKey)) {
+          const abandonTimer = setTimeout(() => {
+            disconnectTimeouts.delete(abandonKey);
+            const currentRoom = roomService.getRoom(room.id);
+            if (!currentRoom) return;
+
+            // Re-check — someone may have reconnected
+            const stillConnected = currentRoom.players.filter(p =>
+              !p.isAI && playerToSocket.has(p.id)
+            );
+            if (stillConnected.length > 0) return;
+
+            // Abandon: clean up game and room
+            if (currentRoom.gameId) {
+              cleanupGame(currentRoom.gameId, room.id);
+            }
+            for (const player of currentRoom.players) {
+              if (!player.isAI) {
+                playerToSocket.delete(player.id);
+                socketToPlayer.delete(player.id); // may not exist, that's fine
+              }
+            }
+            // Delete the room
+            roomService.leaveRoom(currentRoom.players[0]?.id || '');
+
+            logEvent({
+              socketId: socket.id,
+              eventType: 'game:abandoned',
+              result: 'success',
+              metadata: {
+                roomId: room.id,
+                reason: 'all_players_disconnected',
+              },
+            });
+          }, 10 * 60 * 1000); // 10 minutes
+          disconnectTimeouts.set(abandonKey, abandonTimer);
+        }
+      }
     } else {
       // Clear any existing timeout
       const existingTimeout = disconnectTimeouts.get(playerId);

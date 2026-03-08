@@ -37,6 +37,14 @@ export function registerConnectionHandlers(socket: TypedSocket, ctx: HandlerCont
           ctx.aiReplacementTimeouts.delete(playerId);
         }
 
+        // Cancel room abandon timer if it exists
+        const abandonKey = `abandon:${roomId}`;
+        const abandonTimer = ctx.disconnectTimeouts.get(abandonKey);
+        if (abandonTimer) {
+          clearTimeout(abandonTimer);
+          ctx.disconnectTimeouts.delete(abandonKey);
+        }
+
         // Validate session token — fall back to auth token if session invalid
         if (!validateSession(sessionToken, playerId)) {
           // If the player is authenticated and the playerId matches, allow reconnect
