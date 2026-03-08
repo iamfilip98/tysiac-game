@@ -106,7 +106,7 @@ export function ReconnectModal() {
               exit={{ opacity: 0 }}
               className="absolute inset-0 flex flex-col items-center justify-center gap-4"
             >
-              <div className="w-10 h-10 border-3 border-white/20 border-t-gold-400 rounded-full animate-spin" />
+              <div className="w-10 h-10 border-2 border-white/20 border-t-gold-400 rounded-full animate-spin" />
               <div className="text-center">
                 <p className="text-white font-medium">Reconnecting...</p>
                 {sessionInfo?.playerName && (
