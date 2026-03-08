@@ -24,6 +24,7 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
     const storedSession = deps.session.load();
     if (storedSession) {
       isAutoReconnecting = true;
+      useRoomStore.getState().setReconnectStatus('reconnecting');
       socket.emit('player:reconnect', {
         roomId: storedSession.roomId,
         playerId: storedSession.playerId,
@@ -100,6 +101,7 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
 
     if (code === 'INVALID_SESSION' && isAutoReconnecting) {
       isAutoReconnecting = false;
+      useRoomStore.getState().setReconnectStatus('failed');
       deps.session.clear();
 
       const hasActiveGame = useGameStore.getState().gameState !== null;
@@ -114,6 +116,9 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
       return;
     }
 
+    if (useRoomStore.getState().reconnectStatus === 'reconnecting') {
+      useRoomStore.getState().setReconnectStatus('failed');
+    }
     isAutoReconnecting = false;
     useRoomStore.getState().setError(message);
   });
@@ -321,6 +326,7 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
 
   socket.on('connection:restored', ({ room, gameState, validActions }: { room: Room; gameState?: ClientGameState; validActions?: ValidAction[] }) => {
     isAutoReconnecting = false;
+    useRoomStore.getState().setReconnectStatus('success');
 
     const storedSession = deps.session.load();
     if (storedSession) {
