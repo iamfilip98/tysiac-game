@@ -4,7 +4,6 @@ import { useMemo, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card } from './Card';
 import { cn } from '@/lib/utils';
-import { truncateName } from '@tysiac/shared';
 import { useScreenSize } from '@/hooks/useIsMobile';
 import type { Card as CardType, ValidAction, Suit } from '@tysiac/shared';
 
@@ -239,10 +238,10 @@ export function PlayerHand({
               />
               {distributionAssignee && (
                 <div
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded truncate max-w-[5rem] sm:max-w-[7rem] z-50"
                   title={distributionAssignee}
                 >
-                  → {truncateName(distributionAssignee)}
+                  → {distributionAssignee}
                 </div>
               )}
             </div>
@@ -320,10 +319,10 @@ export function PlayerHand({
               />
               {distributionAssignee && (
                 <div
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded whitespace-nowrap z-50"
+                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded truncate max-w-[5rem] sm:max-w-[7rem] z-50"
                   title={distributionAssignee}
                 >
-                  → {truncateName(distributionAssignee)}
+                  → {distributionAssignee}
                 </div>
               )}
             </motion.div>

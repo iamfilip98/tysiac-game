@@ -3,7 +3,6 @@
 import { memo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
-import { truncateName } from '@tysiac/shared';
 
 // Smooth easing for all devices (no springs)
 const smoothTransition = { duration: 0.2, ease: [0.25, 0.1, 0.25, 1] };
@@ -38,24 +37,14 @@ export const OpponentHand = memo(function OpponentHand({
       {/* Player name */}
       <div
         className={cn(
-          'text-sm font-medium px-2 py-1 rounded-lg',
+          'text-sm font-medium px-2 py-1 rounded-lg truncate max-w-[5.5rem] sm:max-w-[8rem] lg:max-w-[12rem]',
           isCurrentTurn
             ? 'text-gold-400 bg-gold-500/10 border border-gold-500/40 shadow-[0_0_12px_rgba(251,191,36,0.2)]'
             : 'text-white/80 bg-table-800/80 border border-white/[0.06]'
         )}
         title={playerName}
       >
-        {truncateName(playerName)}
-        {isCurrentTurn && (
-          <motion.span
-            animate={{ opacity: [0.5, 1, 0.5] }}
-            transition={{ duration: 1.5, repeat: Infinity }}
-            className="ml-2"
-            aria-hidden="true"
-          >
-            •
-          </motion.span>
-        )}
+        {playerName}
         {isCurrentTurn && <span className="sr-only"> (their turn)</span>}
       </div>
 

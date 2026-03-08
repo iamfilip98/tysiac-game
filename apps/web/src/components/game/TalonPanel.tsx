@@ -5,7 +5,6 @@ import { Card } from './Card';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn } from '@/lib/utils';
-import { truncateName } from '@tysiac/shared';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
 
@@ -111,7 +110,7 @@ export function TalonDistributionPanel({
                 )}
                 title={player.name}
               >
-                <div className="font-medium text-sm">{truncateName(player.name)}</div>
+                <div className="font-medium text-sm truncate max-w-[5rem] sm:max-w-[7rem]">{player.name}</div>
               </motion.button>
             );
           })}

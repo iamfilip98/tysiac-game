@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { truncateName } from '@tysiac/shared';
 import { usePreferencesStore } from '@tysiac/game-logic';
 import { useIsMobile } from '@/hooks/useIsMobile';
 import { Card } from './Card';
@@ -148,10 +147,10 @@ export function WykladanaModal({ playerName, bid, marriagePoints = 0, cards, onC
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="text-xl sm:text-2xl text-white font-medium mb-5"
+            className="text-xl sm:text-2xl text-white font-medium mb-5 truncate max-w-[12rem] sm:max-w-[16rem] mx-auto"
             title={playerName}
           >
-            {truncateName(playerName)}
+            {playerName}
           </motion.p>
 
           {/* Cards display */}

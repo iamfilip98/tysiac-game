@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { ElectricBorder } from '@/components/ui/ElectricBorder';
 import { cn, copyToClipboard } from '@/lib/utils';
-import { truncateName } from '@tysiac/shared';
 import { useRoomStore } from '@tysiac/game-logic';
 import type { Room, RoomPlayer } from '@tysiac/shared';
 
@@ -414,12 +413,12 @@ function PlayerSlot({
           <div className="flex items-center gap-2 flex-wrap">
             <span
               className={cn(
-                'font-medium',
+                'font-medium truncate max-w-[8rem] sm:max-w-[12rem] lg:max-w-[16rem]',
                 isCurrentPlayer ? 'text-gold-400' : 'text-white'
               )}
               title={player.name}
             >
-              {truncateName(player.name)}
+              {player.name}
             </span>
             {isHost && (
               <span className="text-xs bg-gold-500/20 text-gold-400 px-1.5 py-0.5 rounded shrink-0">

@@ -24,9 +24,9 @@ export function getSuitName(suit: string): string {
   return names[suit] || suit;
 }
 
-export const MAX_NAME_LENGTH = 7;
+export const MAX_NAME_LENGTH = 8;
 
 export function truncateName(name: string): string {
   if (name.length <= MAX_NAME_LENGTH) return name;
-  return name.slice(0, MAX_NAME_LENGTH) + '\u2026';
+  return name.slice(0, MAX_NAME_LENGTH - 3) + '...';
 }

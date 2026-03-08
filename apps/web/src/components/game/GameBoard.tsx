@@ -20,7 +20,6 @@ import { useScreenSize } from '@/hooks/useIsMobile';
 import { AmbientParticles } from '@/components/ui/AmbientParticles';
 import { cn } from '@/lib/utils';
 import { useShallow } from 'zustand/react/shallow';
-import { truncateName } from '@tysiac/shared';
 import type { Card as CardType } from '@tysiac/shared';
 
 // Layout positions based on screen dimensions
@@ -419,9 +418,9 @@ export function GameBoard() {
           isMobile ? 'top-32' : 'top-36'
         )}>
           <div className="flex flex-col items-center gap-1 opacity-50">
-            <div className="text-xs font-medium px-2 py-1 rounded-lg text-white/60 bg-table-800/80 border border-white/[0.06]">
-              {truncateName(dealerOpponent.name)}
-              <span className="ml-1.5 text-amber-400/80 text-[10px]">Dealing</span>
+            <div className="text-xs font-medium px-2 py-1 rounded-lg text-white/60 bg-table-800/80 border border-white/[0.06] flex items-center max-w-[8rem] sm:max-w-[12rem]">
+              <span className="truncate">{dealerOpponent.name}</span>
+              <span className="ml-1.5 text-amber-400/80 text-[10px] shrink-0">Dealing</span>
             </div>
           </div>
         </div>

@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { truncateName } from '@tysiac/shared';
 import type { GameStatistics } from '@tysiac/shared';
 import { AwardCard } from './AwardCard';
 import { DetailedStatsPanel } from './DetailedStatsPanel';
@@ -155,12 +154,12 @@ export function GameEndModal({
                     </span>
                     <span
                       className={cn(
-                        'font-semibold text-sm',
+                        'font-semibold text-sm truncate max-w-[8rem] sm:max-w-[12rem]',
                         isMe ? 'text-gold-400' : 'text-white'
                       )}
                       title={player.name}
                     >
-                      {truncateName(player.name)}
+                      {player.name}
                       {isMe && (
                         <span className="text-gold-400/60 font-normal ml-1 text-xs">(You)</span>
                       )}
@@ -214,7 +213,7 @@ export function GameEndModal({
                 <AwardCard
                   key={award.id}
                   award={award}
-                  playerName={truncateName(getPlayerName(award.playerId))}
+                  playerName={getPlayerName(award.playerId)}
                   index={index}
                 />
               ))}
@@ -274,7 +273,7 @@ export function GameEndModal({
                 <AwardCard
                   key={award.id}
                   award={award}
-                  playerName={truncateName(getPlayerName(award.playerId))}
+                  playerName={getPlayerName(award.playerId)}
                   index={index}
                 />
               ))}

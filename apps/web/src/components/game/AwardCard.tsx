@@ -126,7 +126,7 @@ export function AwardCard({ award, playerName, index }: AwardCardProps) {
         </div>
 
         {/* Player name */}
-        <p className="text-white font-medium">{playerName}</p>
+        <p className="text-white font-medium truncate" title={playerName}>{playerName}</p>
 
         {/* Description */}
         <p className="text-sm text-white/60">{award.description}</p>

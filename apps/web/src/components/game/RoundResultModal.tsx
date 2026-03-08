@@ -4,7 +4,6 @@ import { motion } from 'framer-motion';
 import { Modal, ModalHeader, ModalBody, ModalFooter } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { cn } from '@/lib/utils';
-import { truncateName } from '@tysiac/shared';
 import type { RoundResult } from '@tysiac/shared';
 
 interface RoundResultModalProps {
@@ -40,7 +39,7 @@ export function RoundResultModal({
           <div className="flex items-center justify-between">
             <div>
               <div className="text-sm text-white/60">Bid Winner</div>
-              <div className="text-lg font-bold text-white" title={bidderName}>{truncateName(bidderName)}</div>
+              <div className="text-lg font-bold text-white truncate max-w-[8rem] sm:max-w-[12rem]" title={bidderName}>{bidderName}</div>
             </div>
             <div className="text-right">
               <div className="text-sm text-white/60">Bid</div>
@@ -75,8 +74,8 @@ export function RoundResultModal({
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
-                  <span className="font-medium text-white" title={player?.name}>
-                    {truncateName(player?.name || 'Unknown')}
+                  <span className="font-medium text-white truncate max-w-[8rem] sm:max-w-[12rem]" title={player?.name}>
+                    {player?.name || 'Unknown'}
                     {isBidder && (
                       <span className="ml-2 text-xs text-gold-400">(Bidder)</span>
                     )}
