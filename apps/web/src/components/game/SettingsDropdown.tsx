@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePreferencesStore, useGameStore, type Theme, type CardStyle } from '@tysiac/game-logic';
+import { usePreferencesStore, type Theme, type CardStyle } from '@tysiac/game-logic';
 import { RulesModal } from './RulesModal';
 
 const THEME_LABELS: Record<Theme, string> = {
@@ -34,8 +34,6 @@ export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause
 
   const { theme, soundEnabled, animationsEnabled, cardStyle, emotesEnabled, toggleTheme, toggleSound, toggleAnimations, toggleCardStyle, toggleEmotes } =
     usePreferencesStore();
-
-  const isMyTurn = useGameStore((s) => s.isMyTurn);
 
   // Close on outside click or Escape key
   useEffect(() => {
@@ -217,7 +215,7 @@ export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause
         </div>
       )}
 
-      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} isMyTurn={isMyTurn} />
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
     </div>
   );
 }
