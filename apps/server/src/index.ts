@@ -8,6 +8,7 @@ import { setupSocketHandlers, syncAllEnginesForShutdown, createRestoredEngine } 
 import * as debugService from './services/debugService.js';
 import * as gameService from './services/gameService.js';
 import * as roomService from './services/roomService.js';
+import { getValidationResults, getValidationResultByGameId, getValidationIssues } from './game/moveLog.js';
 import { initializeSessions, startSessionCleanup, stopSessionCleanup } from './security/session.js';
 import { initializeStats, getStats } from './services/statsService.js';
 import { verifyToken } from '@clerk/backend';
@@ -181,6 +182,70 @@ async function main() {
       }
       reply.code(500);
       return { error: 'Failed to cleanup logs' };
+    }
+  });
+
+  // --- Move validation endpoints ---
+
+  fastify.get('/debug/validation', async (request, reply) => {
+    try {
+      verifyDebugAuth(request);
+      const results = getValidationResults();
+      return {
+        total: results.length,
+        withIssues: results.filter(r => r.issues.length > 0).length,
+        results: results.map(r => ({
+          gameId: r.gameId,
+          totalMoves: r.totalMoves,
+          issueCount: r.issues.length,
+          validatedAt: r.validatedAt,
+        })),
+      };
+    } catch (error) {
+      if ((error as Error).message === 'Unauthorized') {
+        reply.code(401);
+        return { error: 'Unauthorized' };
+      }
+      reply.code(500);
+      return { error: 'Failed to fetch validation results' };
+    }
+  });
+
+  fastify.get('/debug/validation/issues', async (request, reply) => {
+    try {
+      verifyDebugAuth(request);
+      const results = getValidationIssues();
+      return {
+        gamesWithIssues: results.length,
+        results,
+      };
+    } catch (error) {
+      if ((error as Error).message === 'Unauthorized') {
+        reply.code(401);
+        return { error: 'Unauthorized' };
+      }
+      reply.code(500);
+      return { error: 'Failed to fetch validation issues' };
+    }
+  });
+
+  fastify.get('/debug/validation/:gameId', async (request, reply) => {
+    try {
+      verifyDebugAuth(request);
+      const { gameId } = request.params as { gameId: string };
+      const result = getValidationResultByGameId(gameId);
+      if (!result) {
+        reply.code(404);
+        return { error: 'No validation result found for this game' };
+      }
+      return result;
+    } catch (error) {
+      if ((error as Error).message === 'Unauthorized') {
+        reply.code(401);
+        return { error: 'Unauthorized' };
+      }
+      reply.code(500);
+      return { error: 'Failed to fetch validation result' };
     }
   });
 

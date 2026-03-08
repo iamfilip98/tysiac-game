@@ -9,6 +9,7 @@ import { detectWykladana } from './wykladana.js';
 import { logDebug } from '../services/debugService.js';
 import { calculateGameStatistics, createInitialPlayerStats, type PlayerGameStats, type RoundHistory } from './statistics.js';
 import { updateStatsAfterGame } from '../services/statsService.js';
+import { MoveLog, storeValidationResult } from './moveLog.js';
 import * as bidding from './phases/bidding.js';
 import * as talon from './phases/talon.js';
 import * as trickPlaying from './phases/trickPlaying.js';
@@ -52,6 +53,9 @@ export class GameEngine {
   // Statistics tracking
   public playerStats: Map<string, PlayerGameStats> = new Map();
   public roundHistory: RoundHistory[] = [];
+
+  // Move logging for post-game validation
+  public moveLog: MoveLog = new MoveLog();
 
   constructor(
     game: GameState,
@@ -176,6 +180,14 @@ export class GameEngine {
         currentBid: round.finalBid,
         passedPlayers: this.passedPlayers,
       });
+    }
+
+    // Record validCards sent for move logging (reconnect path)
+    if (this.game.phase === 'trickPlaying') {
+      const playCardAction = actions.find(a => a.type === 'playCard');
+      if (playCardAction && playCardAction.type === 'playCard') {
+        this.moveLog.recordValidCardsSent(playerId, playCardAction.validCards);
+      }
     }
 
     // Emit game:yourTurn to this player
@@ -509,6 +521,42 @@ export class GameEngine {
     // Calculate game statistics
     const statistics = calculateGameStatistics(this.game, this.roundHistory, this.playerStats);
 
+    // Run post-game move validation
+    const validationResult = this.moveLog.validate(this.game.id, this.game);
+    storeValidationResult(validationResult);
+
+    if (validationResult.issues.length > 0) {
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        eventType: 'moveLog:validationFailed',
+        eventData: {
+          totalMoves: validationResult.totalMoves,
+          issueCount: validationResult.issues.length,
+          issues: validationResult.issues.map(i => ({
+            type: i.type,
+            round: i.roundNumber,
+            trick: i.trickNumber,
+            player: i.playerId,
+            description: i.description,
+            playedCard: `${i.playedCard.rank}${i.playedCard.suit}`,
+            hand: i.hand.map(c => `${c.rank}${c.suit}`),
+            expectedCards: i.expected.map(c => `${c.rank}${c.suit}`),
+            actualCards: i.actual.map(c => `${c.rank}${c.suit}`),
+          })),
+        },
+        result: 'error',
+      });
+    } else {
+      logDebug({
+        gameId: this.game.id,
+        roomId: this.roomId,
+        eventType: 'moveLog:validationPassed',
+        eventData: { totalMoves: validationResult.totalMoves },
+        result: 'success',
+      });
+    }
+
     this.io.to(this.roomId).emit('game:ended', {
       winnerId: this.game.winner!,
       finalScores,
@@ -635,6 +683,14 @@ export class GameEngine {
       currentBid: round.finalBid,
       passedPlayers: this.passedPlayers,
     });
+
+    // Record validCards sent for move logging
+    if (this.game.phase === 'trickPlaying') {
+      const playCardAction = actions.find(a => a.type === 'playCard');
+      if (playCardAction && playCardAction.type === 'playCard') {
+        this.moveLog.recordValidCardsSent(currentPlayerId, playCardAction.validCards);
+      }
+    }
 
     // Check if AI player
     if (isAIPlayer(this.game, currentPlayerId)) {

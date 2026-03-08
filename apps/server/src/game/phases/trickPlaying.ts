@@ -1,7 +1,7 @@
 import type { GameEngine } from '../engine.js';
 import type { Card, Suit } from '@tysiac/shared';
 import { hasMarriage, MARRIAGE_VALUES } from '@tysiac/shared';
-import { getTrickWinnerWithReason, validateCardPlay, canDeclareMarriage } from '../validation.js';
+import { getTrickWinnerWithReason, validateCardPlay, canDeclareMarriage, getValidCards } from '../validation.js';
 import { getNextPlayer, isAIPlayer } from '../stateManager.js';
 import { detectWykladana } from '../wykladana.js';
 import { logDebug } from '../../services/debugService.js';
@@ -135,6 +135,19 @@ export function handlePlayCard(engine: GameEngine, playerId: string, card: Card)
     engine.sendError(playerId, validation.reason!);
     return;
   }
+
+  // Log this move BEFORE modifying state
+  const validCardsAtPlay = getValidCards(playerState.hand, trick, round.trumpSuit, engine.game);
+  engine.moveLog.logMove({
+    roundNumber: round.roundNumber,
+    trickNumber: trick.trickNumber,
+    playerId,
+    hand: playerState.hand,
+    trick,
+    trumpSuit: round.trumpSuit,
+    validCardsAtPlay,
+    playedCard: card,
+  });
 
   // Auto-declare marriage when playing Q while leading
   if (card.rank === 'Q' && trick.cards.length === 0) {
