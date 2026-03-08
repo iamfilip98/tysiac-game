@@ -8,12 +8,11 @@ import { cn } from '@/lib/utils';
 interface RulesModalProps {
   isOpen: boolean;
   onClose: () => void;
-  isMyTurn?: boolean;
 }
 
 type Tab = 'guide' | 'rules';
 
-export function RulesModal({ isOpen, onClose, isMyTurn }: RulesModalProps) {
+export function RulesModal({ isOpen, onClose }: RulesModalProps) {
   const [tab, setTab] = useState<Tab>('guide');
 
   return (
@@ -21,12 +20,6 @@ export function RulesModal({ isOpen, onClose, isMyTurn }: RulesModalProps) {
       <ModalHeader onClose={onClose}>
         Tysiąc - Game Rules
       </ModalHeader>
-
-      {isMyTurn && (
-        <div className="mb-3 px-3 py-2 rounded-lg bg-gold-500/20 border border-gold-500/30 text-center">
-          <span className="text-gold-400 text-sm font-medium">It&apos;s your turn to play!</span>
-        </div>
-      )}
 
       {/* Tab switcher */}
       <div className="flex gap-1 mb-4 bg-white/5 rounded-lg p-1">

@@ -11,6 +11,7 @@ import { GameActionPanels } from './GameActionPanels';
 import { GameOverlays } from './GameOverlays';
 import { TutorialOverlay } from './TutorialOverlay';
 import { SettingsDropdown } from './SettingsDropdown';
+import { RulesModal } from './RulesModal';
 import { EmoteButton } from './EmoteButton';
 import { EmoteBubble } from './EmoteBubble';
 import { Button } from '@/components/ui/Button';
@@ -166,6 +167,9 @@ export function GameBoard() {
   // Track leave game modal
   const [showLeaveModal, setShowLeaveModal] = useState(false);
 
+  // Track rules modal
+  const [showRules, setShowRules] = useState(false);
+
   // Talon distribution state
   const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
   const [distributionCards, setDistributionCards] = useState<Map<string, CardType>>(new Map());
@@ -316,6 +320,7 @@ export function GameBoard() {
               showToast('Room code copied to clipboard', 'success');
             }
           }}
+          onShowRules={() => setShowRules(true)}
         />
       </div>
 
@@ -634,6 +639,9 @@ export function GameBoard() {
           completedTricks={round?.completedTricks}
         />
       )}
+
+      {/* Rules modal — rendered at root level to avoid z-index stacking issues */}
+      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} />
 
       {/* Modals and announcements */}
       <GameOverlays

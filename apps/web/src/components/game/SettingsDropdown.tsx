@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { usePreferencesStore, useGameStore, type Theme, type CardStyle } from '@tysiac/game-logic';
-import { RulesModal } from './RulesModal';
+import { usePreferencesStore, type Theme, type CardStyle } from '@tysiac/game-logic';
 
 const THEME_LABELS: Record<Theme, string> = {
   classic: 'Classic',
@@ -25,17 +24,15 @@ interface SettingsDropdownProps {
   phase?: string;
   onPause?: () => void;
   onCopyCode?: () => void;
+  onShowRules?: () => void;
 }
 
-export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause, onCopyCode }: SettingsDropdownProps) {
+export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause, onCopyCode, onShowRules }: SettingsDropdownProps) {
   const [open, setOpen] = useState(false);
-  const [showRules, setShowRules] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   const { theme, soundEnabled, animationsEnabled, cardStyle, emotesEnabled, toggleTheme, toggleSound, toggleAnimations, toggleCardStyle, toggleEmotes } =
     usePreferencesStore();
-
-  const isMyTurn = useGameStore((s) => s.isMyTurn);
 
   // Close on outside click or Escape key
   useEffect(() => {
@@ -205,7 +202,7 @@ export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause
           {/* Game Rules */}
           <button
             role="menuitem"
-            onClick={() => { setShowRules(true); setOpen(false); }}
+            onClick={() => { onShowRules?.(); setOpen(false); }}
             className="w-full flex items-center gap-3 px-3 py-3 text-[13px] text-white/85 hover:bg-white/[0.06] transition-colors"
           >
             <svg className="w-4 h-4 text-white/50 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -217,7 +214,6 @@ export function SettingsDropdown({ isPrivate, roomCode, isPaused, phase, onPause
         </div>
       )}
 
-      <RulesModal isOpen={showRules} onClose={() => setShowRules(false)} isMyTurn={isMyTurn} />
     </div>
   );
 }
