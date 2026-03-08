@@ -5,7 +5,8 @@ export interface TrickHistoryEntry {
   trickNumber: number;
   cards: { playerId: string; card: Card }[];
   winnerId: string;
-  points: number;
+  trumpSuit: string | null;
+  marriageDeclared: { playerId: string; suit: string } | null;
 }
 
 export interface GameState {

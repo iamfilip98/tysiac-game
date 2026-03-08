@@ -26,21 +26,27 @@ function TrickRow({ entry, players }: { entry: TrickHistoryEntry; players: { id:
     return p?.name ?? '?';
   };
 
+  const leadSuit = entry.cards[0]?.card.suit;
+
   return (
     <div className="px-3 py-2 border-b border-white/[0.06] last:border-b-0">
-      <div className="flex items-center justify-between mb-1">
+      <div className="flex items-center gap-1.5 mb-1">
         <span className="text-[10px] text-white/40 font-medium">Trick {entry.trickNumber}</span>
-        {entry.points > 0 && (
-          <span className="text-[10px] text-gold-400/80 font-medium">{entry.points} pts</span>
+        {entry.marriageDeclared && (
+          <span className="text-[10px] text-amber-400/80" title="Marriage declared">
+            {getSuitSymbol(entry.marriageDeclared.suit)} marriage
+          </span>
         )}
       </div>
       <div className="space-y-0.5">
         {entry.cards.map((c, i) => {
           const isWinner = c.playerId === entry.winnerId;
+          const isTrump = entry.trumpSuit && c.card.suit === entry.trumpSuit && c.card.suit !== leadSuit;
           return (
             <div key={i} className={`flex items-center gap-2 text-xs ${isWinner ? 'font-semibold' : 'opacity-70'}`}>
               <span className="truncate max-w-[80px] text-white/80">{getName(c.playerId)}</span>
               <TrickCard suit={c.card.suit} rank={c.card.rank} />
+              {isTrump && <span className="text-amber-400 text-[10px]" title="Trump">T</span>}
               {isWinner && <span className="text-gold-400 text-[10px]">W</span>}
             </div>
           );

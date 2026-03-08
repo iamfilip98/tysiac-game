@@ -220,14 +220,18 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
 
   socket.on('game:trickWon', (data: { winnerId: string; cards: Card[]; points: number }) => {
     // Snapshot current trick cards (with playerIds) before state clears
-    const gs = useGameStore.getState().gameState;
+    const store = useGameStore.getState();
+    const gs = store.gameState;
     const currentTrick = gs?.round?.currentTrick;
     if (currentTrick && currentTrick.cards.length > 0) {
       useGameStore.getState().addTrickToHistory({
         trickNumber: currentTrick.trickNumber,
         cards: [...currentTrick.cards],
         winnerId: data.winnerId,
-        points: data.points,
+        trumpSuit: gs?.round?.trumpSuit ?? null,
+        marriageDeclared: store.lastMarriageDeclared
+          ? { playerId: store.lastMarriageDeclared.playerId, suit: store.lastMarriageDeclared.suit }
+          : null,
       });
     }
 
