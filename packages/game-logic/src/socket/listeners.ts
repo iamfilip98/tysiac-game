@@ -329,7 +329,12 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
 
     useRoomStore.getState().setRoom(room);
     if (gameState) {
-      useGameStore.getState().setGameState(gameState);
+      // Clear stale overlays before restoring state so the update isn't buffered
+      const gs = useGameStore.getState();
+      if (gs.showRoundResult) {
+        gs.setRoundResult(null);
+      }
+      gs.setGameState(gameState);
       deps.keepAlive.start();
     }
     if (validActions && validActions.length > 0) {

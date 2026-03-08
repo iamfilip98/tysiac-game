@@ -1,5 +1,6 @@
 import type { GameEngine } from '../engine.js';
 import type { Card } from '@tysiac/shared';
+import { BARREL_THRESHOLD, WINNING_SCORE } from '@tysiac/shared';
 import type { RoundHistory } from '../statistics.js';
 import { isAIPlayer } from '../stateManager.js';
 import { logDebug } from '../../services/debugService.js';
@@ -149,7 +150,7 @@ export function promptPlayOrPassDecision(engine: GameEngine): void {
     // Public games: auto-pass after 60 seconds if no response
     if (!engine.isPrivateRoom) {
       engine.clearPlayOrPassTimer();
-      engine.playOrPassTimer = setTimeout(() => {
+      engine.playOrPassTimer = engine.safeSetTimeout(() => {
         engine.playOrPassTimer = null;
         if (engine.game.phase === 'playOrPassDecision') {
           logDebug({
@@ -163,7 +164,6 @@ export function promptPlayOrPassDecision(engine: GameEngine): void {
           engine.handlePlayOrPass(bidWinnerId, 'pass');
         }
       }, 60000);
-      engine.activeTimers.add(engine.playOrPassTimer);
     }
   } else {
     // No socket - player disconnected. Auto-play for them.
@@ -227,6 +227,12 @@ export function handlePlayOrPass(engine: GameEngine, playerId: string, decision:
         engine.game.scores[otherPlayer.id].totalScore += awarded;
         engine.game.scores[otherPlayer.id].roundScores.push(awarded);
         scoreChanges[otherPlayer.id] = awarded;
+      }
+
+      // Update barrel flags after score changes
+      for (const p of engine.game.players) {
+        const s = engine.game.scores[p.id];
+        s.isOnBarrel = s.totalScore >= BARREL_THRESHOLD && s.totalScore < WINNING_SCORE;
       }
 
       // Emit the threw event with score changes

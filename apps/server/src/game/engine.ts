@@ -705,6 +705,8 @@ export class GameEngine {
 
   public handleAITurn(playerId: string, actions: ValidAction[]): void {
     if (this.isCleanedUp) return;
+    // Guard: player may have been reclaimed by a human since this was scheduled
+    if (!isAIPlayer(this.game, playerId)) return;
 
     try {
       const round = this.game.currentRound!;
@@ -1079,7 +1081,15 @@ export class GameEngine {
     this.broadcastState();
 
     // Re-prompt/restore based on current phase
-    if (['bidding', 'talonDistribution', 'trickPlaying'].includes(this.game.phase)) {
+    if (this.game.phase === 'trickPlaying') {
+      // Check if the current trick has 3 cards (was mid-completion when paused)
+      const trick = this.game.currentRound?.currentTrick;
+      if (trick && trick.cards.length === 3) {
+        trickPlaying.completeTrick(this);
+      } else {
+        this.promptCurrentPlayer();
+      }
+    } else if (['bidding', 'talonDistribution'].includes(this.game.phase)) {
       this.promptCurrentPlayer();
     } else if (this.game.phase === 'talonReveal') {
       // Re-check talon confirmations (some may have been missed during pause)
@@ -1164,9 +1174,16 @@ export class GameEngine {
         this.checkWykladanaConfirmations();
         break;
 
-      case 'trickPlaying':
-        this.promptCurrentPlayer();
+      case 'trickPlaying': {
+        // Check if the current trick has 3 cards (was mid-completion when server restarted)
+        const trick = this.game.currentRound?.currentTrick;
+        if (trick && trick.cards.length === 3) {
+          trickPlaying.completeTrick(this);
+        } else {
+          this.promptCurrentPlayer();
+        }
         break;
+      }
 
       case 'roundScoring':
         // Scoring already applied, start new round after brief delay

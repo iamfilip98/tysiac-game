@@ -96,6 +96,8 @@ function cleanupGame(gameId: string, roomId: string): void {
     gameEngines.delete(gameId);
   }
   gameCreationLocks.delete(roomId);
+  // Remove game from in-memory store to prevent memory leak
+  gameService.deleteGame(gameId);
   // Clear gameId from room so "Play Again" works
   roomService.clearGameId(roomId);
   // Remove persisted game state from database
