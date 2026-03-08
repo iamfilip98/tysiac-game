@@ -13,6 +13,7 @@ import { RulesModal } from '@/components/game/RulesModal';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { UserBadge } from '@/components/auth/UserBadge';
 import { RejoinBanner } from '@/components/lobby/RejoinBanner';
+import { ReconnectModal } from '@/components/lobby/ReconnectModal';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Input } from '@/components/ui/Input';
 import { useSocket } from '@/hooks/useSocket';
@@ -32,7 +33,7 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
   const { showToast } = useToast();
   const previousError = useRef<string | null>(null);
 
-  const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms, isSearching, searchPlayerCount } = useRoomStore();
+  const { room, playerId, isConnected, isConnecting, isCreatingRoom, error, publicRooms, isSearching, searchPlayerCount, reconnectStatus } = useRoomStore();
   const { guestName, setGuestName, avatarEmoji, setAvatarEmoji, tutorialCompleted, setTutorialCompleted } = usePreferencesStore();
 
   const { isSignedIn, getToken } = useAuth();
@@ -307,11 +308,13 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         </motion.div>
       ) : (
         <>
-          {/* Rejoin banner for authenticated users with an active game */}
-          <RejoinBanner
-            isConnected={isConnected}
-            onRejoin={(roomCode) => joinRoom(playerName || 'Player', roomCode)}
-          />
+          {/* Rejoin banner for authenticated users with an active game (hidden during reconnect modal) */}
+          {reconnectStatus === 'idle' && (
+            <RejoinBanner
+              isConnected={isConnected}
+              onRejoin={(roomCode) => joinRoom(playerName || 'Player', roomCode)}
+            />
+          )}
 
           {/* Single tabbed card */}
           <motion.div
@@ -482,6 +485,9 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
 
       {/* Full Rules Modal */}
       <RulesModal isOpen={showRulesModal} onClose={() => setShowRulesModal(false)} />
+
+      {/* Reconnect Modal */}
+      <ReconnectModal />
 
       {/* Profile Modal */}
       <ProfileModal
