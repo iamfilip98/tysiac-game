@@ -311,6 +311,38 @@ export function syncAllEnginesForShutdown(): void {
   console.log(`[Shutdown] Synced ${gameEngines.size} engine(s)`);
 }
 
+/**
+ * Create a GameEngine for a game restored from the database on server startup.
+ * This ensures AI turns fire even if no human player reconnects immediately.
+ */
+export function createRestoredEngine(
+  io: TypedServer,
+  gameState: GameState,
+  roomData: Room,
+): void {
+  const engine = new GameEngine(
+    gameState,
+    io,
+    roomData.id,
+    () => cleanupGame(gameState.id, roomData.id),
+    (playerId: string) => playerToSocket.get(playerId) || null,
+    true, // isRecreated
+    (g: GameState) => {
+      const currentRoom = roomService.getRoom(roomData.id);
+      if (currentRoom) persistGame(g, currentRoom);
+    },
+    roomData.isPrivate,
+  );
+  gameEngines.set(gameState.id, engine);
+
+  // Resume after 15s to allow players to reconnect before AI acts
+  setTimeout(() => {
+    if (!engine.isCleanedUp) {
+      engine.resumeAfterRestore();
+    }
+  }, 15000);
+}
+
 const CLERK_SECRET_KEY = process.env.CLERK_SECRET_KEY || '';
 
 export function setupSocketHandlers(io: TypedServer) {

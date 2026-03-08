@@ -4,7 +4,7 @@ import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
 import { Server } from 'socket.io';
 import type { ClientToServerEvents, ServerToClientEvents } from '@tysiac/shared';
-import { setupSocketHandlers, syncAllEnginesForShutdown } from './socket/handlers.js';
+import { setupSocketHandlers, syncAllEnginesForShutdown, createRestoredEngine } from './socket/handlers.js';
 import * as debugService from './services/debugService.js';
 import * as gameService from './services/gameService.js';
 import * as roomService from './services/roomService.js';
@@ -399,6 +399,7 @@ async function main() {
       for (const { gameState, roomState } of activeGames) {
         gameService.restoreGame(gameState);
         roomService.restoreRoom(roomState);
+        createRestoredEngine(io, gameState, roomState);
         console.log(`[Restore] Game ${gameState.id} restored (phase: ${gameState.phase})`);
       }
       if (activeGames.length > 0) {
