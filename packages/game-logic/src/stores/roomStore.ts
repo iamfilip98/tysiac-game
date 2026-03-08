@@ -11,6 +11,7 @@ export interface RoomState {
   publicRooms: Room[];
   isSearching: boolean;
   searchPlayerCount: number;
+  reconnectStatus: 'idle' | 'reconnecting' | 'success' | 'failed';
 
   // Actions
   setRoom: (room: Room | null) => void;
@@ -22,6 +23,7 @@ export interface RoomState {
   setPublicRooms: (rooms: Room[]) => void;
   setSearching: (searching: boolean) => void;
   setSearchPlayerCount: (count: number) => void;
+  setReconnectStatus: (status: 'idle' | 'reconnecting' | 'success' | 'failed') => void;
   updatePlayer: (playerId: string, updates: Partial<RoomPlayer>) => void;
   clearRoom: () => void;
   reset: () => void;
@@ -37,6 +39,7 @@ export const useRoomStore = create<RoomState>((set) => ({
   publicRooms: [],
   isSearching: false,
   searchPlayerCount: 0,
+  reconnectStatus: 'idle',
 
   setRoom: (room) => set({ room, error: null }),
   setPlayerId: (playerId) => set({ playerId }),
@@ -47,6 +50,7 @@ export const useRoomStore = create<RoomState>((set) => ({
   setPublicRooms: (publicRooms) => set({ publicRooms }),
   setSearching: (isSearching) => set({ isSearching }),
   setSearchPlayerCount: (searchPlayerCount) => set({ searchPlayerCount }),
+  setReconnectStatus: (reconnectStatus) => set({ reconnectStatus }),
 
   updatePlayer: (playerId, updates) =>
     set((state) => {
@@ -66,6 +70,7 @@ export const useRoomStore = create<RoomState>((set) => ({
       error: null,
       isSearching: false,
       searchPlayerCount: 0,
+      reconnectStatus: 'idle',
     }),
 
   reset: () =>
@@ -79,5 +84,6 @@ export const useRoomStore = create<RoomState>((set) => ({
       publicRooms: [],
       isSearching: false,
       searchPlayerCount: 0,
+      reconnectStatus: 'idle',
     }),
 }));
