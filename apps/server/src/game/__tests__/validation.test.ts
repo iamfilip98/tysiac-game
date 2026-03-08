@@ -59,16 +59,16 @@ describe('getValidCards', () => {
     expect(result.every(c => c.suit === 'hearts')).toBe(true);
   });
 
-  it('must beat the lead card if it is still winning and player can', () => {
+  it('allows any in-suit card even if player could beat the lead', () => {
     const hand = [card('9', 'hearts'), card('A', 'hearts'), card('K', 'clubs')];
     const trick = trickState(
       [{ playerId: 'p1', card: card('10', 'hearts') }],
       'p2',
     );
-    // Lead (10 hearts, strength 4) is still winning -- must beat it
+    // No obligation to beat -- just follow suit
     const result = getValidCards(hand, trick, null, GAME);
-    // Only A hearts (strength 5) can beat 10 hearts
-    expect(result).toEqual([card('A', 'hearts')]);
+    expect(result).toEqual(expect.arrayContaining([card('9', 'hearts'), card('A', 'hearts')]));
+    expect(result).toHaveLength(2);
   });
 
   it('allows any card in suit when unable to beat the winning lead card', () => {
@@ -124,16 +124,16 @@ describe('getValidCards', () => {
     expect(result).toHaveLength(2);
   });
 
-  it('must beat lead with higher in-suit card when trump is lead suit', () => {
+  it('allows any in-suit card when trump is lead suit (no beat obligation)', () => {
     const hand = [card('Q', 'hearts'), card('A', 'hearts'), card('9', 'clubs')];
     const trick = trickState(
       [{ playerId: 'p1', card: card('K', 'hearts') }],
       'p2',
     );
-    // Hearts is trump; K hearts (strength 3) is lead and winning
+    // Hearts is trump and lead -- must follow suit but no need to beat
     const result = getValidCards(hand, trick, 'hearts', GAME);
-    // Only A hearts (strength 5) beats K hearts
-    expect(result).toEqual([card('A', 'hearts')]);
+    expect(result).toEqual(expect.arrayContaining([card('Q', 'hearts'), card('A', 'hearts')]));
+    expect(result).toHaveLength(2);
   });
 });
 

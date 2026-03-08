@@ -4,8 +4,8 @@ import { RANK_STRENGTH, getTotalMarriageValue, hasMarriage } from '@tysiac/share
 /**
  * Card play validation for Polish Tysiąc:
  * - All players must follow suit if they can
- * - Must beat highest card if possible when following suit
- * - If can't follow suit, must trump if possible
+ * - No obligation to beat (just follow suit)
+ * - If can't follow suit, any card is valid (no trump obligation)
  */
 
 export interface ValidationResult {
@@ -25,43 +25,18 @@ export function getValidCards(
   }
 
   const leadSuit = trick.leadSuit!;
-  const leadCard = trick.cards[0].card;
 
-  // Get highest card played so far
-  const highestCard = getHighestCardInTrick(trick.cards.map(c => c.card), leadSuit, trumpSuit);
-
-  // Check if lead card is still winning
-  const leadIsWinning =
-    highestCard.suit === leadCard.suit &&
-    highestCard.rank === leadCard.rank;
-
-  // Only beat the lead if it's currently winning; otherwise just follow suit
-  const cardToBeat = leadIsWinning ? leadCard : null;
-
-  return getCardsFollowingStandardRules(hand, leadSuit, trumpSuit, cardToBeat);
+  return getCardsFollowingSuitRule(hand, leadSuit);
 }
 
-function getCardsFollowingStandardRules(
+function getCardsFollowingSuitRule(
   hand: Card[],
-  leadSuit: Suit,
-  trumpSuit: Suit | null,
-  cardToBeat: Card | null  // null = just follow suit (lead already beaten)
+  leadSuit: Suit
 ): Card[] {
   const cardsInSuit = hand.filter(c => c.suit === leadSuit);
 
-  // Must follow suit if possible
+  // Must follow suit if possible, but no obligation to beat
   if (cardsInSuit.length > 0) {
-    // Only need to beat if there's a card to beat (lead is still winning)
-    if (cardToBeat) {
-      const beatingCards = cardsInSuit.filter(c =>
-        canBeat(c, cardToBeat, leadSuit, trumpSuit)
-      );
-
-      if (beatingCards.length > 0) {
-        return beatingCards;
-      }
-    }
-    // No card to beat OR can't beat - just follow suit
     return cardsInSuit;
   }
 
