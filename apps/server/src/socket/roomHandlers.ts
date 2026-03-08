@@ -37,6 +37,9 @@ export function registerRoomHandlers(socket: TypedSocket, ctx: HandlerContext): 
         ctx.playerToSocket.set(playerId, socket.id);
 
         const room = roomService.createRoom(playerId, playerName, roomName, isPrivate, maxPlayers);
+        if (ctx.authenticatedPlayerId) {
+          roomService.setPlayerClerkId(playerId, ctx.authenticatedPlayerId);
+        }
         const sessionToken = await createSession(playerId, room.id);
 
         socket.join(room.id);
@@ -71,6 +74,53 @@ export function registerRoomHandlers(socket: TypedSocket, ctx: HandlerContext): 
           return;
         }
 
+        // Check if this authenticated user already has a seat (replaced by AI)
+        if (ctx.authenticatedPlayerId && room) {
+          const existingPlayerId = roomService.getPlayerByClerkId(room.id, ctx.authenticatedPlayerId);
+          if (existingPlayerId) {
+            const existingPlayer = room.players.find(p => p.id === existingPlayerId);
+            if (existingPlayer?.isAI) {
+              // Reclaim seat instead of joining as new player
+              const playerName = parsed.data.playerName || existingPlayer.name.replace(/\s*\[AI\]$/, '');
+              roomService.reclaimFromAI(room.id, existingPlayerId, playerName);
+
+              // Update socket mappings
+              const oldExisting = ctx.socketToPlayer.get(socket.id);
+              if (oldExisting) {
+                ctx.playerToSocket.delete(oldExisting);
+              }
+              ctx.socketToPlayer.set(socket.id, existingPlayerId);
+              ctx.playerToSocket.set(existingPlayerId, socket.id);
+              socket.join(room.id);
+
+              // Create new session
+              const sessionToken = await createSession(existingPlayerId, room.id);
+
+              // Reclaim in engine if game is active
+              if (room.gameId) {
+                const engine = ctx.gameEngines.get(room.gameId);
+                if (engine) {
+                  engine.reclaimFromAI(existingPlayerId);
+                }
+              }
+
+              // Send response
+              const updatedRoom = roomService.getRoom(room.id)!;
+              socket.emit('room:joined', {
+                room: updatedRoom,
+                playerId: existingPlayerId,
+                sessionToken,
+              });
+              ctx.io.to(room.id).emit('room:updated', updatedRoom);
+              socket.to(room.id).emit('player:reconnected', existingPlayerId);
+              ctx.broadcastRoomList();
+
+              ctx.logEvent({ socketId: socket.id, eventType: 'player:reclaimed', eventData: parsed.data, result: 'success', metadata: { playerId: existingPlayerId, roomId: room.id, method: 'room_code_join' } });
+              return;
+            }
+          }
+        }
+
         if (room.players.length >= room.maxPlayers) {
           ctx.logEvent({ socketId: socket.id, eventType: 'room:join', eventData: parsed.data, result: 'rejected', errorMessage: 'Room is full', metadata: { roomId: room.id } });
           socket.emit('room:error', { code: 'ROOM_FULL', message: 'Room is full' });
@@ -100,6 +150,10 @@ export function registerRoomHandlers(socket: TypedSocket, ctx: HandlerContext): 
           ctx.logEvent({ socketId: socket.id, eventType: 'room:join', eventData: parsed.data, result: 'error', errorMessage: 'Failed to join room', metadata: { roomId: room.id } });
           socket.emit('room:error', { code: 'JOIN_FAILED', message: 'Failed to join room' });
           return;
+        }
+
+        if (ctx.authenticatedPlayerId) {
+          roomService.setPlayerClerkId(playerId, ctx.authenticatedPlayerId);
         }
 
         const sessionToken = await createSession(playerId, updatedRoom.id);

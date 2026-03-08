@@ -18,6 +18,7 @@ const AI_NAMES = [
 // In-memory room storage (for simplicity; can be backed by DB)
 const rooms = new Map<string, Room>();
 const playerRooms = new Map<string, string>(); // playerId -> roomId
+const playerClerkIds = new Map<string, string>(); // playerId → clerkId (survives AI replacement)
 
 function generateRoomCode(): string {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -120,6 +121,7 @@ export function leaveRoom(playerId: string): { room: Room | null; wasDeleted: bo
   // Remove player
   room.players = room.players.filter(p => p.id !== playerId);
   playerRooms.delete(playerId);
+  playerClerkIds.delete(playerId);
 
   // If room is empty, delete it
   if (room.players.length === 0) {
@@ -270,4 +272,49 @@ export function replacePlayerWithAI(roomId: string, playerId: string): Room | nu
   }
 
   return room;
+}
+
+export function setPlayerClerkId(playerId: string, clerkId: string): void {
+  playerClerkIds.set(playerId, clerkId);
+}
+
+export function getPlayerByClerkId(roomId: string, clerkId: string): string | null {
+  const room = rooms.get(roomId);
+  if (!room) return null;
+  for (const player of room.players) {
+    const mappedClerkId = playerClerkIds.get(player.id);
+    if (mappedClerkId === clerkId) return player.id;
+  }
+  return null;
+}
+
+export function reclaimFromAI(roomId: string, playerId: string, playerName: string): boolean {
+  const room = rooms.get(roomId);
+  if (!room) return false;
+  const player = room.players.find(p => p.id === playerId);
+  if (!player || !player.isAI) return false;
+
+  // Restore as human
+  player.isAI = false;
+  player.name = playerName.replace(/\s*\[AI\]$/, '');
+  player.isReady = true;
+
+  // Reassign host if current host is AI
+  const currentHost = room.players.find(p => p.id === room.hostId);
+  if (currentHost?.isAI) {
+    room.hostId = playerId;
+    for (const p of room.players) p.isHost = p.id === playerId;
+  }
+
+  playerRooms.set(playerId, roomId);
+  return true;
+}
+
+export function clearPlayerClerkId(clerkId: string): void {
+  for (const [playerId, cid] of playerClerkIds.entries()) {
+    if (cid === clerkId) {
+      playerClerkIds.delete(playerId);
+      break;
+    }
+  }
 }

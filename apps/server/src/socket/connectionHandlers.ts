@@ -72,6 +72,13 @@ export function registerConnectionHandlers(socket: TypedSocket, ctx: HandlerCont
         ctx.playerToSocket.set(playerId, socket.id);
         socket.join(roomId);
 
+        // Check if the player was replaced by AI and reclaim their seat
+        const playerInRoom = room.players.find(p => p.id === playerId);
+        if (playerInRoom?.isAI) {
+          const playerName = playerInRoom.name.replace(/\s*\[AI\]$/, '');
+          roomService.reclaimFromAI(roomId, playerId, playerName);
+        }
+
         // Get game state if exists
         let gameState: ClientGameState | null = null;
         let validActions: ValidAction[] = [];
@@ -106,20 +113,31 @@ export function registerConnectionHandlers(socket: TypedSocket, ctx: HandlerCont
               }, 5000);
             }
 
+            // Reclaim from AI in engine if player was replaced
+            if (playerInRoom?.isAI) {
+              engine.reclaimFromAI(playerId);
+            }
+
             // Get valid actions from engine state, then notify the player
             validActions = engine.getValidActionsForPlayer(playerId);
             engine.notifyPlayerIfTheirTurn(playerId);
 
-            ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'success', metadata: { hasActiveGame: true, phase: game?.phase } });
+            ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'success', metadata: { hasActiveGame: true, phase: game?.phase, reclaimedFromAI: !!playerInRoom?.isAI } });
             socket.emit('connection:restored', { room, gameState, validActions });
             socket.to(roomId).emit('player:reconnected', playerId);
+            if (playerInRoom?.isAI) {
+              ctx.io.to(roomId).emit('room:updated', room);
+            }
             return;
           }
         }
 
-        ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'success', metadata: { hasActiveGame: false } });
+        ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: { roomId, playerId }, result: 'success', metadata: { hasActiveGame: false, reclaimedFromAI: !!playerInRoom?.isAI } });
         socket.emit('connection:restored', { room, gameState, validActions });
         socket.to(roomId).emit('player:reconnected', playerId);
+        if (playerInRoom?.isAI) {
+          ctx.io.to(roomId).emit('room:updated', room);
+        }
       } catch (error) {
         console.error('[RECONNECT] Error:', error);
         ctx.logEvent({ socketId: socket.id, eventType: 'player:reconnect', eventData: data, result: 'error', errorMessage: String(error) });

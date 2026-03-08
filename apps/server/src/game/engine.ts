@@ -850,6 +850,43 @@ export class GameEngine {
   }
 
   /**
+   * Reclaim a seat from AI back to the returning human player
+   */
+  reclaimFromAI(playerId: string): void {
+    const player = this.game.players.find(p => p.id === playerId);
+    if (!player) return;
+
+    player.isAI = false;
+
+    // If it's currently the AI's turn, re-prompt as human
+    const currentPlayerId = this.getCurrentPlayerId();
+    if (currentPlayerId === playerId) {
+      this.promptCurrentPlayer();
+    }
+
+    this.broadcastState();
+  }
+
+  private getCurrentPlayerId(): string | null {
+    const phase = this.game.phase;
+    const round = this.game.currentRound;
+    if (!round) return null;
+
+    switch (phase) {
+      case 'bidding':
+        return this.currentBidder;
+      case 'talonReveal':
+      case 'playOrPassDecision':
+      case 'talonDistribution':
+        return round.bidWinner || null;
+      case 'trickPlaying':
+        return round.currentTrick?.currentPlayer || null;
+      default:
+        return null;
+    }
+  }
+
+  /**
    * Pause the game - any player can pause
    */
   pauseGame(playerId: string): boolean {
