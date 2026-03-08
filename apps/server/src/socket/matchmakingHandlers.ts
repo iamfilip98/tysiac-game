@@ -46,10 +46,16 @@ function broadcastQueueStatus(ctx: HandlerContext): void {
 }
 
 async function assembleMatch(players: matchmakingService.QueueEntry[], ctx: HandlerContext): Promise<void> {
-  if (players.length === 0) return;
+  // Filter out players whose sockets disconnected between queue match and assembly
+  const livePlayers = players.filter(p => {
+    const socket = ctx.io.sockets.sockets.get(p.socketId);
+    return !!socket?.connected;
+  });
+
+  if (livePlayers.length === 0) return;
 
   try {
-    const host = players[0];
+    const host = livePlayers[0];
 
     // Create a private room (won't show in lobby)
     const room = roomService.createRoom(
@@ -61,23 +67,23 @@ async function assembleMatch(players: matchmakingService.QueueEntry[], ctx: Hand
     );
 
     // Join remaining human players
-    for (let i = 1; i < players.length; i++) {
-      roomService.joinRoom(room.id, players[i].playerId, players[i].playerName);
+    for (let i = 1; i < livePlayers.length; i++) {
+      roomService.joinRoom(room.id, livePlayers[i].playerId, livePlayers[i].playerName);
     }
 
     // Fill empty slots with AI
-    const slotsToFill = 3 - players.length;
+    const slotsToFill = 3 - livePlayers.length;
     for (let i = 0; i < slotsToFill; i++) {
       roomService.addAI(room.id);
     }
 
     // Set all human players as ready
-    for (const p of players) {
+    for (const p of livePlayers) {
       roomService.setPlayerReady(p.playerId, true);
     }
 
     // Create sessions and join sockets to the room
-    for (const p of players) {
+    for (const p of livePlayers) {
       const sessionToken = await createSession(p.playerId, room.id);
       const socket = ctx.io.sockets.sockets.get(p.socketId);
       if (socket) {
@@ -127,7 +133,7 @@ async function assembleMatch(players: matchmakingService.QueueEntry[], ctx: Hand
       ctx.io.to(room.id).emit('room:updated', updatedRoom);
     }
 
-    console.log(`[Matchmaking] Match assembled: ${players.length} humans + ${slotsToFill} AI, gameId=${game.id}`);
+    console.log(`[Matchmaking] Match assembled: ${livePlayers.length} humans + ${slotsToFill} AI, gameId=${game.id}`);
   } catch (error) {
     console.error('[Matchmaking] Error assembling match:', error);
     // Notify players of the error
