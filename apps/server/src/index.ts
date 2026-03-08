@@ -227,6 +227,56 @@ async function main() {
     };
   });
 
+  // --- Active game endpoints (for rejoin detection) ---
+
+  fastify.get('/active-game', async (request, reply) => {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    try {
+      const token = authHeader.slice(7);
+      const payload = await verifyToken(token, { secretKey: CLERK_SECRET_KEY });
+      const clerkId = payload.sub;
+
+      const result = roomService.getRoomByClerkId(clerkId);
+      if (!result) {
+        return reply.send({ hasActiveGame: false });
+      }
+
+      const { room, playerId: activePlayerId } = result;
+      const player = room.players.find(p => p.id === activePlayerId);
+
+      return reply.send({
+        hasActiveGame: true,
+        roomId: room.id,
+        roomCode: room.code,
+        roomName: room.name,
+        playerId: activePlayerId,
+        isAIReplaced: player?.isAI ?? false,
+        hasActiveRound: !!room.gameId,
+      });
+    } catch {
+      return reply.code(401).send({ error: 'Invalid token' });
+    }
+  });
+
+  fastify.delete('/active-game', async (request, reply) => {
+    const authHeader = request.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+      return reply.code(401).send({ error: 'Unauthorized' });
+    }
+    try {
+      const token = authHeader.slice(7);
+      const payload = await verifyToken(token, { secretKey: CLERK_SECRET_KEY });
+      const clerkId = payload.sub;
+      roomService.clearPlayerClerkId(clerkId);
+      return reply.send({ success: true });
+    } catch {
+      return reply.code(401).send({ error: 'Invalid token' });
+    }
+  });
+
   // Create HTTP server
   await fastify.ready();
   const httpServer = fastify.server;

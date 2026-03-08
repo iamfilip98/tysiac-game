@@ -318,3 +318,25 @@ export function clearPlayerClerkId(clerkId: string): void {
     }
   }
 }
+
+export function getRoomByClerkId(clerkId: string): { room: Room; playerId: string } | null {
+  // Check playerRooms first (still connected players)
+  for (const [playerId, roomId] of playerRooms.entries()) {
+    const mappedClerkId = playerClerkIds.get(playerId);
+    if (mappedClerkId === clerkId) {
+      const room = rooms.get(roomId);
+      if (room) return { room, playerId };
+    }
+  }
+  // Also check AI-replaced players (removed from playerRooms but still in room.players)
+  for (const [playerId, clerkIdVal] of playerClerkIds.entries()) {
+    if (clerkIdVal === clerkId) {
+      for (const [, room] of rooms) {
+        if (room.players.some(p => p.id === playerId)) {
+          return { room, playerId };
+        }
+      }
+    }
+  }
+  return null;
+}
