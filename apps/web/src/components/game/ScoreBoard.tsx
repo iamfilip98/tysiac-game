@@ -1,7 +1,7 @@
 'use client';
 
 import { memo } from 'react';
-import { motion } from 'framer-motion';
+
 import { cn } from '@/lib/utils';
 import { getSuitSymbol, getSuitName } from '@tysiac/shared';
 import type { Suit } from '@tysiac/shared';
@@ -78,20 +78,24 @@ export const ScoreBoard = memo(function ScoreBoard({
         isFourPlayer ? "mb-1.5 pb-1" : "mb-3 pb-2"
       )}>
         <h3 className="text-[13px] font-semibold text-white/90 tracking-wide" style={{ textShadow: '0 1px 2px rgba(0,0,0,0.3)' }}>Scores</h3>
-        {trumpSuit && (
-          <div className="flex items-center gap-1 text-sm">
-            <span className="text-white/60 text-xs tracking-wide">Trump:</span>
-            <span
-              className="text-base w-4 text-center"
-              style={trumpSuit === 'hearts' || trumpSuit === 'diamonds'
-                ? { color: 'var(--card-red)' }
-                : { color: 'white' }}
-              aria-label={getSuitName(trumpSuit)}
-            >
-              {getSuitSymbol(trumpSuit)}
-            </span>
-          </div>
-        )}
+        <div className="flex items-center gap-1 text-sm min-w-[60px] justify-end">
+          {trumpSuit ? (
+            <>
+              <span className="text-white/60 text-xs tracking-wide">Trump:</span>
+              <span
+                className="text-base w-4 text-center"
+                style={trumpSuit === 'hearts' || trumpSuit === 'diamonds'
+                  ? { color: 'var(--card-red)' }
+                  : { color: 'white' }}
+                aria-label={getSuitName(trumpSuit)}
+              >
+                {getSuitSymbol(trumpSuit)}
+              </span>
+            </>
+          ) : (
+            <span className="text-white/30 text-xs">&nbsp;</span>
+          )}
+        </div>
       </div>
 
       {/* Players */}
@@ -103,9 +107,8 @@ export const ScoreBoard = memo(function ScoreBoard({
           const isDealer = dealerId === player.id;
 
           return (
-            <motion.div
+            <div
               key={player.id}
-              layout
               className={cn(
                 'flex items-center justify-between rounded-lg',
                 isFourPlayer ? 'p-1 px-1.5' : 'p-2',
@@ -114,7 +117,7 @@ export const ScoreBoard = memo(function ScoreBoard({
               )}
             >
               <div className="flex items-center gap-2 min-w-0">
-                {/* Dealer indicator */}
+                {/* Dealer indicator — fixed slot to prevent layout shift */}
                 {isDealer && (
                   <span
                     className="w-5 h-5 flex items-center justify-center flex-shrink-0"
@@ -170,23 +173,19 @@ export const ScoreBoard = memo(function ScoreBoard({
                 )}
               </div>
 
-              {/* Score */}
-              <div className="flex items-center gap-2 flex-shrink-0">
+              {/* Score — fixed width to prevent layout shift */}
+              <div className="flex items-center gap-1.5 flex-shrink-0 justify-end min-w-[60px]">
                 {score?.isOnBarrel && (
-                  <motion.span
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                  <span
                     className="text-xs text-amber-400 flex items-center gap-1"
                     aria-label="On the barrel (800+)"
                   >
                     <BarrelIcon className="w-5 h-5" />
                     <span className="sr-only">On barrel</span>
-                  </motion.span>
+                  </span>
                 )}
                 {score?.totalScore === 410 && (
-                  <motion.span
-                    animate={{ opacity: [0.5, 1, 0.5] }}
-                    transition={{ duration: 2, repeat: Infinity }}
+                  <span
                     className="text-xs text-amber-400 flex items-center gap-1"
                     aria-label="Grunwald (410 points)"
                   >
@@ -205,23 +204,23 @@ export const ScoreBoard = memo(function ScoreBoard({
                       <circle cx="10" cy="10" r="1.2" fill="#b8941f" stroke="#d4af37" strokeWidth="0.5" />
                     </svg>
                     <span className="sr-only">Grunwald</span>
-                  </motion.span>
+                  </span>
                 )}
                 <span
                   className={cn(
-                    'font-mono font-bold text-[13px]',
+                    'font-mono font-bold text-[13px] text-right min-w-[36px]',
                     score?.totalScore >= 800
                       ? 'text-amber-400'
                       : score?.totalScore < 0
                       ? 'text-card-red'
                       : 'text-white'
                   )}
-                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)' }}
+                  style={{ textShadow: '0 1px 3px rgba(0,0,0,0.4)', fontVariantNumeric: 'tabular-nums' }}
                 >
                   {score?.totalScore ?? 0}
                 </span>
               </div>
-            </motion.div>
+            </div>
           );
         })}
       </div>
