@@ -11,10 +11,18 @@ interface TrickHistoryButtonProps {
   players: { id: string; name: string }[];
 }
 
-function TrickCard({ suit, rank }: { suit: string; rank: string }) {
-  const color = getSuitColor(suit);
+function TrickCard({ suit, rank, isTrump, isMarriage }: { suit: string; rank: string; isTrump?: boolean; isMarriage?: boolean }) {
+  // Gold for marriage, blue for trump, otherwise normal suit colors
+  const colorClass = isMarriage
+    ? 'text-gold-400'
+    : isTrump
+    ? 'text-blue-400'
+    : getSuitColor(suit) === 'red'
+    ? 'text-red-400'
+    : 'text-white/90';
+
   return (
-    <span className={color === 'red' ? 'text-red-400' : 'text-white/90'}>
+    <span className={colorClass}>
       {rank}{getSuitSymbol(suit)}
     </span>
   );
@@ -27,26 +35,21 @@ function TrickRow({ entry, players }: { entry: TrickHistoryEntry; players: { id:
   };
 
   const leadSuit = entry.cards[0]?.card.suit;
+  const marriagePlayerId = entry.marriageDeclared?.playerId;
+  const marriageSuit = entry.marriageDeclared?.suit;
 
   return (
     <div className="px-3 py-2 border-b border-white/[0.06] last:border-b-0">
-      <div className="flex items-center gap-1.5 mb-1">
-        <span className="text-[10px] text-white/40 font-medium">Trick {entry.trickNumber}</span>
-        {entry.marriageDeclared && (
-          <span className="text-[10px] text-amber-400/80" title="Marriage declared">
-            {getSuitSymbol(entry.marriageDeclared.suit)} marriage
-          </span>
-        )}
-      </div>
+      <div className="text-[10px] text-white/40 font-medium mb-1">Trick {entry.trickNumber}</div>
       <div className="space-y-0.5">
         {entry.cards.map((c, i) => {
           const isWinner = c.playerId === entry.winnerId;
-          const isTrump = entry.trumpSuit && c.card.suit === entry.trumpSuit && c.card.suit !== leadSuit;
+          const isTrump = !!(entry.trumpSuit && c.card.suit === entry.trumpSuit && c.card.suit !== leadSuit);
+          const isMarriage = !!(marriagePlayerId === c.playerId && marriageSuit && (c.card.rank === 'Q' || c.card.rank === 'K') && c.card.suit === marriageSuit);
           return (
             <div key={i} className={`flex items-center gap-2 text-xs ${isWinner ? 'font-semibold' : 'opacity-70'}`}>
               <span className="truncate max-w-[80px] text-white/80">{getName(c.playerId)}</span>
-              <TrickCard suit={c.card.suit} rank={c.card.rank} />
-              {isTrump && <span className="text-amber-400 text-[10px]" title="Trump">T</span>}
+              <TrickCard suit={c.card.suit} rank={c.card.rank} isTrump={isTrump} isMarriage={isMarriage} />
               {isWinner && <span className="text-gold-400 text-[10px]">W</span>}
             </div>
           );
