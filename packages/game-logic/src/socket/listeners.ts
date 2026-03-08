@@ -144,6 +144,7 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
   });
 
   socket.on('game:roundEnd', (result: RoundResult) => {
+    useGameStore.getState().clearTrickHistory();
     useGameStore.getState().setRoundResult(result);
     deps.sound.play('roundEnd');
   });
@@ -218,6 +219,18 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
   });
 
   socket.on('game:trickWon', (data: { winnerId: string; cards: Card[]; points: number }) => {
+    // Snapshot current trick cards (with playerIds) before state clears
+    const gs = useGameStore.getState().gameState;
+    const currentTrick = gs?.round?.currentTrick;
+    if (currentTrick && currentTrick.cards.length > 0) {
+      useGameStore.getState().addTrickToHistory({
+        trickNumber: currentTrick.trickNumber,
+        cards: [...currentTrick.cards],
+        winnerId: data.winnerId,
+        points: data.points,
+      });
+    }
+
     if (marriageClearTimeout) clearTimeout(marriageClearTimeout);
     marriageClearTimeout = setTimeout(() => useGameStore.getState().setLastMarriageDeclared(null), 1500);
     deps.sound.play('trickWon');

@@ -1,6 +1,13 @@
 import { create } from 'zustand';
 import type { ClientGameState, ValidAction, Card, Suit, RoundResult, GameStatistics } from '@tysiac/shared';
 
+export interface TrickHistoryEntry {
+  trickNumber: number;
+  cards: { playerId: string; card: Card }[];
+  winnerId: string;
+  points: number;
+}
+
 export interface GameState {
   gameState: ClientGameState | null;
   validActions: ValidAction[];
@@ -27,6 +34,9 @@ export interface GameState {
   // Buffered state update while round result modal is open
   pendingGameState: ClientGameState | null;
 
+  // Trick history (for current round)
+  trickHistory: TrickHistoryEntry[];
+
   // Emote state
   activeEmotes: Record<string, { emoteId: string; timestamp: number }>;
 
@@ -46,6 +56,8 @@ export interface GameState {
   setThrewNotification: (data: { playerName: string; bidAmount: number; scoreChanges: Record<string, number> } | null) => void;
   setPauseData: (data: { pausedByName: string; pausedAt: number; expiresAt: number } | null) => void;
   setTrickWonData: (data: { winnerId: string; wasTrumpWin: boolean } | null) => void;
+  addTrickToHistory: (entry: TrickHistoryEntry) => void;
+  clearTrickHistory: () => void;
   setEmote: (playerId: string, emoteId: string) => void;
   clearEmote: (playerId: string) => void;
   reset: () => void;
@@ -68,6 +80,7 @@ export const useGameStore = create<GameState>((set) => ({
   pauseData: null,
   trickWonData: null,
   pendingGameState: null,
+  trickHistory: [],
   activeEmotes: {},
 
   setGameState: (gameState) =>
@@ -131,6 +144,11 @@ export const useGameStore = create<GameState>((set) => ({
 
   setTrickWonData: (trickWonData) => set({ trickWonData }),
 
+  addTrickToHistory: (entry) =>
+    set((state) => ({ trickHistory: [...state.trickHistory, entry] })),
+
+  clearTrickHistory: () => set({ trickHistory: [] }),
+
   setEmote: (playerId, emoteId) =>
     set((state) => ({
       activeEmotes: { ...state.activeEmotes, [playerId]: { emoteId, timestamp: Date.now() } },
@@ -160,6 +178,7 @@ export const useGameStore = create<GameState>((set) => ({
       pauseData: null,
       trickWonData: null,
       pendingGameState: null,
+      trickHistory: [],
       activeEmotes: {},
     }),
 }));

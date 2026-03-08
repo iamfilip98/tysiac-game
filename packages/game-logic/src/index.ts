@@ -1,6 +1,6 @@
 // Stores
 export { useGameStore } from './stores/gameStore.js';
-export type { GameState } from './stores/gameStore.js';
+export type { GameState, TrickHistoryEntry } from './stores/gameStore.js';
 
 export { useRoomStore } from './stores/roomStore.js';
 export type { RoomState } from './stores/roomStore.js';
