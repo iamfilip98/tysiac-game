@@ -201,13 +201,13 @@ function SlideMarriages({ cardSize }: { cardSize: 'xs' | 'sm' }) {
     { suit: 'spades', value: MARRIAGE_VALUES.spades },
   ];
   return (
-    <div className="space-y-3 pt-3">
+    <div className="space-y-4 pt-4">
       {marriages.map((m) => {
         const symbol = getSuitSymbol(m.suit);
         const color = getSuitColor(m.suit);
         return (
           <div key={m.suit} className="flex items-center justify-center gap-3">
-            <div className="flex gap-1">
+            <div className="flex gap-2">
               <Card card={c(m.suit, 'K')} size={cardSize} isPlayable={false} isMarriageCard skipEntryAnimation />
               <Card card={c(m.suit, 'Q')} size={cardSize} isPlayable={false} isMarriageCard skipEntryAnimation />
             </div>
