@@ -4,6 +4,7 @@ import { ClerkProvider } from '@clerk/nextjs';
 import { ToastProvider } from '@/components/ui/Toast';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { ThemeProvider } from '@/components/ThemeProvider';
+import { ConnectionStatus } from '@/components/ui/ConnectionStatus';
 import './globals.css';
 
 // Force dynamic rendering — ClerkProvider needs env vars at runtime
@@ -59,6 +60,7 @@ export default function RootLayout({
             <ToastProvider>
               <ThemeProvider>
                 <div className="felt-texture h-full overflow-auto">
+                  <ConnectionStatus />
                   {children}
                 </div>
               </ThemeProvider>
