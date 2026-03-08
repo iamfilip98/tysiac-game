@@ -44,6 +44,19 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
     useRoomStore.getState().setConnected(false);
   });
 
+  // Track reconnecting state via Socket.io manager events
+  (socket as any).io?.on('reconnect_attempt', () => {
+    useRoomStore.getState().setConnecting(true);
+  });
+
+  (socket as any).io?.on('reconnect', () => {
+    useRoomStore.getState().setConnecting(false);
+  });
+
+  (socket as any).io?.on('reconnect_failed', () => {
+    useRoomStore.getState().setConnecting(false);
+  });
+
   // --- Room events ---
 
   socket.on('room:created', (room: Room & { sessionToken: string }) => {
@@ -86,14 +99,19 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
     useRoomStore.getState().setCreatingRoom(false);
 
     if (code === 'INVALID_SESSION' && isAutoReconnecting) {
+      isAutoReconnecting = false;
+      deps.session.clear();
+
       const hasActiveGame = useGameStore.getState().gameState !== null;
       const hasActiveRoom = useRoomStore.getState().room !== null;
 
-      if (!hasActiveGame && !hasActiveRoom) {
-        isAutoReconnecting = false;
-        deps.session.clear();
-        return;
+      if (hasActiveGame || hasActiveRoom) {
+        // Clear stale state so user doesn't get stuck on spinner
+        useGameStore.getState().reset();
+        useRoomStore.getState().clearRoom();
+        useRoomStore.getState().setError('Your session expired. Please rejoin the game.');
       }
+      return;
     }
 
     isAutoReconnecting = false;
@@ -337,5 +355,9 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
     socket.off('game:emoteReceived');
     socket.off('lobby:roomList');
     socket.off('connection:restored');
+
+    (socket as any).io?.off('reconnect_attempt');
+    (socket as any).io?.off('reconnect');
+    (socket as any).io?.off('reconnect_failed');
   };
 }

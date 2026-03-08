@@ -127,7 +127,7 @@ export function startVisibilityHandler(): void {
       if (!socket.connected) {
         console.log('[Socket] Tab became visible, reconnecting...');
         socket.connect();
-      } else if (backgroundDuration > 5000) {
+      } else if (backgroundDuration > 30000) {
         // Socket claims connected but was backgrounded long enough for the
         // browser to have killed the transport. Force a fresh connection.
         console.log(`[Socket] Tab was backgrounded for ${Math.round(backgroundDuration / 1000)}s, forcing reconnect...`);
