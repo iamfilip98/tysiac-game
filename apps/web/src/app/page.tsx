@@ -12,6 +12,7 @@ import { GameBoard } from '@/components/game/GameBoard';
 import { RulesModal } from '@/components/game/RulesModal';
 import { AuthGate } from '@/components/auth/AuthGate';
 import { UserBadge } from '@/components/auth/UserBadge';
+import { RejoinBanner } from '@/components/lobby/RejoinBanner';
 import { ProfileModal } from '@/components/profile/ProfileModal';
 import { Input } from '@/components/ui/Input';
 import { useSocket } from '@/hooks/useSocket';
@@ -306,6 +307,12 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
         </motion.div>
       ) : (
         <>
+          {/* Rejoin banner for authenticated users with an active game */}
+          <RejoinBanner
+            isConnected={isConnected}
+            onRejoin={(roomCode) => joinRoom(playerName || 'Player', roomCode)}
+          />
+
           {/* Single tabbed card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
