@@ -123,7 +123,7 @@ export function removePersistedGame(gameId: string): void {
 }
 
 /**
- * Flush all active games to database. Called on SIGTERM for graceful shutdown.
+ * Flush all active games to database in parallel. Called on SIGTERM for graceful shutdown.
  */
 export async function flushAllGames(
   gameGetter: () => GameState[],
@@ -132,7 +132,7 @@ export async function flushAllGames(
   if (!db) return;
 
   const games = gameGetter();
-  let flushed = 0;
+  const promises: Promise<void>[] = [];
 
   for (const game of games) {
     // Only persist active games (not ended/idle)
@@ -141,11 +141,13 @@ export async function flushAllGames(
     const room = roomGetter(game.roomId);
     if (!room) continue;
 
-    try {
-      // Bypass throttle for shutdown flush
-      const gJson = JSON.stringify(game);
-      const rJson = JSON.stringify(room);
-      await db.execute(sql`
+    // Bypass throttle for shutdown flush
+    lastPersistTime.delete(game.id);
+
+    const gJson = JSON.stringify(game);
+    const rJson = JSON.stringify(room);
+    promises.push(
+      db.execute(sql`
         INSERT INTO active_games (game_id, game_state, room_state, phase, updated_at)
         VALUES (${game.id}, ${gJson}::text::jsonb, ${rJson}::text::jsonb, ${game.phase}, now())
         ON CONFLICT (game_id) DO UPDATE SET
@@ -153,14 +155,15 @@ export async function flushAllGames(
           room_state = ${rJson}::text::jsonb,
           phase = ${game.phase},
           updated_at = now()
-      `);
-      flushed++;
-    } catch (error) {
-      console.error(`[Persistence] Failed to flush game ${game.id}:`, error);
-    }
+      `).then(() => { /* success */ }).catch(err => {
+        console.error(`[Persistence] Failed to flush game ${game.id}:`, err);
+      })
+    );
   }
 
-  if (flushed > 0) {
-    console.log(`[Persistence] Flushed ${flushed} active game(s) to database`);
+  await Promise.all(promises);
+
+  if (promises.length > 0) {
+    console.log(`[Persistence] Flushed ${promises.length} active game(s) to database`);
   }
 }

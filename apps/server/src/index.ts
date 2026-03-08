@@ -303,11 +303,11 @@ async function main() {
     isShuttingDown = true;
     console.log('Shutting down gracefully...');
 
-    // Hard deadline: force exit after 8s (Render gives ~10s before SIGKILL)
+    // Hard deadline: force exit after 15s
     const forceExit = setTimeout(() => {
       console.error('[Shutdown] Timeout — forcing exit');
       process.exit(1);
-    }, 8000);
+    }, 15000);
     forceExit.unref();
 
     stopSessionCleanup();
