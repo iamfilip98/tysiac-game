@@ -442,7 +442,7 @@ export function TutorialSlideshow() {
             <h3 className="text-gold-400 font-semibold text-center mb-3 text-base shrink-0">
               {slide.title}
             </h3>
-            <div className="flex-1 flex flex-col justify-center overflow-y-auto">
+            <div className="flex-1 overflow-y-auto">
               {slide.content(cardSize)}
             </div>
           </motion.div>
