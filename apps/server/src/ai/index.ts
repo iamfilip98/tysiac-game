@@ -352,11 +352,15 @@ export class AIPlayer {
     remaining: Card[]
   ): Card {
     if (isBidder) {
-      // Bidder: lead aces of non-trump first, then 10s with ace backup
+      // Bidder: lead aces of non-trump first to collect guaranteed points
       const aces = validCards.filter(c => c.rank === 'A');
       if (aces.length > 0) {
         const nonTrumpAces = aces.filter(c => c.suit !== trumpSuit);
-        if (nonTrumpAces.length > 0) return nonTrumpAces[0];
+        if (nonTrumpAces.length > 0) {
+          // Lead ace of suit where opponents likely have high cards to collect
+          return this.pickSuitWithMostPoints(nonTrumpAces, remaining);
+        }
+        // Trump ace — lead if we have trump length to drain defenders
         return aces[0];
       }
 
@@ -364,7 +368,17 @@ export class AIPlayer {
       const tens = validCards.filter(c => c.rank === '10');
       for (const ten of tens) {
         const aceStillOut = remaining.some(r => r.suit === ten.suit && r.rank === 'A');
-        if (!aceStillOut && ten.suit !== trumpSuit) return ten;
+        if (!aceStillOut) return ten;
+      }
+
+      // Lead trump to pull defenders' trumps if we have strong trump position
+      if (trumpSuit) {
+        const myTrumps = validCards.filter(c => c.suit === trumpSuit);
+        const outstandingTrumps = remaining.filter(c => c.suit === trumpSuit);
+        if (myTrumps.length >= 2 && outstandingTrumps.length > 0) {
+          // Lead highest trump to force out their strong trumps
+          return this.highestValue(myTrumps);
+        }
       }
 
       // No guaranteed winners left — lead low from longest non-trump suit to probe
@@ -457,50 +471,58 @@ export class AIPlayer {
     const winningPlayerIdx = playedCards.indexOf(winningCard);
     const winningPlayerId = playedPlayerIds[winningPlayerIdx];
 
+    const followingSuit = validCards.some(c => c.suit === leadSuit);
+
     const beatingCards = validCards.filter(c =>
       this.canBeat(c, winningCard, leadSuit, trumpSuit)
     );
 
+    // ─── Off-suit: can't follow suit ─────────────────────
+    if (!followingSuit) {
+      return this.decideOffSuitCard(
+        validCards, trick, trumpSuit, isBidder, bidderId,
+        winningCard, winningPlayerId, remaining
+      );
+    }
+
+    // ─── Following suit ──────────────────────────────────
     if (isBidder) {
-      // Bidder wants to win tricks
+      // Bidder wants to win tricks — beat with lowest winner
       if (beatingCards.length > 0) {
         return this.lowestValue(beatingCards);
       }
       return this.lowestValue(validCards);
     }
 
-    // ─── Defender strategy ──────────────────────────────
-    const isBidderLeading = playedPlayerIds[0] === bidderId;
+    // ─── Defender, following suit ─────────────────────────
     const isBidderWinning = winningPlayerId === bidderId;
     const isPartnerWinning = !isBidderWinning && winningPlayerId !== undefined;
 
     if (trick.cards.length === 1) {
-      // ── Second to play ──
-      if (isBidderLeading) {
-        // Bidder leads: try to beat with lowest winning card
+      // ── Second to play, following suit ──
+      if (playedPlayerIds[0] === bidderId) {
+        // Bidder leads: beat with lowest winner, or dump lowest
         if (beatingCards.length > 0) {
           return this.lowestValue(beatingCards);
         }
-        // Can't beat, dump lowest value card
         return this.lowestValue(validCards);
       } else {
-        // Partner leads
+        // Partner leads — bidder plays third and could still beat us
         const partnerCard = playedCards[0];
         const partnerIsStrong = RANK_STRENGTH[partnerCard.rank] >= 4; // 10 or A
 
         if (partnerIsStrong) {
-          // Partner leads strong: feed high-point cards partner can win
-          // Play our highest point card that doesn't overtake partner
+          // Partner leads strong: feed points that don't overtake partner
           const feedCards = validCards.filter(c =>
             !this.canBeat(c, partnerCard, leadSuit, trumpSuit)
           );
           if (feedCards.length > 0) {
             return this.highestPoints(feedCards);
           }
-          // All our cards beat partner — play lowest
+          // All cards beat partner — play lowest to not steal
           return this.lowestValue(validCards);
         } else {
-          // Partner leads weak: try to beat cheaply, as bidder plays third
+          // Partner leads weak: try to take over cheaply
           if (beatingCards.length > 0) {
             return this.lowestValue(beatingCards);
           }
@@ -508,16 +530,15 @@ export class AIPlayer {
         }
       }
     } else {
-      // ── Third to play ──
+      // ── Third to play, following suit ──
       if (isPartnerWinning) {
-        // Partner is winning: feed high-point card that doesn't overtake partner
+        // Partner is winning: feed points that don't overtake
         const feedCards = validCards.filter(c =>
           !this.canBeat(c, winningCard, leadSuit, trumpSuit)
         );
         if (feedCards.length > 0) {
           return this.highestPoints(feedCards);
         }
-        // All our cards beat partner — play lowest to not steal the trick
         return this.lowestValue(validCards);
       } else {
         // Bidder is winning: beat with lowest winner, or dump lowest
@@ -527,6 +548,117 @@ export class AIPlayer {
         return this.lowestValue(validCards);
       }
     }
+  }
+
+  /**
+   * Handle off-suit play: we can't follow the lead suit.
+   * Key principle: never waste high-value cards (Aces, protected 10s)
+   * that would be better used as trick-winners when led later.
+   */
+  private decideOffSuitCard(
+    validCards: Card[],
+    trick: TrickState,
+    trumpSuit: Suit | null,
+    isBidder: boolean,
+    bidderId: string,
+    winningCard: Card,
+    winningPlayerId: string,
+    remaining: Card[]
+  ): Card {
+    const isBidderWinning = winningPlayerId === bidderId;
+    const isPartnerWinning = !isBidderWinning && winningPlayerId !== undefined;
+
+    const myTrumps = trumpSuit ? validCards.filter(c => c.suit === trumpSuit) : [];
+    const trickPointValue = trick.cards.reduce((sum, c) => sum + CARD_POINTS[c.card.rank], 0);
+
+    if (isBidder) {
+      // Bidder off-suit: trump to win the trick if possible
+      if (myTrumps.length > 0) {
+        const beatingTrumps = myTrumps.filter(c =>
+          this.canBeat(c, winningCard, trick.leadSuit!, trumpSuit)
+        );
+        if (beatingTrumps.length > 0) {
+          return this.lowestValue(beatingTrumps);
+        }
+      }
+      // Can't win — dump lowest expendable card
+      return this.lowestExpendable(validCards, trumpSuit);
+    }
+
+    // ─── Defender off-suit ───────────────────────────────
+
+    if (isPartnerWinning) {
+      // Partner is winning: dump our least valuable card.
+      // Never feed Aces or protected 10s off-suit — they're worth far
+      // more as trick-winners when we lead them later.
+      return this.lowestExpendable(validCards, trumpSuit);
+    }
+
+    // Bidder is winning (or will play after us)
+    if (myTrumps.length > 0) {
+      const beatingTrumps = myTrumps.filter(c =>
+        this.canBeat(c, winningCard, trick.leadSuit!, trumpSuit)
+      );
+
+      if (beatingTrumps.length > 0) {
+        // Trump to steal the trick from bidder — but only if worth it
+        // Worth it if: trick has meaningful points, or we have plenty of trumps
+        const isTrickValuable = trickPointValue >= 10;
+        const haveTrumpDepth = myTrumps.length >= 2;
+
+        if (isTrickValuable || haveTrumpDepth) {
+          return this.lowestValue(beatingTrumps);
+        }
+
+        // Trick has few points and we'd spend our last trump — not worth it
+        // unless the bidder is winning (deny them even small tricks late game)
+        if (remaining.length <= 12) {
+          // Late game: fight for every trick
+          return this.lowestValue(beatingTrumps);
+        }
+      }
+    }
+
+    // Can't trump or not worth it — dump lowest expendable card
+    return this.lowestExpendable(validCards, trumpSuit);
+  }
+
+  /**
+   * Pick the lowest-value "expendable" card — one that won't be missed.
+   * Preserves: Aces (guaranteed winners), 10s with their Ace still in hand,
+   * and trumps (if we have few).
+   */
+  private lowestExpendable(cards: Card[], trumpSuit: Suit | null): Card {
+    // Score each card by how expendable it is (lower = more expendable)
+    const scored = cards.map(card => {
+      let keepValue = CARD_POINTS[card.rank] + RANK_STRENGTH[card.rank];
+
+      // Aces are guaranteed trick winners — very high keep value
+      if (card.rank === 'A') keepValue += 30;
+
+      // 10s with their Ace still in hand are safe winners — high keep value
+      if (card.rank === '10') {
+        const hasAce = cards.some(c => c.suit === card.suit && c.rank === 'A');
+        if (hasAce) keepValue += 20;
+        // Exposed 10 (no ace) is risky but still 10 points if it wins
+        else keepValue += 5;
+      }
+
+      // Trumps are valuable for control — keep them
+      if (trumpSuit && card.suit === trumpSuit) keepValue += 10;
+
+      // Marriage pair cards are worth keeping
+      if ((card.rank === 'Q' || card.rank === 'K') &&
+          cards.some(c => c.suit === card.suit && c.rank === (card.rank === 'Q' ? 'K' : 'Q'))) {
+        keepValue += 15;
+      }
+
+      return { card, keepValue };
+    });
+
+    // Sort by keepValue ascending — most expendable first
+    scored.sort((a, b) => a.keepValue - b.keepValue);
+    return scored[0].card;
   }
 
   // ─── Hand Evaluation ──────────────────────────────────────────
