@@ -24,6 +24,28 @@ export function DistributionModal({
   const [assignments, setAssignments] = useState<Map<string, CardType>>(new Map());
   const [submitted, setSubmitted] = useState(false);
 
+  // Detect marriages (K and Q of same suit both in hand)
+  const marriageCards = useMemo(() => {
+    const suits: Suit[] = ['hearts', 'diamonds', 'clubs', 'spades'];
+    const marriageCardSet = new Set<string>();
+
+    for (const suit of suits) {
+      const hasKing = hand.some(c => c.suit === suit && c.rank === 'K');
+      const hasQueen = hand.some(c => c.suit === suit && c.rank === 'Q');
+
+      if (hasKing && hasQueen) {
+        marriageCardSet.add(`${suit}-K`);
+        marriageCardSet.add(`${suit}-Q`);
+      }
+    }
+
+    return marriageCardSet;
+  }, [hand]);
+
+  const isMarriageCard = (card: CardType): boolean => {
+    return marriageCards.has(`${card.suit}-${card.rank}`);
+  };
+
   // Sort cards by suit (alternating red/black) and rank
   const sortedCards = useMemo(() => {
     const rankOrder = ['A', '10', 'K', 'Q', 'J', '9'];
@@ -175,6 +197,7 @@ export function DistributionModal({
                       card={card}
                       size={cardSize}
                       isPlayable={!assignedTo && !!activeSlot && !submitted}
+                      isMarriageCard={isMarriageCard(card)}
                     />
                   </div>
                   {/* Assigned label — fixed height to prevent shift */}
