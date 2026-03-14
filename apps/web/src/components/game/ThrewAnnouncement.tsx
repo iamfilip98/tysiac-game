@@ -24,8 +24,6 @@ export function ThrewAnnouncement({ data, players, onComplete }: ThrewAnnounceme
     return () => clearTimeout(timer);
   }, [data, onComplete]);
 
-  if (!data) return null;
-
   // Get score changes for display
   const getPlayerName = (playerId: string) => {
     return players.find(p => p.id === playerId)?.name || 'Unknown';
@@ -33,42 +31,52 @@ export function ThrewAnnouncement({ data, players, onComplete }: ThrewAnnounceme
 
   return (
     <AnimatePresence>
-      <motion.div
-        key="threw-announcement"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ duration: 0.3 }}
-        className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
-      >
+      {data && (
         <motion.div
-          initial={{ y: 20 }}
-          animate={{ y: 0 }}
-          className="bg-table-800/95 border-2 border-card-red/50 rounded-xl px-8 py-6 shadow-2xl max-w-sm"
+          key="threw-announcement"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className="fixed inset-0 flex items-center justify-center z-50 pointer-events-none"
         >
-          <div className="text-center">
-            <div className="text-card-red text-lg font-semibold mb-2">
-              {data.playerName} threw at {data.bidAmount}
-            </div>
-            <div className="text-white/70 text-sm mb-4">
-              Score changes:
-            </div>
-            <div className="space-y-1">
-              {Object.entries(data.scoreChanges).map(([playerId, change]) => (
-                <div
-                  key={playerId}
-                  className={`text-sm ${change >= 0 ? 'text-gold-400' : 'text-card-red'}`}
-                >
-                  {getPlayerName(playerId)}: {change >= 0 ? '+' : ''}{change}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            transition={{ duration: 0.3, type: 'spring', damping: 20 }}
+            className="relative overflow-hidden rounded-xl min-w-[280px] max-w-sm bg-gradient-to-b from-table-800/95 to-table-900/95 backdrop-blur-md border-2 border-card-red/50"
+            style={{
+              boxShadow: '0 0 15px rgba(239, 68, 68, 0.25), inset 0 1px 0 rgba(255,255,255,0.06)',
+            }}
+          >
+            <div className="relative px-8 py-5">
+              <div className="text-center mb-3">
+                <div className="text-sm text-white/60 mb-1">Bid abandoned</div>
+                <div className="text-lg font-bold text-card-red">
+                  {data.playerName} threw at {data.bidAmount}
                 </div>
-              ))}
+              </div>
+              <div className="space-y-1">
+                {Object.entries(data.scoreChanges).map(([playerId, change]) => (
+                  <div
+                    key={playerId}
+                    className="flex items-center justify-between text-sm"
+                  >
+                    <span className="text-white/70">{getPlayerName(playerId)}</span>
+                    <span className={change >= 0 ? 'text-gold-400 font-medium' : 'text-card-red font-medium'}>
+                      {change >= 0 ? '+' : ''}{change}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <div className="text-white/50 text-xs mt-3 text-center">
+                Starting new round...
+              </div>
             </div>
-            <div className="text-white/50 text-xs mt-4">
-              Starting new round...
-            </div>
-          </div>
+          </motion.div>
         </motion.div>
-      </motion.div>
+      )}
     </AnimatePresence>
   );
 }

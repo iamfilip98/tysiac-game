@@ -106,6 +106,17 @@ function HomePageContent({ roomCodeFromUrl }: { roomCodeFromUrl: string }) {
     leaveMatchmaking,
   } = useSocket();
 
+  // Auto-join room when arriving via shared link (?room=XXXXXX)
+  const autoJoinAttempted = useRef(false);
+  useEffect(() => {
+    if (!roomCodeFromUrl || autoJoinAttempted.current || !isConnected || room) return;
+    // Need a name — either authenticated or guest with a name set
+    const name = isAuthenticated && authDisplayName ? authDisplayName : guestName.trim();
+    if (!name) return;
+    autoJoinAttempted.current = true;
+    joinRoom(name, roomCodeFromUrl);
+  }, [roomCodeFromUrl, isConnected, room, isAuthenticated, authDisplayName, guestName, joinRoom]);
+
   // Tutorial flow — chains: createRoom → addAI x2 → setReady → startGame
   type TutorialStep = 'idle' | 'waitRoom' | 'waitPlayers' | 'waitReady' | 'waitStart';
   const [tutorialStep, setTutorialStep] = useState<TutorialStep>('idle');

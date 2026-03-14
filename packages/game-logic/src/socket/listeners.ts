@@ -144,6 +144,11 @@ export function registerSocketListeners(socket: SocketLike, deps: SocketDeps): (
     if (state?.phase !== 'wykladana') {
       useGameStore.getState().setWykladanaData(null);
     }
+    // Clear threw/passed notifications when a new round starts (bidding phase)
+    if (state?.phase === 'bidding') {
+      useGameStore.getState().setThrewNotification(null);
+      useGameStore.getState().setPassedAt100Notification(null);
+    }
   });
 
   socket.on('game:yourTurn', ({ validActions }: { validActions: ValidAction[] }) => {

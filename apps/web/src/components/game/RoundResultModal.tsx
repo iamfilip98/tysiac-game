@@ -19,14 +19,27 @@ export function RoundResultModal({
 }: RoundResultModalProps) {
   const bidderName =
     players.find((p) => p.id === result.bidWinner)?.name || 'Unknown';
+  const winnerName = result.gameWinner
+    ? players.find((p) => p.id === result.gameWinner)?.name || 'Unknown'
+    : null;
 
   return (
     <Modal isOpen={true} onClose={onClose} className="max-w-lg">
       <ModalHeader onClose={onClose}>
-        Round {result.roundNumber} Complete
+        {result.gameWinner ? 'Final Round' : `Round ${result.roundNumber} Complete`}
       </ModalHeader>
 
       <ModalBody>
+        {/* Game winner banner */}
+        {winnerName && (
+          <div className="p-4 rounded-lg mb-4 bg-gradient-to-r from-gold-500/20 via-gold-500/30 to-gold-500/20 border border-gold-500/40 text-center">
+            <div className="text-gold-400 text-xs font-medium uppercase tracking-wider mb-1">Game Over</div>
+            <div className="text-xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-gold-300 via-gold-400 to-amber-500">
+              {winnerName} wins the game!
+            </div>
+          </div>
+        )}
+
         {/* Bid result */}
         <div
           className={cn(
@@ -50,9 +63,9 @@ export function RoundResultModal({
           </div>
           <div className="mt-2 text-center">
             {result.bidderMadeBid ? (
-              <span className="text-gold-400 font-medium">✓ Made the bid!</span>
+              <span className="text-gold-400 font-medium">Made the bid!</span>
             ) : (
-              <span className="text-card-red font-medium">✗ Failed to make bid</span>
+              <span className="text-card-red font-medium">Failed to make bid</span>
             )}
           </div>
         </div>
@@ -62,6 +75,7 @@ export function RoundResultModal({
           {result.playerResults.map((pr) => {
             const player = players.find((p) => p.id === pr.playerId);
             const isBidder = pr.playerId === result.bidWinner;
+            const isGameWinner = pr.playerId === result.gameWinner;
 
             return (
               <motion.div
@@ -70,7 +84,7 @@ export function RoundResultModal({
                 animate={{ opacity: 1, x: 0 }}
                 className={cn(
                   'p-3 rounded-lg',
-                  isBidder ? 'bg-gold-500/10' : 'bg-table-800/50'
+                  isGameWinner ? 'bg-gold-500/15 border border-gold-500/25' : isBidder ? 'bg-gold-500/10' : 'bg-table-800/50'
                 )}
               >
                 <div className="flex items-center justify-between mb-1">
@@ -101,8 +115,8 @@ export function RoundResultModal({
                   <span>Total: {pr.newTotalScore}</span>
                 </div>
 
-                {/* Barrel warnings */}
-                {pr.wasOnBarrel && (
+                {/* Barrel warnings — hide "still on barrel" when game is over */}
+                {pr.wasOnBarrel && (pr.fellOffBarrel || !result.gameWinner) && (
                   <div className="mt-1 text-xs text-amber-400 flex items-center gap-1">
                     <svg className="w-3 h-3 inline-block shrink-0" viewBox="0 0 16 16" fill="none" aria-hidden="true">
                       <path d="M4 3 Q3 8 4 13 L12 13 Q13 8 12 3 Z" fill="#1a1a1a" stroke="#d4af37" strokeWidth="0.7" />
@@ -127,7 +141,7 @@ export function RoundResultModal({
 
       <ModalFooter className="justify-center">
         <Button variant="primary" onClick={onClose} glow>
-          {result.gameWinner ? 'Show Results' : 'Continue to Next Round'}
+          {result.gameWinner ? 'View Final Standings' : 'Continue to Next Round'}
         </Button>
       </ModalFooter>
     </Modal>
