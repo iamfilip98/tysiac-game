@@ -10,6 +10,7 @@ import { Card } from './Card';
 import { TalonDisplay } from './TalonPanel';
 import { GameActionPanels } from './GameActionPanels';
 import { GameOverlays } from './GameOverlays';
+import { DistributionModal } from './DistributionModal';
 import { TutorialOverlay } from './TutorialOverlay';
 import { SettingsDropdown } from './SettingsDropdown';
 import { RulesModal } from './RulesModal';
@@ -177,8 +178,6 @@ export function GameBoard() {
   const [showRules, setShowRules] = useState(false);
 
   // Talon distribution state
-  const [distributionTarget, setDistributionTarget] = useState<string | null>(null);
-  const [distributionCards, setDistributionCards] = useState<Map<string, CardType>>(new Map());
   const [distributionSubmitted, setDistributionSubmitted] = useState(false);
 
   // Reset confirmation state when phase changes
@@ -197,43 +196,14 @@ export function GameBoard() {
   // Reset distribution state when phase changes
   useEffect(() => {
     if (gameState?.phase !== 'talonDistribution') {
-      setDistributionTarget(null);
-      setDistributionCards(new Map());
       setDistributionSubmitted(false);
     }
   }, [gameState?.phase]);
 
-
-  // Distribution card selection handler
-  const handleDistributionCardSelect = (card: CardType) => {
-    if (!distributionTarget) return;
-
-    const newSelected = new Map(distributionCards);
-
-    // Check if card is already selected for someone else
-    newSelected.forEach((selectedCard, pId) => {
-      if (selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
-        newSelected.delete(pId);
-      }
-    });
-
-    // Assign to current target
-    newSelected.set(distributionTarget, card);
-    setDistributionCards(newSelected);
-
-    // Auto-switch to next player without a card
-    const nextPlayer = otherPlayers.slice(0, 2).find((p) => !newSelected.has(p.id));
-    setDistributionTarget(nextPlayer?.id || null);
-  };
-
-  // Handle distribution submit
-  const handleDistributeSubmit = () => {
+  // Handle distribution submit from modal
+  const handleDistributeSubmit = (distribution: { playerId: string; card: CardType }[]) => {
     if (distributionSubmitted) return;
     setDistributionSubmitted(true);
-    const distribution: { playerId: string; card: CardType }[] = [];
-    distributionCards.forEach((card, pId) => {
-      distribution.push({ playerId: pId, card });
-    });
     distributeTalon(distribution);
   };
 
@@ -330,7 +300,7 @@ export function GameBoard() {
       </div>
 
       {/* Top-right settings */}
-      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-4 z-30">
+      <div className="absolute top-[max(1rem,env(safe-area-inset-top))] right-2 sm:right-4 z-30">
         <SettingsDropdown
           isPrivate={room?.isPrivate}
           roomCode={room?.code}
@@ -563,12 +533,6 @@ export function GameBoard() {
           bidAmount={round?.finalBid || 100}
           playerCount={playerCount}
           bidWinnerName={gameState.players.find(p => p.id === round?.bidWinner)?.name}
-          hasCardsToDistribute={!!gameState.cardsToDistribute}
-          otherPlayers={otherPlayers.slice(0, 2)}
-          distributionCards={distributionCards}
-          distributionTarget={distributionTarget}
-          onSelectTarget={setDistributionTarget}
-          onDistributeSubmit={handleDistributeSubmit}
         />
       </div>
 
@@ -612,16 +576,6 @@ export function GameBoard() {
             declaredMarriages={round?.declaredMarriages?.[playerId] || []}
             phase={phase}
             trumpSuit={round?.trumpSuit}
-            distributionState={
-              phase === 'talonDistribution' && round?.bidWinner === playerId
-                ? {
-                    currentTarget: distributionTarget,
-                    selectedCards: distributionCards,
-                    targetNames: new Map(otherPlayers.slice(0, 2).map(p => [p.id, p.name])),
-                    onCardSelect: handleDistributionCardSelect,
-                  }
-                : undefined
-            }
           />
         )}
       </div>
@@ -671,6 +625,18 @@ export function GameBoard() {
           completedTricks={round?.completedTricks}
         />
       )}
+
+      {/* Distribution modal — bid winner assigns cards to other players */}
+      {phase === 'talonDistribution' &&
+        round?.bidWinner === playerId &&
+        !isSpectating &&
+        gameState.cardsToDistribute && (
+          <DistributionModal
+            hand={myHand}
+            otherPlayers={otherPlayers.slice(0, 2)}
+            onDistribute={handleDistributeSubmit}
+          />
+        )}
 
       {/* Distribution reveal overlay — shows the card received from bid winner */}
       <AnimatePresence>

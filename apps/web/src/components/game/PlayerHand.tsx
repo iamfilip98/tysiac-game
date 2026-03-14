@@ -7,13 +7,6 @@ import { cn } from '@/lib/utils';
 import { useScreenSize } from '@/hooks/useIsMobile';
 import type { Card as CardType, ValidAction, Suit } from '@tysiac/shared';
 
-interface DistributionState {
-  currentTarget: string | null;
-  selectedCards: Map<string, CardType>;
-  targetNames: Map<string, string>; // playerId -> playerName
-  onCardSelect: (card: CardType) => void;
-}
-
 interface PlayerHandProps {
   cards: CardType[];
   validActions: ValidAction[];
@@ -22,7 +15,6 @@ interface PlayerHandProps {
   onPlayCard: (card: CardType) => void;
   isMyTurn: boolean;
   declaredMarriages?: Suit[];
-  distributionState?: DistributionState;
   phase?: string;
   trumpSuit?: Suit | null;
 }
@@ -38,7 +30,6 @@ export function PlayerHand({
   onPlayCard,
   isMyTurn,
   declaredMarriages = [],
-  distributionState,
   phase,
   trumpSuit,
 }: PlayerHandProps) {
@@ -76,29 +67,6 @@ export function PlayerHand({
 
   const isMarriageCard = (card: CardType): boolean => {
     return marriageCards.has(`${card.suit}-${card.rank}`);
-  };
-
-  // Distribution mode helpers
-  const getCardAssignee = (card: CardType): string | null => {
-    if (!distributionState) return null;
-    let assignee: string | null = null;
-    distributionState.selectedCards.forEach((selectedCard, playerId) => {
-      if (selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
-        assignee = distributionState.targetNames.get(playerId) || null;
-      }
-    });
-    return assignee;
-  };
-
-  const isDistributionSelected = (card: CardType): boolean => {
-    if (!distributionState) return false;
-    let found = false;
-    distributionState.selectedCards.forEach((selectedCard) => {
-      if (selectedCard.suit === card.suit && selectedCard.rank === card.rank) {
-        found = true;
-      }
-    });
-    return found;
   };
 
   // Sort cards by suit and rank, ensuring red/black alternation when possible
@@ -155,14 +123,6 @@ export function PlayerHand({
   };
 
   const handleCardClick = (card: CardType) => {
-    // Handle distribution mode
-    if (distributionState) {
-      if (distributionState.currentTarget) {
-        distributionState.onCardSelect(card);
-      }
-      return;
-    }
-
     if (!isMyTurn) return;
 
     if (isCardSelected(card)) {
@@ -203,54 +163,6 @@ export function PlayerHand({
   const fanAngle = 0;
   const startAngle = -fanAngle / 2;
 
-  // Mobile distribution mode: horizontal scroll layout for easier card selection
-  if (distributionState && isMobile) {
-    return (
-      <div
-        className="overflow-x-auto flex gap-2 pb-10 pt-12 -mt-12 px-4 snap-x snap-mandatory"
-        style={{
-          width: '100vw',
-          marginLeft: '-16px',
-          scrollbarWidth: 'none',
-          WebkitOverflowScrolling: 'touch',
-        }}
-        role="group"
-        aria-label={`Your hand: ${cardCount} cards. Select cards to distribute.`}
-      >
-        {sortedCards.map((card) => {
-          const distributionAssignee = getCardAssignee(card);
-          const isDistSelected = isDistributionSelected(card);
-          const isSelectableNow = !!distributionState.currentTarget;
-
-          return (
-            <div
-              key={`${card.suit}-${card.rank}`}
-              className="flex-shrink-0 snap-center relative"
-            >
-              <Card
-                card={card}
-                isSelected={isDistSelected}
-                isPlayable={isSelectableNow}
-                isMarriageCard={isMarriageCard(card)}
-                isTrumpCard={!!trumpSuit && card.suit === trumpSuit}
-                onClick={() => handleCardClick(card)}
-                size="md"
-              />
-              {distributionAssignee && (
-                <div
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded truncate max-w-[5rem] sm:max-w-[7rem] z-50"
-                  title={distributionAssignee}
-                >
-                  → {distributionAssignee}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  }
-
   return (
     <div
       className={cn(
@@ -270,8 +182,6 @@ export function PlayerHand({
         {sortedCards.map((card, index) => {
           const playable = isCardPlayable(card);
           const selected = isCardSelected(card);
-          const distributionAssignee = getCardAssignee(card);
-          const isDistSelected = isDistributionSelected(card);
 
           // Calculate position
           const angle = startAngle + (index / Math.max(cardCount - 1, 1)) * fanAngle;
@@ -284,10 +194,7 @@ export function PlayerHand({
             delay: isHandGrowing ? 0 : index * 0.02
           };
 
-          // Determine if card is playable/selectable
-          const isPlayableNow = distributionState
-            ? !!distributionState.currentTarget
-            : playable && isMyTurn;
+          const isPlayableNow = playable && isMyTurn;
 
           return (
             <motion.div
@@ -304,27 +211,19 @@ export function PlayerHand({
               style={{
                 position: 'absolute',
                 transformOrigin: 'bottom center',
-                zIndex: (distributionState ? isDistSelected : selected) ? 100 : index,
+                zIndex: selected ? 100 : index,
               }}
               className="relative"
             >
               <Card
                 card={card}
-                isSelected={distributionState ? isDistSelected : selected}
+                isSelected={selected}
                 isPlayable={isPlayableNow}
                 isMarriageCard={isMarriageCard(card)}
                 isTrumpCard={!!trumpSuit && card.suit === trumpSuit}
                 onClick={() => handleCardClick(card)}
                 size={isMobile ? 'md' : 'lg'}
               />
-              {distributionAssignee && (
-                <div
-                  className="absolute -bottom-5 left-1/2 -translate-x-1/2 text-xs bg-gold-600 text-white px-2 py-0.5 rounded truncate max-w-[5rem] sm:max-w-[7rem] z-50"
-                  title={distributionAssignee}
-                >
-                  → {distributionAssignee}
-                </div>
-              )}
             </motion.div>
           );
         })}

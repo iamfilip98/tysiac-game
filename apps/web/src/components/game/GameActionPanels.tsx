@@ -1,8 +1,7 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { BiddingPanel } from './BiddingPanel';
 import { PlayOrPassPanel } from './PlayOrPassPanel';
-import { TalonDistributionPanel } from './TalonPanel';
-import type { ValidAction, Card as CardType, GamePlayer } from '@tysiac/shared';
+import type { ValidAction } from '@tysiac/shared';
 
 interface GameActionPanelsProps {
   phase: string;
@@ -16,13 +15,6 @@ interface GameActionPanelsProps {
   bidAmount: number;
   playerCount: number;
   bidWinnerName?: string;
-  // Talon distribution props
-  hasCardsToDistribute: boolean;
-  otherPlayers: GamePlayer[];
-  distributionCards: Map<string, CardType>;
-  distributionTarget: string | null;
-  onSelectTarget: (id: string) => void;
-  onDistributeSubmit: () => void;
 }
 
 export function GameActionPanels({
@@ -37,12 +29,6 @@ export function GameActionPanels({
   bidAmount,
   playerCount,
   bidWinnerName,
-  hasCardsToDistribute,
-  otherPlayers,
-  distributionCards,
-  distributionTarget,
-  onSelectTarget,
-  onDistributeSubmit,
 }: GameActionPanelsProps) {
   return (
     <AnimatePresence mode="wait">
@@ -81,26 +67,6 @@ export function GameActionPanels({
           />
         </motion.div>
       )}
-
-      {/* Talon distribution */}
-      {phase === 'talonDistribution' &&
-        isBidWinner &&
-        hasCardsToDistribute && (
-          <motion.div
-            key="distribution"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-          >
-            <TalonDistributionPanel
-              otherPlayers={otherPlayers}
-              selectedCards={distributionCards}
-              currentTarget={distributionTarget}
-              onSelectTarget={onSelectTarget}
-              onDistribute={onDistributeSubmit}
-            />
-          </motion.div>
-        )}
 
       {/* Waiting for bid winner to distribute */}
       {phase === 'talonDistribution' && !isBidWinner && (

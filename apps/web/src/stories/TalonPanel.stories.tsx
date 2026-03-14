@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import { TalonDisplay, TalonDistributionPanel } from '@/components/game/TalonPanel';
+import { TalonDisplay } from '@/components/game/TalonPanel';
+import { DistributionModal } from '@/components/game/DistributionModal';
 import { FeltDecoratorCompact } from './decorators';
 import type { Card as CardType, GamePlayer } from '@tysiac/shared';
 
@@ -29,47 +30,25 @@ const otherPlayers: GamePlayer[] = [
   { id: 'p3', name: 'Bob', isAI: true, seatIndex: 2 },
 ];
 
-export const DistributionEmpty: StoryObj = {
+const sampleHand: CardType[] = [
+  { suit: 'hearts', rank: 'A' },
+  { suit: 'hearts', rank: 'K' },
+  { suit: 'hearts', rank: 'Q' },
+  { suit: 'clubs', rank: '10' },
+  { suit: 'clubs', rank: 'J' },
+  { suit: 'diamonds', rank: 'A' },
+  { suit: 'diamonds', rank: 'K' },
+  { suit: 'spades', rank: 'Q' },
+  { suit: 'spades', rank: '9' },
+  { suit: 'diamonds', rank: '9' },
+];
+
+export const Distribution: StoryObj = {
   render: () => (
-    <TalonDistributionPanel
+    <DistributionModal
+      hand={sampleHand}
       otherPlayers={otherPlayers}
-      selectedCards={new Map()}
-      currentTarget={null}
-      onSelectTarget={() => {}}
-      onDistribute={() => {}}
+      onDistribute={(dist) => console.log('distribute', dist)}
     />
   ),
-};
-
-export const DistributionOneSelected: StoryObj = {
-  render: () => {
-    const selected = new Map<string, CardType>();
-    selected.set('p2', { suit: 'hearts', rank: 'Q' });
-    return (
-      <TalonDistributionPanel
-        otherPlayers={otherPlayers}
-        selectedCards={selected}
-        currentTarget="p3"
-        onSelectTarget={() => {}}
-        onDistribute={() => {}}
-      />
-    );
-  },
-};
-
-export const DistributionComplete: StoryObj = {
-  render: () => {
-    const selected = new Map<string, CardType>();
-    selected.set('p2', { suit: 'hearts', rank: 'Q' });
-    selected.set('p3', { suit: 'spades', rank: '9' });
-    return (
-      <TalonDistributionPanel
-        otherPlayers={otherPlayers}
-        selectedCards={selected}
-        currentTarget={null}
-        onSelectTarget={() => {}}
-        onDistribute={() => {}}
-      />
-    );
-  },
 };
