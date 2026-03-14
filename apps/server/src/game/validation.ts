@@ -4,7 +4,8 @@ import { RANK_STRENGTH, getTotalMarriageValue, hasMarriage } from '@tysiac/share
 /**
  * Card play validation for Polish Tysiąc:
  * - All players must follow suit if they can
- * - No obligation to beat (just follow suit)
+ * - Second player must beat the lead card if possible (when following suit)
+ * - Third player has no obligation to beat — just follow suit
  * - If can't follow suit, any card is valid (no trump obligation)
  */
 
@@ -25,23 +26,25 @@ export function getValidCards(
   }
 
   const leadSuit = trick.leadSuit!;
-
-  return getCardsFollowingSuitRule(hand, leadSuit);
-}
-
-function getCardsFollowingSuitRule(
-  hand: Card[],
-  leadSuit: Suit
-): Card[] {
   const cardsInSuit = hand.filter(c => c.suit === leadSuit);
 
-  // Must follow suit if possible, but no obligation to beat
-  if (cardsInSuit.length > 0) {
+  // Can't follow suit — any card is valid (no trump obligation)
+  if (cardsInSuit.length === 0) {
+    return [...hand];
+  }
+
+  // Third player: just follow suit, no obligation to beat
+  if (trick.cards.length === 2) {
     return cardsInSuit;
   }
 
-  // Can't follow suit - player can play any card (no trump obligation)
-  return [...hand];
+  // Second player: must beat the lead card if possible
+  const leadCard = trick.cards[0].card;
+  const beatingCards = cardsInSuit.filter(c =>
+    canBeat(c, leadCard, leadSuit, trumpSuit)
+  );
+
+  return beatingCards.length > 0 ? beatingCards : cardsInSuit;
 }
 
 export function canBeat(

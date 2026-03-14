@@ -59,19 +59,18 @@ describe('getValidCards', () => {
     expect(result.every(c => c.suit === 'hearts')).toBe(true);
   });
 
-  it('allows any in-suit card even if player could beat the lead', () => {
+  it('forces second player to beat the lead card if they can', () => {
     const hand = [card('9', 'hearts'), card('A', 'hearts'), card('K', 'clubs')];
     const trick = trickState(
       [{ playerId: 'p1', card: card('10', 'hearts') }],
       'p2',
     );
-    // No obligation to beat -- just follow suit
+    // Second player must beat 10 hearts — only A hearts qualifies
     const result = getValidCards(hand, trick, null, GAME);
-    expect(result).toEqual(expect.arrayContaining([card('9', 'hearts'), card('A', 'hearts')]));
-    expect(result).toHaveLength(2);
+    expect(result).toEqual([card('A', 'hearts')]);
   });
 
-  it('allows any card in suit when unable to beat the winning lead card', () => {
+  it('allows any in-suit card for second player when unable to beat the lead', () => {
     const hand = [card('9', 'hearts'), card('J', 'hearts'), card('K', 'clubs')];
     const trick = trickState(
       [{ playerId: 'p1', card: card('A', 'hearts') }],
@@ -95,8 +94,8 @@ describe('getValidCards', () => {
     expect(result).toEqual(expect.arrayContaining(hand));
   });
 
-  it('does not require beating a lead card that has already been beaten by a later card', () => {
-    // p1 leads 9 hearts, p2 plays A hearts (beats lead). Lead is no longer winning.
+  it('third player has no obligation to beat — just follows suit', () => {
+    // p1 leads 9 hearts, p2 plays A hearts. p3 just needs to follow suit.
     const hand = [card('J', 'hearts'), card('K', 'hearts')];
     const trick = trickState(
       [
@@ -105,7 +104,21 @@ describe('getValidCards', () => {
       ],
       'p3',
     );
-    // Lead (9 hearts) is NOT winning -- just follow suit, no need to beat
+    const result = getValidCards(hand, trick, null, GAME);
+    expect(result).toHaveLength(2);
+    expect(result).toEqual(expect.arrayContaining([card('J', 'hearts'), card('K', 'hearts')]));
+  });
+
+  it('third player has no obligation to beat even when second player did not beat lead', () => {
+    // p1 leads A hearts, p2 plays 9 hearts (can't beat). p3 still just follows suit.
+    const hand = [card('J', 'hearts'), card('K', 'hearts')];
+    const trick = trickState(
+      [
+        { playerId: 'p1', card: card('A', 'hearts') },
+        { playerId: 'p2', card: card('9', 'hearts') },
+      ],
+      'p3',
+    );
     const result = getValidCards(hand, trick, null, GAME);
     expect(result).toHaveLength(2);
     expect(result).toEqual(expect.arrayContaining([card('J', 'hearts'), card('K', 'hearts')]));
@@ -124,16 +137,15 @@ describe('getValidCards', () => {
     expect(result).toHaveLength(2);
   });
 
-  it('allows any in-suit card when trump is lead suit (no beat obligation)', () => {
+  it('second player must beat lead even when trump is lead suit', () => {
     const hand = [card('Q', 'hearts'), card('A', 'hearts'), card('9', 'clubs')];
     const trick = trickState(
       [{ playerId: 'p1', card: card('K', 'hearts') }],
       'p2',
     );
-    // Hearts is trump and lead -- must follow suit but no need to beat
+    // Hearts is trump and lead -- must beat K hearts, only A hearts can
     const result = getValidCards(hand, trick, 'hearts', GAME);
-    expect(result).toEqual(expect.arrayContaining([card('Q', 'hearts'), card('A', 'hearts')]));
-    expect(result).toHaveLength(2);
+    expect(result).toEqual([card('A', 'hearts')]);
   });
 });
 

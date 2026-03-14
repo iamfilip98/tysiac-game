@@ -185,13 +185,13 @@ export function GameEndModal({
 
       {/* Tabs — underlined text style */}
       {hasEnhancedStats && (
-        <div className="flex mx-5 mt-2 mb-2 gap-4 flex-shrink-0">
+        <div className="flex mx-5 mt-2 mb-2 flex-shrink-0 border-b border-table-600">
           {(['awards', 'stats', 'history'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={cn(
-                'pb-1.5 text-sm font-medium transition-all duration-200 border-b-2',
+                'flex-1 pb-1.5 text-sm font-medium transition-all duration-200 border-b-2 -mb-px',
                 activeTab === tab
                   ? 'border-gold-400 text-gold-400'
                   : 'border-transparent text-white/45 hover:text-white/70'
@@ -204,7 +204,7 @@ export function GameEndModal({
       )}
 
       {/* Tab content (scrollable) */}
-      <div ref={scrollRef} className="flex-1 overflow-y-auto mb-3 min-h-0 px-5">
+      <div ref={scrollRef} className="flex-1 overflow-y-auto mb-3 min-h-[200px] px-5">
         {/* Awards tab */}
         {activeTab === 'awards' && statistics && statistics.awards.length > 0 && (
           <div>
