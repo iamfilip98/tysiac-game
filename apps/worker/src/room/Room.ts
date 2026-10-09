@@ -102,6 +102,16 @@ export class Room extends DurableObject<Env> {
   // ---------- sockets ----------
 
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    try {
+      await this.handleMessage(ws, message);
+    } catch (err) {
+      // Never log message contents (they can carry secrets).
+      console.error('room message handler failed', err instanceof Error ? err.message : 'unknown error');
+      if (ws.readyState === WebSocket.READY_STATE_OPEN) this.sendError(ws, 'badMessage', 'Something went wrong handling that message');
+    }
+  }
+
+  private async handleMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const now = Date.now();
     let bucket = this.buckets.get(ws);
     if (!bucket) {
@@ -112,24 +122,26 @@ export class Room extends DurableObject<Env> {
     if (verdict === 'drop') return;
     if (verdict === 'warn') return this.sendError(ws, 'rateLimited', 'Too many messages — slow down');
 
-    const me = attachmentOf(ws).playerId;
+    const att = attachmentOf(ws);
+    const me = att.playerId;
+    if (att.pending) return this.sendError(ws, 'badMessage', 'Your hello is still being processed');
     const parsed: ParseResult =
       typeof message === 'string' ? parseClientMessage(message) : { ok: false, code: 'badMessage', message: 'Messages must be text' };
     if (!parsed.ok) {
       this.sendError(ws, parsed.code, parsed.message);
-      if (me === null) ws.close(1008, parsed.code);
+      if (me === null) this.safeClose(ws, 1008, parsed.code);
       return;
     }
     if (!this.meta) {
       this.sendError(ws, 'notInRoom', 'This room no longer exists');
-      ws.close(1008, 'notInRoom');
+      this.safeClose(ws, 1008, 'notInRoom');
       return;
     }
     // The client must await `welcome` before sending anything but hello: until then this socket has no identity.
     if (me === null) {
       if (parsed.msg.t !== 'hello') {
         this.sendError(ws, 'badMessage', 'The first message must be hello');
-        ws.close(1008, 'badMessage');
+        this.safeClose(ws, 1008, 'badMessage');
         return;
       }
       return this.onHello(ws, parsed.msg, now);
@@ -139,11 +151,7 @@ export class Room extends DurableObject<Env> {
 
   async webSocketClose(ws: WebSocket): Promise<void> {
     this.onDisconnect(ws);
-    try {
-      ws.close();
-    } catch {
-      // the runtime already completed the close handshake
-    }
+    this.safeClose(ws);
   }
 
   async webSocketError(ws: WebSocket): Promise<void> {
@@ -151,18 +159,21 @@ export class Room extends DurableObject<Env> {
   }
 
   private async onHello(ws: WebSocket, msg: Hello, now: number): Promise<void> {
+    ws.serializeAttachment({ playerId: null, pending: true } satisfies SocketAttachment); // before any await
     const secretHash = await sha256Hex(msg.secret);
     const meta = this.meta; // read after the await: another hello may have taken a seat meanwhile
-    if (!meta) return;
+    // The socket may have closed (or been destroyed) while hashing; do not claim a seat for a dead socket.
+    if (!meta || ws.readyState !== WebSocket.READY_STATE_OPEN || !attachmentOf(ws).pending) return;
     const claim = lobby.claimSeat(meta, { id: msg.playerId, name: msg.name, avatar: msg.avatar, coach: msg.coach, secretHash });
     if (!claim.ok) {
+      ws.serializeAttachment({ playerId: null } satisfies SocketAttachment);
       this.sendError(ws, claim.code, claim.message);
-      ws.close(1008, claim.code);
+      this.safeClose(ws, 1008, claim.code);
       return;
     }
-    for (const old of this.socketsOf(msg.playerId)) {
+    for (const old of this.socketsOf(msg.playerId, ws)) {
       old.serializeAttachment({ playerId: null } satisfies SocketAttachment); // its close must not mark the player away
-      old.close(4000, 'replaced');
+      this.safeClose(old, 4000, 'replaced');
     }
     ws.serializeAttachment({ playerId: msg.playerId } satisfies SocketAttachment);
     this.setMeta(claim.meta);
@@ -264,7 +275,7 @@ export class Room extends DurableObject<Env> {
     this.setMeta(result.meta);
     await this.reschedule(now);
     this.broadcastRoom();
-    ws.close(1000, 'left');
+    this.safeClose(ws, 1000, 'left');
   }
 
   private onDisconnect(ws: WebSocket): void {
@@ -307,11 +318,7 @@ export class Room extends DurableObject<Env> {
 
   private async destroy(): Promise<void> {
     for (const ws of this.ctx.getWebSockets()) {
-      try {
-        ws.close(1001, 'room expired');
-      } catch {
-        // already closed
-      }
+      this.safeClose(ws, 1001, 'room expired');
     }
     await this.ctx.storage.deleteAlarm();
     await this.ctx.storage.deleteAll();
@@ -360,6 +367,17 @@ export class Room extends DurableObject<Env> {
       const id = attachmentOf(ws).playerId;
       if (id === null) continue;
       this.send(ws, { t: 'state', seq: state.seq, view: viewFor(state, id), events: eventsFor(events, id) });
+    }
+  }
+
+  private safeClose(ws: WebSocket, code?: number, reason?: string): void {
+    try {
+      if (ws.readyState === WebSocket.READY_STATE_OPEN || ws.readyState === WebSocket.READY_STATE_CONNECTING) {
+        if (code === undefined) ws.close();
+        else ws.close(code, reason);
+      }
+    } catch {
+      // already closing or closed
     }
   }
 

@@ -157,3 +157,45 @@ describe('message limits', () => {
     expect(a.closeCode).toBeNull();
   });
 });
+
+describe('hello races and replaced sockets', () => {
+  it('a second hello sent right behind the first is refused and nothing self-closes', async () => {
+    const ala = ident('Ala');
+    const code = await createRoom(ala);
+    const c = await connect(code, ala);
+    c.send(helloMsg(ala));
+    c.send(helloMsg(ident('Bartek')));
+    await c.next('welcome');
+    expect((await c.next('error')).code).toBe('badMessage');
+    await sleep(100);
+    expect(c.closeCode).toBeNull();
+    const dump = await debugDump(code);
+    expect(dump.meta.seats.filter((s) => s !== null)).toHaveLength(1);
+    expect(dump.connected).toEqual([ala.playerId]);
+  });
+
+  it('a socket closed right after hello does not leave a connected seat behind', async () => {
+    const ala = ident('Ala');
+    const code = await createRoom(ala);
+    const c = await connect(code, ala);
+    c.send(helloMsg(ala));
+    c.close();
+    await sleep(300);
+    expect((await debugDump(code)).connected).toEqual([]);
+  });
+
+  it('a message on a just-replaced socket does not throw or break the new socket', async () => {
+    const ala = ident('Ala');
+    const code = await createRoom(ala);
+    const first = await join(code, ala);
+    const second = await connect(code, ala);
+    second.send(helloMsg(ala));
+    first.send({ t: 'setCoach', coach: true }); // in flight while the replacement is processed
+    first.send({ t: 'leave' });
+    await second.next('welcome');
+    await first.closed();
+    second.send({ t: 'setCoach', coach: true });
+    await second.next('room', (m) => m.room.seats[0]?.coach === true);
+    expect(second.closeCode).toBeNull();
+  });
+});

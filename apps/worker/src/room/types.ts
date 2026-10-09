@@ -42,6 +42,8 @@ export interface LogEntry {
 /** Stored on each hibernatable socket; survives hibernation and eviction. */
 export interface SocketAttachment {
   playerId: PlayerId | null;
+  /** A hello is being verified (set synchronously before the first await) so a second hello is refused. */
+  pending?: boolean;
 }
 
 export interface InitRoomRequest {
