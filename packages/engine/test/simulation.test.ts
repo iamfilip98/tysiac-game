@@ -1,0 +1,139 @@
+import { describe, it, expect } from 'vitest';
+import type { Action, Card, GameState, PlayerId, RoundSummary, Seat } from '../src/types';
+import { createGame } from '../src/game';
+import { reduce } from '../src/reduce';
+import { actionsEqual, legalActions, turnOf } from '../src/actions';
+import { viewFor } from '../src/view';
+import { botAction } from '../src/bot';
+import { makeRandom } from '../src/rng';
+import { cardKey } from '../src/cards';
+import { SEATS3, SEATS4, cardKeysIn, hiddenCardKeys } from './helpers';
+
+// Full run (>= 2,000 games, ~130 s): `pnpm --filter @tysiac/engine test:sim` (SIM_FULL=1).
+// The default suite runs a 10% sample to stay fast.
+const FULL = process.env.SIM_FULL === '1';
+const GAMES_3P = FULL ? 1200 : 120;
+const GAMES_4P = FULL ? 800 : 80;
+const FULL_VIEW_CHECK_GAMES = 100; // per mode: check every seat's view at every step
+const MAX_STEPS = 20_000;
+
+function assert(cond: unknown, msg: string): asserts cond {
+  if (!cond) throw new Error(msg);
+}
+
+// Independent re-statement of spec §3.9 rounding.
+const r10 = (n: number) => (n % 10 >= 6 ? n - (n % 10) + 10 : n - (n % 10));
+const barrel = (t: number) => t >= 800 && t < 1000;
+
+function roundCards(s: GameState): Card[] {
+  const r = s.round!;
+  const cards = [
+    ...Object.values(r.hands).flat(),
+    ...r.trick.cards.map(t => t.card),
+    ...Object.values(r.tricksWon).flat(2),
+  ];
+  if (s.phase === 'bidding') cards.push(...r.talon);
+  return cards;
+}
+
+function checkNoLeak(s: GameState, me: PlayerId, tag: string): void {
+  const hidden = hiddenCardKeys(s, me);
+  for (const k of cardKeysIn(viewFor(s, me))) assert(!hidden.has(k), `${tag}: view for ${me} leaks ${k}`);
+}
+
+function checkSummary(sum: RoundSummary, prev: Record<PlayerId, number>, tag: string): void {
+  for (const pr of sum.players) {
+    const before = prev[pr.playerId];
+    assert(pr.newTotalScore === before + pr.scoreChange, `${tag}: total mismatch for ${pr.playerId}`);
+    const onBarrel = barrel(before);
+    if (sum.outcome === 'thrown') {
+      let expected = 0;
+      if (sum.bid > 100) {
+        if (pr.playerId === sum.bidder) expected = -sum.bid;
+        else if (!pr.sittingOut && !onBarrel) expected = 60;
+      }
+      assert(pr.scoreChange === expected, `${tag}: throw change ${pr.scoreChange} != ${expected} for ${pr.playerId}`);
+      continue;
+    }
+    if (pr.playerId === sum.bidder) {
+      const made = pr.totalRoundPoints >= sum.bid;
+      assert(sum.outcome === (made ? 'made' : 'failed'), `${tag}: outcome mismatch`);
+      assert(pr.scoreChange === (made ? r10(pr.totalRoundPoints) : -sum.bid), `${tag}: bidder change wrong`);
+    } else if (onBarrel) {
+      assert(pr.scoreChange === 0, `${tag}: barrel player ${pr.playerId} scored`);
+    } else {
+      assert(pr.scoreChange === r10(pr.totalRoundPoints), `${tag}: defender change wrong`);
+    }
+  }
+  if (sum.outcome !== 'thrown') {
+    const trickTotal = sum.players.filter(p => !p.sittingOut).reduce((t, p) => t + p.trickPoints, 0);
+    assert(trickTotal === 120, `${tag}: trick points ${trickTotal} != 120`);
+  }
+}
+
+interface Played {
+  state: GameState;
+  log: Array<{ p: PlayerId; action: Action }>;
+}
+
+function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: boolean, jsonRoundTrip = false): Played {
+  const rand = makeRandom(`bots:${seed}`);
+  let s = createGame({ seed, seats, maxPlayers: seats.length as 3 | 4, firstDealer });
+  const log: Played['log'] = [];
+  let steps = 0;
+  while (s.phase !== 'gameEnd') {
+    const tag = `${seed}#${steps}`;
+    assert(++steps < MAX_STEPS, `${seed}: did not terminate`);
+    const p = turnOf(s);
+    assert(p, `${tag}: nobody to act`);
+    if (fullViews) for (const seat of seats) checkNoLeak(s, seat.id, tag);
+    else checkNoLeak(s, p, tag);
+    const action = botAction(viewFor(s, p), rand);
+    assert(legalActions(s, p).some(a => actionsEqual(a, action)), `${tag}: bot chose illegal ${JSON.stringify(action)}`);
+    const prevTotals = Object.fromEntries(Object.entries(s.scores).map(([id, x]) => [id, x.total]));
+    const res = reduce(s, p, action, steps);
+    assert(res.ok, `${tag}: reduce rejected ${JSON.stringify(action)}: ${!res.ok && res.error.message}`);
+    for (const e of res.events) {
+      if (e.type === 'roundScored' || e.type === 'threw') checkSummary(e.summary, prevTotals, tag);
+    }
+    assert(res.state.seq === s.seq + 1, `${tag}: seq did not advance`);
+    log.push({ p, action });
+    s = jsonRoundTrip ? (JSON.parse(JSON.stringify(res.state)) as GameState) : res.state;
+    if (s.phase !== 'gameEnd') {
+      const keys = roundCards(s).map(cardKey);
+      assert(keys.length === 24 && new Set(keys).size === 24, `${tag}: card conservation broken (${keys.length})`);
+    }
+    const shadow = Object.values(s.scores).every(x => x.total === x.history.reduce((a, b) => a + b, 0));
+    assert(shadow, `${tag}: totals differ from history`);
+  }
+  assert(s.winner, `${seed}: no winner`);
+  assert(s.scores[s.winner].total >= 1000, `${seed}: winner below 1000`);
+  return { state: s, log };
+}
+
+describe('simulation', () => {
+  it(`plays ${GAMES_3P} three-player bot games`, () => {
+    for (let i = 0; i < GAMES_3P; i++) playGame(`3p-${i}`, SEATS3, i % 3, i < FULL_VIEW_CHECK_GAMES);
+  }, 600_000);
+
+  it(`plays ${GAMES_4P} four-player bot games`, () => {
+    for (let i = 0; i < GAMES_4P; i++) playGame(`4p-${i}`, SEATS4, i % 4, i < FULL_VIEW_CHECK_GAMES);
+  }, 600_000);
+
+  it('is deterministic and survives JSON round-trips', () => {
+    for (const [seed, seats] of [['det-3', SEATS3], ['det-4', SEATS4]] as const) {
+      const a = playGame(seed, seats, 1, false);
+      const b = playGame(seed, seats, 1, false, true);
+      expect(b.state).toEqual(a.state);
+      expect(b.log).toEqual(a.log);
+      // replaying the logged actions from scratch reproduces the final state
+      let s = createGame({ seed, seats, maxPlayers: seats.length as 3 | 4, firstDealer: 1 });
+      a.log.forEach(({ p, action }, i) => {
+        const res = reduce(s, p, action, i + 1);
+        if (!res.ok) throw new Error(res.error.message);
+        s = res.state;
+      });
+      expect(s).toEqual(a.state);
+    }
+  }, 120_000);
+});
