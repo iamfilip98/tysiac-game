@@ -1,5 +1,5 @@
 import type { GameEvent, PlayerView, RoundSummary } from '../types';
-import { RULES, SUIT_SYMBOL } from '../rules';
+import { SUIT_SYMBOL } from '../rules';
 import { cardLabel } from '../cards';
 import { roundToTen } from '../scoring';
 import { nameOf } from './names';
@@ -21,12 +21,8 @@ export function explainEvent(event: GameEvent, view: PlayerView): string | null 
       const sees = event.p === view.me ? 'you see' : `${who} sees`;
       return `${who} won the bid at ${event.amount}. At 100 only ${sees} the talon.`;
     }
-    case 'threw': {
-      const who = nameOf(view, event.p);
-      if (event.amount <= RULES.autoBid) return `${who} threw in at 100 — nobody scores, new deal.`;
-      const share = Math.floor(RULES.throwPool / 2);
-      return `${who} threw in at ${event.amount}: −${event.amount}, everyone else +${share} (0 on the barrel).`;
-    }
+    case 'threw':
+      return explainThrow(event.summary, event.amount, view);
     case 'wykladana': {
       const verb = event.p === view.me ? 'have' : 'has';
       return `${nameOf(view, event.p)} ${verb} every trick guaranteed — round won outright (wykładana)!`;
@@ -40,12 +36,25 @@ export function explainEvent(event: GameEvent, view: PlayerView): string | null 
   }
 }
 
+function signed(n: number): string {
+  return n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0';
+}
+
+/** Throw-in text built from the real score changes (barrel players and a sitting-out dealer get 0). */
+function explainThrow(summary: RoundSummary, amount: number, view: PlayerView): string {
+  const who = nameOf(view, summary.bidder);
+  if (summary.players.every(p => p.scoreChange === 0)) return `${who} threw in at ${amount} — nobody scores, new deal.`;
+  const changes = summary.players.map(p => `${nameOf(view, p.playerId)} ${signed(p.scoreChange)}`);
+  return `${who} threw in at ${amount}: ${changes.join(', ')}.`;
+}
+
 function explainRound(summary: RoundSummary, view: PlayerView): string {
+  if (summary.outcome === 'thrown') return explainThrow(summary, summary.bid, view);
   const bidder = summary.players.find(p => p.playerId === summary.bidder)!;
   const name = nameOf(view, summary.bidder);
   const parts: string[] = [];
   if (summary.outcome === 'made') {
-    const rounded = bidder.scoreChange !== bidder.totalRoundPoints ? ' (rounded)' : '';
+    const rounded = roundToTen(bidder.totalRoundPoints) !== bidder.totalRoundPoints ? ' (rounded)' : '';
     parts.push(`${name} bid ${summary.bid} and scored ${bidder.totalRoundPoints} → +${bidder.scoreChange}${rounded}`);
   } else {
     // A near miss that would round up to the bid still fails: rounding never helps the bidder.

@@ -3,10 +3,11 @@ import type { GameEvent } from '../src/types';
 import { explainEvent } from '../src/coach';
 import { viewFor } from '../src/view';
 import { scoreRound, scoreThrow, summarizeRound } from '../src/scoring';
-import { c, scenario } from './helpers';
+import { c, scenario, SEATS4 } from './helpers';
 
 const s = scenario({ phase: 'tricks', hands: { a: 'AH', b: '9H', c: '10H' } });
 const viewAs = (p: string) => viewFor(s, p);
+const s4 = scenario({ seats: SEATS4, phase: 'tricks', hands: { a: 'AH', b: '9H', c: '10H' } });
 const ev = (e: Omit<GameEvent, 'audience'> & Record<string, unknown>): GameEvent => ({ ...e, audience: 'all' }) as unknown as GameEvent;
 
 function summary(raws: { a: number; b: number; c: number }, bid: number, marriageA = 0) {
@@ -36,13 +37,23 @@ describe('explainEvent', () => {
     expect(explainEvent(ev({ type: 'biddingWon', p: 'a', amount: 100, talonPublic: false }), viewAs('b')))
       .toBe('Ala won the bid at 100. At 100 only Ala sees the talon.');
   });
-  it('throw-ins', () => {
-    const free = summarizeRound({ number: 1, dealer: 'c', bidder: 'a', bid: 100, outcome: 'thrown', wykladana: false },
-      scoreThrow({ order: ['a', 'b', 'c'], dealer: 'c', bidder: 'a', bid: 100, sittingOut: null, totals: { a: 0, b: 0, c: 0 } }));
+  it('throw-ins list the real score changes', () => {
+    const throwSummary = (bid: number, totals: Record<string, number>, four = false) => summarizeRound(
+      { number: 1, dealer: four ? 'd' : 'c', bidder: 'a', bid, outcome: 'thrown', wykladana: false },
+      scoreThrow({ order: four ? ['a', 'b', 'c', 'd'] : ['a', 'b', 'c'], dealer: four ? 'd' : 'c', bidder: 'a', bid,
+        sittingOut: four ? 'd' : null, totals }));
+    const free = throwSummary(100, { a: 0, b: 0, c: 0 });
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 100, summary: free }), viewAs('b')))
       .toBe('Ala threw in at 100 — nobody scores, new deal.');
-    expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: free }), viewAs('b')))
-      .toBe('Ala threw in at 130: −130, everyone else +60 (0 on the barrel).');
+    const paid = throwSummary(130, { a: 0, b: 0, c: 0 });
+    expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: paid }), viewAs('b')))
+      .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
+    const four = throwSummary(130, { a: 0, b: 850, c: 0, d: 0 }, true);
+    expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: four }), viewFor(s4, 'c')))
+      .toBe('Ala threw in at 130: Ala −130, Bartek 0, You +60, Darek 0.');
+    // a thrown round scored through roundScored is not misprinted as a failed bid
+    expect(explainEvent(ev({ type: 'roundScored', summary: paid }), viewAs('b')))
+      .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
   });
   it('round scored: made with rounding, failed, and the viewer line', () => {
     const made = summary({ a: 96, b: 14, c: 10 }, 120, 40);
@@ -56,6 +67,16 @@ describe('explainEvent', () => {
     const near = summary({ a: 117, b: 3, c: 0 }, 120);
     expect(explainEvent(ev({ type: 'roundScored', summary: near }), viewAs('b')))
       .toBe("Ala bid 120 but scored only 117 → −120 — rounding doesn't help a bidder who falls short. You: +0.");
+  });
+  it('round scored: a defender on the barrel scores 0', () => {
+    const result = scoreRound({
+      order: ['a', 'b', 'c'], bidder: 'a', bid: 100, dealer: 'c', sittingOut: null,
+      totals: { a: 0, b: 850, c: 0 }, trickPoints: { a: 100, b: 14, c: 6 }, tricksTaken: { a: 5, b: 2, c: 1 },
+      declaredMarriagePoints: { a: 0, b: 0, c: 0 }, talonBonus: 0,
+    });
+    const sum = summarizeRound({ number: 1, dealer: 'c', bidder: 'a', bid: 100, outcome: 'made', wykladana: false }, result);
+    expect(explainEvent(ev({ type: 'roundScored', summary: sum }), viewAs('b')))
+      .toBe("Ala bid 100 and scored 100 → +100. You're on the barrel — only winning a bid scores there.");
   });
   it('wykładana and game won', () => {
     expect(explainEvent(ev({ type: 'wykladana', p: 'a', hand: [], trump: null, marriages: [] }), viewAs('a')))
