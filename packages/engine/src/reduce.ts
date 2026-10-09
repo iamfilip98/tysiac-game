@@ -15,6 +15,8 @@ const fail = (error: RuleError): ReduceResult => ({ ok: false, error });
 /**
  * Applies one action atomically. Pure and deterministic: same (state, playerId, action, now) → same result.
  * Rejects anything not in legalActions(state, playerId). Never throws on malformed input.
+ * Every round ends with exactly ONE of the events `threw` (throw-in) or `roundScored` (played or
+ * wykładana round); both carry the round `summary`.
  */
 export function reduce(state: GameState, playerId: PlayerId, action: Action, now: number): ReduceResult {
   if (!action || typeof action !== 'object' || typeof (action as { type?: unknown }).type !== 'string') {
@@ -55,6 +57,10 @@ export function reduce(state: GameState, playerId: PlayerId, action: Action, now
     case 'card':
       applyCard(ctx, playerId, legal.card);
       break;
+    default: {
+      const _exhaustive: never = legal;
+      return fail(err('illegalAction', `Unhandled action: ${JSON.stringify(_exhaustive)}`));
+    }
   }
   ctx.s.seq += 1;
   return { ok: true, state: ctx.s, events: ctx.events };

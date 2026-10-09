@@ -46,7 +46,10 @@ export function concludeRound(
   const s = ctx.s;
   s.scores = applyScoreResult(s.scores, result);
   s.rounds.push(summary);
-  emit(ctx, event);
+  // Clone the summary so emitted events never alias the entries of state.rounds.
+  const withOwnSummary =
+    event.type === 'roundScored' || event.type === 'threw' ? { ...event, summary: clone(event.summary) } : event;
+  emit(ctx, withOwnSummary);
   if (result.winner) {
     s.phase = 'gameEnd';
     s.winner = result.winner;
