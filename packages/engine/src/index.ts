@@ -20,3 +20,4 @@ export { dealerIndexFor, activeFor, isHandValid, dealCards } from './deal';
 export type { Deal } from './deal';
 export { createGame } from './game';
 export type { CreateGameOptions } from './game';
+export { legalActions, turnOf, actionsEqual, handoutOptions, nextActive } from './actions';
