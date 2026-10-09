@@ -83,6 +83,14 @@ function checkSummary(sum: RoundSummary, prev: Record<PlayerId, number>, tag: st
   }
 }
 
+function deepFreeze<T>(x: T): T {
+  if (x && typeof x === 'object' && !Object.isFrozen(x)) {
+    Object.freeze(x);
+    for (const v of Object.values(x)) deepFreeze(v);
+  }
+  return x;
+}
+
 interface Played {
   state: GameState;
   log: Array<{ p: PlayerId; action: Action }>;
@@ -92,6 +100,7 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
   const rand = makeRandom(`bots:${seed}`);
   let s = createGame({ seed, seats, maxPlayers: seats.length as 3 | 4, firstDealer });
   const log: Played['log'] = [];
+  const roundEnds: number[] = [];
   let steps = 0;
   while (s.phase !== 'gameEnd') {
     const tag = `${seed}#${steps}`;
@@ -103,11 +112,17 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
     const action = botAction(viewFor(s, p), rand);
     assert(legalActions(s, p).some(a => actionsEqual(a, action)), `${tag}: bot chose illegal ${JSON.stringify(action)}`);
     const prevTotals = Object.fromEntries(Object.entries(s.scores).map(([id, x]) => [id, x.total]));
+    const before = JSON.stringify(s);
+    deepFreeze(s);
     const res = reduce(s, p, action, steps);
+    assert(JSON.stringify(s) === before, `${tag}: reduce mutated its input state`);
     assert(res.ok, `${tag}: reduce rejected ${JSON.stringify(action)}: ${!res.ok && res.error.message}`);
     for (const e of res.events) {
       if (e.type === 'marriage') tally.marriage++;
-      if (e.type === 'roundScored' || e.type === 'threw') checkSummary(e.summary, prevTotals, tag);
+      if (e.type === 'roundScored' || e.type === 'threw') {
+        checkSummary(e.summary, prevTotals, tag);
+        roundEnds.push(e.summary.number);
+      }
     }
     assert(res.state.seq === s.seq + 1, `${tag}: seq did not advance`);
     log.push({ p, action });
@@ -119,6 +134,11 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
     const shadow = Object.values(s.scores).every(x => x.total === x.history.reduce((a, b) => a + b, 0));
     assert(shadow, `${tag}: totals differ from history`);
   }
+  // exactly one round-ending event (threw | roundScored) per round, in order
+  assert(
+    roundEnds.length === s.rounds.length && roundEnds.every((n, i) => n === i + 1),
+    `${seed}: round-ending events ${JSON.stringify(roundEnds)} != ${s.rounds.length} rounds`,
+  );
   assert(s.winner, `${seed}: no winner`);
   assert(s.scores[s.winner].total >= 1000, `${seed}: winner below 1000`);
   return { state: s, log };
@@ -149,6 +169,36 @@ describe('simulation', () => {
       expect(s).toStrictEqual(a.state);
     }
   }, 120_000);
+
+  it('emits exactly one of threw/roundScored per round, with a summary not aliasing state', () => {
+    const seats = SEATS3;
+    let s = createGame({ seed: 'ends-1', seats, maxPlayers: 3, firstDealer: 0 });
+    const rand = makeRandom('ends-bots');
+    const perRound = new Map<number, number>();
+    let checked = 0;
+    for (let i = 0; s.phase !== 'gameEnd' && i < MAX_STEPS; i++) {
+      const p = turnOf(s)!;
+      const res = reduce(s, p, botAction(viewFor(s, p), rand), i);
+      if (!res.ok) throw new Error(res.error.message);
+      for (const e of res.events) {
+        if (e.type !== 'threw' && e.type !== 'roundScored') continue;
+        perRound.set(e.summary.number, (perRound.get(e.summary.number) ?? 0) + 1);
+        const stored = res.state.rounds.find(r => r.number === e.summary.number)!;
+        expect(e.summary).toStrictEqual(stored);
+        expect(e.summary).not.toBe(stored);
+        const snapshot = JSON.stringify(res.state);
+        e.summary.players[0].scoreChange += 12345;
+        e.summary.number = -1;
+        expect(JSON.stringify(res.state)).toBe(snapshot);
+        checked++;
+      }
+      s = res.state;
+    }
+    expect(s.phase).toBe('gameEnd');
+    expect(checked).toBe(s.rounds.length);
+    expect(perRound.size).toBe(s.rounds.length);
+    for (const n of perRound.values()) expect(n).toBe(1);
+  });
 
   it('exercised every rare scoring branch (guards against vacuous checks)', () => {
     console.log('simulation tally', JSON.stringify(tally), FULL ? '(full)' : '(sample)');

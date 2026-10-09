@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { GameState } from '../src/types';
-import { botAction } from '../src/bot';
+import { botAction, botShouldAct } from '../src/bot';
 import { lowestExpendable, marriageToDeclare, remainingCards } from '../src/bot/play';
 import { createGame } from '../src/game';
 import { reduce } from '../src/reduce';
@@ -75,5 +75,36 @@ describe('botAction', () => {
   it('throws when the viewer has nothing to do', () => {
     const s = createGame({ seed: 'idle', seats: SEATS3, maxPlayers: 3, firstDealer: 2 });
     expect(() => botAction(viewFor(s, 'a'), zero)).toThrow();
+  });
+});
+
+describe('botAction contract', () => {
+  it('botShouldAct is true on a normal bot turn', () => {
+    const s = scenario({ phase: 'tricks', bid: { high: 'a' }, hands: { a: 'AS AD KD 10D 9C 9H JS QS' } });
+    const p = turnOf(s)!;
+    expect(botShouldAct(viewFor(s, p))).toBe(true);
+    expect(() => botAction(viewFor(s, p), zero)).not.toThrow();
+  });
+
+  it('throws and botShouldAct is false when it is not the viewer\'s turn', () => {
+    const s = scenario({ phase: 'tricks', bid: { high: 'a' }, hands: { a: 'AS AD KD 10D 9C 9H JS QS' } });
+    const other = SEATS3.map(x => x.id).find(id => id !== turnOf(s))!;
+    expect(botShouldAct(viewFor(s, other))).toBe(false);
+    expect(() => botAction(viewFor(s, other), zero)).toThrow();
+  });
+
+  it('throws and botShouldAct is false when paused', () => {
+    const s = scenario({ phase: 'tricks', bid: { high: 'a' }, hands: { a: 'AS AD KD 10D 9C 9H JS QS' } });
+    const p = turnOf(s)!;
+    const paused = ok(reduce(s, p, { type: 'pause' }, 1)).state;
+    expect(botShouldAct(viewFor(paused, p))).toBe(false);
+    expect(() => botAction(viewFor(paused, p), zero)).toThrow();
+  });
+
+  it('throws and botShouldAct is false at gameEnd', () => {
+    const s = { ...scenario({ phase: 'tricks', bid: { high: 'a' }, hands: { a: 'AS' } }), phase: 'gameEnd' as const };
+    const p = SEATS3[0].id;
+    expect(botShouldAct(viewFor(s, p))).toBe(false);
+    expect(() => botAction(viewFor(s, p), zero)).toThrow();
   });
 });

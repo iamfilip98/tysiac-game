@@ -4,7 +4,20 @@ import { isOnBarrel } from '../scoring';
 import { decideBid, decideHandout, decidePlayOrThrow } from './eval';
 import { decideCard, marriageToDeclare } from './play';
 
-/** Bot move from the bot's own view only. `rng` is used only as a fallback tie-breaker. */
+/**
+ * True exactly when `botAction(view, ...)` is safe to call: it is this player's turn, the game is not
+ * paused, the phase isn't `gameEnd`, and `view.legal` has a non-pause action.
+ */
+export function botShouldAct(view: PlayerView): boolean {
+  if (view.phase === 'gameEnd' || view.paused) return false;
+  return view.legal.some(a => a.type !== 'pause' && a.type !== 'resume');
+}
+
+/**
+ * Bot move from the bot's own view only. `rng` is used only as a fallback tie-breaker.
+ * @throws Error when the viewer has nothing to do (not its turn, game paused, or `gameEnd`).
+ *   Guard calls with `botShouldAct(view)`.
+ */
 export function botAction(view: PlayerView, rng: () => number): Action {
   const options = view.legal.filter(a => a.type !== 'pause' && a.type !== 'resume');
   if (options.length === 0) throw new Error(`botAction: ${view.me} has nothing to do`);
