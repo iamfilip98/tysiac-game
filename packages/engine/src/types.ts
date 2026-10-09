@@ -105,7 +105,7 @@ export interface GameState {
   v: 1;
   /** Increments on every accepted action. */
   seq: number;
-  /** Seeded RNG state (8 hex chars). */
+  /** Seeded RNG state (32 hex chars, sfc32). */
   rng: string;
   seats: Seat[];
   firstDealer: number;

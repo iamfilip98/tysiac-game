@@ -7,7 +7,7 @@ import { SEATS3, SEATS4 } from './helpers';
 
 describe('rng', () => {
   it('is deterministic per seed and stays in [0,1)', () => {
-    expect(seedState('abc')).toMatch(/^[0-9a-f]{8}$/);
+    expect(seedState('abc')).toMatch(/^[0-9a-f]{32}$/);
     expect(seedState('abc')).toBe(seedState('abc'));
     expect(seedState('abc')).not.toBe(seedState('abd'));
     let s = seedState('x');
@@ -15,11 +15,28 @@ describe('rng', () => {
       const [v, n] = nextRandom(s);
       expect(v).toBeGreaterThanOrEqual(0);
       expect(v).toBeLessThan(1);
+      expect(n).toMatch(/^[0-9a-f]{32}$/);
       s = n;
     }
     const r1 = makeRandom('q');
     const r2 = makeRandom('q');
     expect([r1(), r1(), r1()]).toEqual([r2(), r2(), r2()]);
+  });
+  it('handles malformed state by re-deriving, not zeroing', () => {
+    for (const bad of ['', 'zz', '0'.repeat(8), 'G'.repeat(32), 'A'.repeat(32)]) {
+      const [v, n] = nextRandom(bad);
+      expect(n).toMatch(/^[0-9a-f]{32}$/);
+      expect(n).not.toBe('0'.repeat(32));
+      expect(nextRandom(bad)).toEqual([v, n]);
+      expect(nextRandom(seedState(bad))).toEqual([v, n]);
+    }
+    expect(seedState('')).toMatch(/^[0-9a-f]{32}$/);
+  });
+  it('different seeds give different deals', () => {
+    const d1 = dealCards(seedState('s1'), ['a', 'b', 'c']);
+    const d2 = dealCards(seedState('s2'), ['a', 'b', 'c']);
+    expect(d1.hands).not.toEqual(d2.hands);
+    expect(dealCards(seedState('s1'), ['a', 'b', 'c'])).toEqual(d1);
   });
   it('shuffle is a deterministic permutation', () => {
     const deck = createDeck();
