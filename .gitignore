@@ -43,3 +43,8 @@ storybook-static
 *.sqlite
 .vercel
 .env.prod
+
+# Local tooling
+.superpowers/
+.playwright-mcp/
+.wrangler/
