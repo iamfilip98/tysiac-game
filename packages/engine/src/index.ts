@@ -15,3 +15,8 @@ export {
 } from './scoring';
 export type { ScoringInput, ThrowInput } from './scoring';
 export { detectWykladana, wykladanaTrump } from './wykladana';
+export { seedState, nextRandom, shuffle, makeRandom } from './rng';
+export { dealerIndexFor, activeFor, isHandValid, dealCards } from './deal';
+export type { Deal } from './deal';
+export { createGame } from './game';
+export type { CreateGameOptions } from './game';
