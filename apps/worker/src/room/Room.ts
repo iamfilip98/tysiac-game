@@ -1,10 +1,16 @@
 import { DurableObject } from 'cloudflare:workers';
-import type { GameState, PlayerId } from '@tysiac/engine';
-import type { RoomExistsResponse } from '@tysiac/protocol';
+import { createGame, eventsFor, reduce, viewFor } from '@tysiac/engine';
+import type { Action, GameEvent, GameState, PlayerId } from '@tysiac/engine';
+import { parseClientMessage } from '@tysiac/protocol';
+import type { ClientMessage, ErrorCode, LobbyOp, ParseResult, RoomExistsResponse, RoomInfo, ServerMessage } from '@tysiac/protocol';
+import { randomHex, sha256Hex } from '../identity';
+import { checkRate, newBucket, type RateBucket } from '../ratelimit';
 import { CLEANUP_AFTER_MS, nextAlarmAt, type Schedule } from '../scheduler';
 import * as lobby from './lobby';
 import { RoomStore } from './storage';
-import type { DebugDump, InitRoomRequest, RoomMeta, SocketAttachment } from './types';
+import type { DebugDump, GameOptions, InitRoomRequest, RoomMeta, SocketAttachment } from './types';
+
+type Hello = Extract<ClientMessage, { t: 'hello' }>;
 
 const EMPTY_SCHEDULE: Schedule = { bot: null, cleanup: 0 };
 
@@ -22,6 +28,8 @@ export class Room extends DurableObject<Env> {
   private meta: RoomMeta | null = null;
   private state: GameState | null = null;
   private schedule: Schedule = EMPTY_SCHEDULE;
+  /** In-memory only: a hibernation simply resets the windows. */
+  private readonly buckets = new WeakMap<WebSocket, RateBucket>();
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -91,6 +99,198 @@ export class Room extends DurableObject<Env> {
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
   }
 
+  // ---------- sockets ----------
+
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    const now = Date.now();
+    let bucket = this.buckets.get(ws);
+    if (!bucket) {
+      bucket = newBucket(now);
+      this.buckets.set(ws, bucket);
+    }
+    const verdict = checkRate(bucket, now);
+    if (verdict === 'drop') return;
+    if (verdict === 'warn') return this.sendError(ws, 'rateLimited', 'Too many messages — slow down');
+
+    const me = attachmentOf(ws).playerId;
+    const parsed: ParseResult =
+      typeof message === 'string' ? parseClientMessage(message) : { ok: false, code: 'badMessage', message: 'Messages must be text' };
+    if (!parsed.ok) {
+      this.sendError(ws, parsed.code, parsed.message);
+      if (me === null) ws.close(1008, parsed.code);
+      return;
+    }
+    if (!this.meta) {
+      this.sendError(ws, 'notInRoom', 'This room no longer exists');
+      ws.close(1008, 'notInRoom');
+      return;
+    }
+    // The client must await `welcome` before sending anything but hello: until then this socket has no identity.
+    if (me === null) {
+      if (parsed.msg.t !== 'hello') {
+        this.sendError(ws, 'badMessage', 'The first message must be hello');
+        ws.close(1008, 'badMessage');
+        return;
+      }
+      return this.onHello(ws, parsed.msg, now);
+    }
+    return this.dispatch(ws, me, parsed.msg, now);
+  }
+
+  async webSocketClose(ws: WebSocket): Promise<void> {
+    this.onDisconnect(ws);
+    try {
+      ws.close();
+    } catch {
+      // the runtime already completed the close handshake
+    }
+  }
+
+  async webSocketError(ws: WebSocket): Promise<void> {
+    this.onDisconnect(ws);
+  }
+
+  private async onHello(ws: WebSocket, msg: Hello, now: number): Promise<void> {
+    const secretHash = await sha256Hex(msg.secret);
+    const meta = this.meta; // read after the await: another hello may have taken a seat meanwhile
+    if (!meta) return;
+    const claim = lobby.claimSeat(meta, { id: msg.playerId, name: msg.name, avatar: msg.avatar, coach: msg.coach, secretHash });
+    if (!claim.ok) {
+      this.sendError(ws, claim.code, claim.message);
+      ws.close(1008, claim.code);
+      return;
+    }
+    for (const old of this.socketsOf(msg.playerId)) {
+      old.serializeAttachment({ playerId: null } satisfies SocketAttachment); // its close must not mark the player away
+      old.close(4000, 'replaced');
+    }
+    ws.serializeAttachment({ playerId: msg.playerId } satisfies SocketAttachment);
+    this.setMeta(claim.meta);
+    // A player reclaiming a seat a bot was playing: a bot move pending for that seat must not fire.
+    // The schedule is rebuilt by reschedule() (bot: null), which drops it; the bot alarm (Task 10) must re-derive
+    // its target from meta, so tookBack needs no extra handling here.
+    await this.reschedule(now);
+    this.send(ws, { t: 'welcome', you: msg.playerId, room: this.roomInfo(), serverTime: now });
+    if (this.state) this.send(ws, { t: 'state', seq: this.state.seq, view: viewFor(this.state, msg.playerId), events: [] });
+    this.broadcastRoom({ skip: ws }); // the joiner already got `welcome`; others see it as connected
+  }
+
+  private async dispatch(ws: WebSocket, me: PlayerId, msg: ClientMessage, now: number): Promise<void> {
+    const meta = this.meta;
+    if (!meta) return;
+    switch (msg.t) {
+      case 'hello':
+        return this.sendError(ws, 'badMessage', 'You have already joined');
+      case 'act':
+        return this.onAct(ws, me, msg.id, msg.action, now);
+      case 'lobby':
+        return this.onLobby(ws, meta, me, msg.op, now);
+      case 'setCoach':
+        return this.applyLobby(ws, lobby.setCoach(meta, me, msg.coach), now);
+      case 'leave':
+        return this.onLeave(ws, meta, me, now);
+      case 'ping':
+        return this.send(ws, { t: 'pong' });
+      case 'botFor':
+      case 'rematch':
+        return this.sendError(ws, 'badMessage', `"${msg.t}" is not available yet`);
+    }
+  }
+
+  private async onAct(ws: WebSocket, me: PlayerId, id: string, action: Action, now: number): Promise<void> {
+    if (!this.state) return this.send(ws, { t: 'reject', id, code: 'notPlaying', message: 'The game has not started yet' });
+    const result = reduce(this.state, me, action, now);
+    if (!result.ok) return this.send(ws, { t: 'reject', id, code: result.error.code, message: result.error.message });
+    await this.commit(me, action, result.state, result.events, now);
+    this.send(ws, { t: 'ack', id });
+  }
+
+  private async onLobby(ws: WebSocket, meta: RoomMeta, me: PlayerId, op: LobbyOp, now: number): Promise<void> {
+    switch (op.op) {
+      case 'addBot':
+        return this.applyLobby(ws, lobby.addBot(meta, me, `bot-${randomHex(6)}`), now);
+      case 'removeBot':
+        return this.applyLobby(ws, lobby.removeBot(meta, me, op.playerId), now);
+      case 'swapSeats':
+        return this.applyLobby(ws, lobby.swapSeats(meta, me, op.a, op.b), now);
+      case 'setFirstDealer':
+        return this.applyLobby(ws, lobby.setFirstDealer(meta, me, op.seat), now);
+      case 'start':
+        return this.startGame(ws, lobby.start(meta, me, crypto.randomUUID(), now, this.connectedIds()), now);
+    }
+  }
+
+  private async applyLobby(ws: WebSocket, result: lobby.LobbyResult, now: number): Promise<void> {
+    if (!result.ok) return this.sendError(ws, result.code, result.message);
+    this.setMeta(result.meta);
+    await this.reschedule(now);
+    this.broadcastRoom();
+  }
+
+  /** Shared by start and (Task 12) rematch: new seed, new GameState, fresh log. */
+  private async startGame(ws: WebSocket, result: lobby.LobbyResult, now: number): Promise<void> {
+    if (!result.ok) return this.sendError(ws, result.code, result.message);
+    const options: GameOptions = {
+      seed: randomHex(16),
+      seats: lobby.engineSeats(result.meta),
+      maxPlayers: result.meta.maxPlayers,
+      firstDealer: result.meta.firstDealer,
+    };
+    let state: GameState;
+    try {
+      state = createGame(options);
+    } catch (err) {
+      return this.sendError(ws, 'badMessage', `Could not start the game: ${String(err)}`);
+    }
+    this.meta = result.meta;
+    this.state = state;
+    this.schedule = { bot: null, cleanup: now + CLEANUP_AFTER_MS };
+    this.ctx.storage.transactionSync(() => {
+      this.store.putMeta(result.meta);
+      this.store.putState(state);
+      this.store.putGameOptions(options);
+      this.store.clearLog();
+      this.store.putSchedule(this.schedule);
+    });
+    await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+    this.broadcastRoom();
+    this.broadcastState([]);
+  }
+
+  private async onLeave(ws: WebSocket, meta: RoomMeta, me: PlayerId, now: number): Promise<void> {
+    const result = lobby.leaveSeat(meta, me);
+    if (!result.ok) return this.sendError(ws, result.code, result.message);
+    ws.serializeAttachment({ playerId: null } satisfies SocketAttachment);
+    this.setMeta(result.meta);
+    await this.reschedule(now);
+    this.broadcastRoom();
+    ws.close(1000, 'left');
+  }
+
+  private onDisconnect(ws: WebSocket): void {
+    const me = attachmentOf(ws).playerId;
+    if (me === null || !this.meta) return;
+    if (this.socketsOf(me, ws).length > 0) return; // another tab of the same player is still here
+    const next = lobby.markAway(this.meta, me, Date.now());
+    if (next !== this.meta) this.setMeta(next);
+    this.broadcastRoom({ gone: ws });
+  }
+
+  /** Persist + broadcast one accepted engine action. */
+  private async commit(by: PlayerId, action: Action, state: GameState, events: GameEvent[], now: number): Promise<void> {
+    this.state = state;
+    this.schedule = { bot: null, cleanup: now + CLEANUP_AFTER_MS };
+    // State, log entry and schedule land atomically (no await between the writes).
+    this.ctx.storage.transactionSync(() => {
+      this.store.putState(state);
+      this.store.appendLog({ seq: state.seq, at: now, player: by, action });
+      this.store.putSchedule(this.schedule);
+    });
+    this.broadcastState(events);
+    await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+    // Bot moves (Task 10) are scheduled here and never while state.paused is set.
+  }
+
   // ---------- internals ----------
 
   private setMeta(meta: RoomMeta): void {
@@ -120,6 +320,12 @@ export class Room extends DurableObject<Env> {
     this.schedule = EMPTY_SCHEDULE;
   }
 
+  private socketsOf(playerId: PlayerId, exclude?: WebSocket): WebSocket[] {
+    return this.ctx
+      .getWebSockets()
+      .filter((ws) => ws !== exclude && ws.readyState === WebSocket.READY_STATE_OPEN && attachmentOf(ws).playerId === playerId);
+  }
+
   private connectedIds(exclude?: WebSocket): Set<PlayerId> {
     const ids = new Set<PlayerId>();
     for (const ws of this.ctx.getWebSockets()) {
@@ -128,5 +334,44 @@ export class Room extends DurableObject<Env> {
       if (id !== null) ids.add(id);
     }
     return ids;
+  }
+
+  private roomInfo(exclude?: WebSocket): RoomInfo {
+    return lobby.toRoomInfo(this.meta!, this.connectedIds(exclude));
+  }
+
+  /**
+   * `room` to every joined socket. `skip` is a recipient to leave out (the joiner, who already has `welcome`);
+   * `gone` is a socket to count as disconnected (and not send to). The two are independent.
+   */
+  private broadcastRoom(opts: { skip?: WebSocket; gone?: WebSocket } = {}): void {
+    if (!this.meta) return;
+    const room = this.roomInfo(opts.gone);
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws !== opts.skip && ws !== opts.gone && attachmentOf(ws).playerId !== null) this.send(ws, { t: 'room', room });
+    }
+  }
+
+  /** Personalised `state` (own view + events this player may see) to every joined socket. */
+  private broadcastState(events: GameEvent[]): void {
+    const state = this.state;
+    if (!state) return;
+    for (const ws of this.ctx.getWebSockets()) {
+      const id = attachmentOf(ws).playerId;
+      if (id === null) continue;
+      this.send(ws, { t: 'state', seq: state.seq, view: viewFor(state, id), events: eventsFor(events, id) });
+    }
+  }
+
+  private send(ws: WebSocket, msg: ServerMessage): void {
+    try {
+      ws.send(JSON.stringify(msg));
+    } catch {
+      // socket closed under us; its close handler deals with presence
+    }
+  }
+
+  private sendError(ws: WebSocket, code: ErrorCode, message: string): void {
+    this.send(ws, { t: 'error', code, message });
   }
 }
