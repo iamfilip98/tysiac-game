@@ -14,3 +14,4 @@ export {
   roundToTen, isOnBarrel, scoreRound, scoreThrow, pickWinner, applyScoreResult, summarizeRound, talonBonus,
 } from './scoring';
 export type { ScoringInput, ThrowInput } from './scoring';
+export { detectWykladana, wykladanaTrump } from './wykladana';
