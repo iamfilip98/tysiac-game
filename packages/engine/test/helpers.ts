@@ -1,5 +1,5 @@
 import type { BidState, Card, GameState, Phase, PlayerId, ReduceResult, Seat, Suit } from '../src/types';
-import { parseCard, parseCards } from '../src/cards';
+import { cardKey, isCard, parseCard, parseCards } from '../src/cards';
 import { activeFor } from '../src/deal';
 import { seedState } from '../src/rng';
 
@@ -86,4 +86,30 @@ export function scenario(sc: Scenario): GameState {
     paused: null,
     winner: null,
   };
+}
+
+/** Every card ({suit, rank} object) found anywhere inside x, as cardKey strings. */
+export function cardKeysIn(x: unknown, out: string[] = []): string[] {
+  if (Array.isArray(x)) {
+    for (const v of x) cardKeysIn(v, out);
+  } else if (x && typeof x === 'object') {
+    if (isCard(x)) out.push(cardKey(x));
+    else for (const v of Object.values(x)) cardKeysIn(v, out);
+  }
+  return out;
+}
+
+/** Cards `me` must not be able to see in state `s`. */
+export function hiddenCardKeys(s: GameState, me: PlayerId): Set<string> {
+  const hidden = new Set<string>();
+  const r = s.round;
+  if (!r) return hidden;
+  for (const p of r.active) if (p !== me) for (const card of r.hands[p]) hidden.add(cardKey(card));
+  const biddingOver = s.phase !== 'bidding';
+  if (!biddingOver) for (const card of r.talon) hidden.add(cardKey(card));
+  if (biddingOver && (r.talonPublic || r.bid.high === me)) for (const card of r.talon) hidden.delete(cardKey(card));
+  if (r.handoutGiven && r.bid.high === me) {
+    for (const card of Object.values(r.handoutGiven)) hidden.delete(cardKey(card));
+  }
+  return hidden;
 }

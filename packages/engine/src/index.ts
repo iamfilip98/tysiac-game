@@ -22,3 +22,4 @@ export { createGame } from './game';
 export type { CreateGameOptions } from './game';
 export { legalActions, turnOf, actionsEqual, handoutOptions, nextActive } from './actions';
 export { reduce } from './reduce';
+export { viewFor, eventsFor, explainIllegal } from './view';
