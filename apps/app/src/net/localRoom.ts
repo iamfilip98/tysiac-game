@@ -70,6 +70,7 @@ export class LocalRoom {
   private readonly botScale: number;
   private readonly rng: () => number;
   private cancelBot: (() => void) | null = null;
+  private disposed = false;
 
   constructor(o: LocalRoomOptions) {
     this.code = o.code;
@@ -80,6 +81,17 @@ export class LocalRoom {
     const seats: (RoomSeat | null)[] = Array.from({ length: o.maxPlayers }, () => null);
     seats[0] = { ...human(o.host.playerId, o.host.name, o.host.avatar, false), connected: false };
     this.info = { code: o.code, status: 'lobby', maxPlayers: o.maxPlayers, hostId: o.host.playerId, seats, firstDealer: 0 };
+  }
+
+  /** Stops all bot activity for good. Called automatically when the last human connection goes away. */
+  dispose(): void {
+    this.disposed = true;
+    this.cancelBot?.();
+    this.cancelBot = null;
+  }
+
+  private disposeIfEmpty(): void {
+    if (this.socks.size === 0) this.dispose();
   }
 
   exists(): RoomExistsResponse {
@@ -170,6 +182,7 @@ export class LocalRoom {
       if (this.info.status !== 'lobby') seat.awaySince = this.clock.now();
     }
     this.broadcastRoom();
+    this.disposeIfEmpty();
   }
 
   private fatal(sock: Sock, code: ErrorCode, message: string): void {
@@ -235,11 +248,13 @@ export class LocalRoom {
     this.secrets.delete(pid);
     this.socks.delete(pid);
     sock.open = false;
+    sock.onClosed();
     if (pid === this.info.hostId) {
       const next = this.info.seats.find(s => s && !s.isBot);
       if (next) this.info.hostId = next.id;
     }
     this.broadcastRoom();
+    this.disposeIfEmpty();
   }
 
   private rematch(sock: Sock): void {
@@ -302,7 +317,7 @@ export class LocalRoom {
     this.cancelBot?.();
     this.cancelBot = null;
     const s = this.state;
-    if (!s || s.phase === 'gameEnd' || s.paused) return;
+    if (this.disposed || !s || s.phase === 'gameEnd' || s.paused) return;
     const turn = turnOf(s);
     if (!turn || !this.botControlled(turn) || !botShouldAct(viewFor(s, turn))) return;
     let delay = 600 + Math.floor(this.rng() * 300);
@@ -316,12 +331,19 @@ export class LocalRoom {
 
   private botMove(pid: PlayerId): void {
     const s = this.state;
-    if (!s || s.paused || turnOf(s) !== pid || !this.botControlled(pid)) return;
+    if (this.disposed || !s || s.paused || turnOf(s) !== pid || !this.botControlled(pid)) return;
     const view = viewFor(s, pid);
     if (!botShouldAct(view)) return;
-    const r = reduce(s, pid, botAction(view, this.rng), this.clock.now());
-    if (!r.ok) throw new Error(`LocalRoom: bot ${pid} chose an illegal move: ${r.error.message}`);
-    this.commit(r.state, r.events);
+    try {
+      const r = reduce(s, pid, botAction(view, this.rng), this.clock.now());
+      if (!r.ok) {
+        console.error(`LocalRoom: bot ${pid} chose an illegal move: ${r.error.message}`);
+        return;
+      }
+      this.commit(r.state, r.events);
+    } catch (e) {
+      console.error('LocalRoom: bot move failed', e);
+    }
   }
 
   private botControlled(pid: PlayerId): boolean {
@@ -330,10 +352,16 @@ export class LocalRoom {
   }
 
   private setEngineBotFor(pid: PlayerId, on: boolean): void {
-    const seat = this.state?.seats.find(x => x.id === pid);
-    if (!seat) return;
-    if (on) seat.botFor = 'bot';
-    else delete seat.botFor;
+    const st = this.state;
+    if (!st?.seats.some(x => x.id === pid)) return;
+    this.state = {
+      ...st,
+      seats: st.seats.map(x => {
+        if (x.id !== pid) return x;
+        const { botFor: _old, ...rest } = x;
+        return on ? { ...rest, botFor: 'bot' } : rest;
+      }),
+    };
   }
 
   // ---------- broadcast ----------

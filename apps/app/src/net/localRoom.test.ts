@@ -11,6 +11,13 @@ class FakeClock implements Clock {
   now() {
     return this.t;
   }
+  get pending() {
+    return this.timers.length;
+  }
+  /** Delay until the earliest pending timer, or null. */
+  nextDelay() {
+    return this.timers.length ? Math.min(...this.timers.map(x => x.at)) - this.t : null;
+  }
   setTimeout(fn: () => void, ms: number) {
     const id = ++this.seq;
     this.timers.push({ at: this.t + ms, id, fn });
@@ -217,8 +224,15 @@ describe('LocalRoom game', () => {
   });
 
   it('rematch is host-only and rotates the first dealer', () => {
-    const { clock, h } = started();
-    drive(clock, [h], () => h.room()!.status === 'finished');
+    const { clock, room } = setup();
+    const h = client(room, 'h', { coach: true });
+    const a = client(room, 'a');
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'start' });
+    drive(clock, [h, a], () => h.room()!.status === 'finished');
+    a.send({ t: 'rematch' });
+    expect(a.last('error')).toMatchObject({ code: 'notHost' });
+    expect(h.room()!.status).toBe('finished');
     h.send({ t: 'rematch' });
     expect(h.room()!.status).toBe('playing');
     expect(h.room()!.firstDealer).toBe(1);
@@ -229,6 +243,129 @@ describe('LocalRoom game', () => {
     const { room } = started();
     const x = client(room, 'x');
     expect(x.last('error')).toMatchObject({ code: 'gameInProgress' });
+  });
+});
+
+describe('LocalRoom privacy', () => {
+  it('shows each human only their own hand and their own events', () => {
+    const { clock, room } = setup();
+    const h = client(room, 'h');
+    const a = client(room, 'a');
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'start' });
+    let handouts = 0;
+    drive(clock, [h, a], () => {
+      const vh = h.view()!, va = a.view()!;
+      expect(vh.me).toBe('h');
+      expect(va.me).toBe('a');
+      if (vh.seq === va.seq && vh.round && va.round) {
+        const mine = new Set(vh.round.hand.map(c => JSON.stringify(c)));
+        for (const c of va.round.hand) expect(mine.has(JSON.stringify(c))).toBe(false);
+      }
+      return h.room()!.status === 'finished';
+    });
+    for (const c of [h, a]) {
+      for (const m of c.msgs) {
+        if (m.t !== 'state') continue;
+        for (const e of m.events) {
+          if (e.type === 'dealt') expect(e.hand).toEqual(m.view.round!.hand);
+          if (e.type === 'handedOut') {
+            handouts++;
+            if (e.p !== c.id) expect(Object.keys(e.cards).every(k => k === c.id)).toBe(true);
+          }
+          if (e.type === 'wykladana' && e.p !== c.id) expect(e.hand.length).toBeGreaterThan(0);
+        }
+      }
+    }
+    expect(handouts).toBeGreaterThan(0);
+  }, 60_000);
+});
+
+describe('LocalRoom bot scheduling', () => {
+  function started(scale?: number) {
+    const clock = new FakeClock();
+    const room = new LocalRoom({ code: 'ABCDEF', maxPlayers: 3, host: { playerId: 'h', name: 'Host', avatar: '🦊' }, seed: 'seed-2', clock, botDelayScale: scale });
+    const h = client(room, 'h');
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'start' });
+    return { clock, room, h };
+  }
+
+  it('never schedules a bot move while paused or after the game ends', () => {
+    const { clock, h } = started();
+    drive(clock, [h], () => h.view()!.turn !== 'h' && h.view()!.phase === 'tricks');
+    expect(clock.pending).toBe(1);
+    h.send({ t: 'act', id: 'p', action: { type: 'pause' } });
+    expect(clock.pending).toBe(0);
+    h.send({ t: 'act', id: 'r', action: { type: 'resume' } });
+    expect(clock.pending).toBe(1);
+    drive(clock, [h], () => h.room()!.status === 'finished');
+    expect(clock.pending).toBe(0);
+  }, 60_000);
+
+  it('uses 600-899 ms plus 1100 after a trick and 1500 after a round end', () => {
+    const { clock, h } = started();
+    const seen = { plain: 0, trick: 0, round: 0 };
+    for (let i = 0; i < 30_000 && h.room()!.status !== 'finished'; i++) {
+      const v = h.view()!;
+      if (v.turn === 'h' && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) {
+        h.send({ t: 'act', id: `a${i}`, action: botAction(v, () => 0.5) });
+        continue;
+      }
+      const d = clock.nextDelay();
+      if (d === null) throw new Error('no timer');
+      const events = h.last('state')!.events;
+      const roundEnd = events.some(e => e.type === 'roundScored' || e.type === 'threw');
+      const trick = events.some(e => e.type === 'trickWon');
+      const extra = (trick ? 1100 : 0) + (roundEnd ? 1500 : 0);
+      expect(d).toBeGreaterThanOrEqual(600 + extra);
+      expect(d).toBeLessThan(900 + extra);
+      seen[roundEnd ? 'round' : trick ? 'trick' : 'plain']++;
+      clock.advance(d);
+    }
+    expect(seen.plain).toBeGreaterThan(0);
+    expect(seen.trick).toBeGreaterThan(0);
+    expect(seen.round).toBeGreaterThan(0);
+  }, 60_000);
+
+  it('botDelayScale 0 schedules every bot move at zero delay', () => {
+    const { clock, h } = started(0);
+    for (let i = 0; i < 30_000 && h.room()!.status !== 'finished'; i++) {
+      const v = h.view()!;
+      if (v.turn === 'h' && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) {
+        h.send({ t: 'act', id: `a${i}`, action: botAction(v, () => 0.5) });
+      } else {
+        expect(clock.nextDelay()).toBe(0);
+        clock.advance(0);
+      }
+    }
+    expect(h.room()!.status).toBe('finished');
+  }, 60_000);
+});
+
+describe('LocalRoom dispose', () => {
+  it('cancels the bot timer when the last human closes, and on demand', () => {
+    const { clock, room } = setup();
+    const h = client(room, 'h');
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'start' });
+    drive(clock, [h], () => h.view()!.turn !== 'h');
+    expect(clock.pending).toBe(1);
+    h.close();
+    expect(clock.pending).toBe(0);
+    clock.advance(60_000);
+    expect(clock.pending).toBe(0);
+  });
+
+  it('leave closes the socket and disposes when nobody is left', () => {
+    const { clock, room } = setup();
+    const h = client(room, 'h');
+    h.send({ t: 'leave' });
+    expect(h.closed).toBe(true);
+    room.dispose();
+    expect(clock.pending).toBe(0);
   });
 });
 
