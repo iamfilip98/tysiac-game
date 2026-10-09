@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+  # Legacy app (pre-rebuild) — excluded from install; removal pending owner approval.
+  - "!apps/web"
+  - "!apps/server"
+  - "!packages/shared"
+  - "!packages/game-logic"

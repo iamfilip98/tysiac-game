@@ -3,19 +3,15 @@
   "private": true,
   "packageManager": "pnpm@9.0.0",
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint",
-    "test": "turbo test",
-    "dev:web": "turbo dev --filter=@tysiac/web",
-    "dev:server": "turbo dev --filter=@tysiac/server",
-    "dev:app": "pnpm --filter @tysiac/app dev",
-    "db:generate": "pnpm --filter=@tysiac/server db:generate",
-    "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
-    "db:push": "pnpm --filter=@tysiac/server db:push"
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
   },
-  "dependencies": {
-    "turbo": "^2.0.0",
+  "pnpm": {
+    "overrides": {
+      "vitest": "4.1.11"
+    }
+  },
+  "devDependencies": {
     "typescript": "^5.4.0"
   }
 }
