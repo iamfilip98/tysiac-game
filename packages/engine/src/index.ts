@@ -24,3 +24,4 @@ export { legalActions, turnOf, actionsEqual, handoutOptions, nextActive } from '
 export { reduce } from './reduce';
 export { viewFor, eventsFor, explainIllegal } from './view';
 export { botAction } from './bot';
+export { advise, explainEvent } from './coach';
