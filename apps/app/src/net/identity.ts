@@ -6,6 +6,8 @@ export interface Identity {
 }
 
 const KEY = 'tysiac.identity';
+/** Per-store cache so repeated calls agree even when writes fail. */
+const memo = new WeakMap<KV, Identity>();
 const UUID = /^[0-9a-f-]{36}$/;
 
 /** RFC 4122 v4 UUID (122 random bits); randomUUID is missing on insecure origins such as LAN http dev. */
@@ -28,7 +30,14 @@ export function getIdentity(store: KV = safeLocalStorage()): Identity {
   } catch {
     // fall through and create a new identity
   }
+  const cached = memo.get(store);
+  if (cached) return cached;
   const id: Identity = { playerId: uuid(), secret: uuid() };
-  store.setItem(KEY, JSON.stringify(id));
+  try {
+    store.setItem(KEY, JSON.stringify(id));
+  } catch {
+    // quota / blocked: the in-memory copy below keeps the identity stable for this page load
+  }
+  memo.set(store, id);
   return id;
 }

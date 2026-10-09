@@ -34,9 +34,19 @@ interface PrefsActions {
 export const AVATARS = ['🦊', '🐻', '🦉', '🐺', '🐸', '🐼', '🦁', '🐯', '🐨', '🐙', '🦄', '🐝'] as const;
 export const NAME_MAX = 16;
 
-/** Trims, collapses whitespace and caps at NAME_MAX code points (emoji-safe). */
+/** Server NameSchema limit, in UTF-16 code units. */
+export const NAME_MAX_UNITS = 24;
+
+/** Trims, collapses whitespace and caps at NAME_MAX code points and NAME_MAX_UNITS UTF-16 units (emoji-safe). */
 export function cleanName(raw: string): string {
-  return [...raw.replace(/\s+/g, ' ').trim()].slice(0, NAME_MAX).join('').trim();
+  let out = '';
+  let count = 0;
+  for (const ch of raw.replace(/\s+/g, ' ').trim()) {
+    if (count >= NAME_MAX || out.length + ch.length > NAME_MAX_UNITS) break;
+    out += ch;
+    count++;
+  }
+  return out.trim();
 }
 
 export function coachEnabled(p: Pick<Prefs, 'coach' | 'gamesStarted'>, practice: boolean): boolean {

@@ -33,4 +33,16 @@ describe('identity', () => {
       spy.mockRestore();
     }
   });
+
+  it('stays stable when setItem throws', () => {
+    const store = {
+      getItem: () => null,
+      setItem: () => {
+        throw new Error('quota');
+      },
+      removeItem: () => {},
+    };
+    const a = getIdentity(store);
+    expect(getIdentity(store)).toEqual(a);
+  });
 });

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from 'vitest';
+import { ClientMessageSchema } from '@tysiac/protocol';
 import { AVATARS, cleanName, coachEnabled, usePrefs } from './prefs';
 
 const reset = () =>
@@ -11,8 +12,17 @@ describe('prefs', () => {
     expect(cleanName('   ')).toBe('');
     expect(cleanName('  Ania   Kowalska  ')).toBe('Ania Kowalska');
     expect(cleanName('x'.repeat(40))).toBe('x'.repeat(16));
-    expect([...cleanName('🦊'.repeat(20))]).toHaveLength(16);
+    expect([...cleanName('🦊'.repeat(20))]).toHaveLength(12); // 24 UTF-16 units
     expect(cleanName('Zenek\n\tB.')).toBe('Zenek B.');
+  });
+
+  it('cleanName output is accepted by the server name schema', () => {
+    for (const raw of ['🦊'.repeat(16), '🦊'.repeat(40), 'x'.repeat(40), 'Ania 🦊 Kowalska']) {
+      const name = cleanName(raw);
+      expect(name.length).toBeLessThanOrEqual(24);
+      const r = ClientMessageSchema.safeParse({ t: 'hello', v: 1, playerId: 'p1', secret: 'secret123', name, avatar: '🦊', coach: false });
+      expect(r.success || JSON.stringify(r.error.issues)).toBe(true);
+    }
   });
 
   it('coach is on for practice and the first 3 games unless set explicitly', () => {

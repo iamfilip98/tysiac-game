@@ -16,11 +16,16 @@ function memoryKV(): KV {
 const memLocal = memoryKV();
 const memSession = memoryKV();
 
+const probed = new WeakSet<object>();
+
 function probe(get: () => Storage, fallback: KV): KV {
   try {
     const s = get();
-    s.setItem('__probe', '1');
-    s.removeItem('__probe');
+    if (!probed.has(s)) {
+      s.setItem('__probe', '1');
+      s.removeItem('__probe');
+      probed.add(s);
+    }
     return s;
   } catch {
     return fallback;
