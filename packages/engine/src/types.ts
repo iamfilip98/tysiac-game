@@ -145,6 +145,11 @@ export interface RuleError {
 
 export type Audience = 'all' | PlayerId[];
 
+/**
+ * Events emitted by `reduce`. Every round ends with exactly ONE of `threw` (a throw-in) or
+ * `roundScored` (a played or wykładana round); both carry the round `summary`. A `gameWon` event may
+ * follow it, and otherwise the next round's `dealt` event(s).
+ */
 export type GameEventBody =
   | { type: 'dealt'; round: number; dealer: PlayerId; active: PlayerId[]; hand: Card[] }
   | { type: 'bid'; p: PlayerId; amount: number }

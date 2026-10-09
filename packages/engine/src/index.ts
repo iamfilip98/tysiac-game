@@ -23,5 +23,5 @@ export type { CreateGameOptions } from './game';
 export { legalActions, turnOf, actionsEqual, handoutOptions, nextActive } from './actions';
 export { reduce } from './reduce';
 export { viewFor, eventsFor, explainIllegal } from './view';
-export { botAction } from './bot';
+export { botAction, botShouldAct } from './bot';
 export { advise, explainEvent } from './coach';

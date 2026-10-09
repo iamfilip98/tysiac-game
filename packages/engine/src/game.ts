@@ -12,7 +12,10 @@ export interface CreateGameOptions {
 }
 
 /**
- * Creates a game and deals round 1. Throws on invalid options (a room-level programming error).
+ * Creates a game and deals round 1.
+ * `seed` determines every shuffle, so in production it should carry >= 128 bits of entropy
+ * (e.g. 32 hex chars from crypto.getRandomValues); a short or guessable seed makes hands predictable.
+ * Throws on invalid options (a room-level programming error).
  * Round-1 hands reach players via `viewFor`, not a `dealt` event (startRound events are discarded).
  */
 export function createGame(opts: CreateGameOptions): GameState {
