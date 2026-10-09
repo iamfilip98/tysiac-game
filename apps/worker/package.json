@@ -1,0 +1,25 @@
+{
+  "name": "@tysiac/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/ensure-local.mjs && wrangler dev",
+    "test": "node scripts/ensure-local.mjs && vitest run",
+    "typecheck": "tsc --noEmit",
+    "types": "wrangler types --strict-vars=false",
+    "db:migrate:local": "wrangler d1 migrations apply tysiac --local",
+    "ship": "node scripts/deploy.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@tysiac/engine": "workspace:*",
+    "@tysiac/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-plugin": "^1.4.0",
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.11",
+    "wrangler": "^4.149.0"
+  }
+}
