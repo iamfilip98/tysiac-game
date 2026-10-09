@@ -1,7 +1,8 @@
-import type { Card, PlayerId, Suit } from './types';
+import type { Card, GameEventBody, PlayerId, RoundScoreResult, RoundSummary, Suit } from './types';
 import { RULES } from './rules';
 import { activeFor, dealCards, dealerIndexFor } from './deal';
-import { clone, emit, seatIds, type Ctx } from './ctx';
+import { applyScoreResult } from './scoring';
+import { clone, emit, seatIds, totalsOf, type Ctx } from './ctx';
 
 /** Deals round `number` and opens bidding: first active player holds 100, the next one bids. */
 export function startRound(ctx: Ctx, number: number): void {
@@ -32,4 +33,24 @@ export function startRound(ctx: Ctx, number: number): void {
   for (const id of ids) {
     emit(ctx, { type: 'dealt', round: number, dealer, active: [...active], hand: clone(deal.hands[id] ?? []) }, [id]);
   }
+}
+
+/** Applies a round result, records it, emits `event`, then ends the game or deals the next round. */
+export function concludeRound(
+  ctx: Ctx,
+  result: RoundScoreResult,
+  summary: RoundSummary,
+  event: GameEventBody,
+): void {
+  const s = ctx.s;
+  s.scores = applyScoreResult(s.scores, result);
+  s.rounds.push(summary);
+  emit(ctx, event);
+  if (result.winner) {
+    s.phase = 'gameEnd';
+    s.winner = result.winner;
+    emit(ctx, { type: 'gameWon', p: result.winner, totals: totalsOf(s) });
+    return;
+  }
+  startRound(ctx, summary.number + 1);
 }

@@ -21,3 +21,4 @@ export type { Deal } from './deal';
 export { createGame } from './game';
 export type { CreateGameOptions } from './game';
 export { legalActions, turnOf, actionsEqual, handoutOptions, nextActive } from './actions';
+export { reduce } from './reduce';
