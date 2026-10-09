@@ -1,0 +1,23 @@
+{
+  "name": "@tysiac/protocol",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@tysiac/engine": "workspace:*",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^4.1.11"
+  }
+}
