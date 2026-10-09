@@ -1,0 +1,116 @@
+:root,
+[data-theme='brass'] {
+  color-scheme: dark;
+  --bg: radial-gradient(120% 70% at 50% 35%, #175140 0%, #0d3528 55%, #082419 100%);
+  --bg-solid: #0d3528;
+  --ink: #efe9da;
+  --ink-dim: rgba(239, 233, 218, 0.7);
+  --accent: #d4af6a;
+  --accent-ink: #1b1408;
+  --accent-soft: #e7c98d;
+  --panel: rgba(8, 30, 22, 0.9);
+  --panel-border: 1px solid rgba(212, 175, 106, 0.3);
+  --panel-shadow: none;
+  --btn-sec-bg: rgba(239, 233, 218, 0.1);
+  --btn-sec-border: 1px solid rgba(239, 233, 218, 0.18);
+  --icon-bg: rgba(0, 0, 0, 0.22);
+  --icon-border: 1px solid rgba(239, 233, 218, 0.14);
+  --avatar-bg: #0a2a1f;
+  --avatar-ink: #d4af6a;
+  --avatar-ring: 0 0 0 1.5px rgba(212, 175, 106, 0.55);
+  --turn-ring: 2px solid #d4af6a;
+  --card-bg: #f8f4ea;
+  --card-ink: #1d1b17;
+  --card-red: #b3261e;
+  --card-border: 0 solid transparent;
+  --card-shadow: 0 1px 0 #fff inset, 0 6px 14px rgba(0, 0, 0, 0.35);
+  --back-bg: #7b2b2b;
+  --back-border: 1px solid #d4af6a88;
+  --slot-border: 1.5px dashed rgba(239, 233, 218, 0.25);
+  --slot-bg: transparent;
+  --chip-muted-bg: rgba(239, 233, 218, 0.14);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-card: 'Fraunces', Georgia, serif;
+  --sheet-bg: #0b2b20;
+  --table-felt: radial-gradient(#1f6b4c, #0f3f2d);
+  --table-rim: #5a3a22;
+  --danger: #e0796f;
+}
+
+[data-theme='wycinanki'] {
+  color-scheme: light;
+  --bg: radial-gradient(circle at 50% 46%, rgba(200, 49, 43, 0.06) 0 92px, transparent 93px),
+    repeating-radial-gradient(circle at 50% 46%, transparent 0 96px, rgba(31, 39, 64, 0.05) 97px 98px, transparent 99px 104px),
+    #f3ead8;
+  --bg-solid: #f3ead8;
+  --ink: #1f2740;
+  --ink-dim: rgba(31, 39, 64, 0.7);
+  --accent: #c8312b;
+  --accent-ink: #fbf6ec;
+  --accent-soft: #c8312b;
+  --panel: #fffaf0;
+  --panel-border: 1.5px solid #1f2740;
+  --panel-shadow: 3px 3px 0 #c8312b;
+  --btn-sec-bg: #fbf6ec;
+  --btn-sec-border: 1.5px solid #1f2740;
+  --icon-bg: #fbf6ec;
+  --icon-border: 1.5px solid #1f2740;
+  --avatar-bg: #1f2740;
+  --avatar-ink: #f3ead8;
+  --avatar-ring: 0 0 0 3px #f3ead8, 0 0 0 4.5px #c8312b;
+  --turn-ring: 2.5px dotted #c8312b;
+  --card-bg: #fffaf0;
+  --card-ink: #1f2740;
+  --card-red: #c8312b;
+  --card-border: 1.5px solid #1f2740;
+  --card-shadow: 3px 3px 0 #1f2740;
+  --back-bg: repeating-linear-gradient(45deg, #c8312b 0 3px, #f3ead8 3px 5px);
+  --back-border: 1px solid #1f2740;
+  --slot-border: 2px dotted rgba(31, 39, 64, 0.3);
+  --slot-bg: transparent;
+  --chip-muted-bg: rgba(31, 39, 64, 0.1);
+  --font-display: 'Young Serif', Georgia, serif;
+  --font-card: 'Young Serif', Georgia, serif;
+  --sheet-bg: #fffaf0;
+  --table-felt: radial-gradient(#fbf3e2, #efe2c8);
+  --table-rim: #1f2740;
+  --danger: #c8312b;
+}
+
+[data-theme='midnight'] {
+  color-scheme: dark;
+  --bg: #0e1016;
+  --bg-solid: #0e1016;
+  --ink: #eef0f5;
+  --ink-dim: rgba(238, 240, 245, 0.65);
+  --accent: #ff7a45;
+  --accent-ink: #140a05;
+  --accent-soft: #ffb08f;
+  --panel: #1a1d26;
+  --panel-border: 1px solid transparent;
+  --panel-shadow: none;
+  --btn-sec-bg: #252a37;
+  --btn-sec-border: 1px solid #3a4152;
+  --icon-bg: #1a1d26;
+  --icon-border: 1px solid transparent;
+  --avatar-bg: linear-gradient(140deg, #2a2f3d, #1a1d26);
+  --avatar-ink: #eef0f5;
+  --avatar-ring: none;
+  --turn-ring: 2.5px solid #ff7a45;
+  --card-bg: #fff;
+  --card-ink: #11131a;
+  --card-red: #e5383b;
+  --card-border: 0 solid transparent;
+  --card-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
+  --back-bg: #252a37;
+  --back-border: 1px solid #3a4152;
+  --slot-border: 0 solid transparent;
+  --slot-bg: #151821;
+  --chip-muted-bg: rgba(238, 240, 245, 0.12);
+  --font-display: 'Inter', system-ui, sans-serif;
+  --font-card: 'Inter', system-ui, sans-serif;
+  --sheet-bg: #151821;
+  --table-felt: radial-gradient(#1c2030, #12141c);
+  --table-rim: #2a2f3d;
+  --danger: #ff6b6b;
+}

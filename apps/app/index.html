@@ -5,6 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <meta name="theme-color" content="#0d3528" />
     <title>Tysiąc</title>
+    <script>
+      try {
+        var p = JSON.parse(localStorage.getItem('tysiac.prefs') || '{}');
+        var t = p && p.state && p.state.theme;
+        if (t === 'brass' || t === 'wycinanki' || t === 'midnight') document.documentElement.dataset.theme = t;
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
