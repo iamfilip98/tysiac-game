@@ -99,17 +99,31 @@ export function cardKeysIn(x: unknown, out: string[] = []): string[] {
   return out;
 }
 
-/** Cards `me` must not be able to see in state `s`. */
+/**
+ * Cards `me` must not be able to see in state `s`: other players' hands, a still-private talon
+ * (bid 100) for non-bidders, and hand-out cards held by others; each only until it becomes
+ * public by being played. Cards in `me`'s own hand are never hidden.
+ */
 export function hiddenCardKeys(s: GameState, me: PlayerId): Set<string> {
   const hidden = new Set<string>();
   const r = s.round;
   if (!r) return hidden;
   for (const p of r.active) if (p !== me) for (const card of r.hands[p]) hidden.add(cardKey(card));
-  const biddingOver = s.phase !== 'bidding';
-  if (!biddingOver) for (const card of r.talon) hidden.add(cardKey(card));
-  if (biddingOver && (r.talonPublic || r.bid.high === me)) for (const card of r.talon) hidden.delete(cardKey(card));
-  if (r.handoutGiven && r.bid.high === me) {
-    for (const card of Object.values(r.handoutGiven)) hidden.delete(cardKey(card));
+  const talonKnown = s.phase !== 'bidding' && (r.talonPublic || r.bid.high === me);
+  if (r.handoutGiven) {
+    for (const [to, card] of Object.entries(r.handoutGiven)) {
+      if (r.bid.high === me || to === me) hidden.delete(cardKey(card));
+      else hidden.add(cardKey(card));
+    }
   }
+  // a private talon stays hidden from non-bidders for the whole round; a known one is visible
+  for (const card of r.talon) {
+    if (talonKnown) hidden.delete(cardKey(card));
+    else hidden.add(cardKey(card));
+  }
+  // anything in my own hand, or already played (current trick / won tricks), is known to me
+  if (Object.hasOwn(r.hands, me)) for (const card of r.hands[me]) hidden.delete(cardKey(card));
+  for (const t of r.trick.cards) hidden.delete(cardKey(t.card));
+  for (const won of Object.values(r.tricksWon)) for (const trick of won) for (const card of trick) hidden.delete(cardKey(card));
   return hidden;
 }

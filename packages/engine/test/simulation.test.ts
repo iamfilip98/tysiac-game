@@ -11,7 +11,7 @@ import { SEATS3, SEATS4, cardKeysIn, hiddenCardKeys } from './helpers';
 
 // Full run (>= 2,000 games, ~130 s): `pnpm --filter @tysiac/engine test:sim` (SIM_FULL=1).
 // The default suite runs a 10% sample to stay fast.
-const FULL = process.env.SIM_FULL === '1';
+const FULL = process.env.SIM_FULL === '1' || process.env.SIM_FULL === 'true';
 const GAMES_3P = FULL ? 1200 : 120;
 const GAMES_4P = FULL ? 800 : 80;
 const FULL_VIEW_CHECK_GAMES = 100; // per mode: check every seat's view at every step
@@ -41,7 +41,19 @@ function checkNoLeak(s: GameState, me: PlayerId, tag: string): void {
   for (const k of cardKeysIn(viewFor(s, me))) assert(!hidden.has(k), `${tag}: view for ${me} leaks ${k}`);
 }
 
+const tally = {
+  thrown100: 0, thrownOver100: 0, failed: 0, made: 0, barrel: 0, sittingOutScored: 0, marriage: 0, wykladana: 0,
+};
+
 function checkSummary(sum: RoundSummary, prev: Record<PlayerId, number>, tag: string): void {
+  if (sum.outcome === 'thrown') (sum.bid > 100 ? tally.thrownOver100++ : tally.thrown100++);
+  else if (sum.outcome === 'failed') tally.failed++;
+  else tally.made++;
+  if (sum.wykladana) tally.wykladana++;
+  for (const pr of sum.players) {
+    if (barrel(prev[pr.playerId])) tally.barrel++;
+    if (pr.sittingOut && pr.scoreChange !== 0) tally.sittingOutScored++;
+  }
   for (const pr of sum.players) {
     const before = prev[pr.playerId];
     assert(pr.newTotalScore === before + pr.scoreChange, `${tag}: total mismatch for ${pr.playerId}`);
@@ -94,6 +106,7 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
     const res = reduce(s, p, action, steps);
     assert(res.ok, `${tag}: reduce rejected ${JSON.stringify(action)}: ${!res.ok && res.error.message}`);
     for (const e of res.events) {
+      if (e.type === 'marriage') tally.marriage++;
       if (e.type === 'roundScored' || e.type === 'threw') checkSummary(e.summary, prevTotals, tag);
     }
     assert(res.state.seq === s.seq + 1, `${tag}: seq did not advance`);
@@ -124,8 +137,8 @@ describe('simulation', () => {
     for (const [seed, seats] of [['det-3', SEATS3], ['det-4', SEATS4]] as const) {
       const a = playGame(seed, seats, 1, false);
       const b = playGame(seed, seats, 1, false, true);
-      expect(b.state).toEqual(a.state);
-      expect(b.log).toEqual(a.log);
+      expect(b.state).toStrictEqual(a.state);
+      expect(b.log).toStrictEqual(a.log);
       // replaying the logged actions from scratch reproduces the final state
       let s = createGame({ seed, seats, maxPlayers: seats.length as 3 | 4, firstDealer: 1 });
       a.log.forEach(({ p, action }, i) => {
@@ -133,7 +146,19 @@ describe('simulation', () => {
         if (!res.ok) throw new Error(res.error.message);
         s = res.state;
       });
-      expect(s).toEqual(a.state);
+      expect(s).toStrictEqual(a.state);
     }
   }, 120_000);
+
+  it('exercised every rare scoring branch (guards against vacuous checks)', () => {
+    console.log('simulation tally', JSON.stringify(tally), FULL ? '(full)' : '(sample)');
+    expect(tally.thrown100).toBeGreaterThan(0);
+    expect(tally.thrownOver100).toBeGreaterThan(0);
+    expect(tally.failed).toBeGreaterThan(0);
+    expect(tally.made).toBeGreaterThan(0);
+    expect(tally.barrel).toBeGreaterThan(0);
+    expect(tally.sittingOutScored).toBeGreaterThan(0);
+    expect(tally.marriage).toBeGreaterThan(0);
+    expect(tally.wykladana).toBeGreaterThan(0);
+  });
 });
