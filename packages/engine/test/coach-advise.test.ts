@@ -49,7 +49,7 @@ describe('advise: decision and hand-out', () => {
     const a = advise(viewFor(s, 'a'))!;
     expect(a.headline).toBe('Give 9♣ to Celina and 9♦ to Bartek');
     expect(a.reasons).toEqual([
-      'Giving 9♣ leaves you void in ♣ — you can trump that suit later',
+      'Giving 9♣ leaves you void in ♣ — you can throw away low cards or trump once a marriage sets a trump suit',
       '9♦ is worth 0 points',
       'Keep your K+Q pairs — each one is a marriage',
       'Keep your aces — they win tricks',
@@ -83,7 +83,18 @@ describe('advise: tricks', () => {
     });
     const a = advise(viewFor(s, 'c'))!;
     expect(a.headline).toBe('Play 10♠');
-    expect(a.reasons).toContain('Bartek is winning — 10♠ feeds them 10 points');
+    expect(a.reasons).toContain('Bartek is winning — 10♠ gives the trick winner 10 points');
+  });
+});
+
+describe('advise: second responder', () => {
+  it('teaches that only the first responder must beat the lead', () => {
+    const t = scenario({
+      phase: 'tricks', bid: { high: 'a' }, hands: { a: '9D', b: 'AS 9C', c: '10S 9S KD' },
+      trick: { leader: 'a', cards: [['a', '9S'], ['b', 'KS']] },
+    });
+    const a = advise(viewFor(t, 'c'))!;
+    expect(a.reasons).toContain('You only need to follow suit — only the first player to respond must beat the lead');
   });
 });
 

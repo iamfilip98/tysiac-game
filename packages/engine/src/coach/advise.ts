@@ -54,7 +54,7 @@ function adviseBid(view: PlayerView, action: Action): Advice {
   if (aces > 0) reasons.push(`${aces} ace${aces > 1 ? 's' : ''} — 11 points each and usually a trick`);
   reasons.push('The talon adds 3 unseen cards — count on roughly 10 points from it');
   if (action.type === 'bid' && r.bid.passed.length > 0) reasons.push('Someone already passed, so a little extra risk is fine');
-  return { action, headline, reasons };
+  return { action, headline, reasons: reasons.slice(0, 6) };
 }
 
 function adviseDecision(view: PlayerView, action: Action): Advice {
@@ -78,8 +78,14 @@ function adviseDecision(view: PlayerView, action: Action): Advice {
   ];
   for (const suit of marriagesInHand(hand)) reasons.push(`Your K+Q ${sym(suit)} marriage is worth ${MV[suit]}`);
   const voids = SUITS.filter(s => !hand.some(c => c.suit === s));
-  if (voids.length > 0) reasons.push(`You're void in ${voids.map(sym).join(' ')} — you can trump those leads`);
+  if (voids.length > 0) reasons.push(`You're void in ${voids.map(sym).join(' ')} — ${voidBenefit(r.trump)}`);
   return { action, headline, reasons };
+}
+
+function voidBenefit(trump: Suit | null): string {
+  return trump
+    ? `you can discard or trump when it is led`
+    : 'you can throw away low cards or trump once a marriage sets a trump suit';
 }
 
 function adviseHandout(view: PlayerView, action: Action, to: Record<PlayerId, Card>): Advice {
@@ -91,7 +97,7 @@ function adviseHandout(view: PlayerView, action: Action, to: Record<PlayerId, Ca
   const reasons: string[] = [];
   for (const card of given) {
     if (!after.some(h => h.suit === card.suit)) {
-      reasons.push(`Giving ${cardLabel(card)} leaves you void in ${sym(card.suit)} — you can trump that suit later`);
+      reasons.push(`Giving ${cardLabel(card)} leaves you void in ${sym(card.suit)} — ${voidBenefit(r.trump)}`);
     } else if (handPoints([card]) === 0) {
       reasons.push(`${cardLabel(card)} is worth 0 points`);
     } else {
@@ -135,7 +141,8 @@ function adviseCard(view: PlayerView, action: Action, card: Card): Advice {
     );
     if (!higherOut) reasons.push(`${label} is the highest ${sym(card.suit)} left — a likely winner`);
     else if (r.trump === card.suit) reasons.push("Leading trumps pulls trumps out of your opponents' hands");
-    else reasons.push('A low lead feels out the suit without risking points');
+    else if (handPoints([card]) === 0) reasons.push('A 9 is worth 0 points, so leading it risks nothing');
+    else reasons.push('Leading a mid card keeps your aces back');
     return { action, headline: `Lead ${label}`, reasons };
   }
 
@@ -149,6 +156,8 @@ function adviseCard(view: PlayerView, action: Action, card: Card): Advice {
     reasons.push(`You have no ${sym(lead.suit)}, so any card is allowed`);
   } else if (r.trick.cards.length === 1 && r.hand.some(h => h.suit === lead.suit && canBeat(h, lead, lead.suit, r.trump))) {
     reasons.push(`As first to respond you must beat ${cardLabel(lead)} if you can`);
+  } else if (holdsLead && r.trick.cards.length >= 2) {
+    reasons.push('You only need to follow suit — only the first player to respond must beat the lead');
   }
   if (wins) {
     const last = r.trick.cards.length === r.active.length - 1;
@@ -164,11 +173,18 @@ function adviseCard(view: PlayerView, action: Action, card: Card): Advice {
     const pts = handPoints([card]);
     reasons.push(
       pts > 0
-        ? `${nameOf(view, winner)} is winning — ${label} feeds them ${pts} points`
+        ? `${nameOf(view, winner)} is winning — ${label} gives the trick winner ${pts} points`
         : `${nameOf(view, winner)} is winning — no need to fight for it`,
     );
   } else {
-    reasons.push("You can't win this one, so play your least useful card");
+    const canWin = legalCards.some(lc =>
+      cardEquals(getHighestCardInTrick([...onTable, lc], lead.suit, r.trump), lc),
+    );
+    reasons.push(
+      canWin
+        ? "This trick isn't worth fighting for — play your least useful card"
+        : "You can't win this one, so play your least useful card",
+    );
   }
   return { action, headline: `Play ${label}`, reasons };
 }
