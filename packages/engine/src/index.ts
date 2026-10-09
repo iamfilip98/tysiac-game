@@ -10,3 +10,7 @@ export {
 } from './tricks';
 export type { ValidationResult, TrickWinnerResult } from './tricks';
 export { maxBidFor, validateBid, nextBidder } from './bidding';
+export {
+  roundToTen, isOnBarrel, scoreRound, scoreThrow, pickWinner, applyScoreResult, summarizeRound, talonBonus,
+} from './scoring';
+export type { ScoringInput, ThrowInput } from './scoring';
