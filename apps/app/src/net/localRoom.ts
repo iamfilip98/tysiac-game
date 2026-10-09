@@ -70,7 +70,9 @@ export class LocalRoom {
   private readonly botScale: number;
   private readonly rng: () => number;
   private cancelBot: (() => void) | null = null;
-  private disposed = false;
+  private destroyed = false;
+  /** True while no human is connected; bots rest, and the next hello wakes them. */
+  private idle = false;
 
   constructor(o: LocalRoomOptions) {
     this.code = o.code;
@@ -83,15 +85,19 @@ export class LocalRoom {
     this.info = { code: o.code, status: 'lobby', maxPlayers: o.maxPlayers, hostId: o.host.playerId, seats, firstDealer: 0 };
   }
 
-  /** Stops all bot activity for good. Called automatically when the last human connection goes away. */
+  /** Permanent teardown: cancels bot timers and nothing ever schedules again. */
   dispose(): void {
-    this.disposed = true;
+    this.destroyed = true;
     this.cancelBot?.();
     this.cancelBot = null;
   }
 
+  /** When the last human goes away bots rest; a later hello revives them. */
   private disposeIfEmpty(): void {
-    if (this.socks.size === 0) this.dispose();
+    if (this.socks.size > 0) return;
+    this.idle = true;
+    this.cancelBot?.();
+    this.cancelBot = null;
   }
 
   exists(): RoomExistsResponse {
@@ -164,10 +170,12 @@ export class LocalRoom {
     const hadBot = seat.botFor;
     seat.botFor = false;
     this.setEngineBotFor(m.playerId, false);
+    const wasIdle = this.idle;
+    this.idle = false;
     sock.deliver({ t: 'welcome', you: m.playerId, room: this.snapshot(), serverTime: this.clock.now() });
     if (this.state) sock.deliver({ t: 'state', seq: this.state.seq, view: viewFor(this.state, m.playerId), events: [] });
     this.broadcastRoom();
-    if (hadBot) this.scheduleBot([]);
+    if (wasIdle || hadBot) this.scheduleBot([]);
   }
 
   private drop(sock: Sock): void {
@@ -317,7 +325,7 @@ export class LocalRoom {
     this.cancelBot?.();
     this.cancelBot = null;
     const s = this.state;
-    if (this.disposed || !s || s.phase === 'gameEnd' || s.paused) return;
+    if (this.destroyed || this.idle || !s || s.phase === 'gameEnd' || s.paused) return;
     const turn = turnOf(s);
     if (!turn || !this.botControlled(turn) || !botShouldAct(viewFor(s, turn))) return;
     let delay = 600 + Math.floor(this.rng() * 300);
@@ -331,7 +339,7 @@ export class LocalRoom {
 
   private botMove(pid: PlayerId): void {
     const s = this.state;
-    if (this.disposed || !s || s.paused || turnOf(s) !== pid || !this.botControlled(pid)) return;
+    if (this.destroyed || this.idle || !s || s.paused || turnOf(s) !== pid || !this.botControlled(pid)) return;
     const view = viewFor(s, pid);
     if (!botShouldAct(view)) return;
     try {

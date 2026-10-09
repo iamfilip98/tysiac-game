@@ -345,7 +345,7 @@ describe('LocalRoom bot scheduling', () => {
 });
 
 describe('LocalRoom dispose', () => {
-  it('cancels the bot timer when the last human closes, and on demand', () => {
+  it('rests the bots when the last human closes and revives them on hello', () => {
     const { clock, room } = setup();
     const h = client(room, 'h');
     lobby(h, { op: 'addBot' });
@@ -357,6 +357,12 @@ describe('LocalRoom dispose', () => {
     expect(clock.pending).toBe(0);
     clock.advance(60_000);
     expect(clock.pending).toBe(0);
+    const h2 = client(room, 'h');
+    expect(h2.view()).not.toBeNull();
+    expect(clock.pending).toBe(1);
+    const seq = h2.view()!.seq;
+    clock.advance(5_000);
+    expect(h2.view()!.seq).toBeGreaterThan(seq);
   });
 
   it('leave closes the socket and disposes when nobody is left', () => {
