@@ -167,7 +167,11 @@ describe('pause / resume', () => {
     expect(turnOf(s)).toBe('b');
     expect(legalActions(s, 'b')).toEqual([{ type: 'card', card: c('AH') }, { type: 'pause' }]);
     expect(legalActions(s, 'b')).toEqual(legalBefore);
-    // Task 8 extends this: play the card after resume and assert it was applied.
+    const res = ok(reduce(s, 'b', { type: 'card', card: c('AH') }, 4));
+    expect(res.events.map(e => e.type)).toEqual(['cardPlayed']);
+    expect(res.state.round!.hands.b).toEqual([c('9S')]);
+    expect(res.state.round!.trick.cards.map(t => [t.p, t.card])).toEqual([['a', c('10H')], ['b', c('AH')]]);
+    expect(turnOf(res.state)).toBe('c');
   });
 
   it('resume when not paused is rejected', () => {

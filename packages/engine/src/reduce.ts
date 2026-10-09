@@ -5,6 +5,8 @@ import { validateBid } from './bidding';
 import { cardRuleMessage } from './tricks';
 import { clone, emit, type Ctx } from './ctx';
 import { applyBid, applyPass } from './phases/bidding';
+import { applyHandout } from './phases/handout';
+import { applyCard } from './phases/tricks';
 import { applyPlay, applyThrow } from './phases/decision';
 
 const err = (code: RuleErrorCode, message: string): RuleError => ({ code, message });
@@ -47,8 +49,12 @@ export function reduce(state: GameState, playerId: PlayerId, action: Action, now
       ctx.s.paused = null;
       emit(ctx, { type: 'resumed', p: playerId });
       break;
-    default:
-      return fail(err('illegalAction', "That move isn't allowed right now"));
+    case 'handout':
+      applyHandout(ctx, playerId, legal.to);
+      break;
+    case 'card':
+      applyCard(ctx, playerId, legal.card);
+      break;
   }
   ctx.s.seq += 1;
   return { ok: true, state: ctx.s, events: ctx.events };
