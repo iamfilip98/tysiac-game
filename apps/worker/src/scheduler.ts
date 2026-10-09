@@ -15,12 +15,13 @@ export interface Schedule {
 
 /**
  * Delay before a bot acts (spec §6): 600–900 ms, +1100 ms if the events that led here include a won
- * trick (let the sweep play), +1500 ms if they include a scored round (let the result sheet show).
+ * trick (let the sweep play), +1500 ms if they include a finished round (scored or thrown in) (let the result sheet show).
  */
 export function botDelayMs(events: readonly Pick<GameEvent, 'type'>[], rand: () => number, scale = 1): number {
   let ms = BOT_DELAY_MIN_MS + Math.floor(rand() * (BOT_DELAY_SPREAD_MS + 1));
   if (events.some((e) => e.type === 'trickWon')) ms += AFTER_TRICK_MS;
-  if (events.some((e) => e.type === 'roundScored')) ms += AFTER_ROUND_MS;
+  // A round ends with exactly one of `threw` (thrown in) or `roundScored`.
+  if (events.some((e) => e.type === 'roundScored' || e.type === 'threw')) ms += AFTER_ROUND_MS;
   return Math.round(ms * scale);
 }
 

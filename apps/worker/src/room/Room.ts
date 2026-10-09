@@ -5,7 +5,8 @@ import { parseClientMessage } from '@tysiac/protocol';
 import type { ClientMessage, ErrorCode, LobbyOp, ParseResult, RoomExistsResponse, RoomInfo, ServerMessage } from '@tysiac/protocol';
 import { randomHex, sha256Hex } from '../identity';
 import { checkRate, newBucket, type RateBucket } from '../ratelimit';
-import { CLEANUP_AFTER_MS, nextAlarmAt, type Schedule } from '../scheduler';
+import { CLEANUP_AFTER_MS, botDelayMs, nextAlarmAt, parseScale, type Schedule } from '../scheduler';
+import { botActor, chooseBotAction } from './bots';
 import * as lobby from './lobby';
 import { RoomStore } from './storage';
 import type { DebugDump, GameOptions, InitRoomRequest, RoomMeta, SocketAttachment } from './types';
@@ -13,6 +14,7 @@ import type { DebugDump, GameOptions, InitRoomRequest, RoomMeta, SocketAttachmen
 type Hello = Extract<ClientMessage, { t: 'hello' }>;
 
 const EMPTY_SCHEDULE: Schedule = { bot: null, cleanup: 0 };
+const BOT_RETRY_MS = 1000;
 
 /** Which player a socket speaks for (null until its hello is accepted). Survives hibernation. */
 export function attachmentOf(ws: WebSocket): SocketAttachment {
@@ -28,6 +30,8 @@ export class Room extends DurableObject<Env> {
   private meta: RoomMeta | null = null;
   private state: GameState | null = null;
   private schedule: Schedule = EMPTY_SCHEDULE;
+  /** In-memory: the state seq whose bot move already failed once (one retry, then stop; never loops). */
+  private botFailedAtSeq: number | null = null;
   /** In-memory only: a hibernation simply resets the windows. */
   private readonly buckets = new WeakMap<WebSocket, RateBucket>();
 
@@ -92,11 +96,29 @@ export class Room extends DurableObject<Env> {
     return new Response(null, { status: 101, webSocket: pair[0] });
   }
 
+  /** The single alarm: room cleanup, or a due bot move. Never throws (a throw would make the runtime retry it). */
   async alarm(): Promise<void> {
-    if (!this.meta) return;
-    const now = Date.now();
-    if (now >= this.schedule.cleanup) return this.destroy();
-    await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+    try {
+      if (!this.meta) return;
+      const now = Date.now();
+      if (now >= this.schedule.cleanup) return await this.destroy();
+      this.sweepPresence(now);
+      if (this.syncBotFlags()) this.broadcastState([]);
+      if (this.schedule.bot !== null && now >= this.schedule.bot) {
+        const ok = await this.playBot(now); // on success commit() has already re-planned
+        if (!ok) await this.afterBotFailure(now);
+        else await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule)); // no-op unless the move was skipped
+      } else {
+        await this.reschedule(now, null, { touch: false }); // the sweep or a flag sync may have changed who must act
+      }
+    } catch (err) {
+      console.error('room alarm failed', err instanceof Error ? err.message : 'unknown error');
+      try {
+        await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+      } catch {
+        // nothing more to do; the next socket message re-arms the alarm
+      }
+    }
   }
 
   // ---------- sockets ----------
@@ -107,12 +129,17 @@ export class Room extends DurableObject<Env> {
     } catch (err) {
       // Never log message contents (they can carry secrets).
       console.error('room message handler failed', err instanceof Error ? err.message : 'unknown error');
-      if (ws.readyState === WebSocket.READY_STATE_OPEN) this.sendError(ws, 'badMessage', 'Something went wrong handling that message');
+      if (ws.readyState === WebSocket.READY_STATE_OPEN) {
+        // A failed hello must not leave the socket locked out behind `pending`.
+        if (attachmentOf(ws).pending) ws.serializeAttachment({ playerId: null } satisfies SocketAttachment);
+        this.sendError(ws, 'badMessage', 'Something went wrong handling that message');
+      }
     }
   }
 
   private async handleMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const now = Date.now();
+    this.sweepPresence(now); // a wake after eviction or redeploy: nobody's close handler ran
     let bucket = this.buckets.get(ws);
     if (!bucket) {
       bucket = newBucket(now);
@@ -177,13 +204,14 @@ export class Room extends DurableObject<Env> {
     }
     ws.serializeAttachment({ playerId: msg.playerId } satisfies SocketAttachment);
     this.setMeta(claim.meta);
-    // A player reclaiming a seat a bot was playing: a bot move pending for that seat must not fire.
-    // The schedule is rebuilt by reschedule() (bot: null), which drops it; the bot alarm (Task 10) must re-derive
-    // its target from meta, so tookBack needs no extra handling here.
+    // Reclaim (spec §6): the player takes control back. The bot target is derived from meta, so a pending
+    // bot move for this seat is dropped by reschedule().
+    const flagsChanged = claim.tookBack && this.syncBotFlags();
     await this.reschedule(now);
     this.send(ws, { t: 'welcome', you: msg.playerId, room: this.roomInfo(), serverTime: now });
     if (this.state) this.send(ws, { t: 'state', seq: this.state.seq, view: viewFor(this.state, msg.playerId), events: [] });
     this.broadcastRoom({ skip: ws }); // the joiner already got `welcome`; others see it as connected
+    if (flagsChanged) this.broadcastState([], ws);
   }
 
   private async dispatch(ws: WebSocket, me: PlayerId, msg: ClientMessage, now: number): Promise<void> {
@@ -203,8 +231,9 @@ export class Room extends DurableObject<Env> {
       case 'ping':
         return this.send(ws, { t: 'pong' });
       case 'botFor':
+        return this.onBotFor(ws, meta, me, msg.playerId, now);
       case 'rematch':
-        return this.sendError(ws, 'badMessage', `"${msg.t}" is not available yet`);
+        return this.sendError(ws, 'badMessage', '"rematch" is not available yet');
     }
   }
 
@@ -231,6 +260,16 @@ export class Room extends DurableObject<Env> {
     }
   }
 
+  private async onBotFor(ws: WebSocket, meta: RoomMeta, me: PlayerId, target: PlayerId, now: number): Promise<void> {
+    const result = lobby.setBotFor(meta, me, target, now);
+    if (!result.ok) return this.sendError(ws, result.code, result.message);
+    this.setMeta(result.meta);
+    const flagsChanged = this.syncBotFlags();
+    await this.reschedule(now);
+    this.broadcastRoom();
+    if (flagsChanged) this.broadcastState([]);
+  }
+
   private async applyLobby(ws: WebSocket, result: lobby.LobbyResult, now: number): Promise<void> {
     if (!result.ok) return this.sendError(ws, result.code, result.message);
     this.setMeta(result.meta);
@@ -255,7 +294,8 @@ export class Room extends DurableObject<Env> {
     }
     this.meta = result.meta;
     this.state = state;
-    this.schedule = { bot: null, cleanup: now + CLEANUP_AFTER_MS };
+    this.botFailedAtSeq = null;
+    this.schedule = { bot: this.planBot(now, []), cleanup: now + CLEANUP_AFTER_MS };
     this.ctx.storage.transactionSync(() => {
       this.store.putMeta(result.meta);
       this.store.putState(state);
@@ -287,10 +327,11 @@ export class Room extends DurableObject<Env> {
     this.broadcastRoom({ gone: ws });
   }
 
-  /** Persist + broadcast one accepted engine action. */
+  /** Persist + broadcast one accepted engine action (human or bot), then plan the next bot move. */
   private async commit(by: PlayerId, action: Action, state: GameState, events: GameEvent[], now: number): Promise<void> {
     this.state = state;
-    this.schedule = { bot: null, cleanup: now + CLEANUP_AFTER_MS };
+    this.botFailedAtSeq = null;
+    this.schedule = { bot: this.planBot(now, events), cleanup: now + CLEANUP_AFTER_MS };
     // State, log entry and schedule land atomically (no await between the writes).
     this.ctx.storage.transactionSync(() => {
       this.store.putState(state);
@@ -299,7 +340,70 @@ export class Room extends DurableObject<Env> {
     });
     this.broadcastState(events);
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
-    // Bot moves (Task 10) are scheduled here and never while state.paused is set.
+  }
+
+  /** Runs the due bot move. Returns false when it failed (nothing was committed). Never throws. */
+  private async playBot(now: number): Promise<boolean> {
+    this.schedule = { ...this.schedule, bot: null };
+    this.store.putSchedule(this.schedule);
+    if (!this.state || !this.meta) return true;
+    const actor = botActor(this.state, this.meta);
+    if (actor === null) return true; // paused, reclaimed, or finished since it was scheduled
+    try {
+      const action = chooseBotAction(this.state, actor, Math.random);
+      const result = reduce(this.state, actor, action, now);
+      if (!result.ok) {
+        console.error('bot move rejected', { room: this.meta.code, actor, action, error: result.error });
+        return false;
+      }
+      await this.commit(actor, action, result.state, result.events, now);
+      return true;
+    } catch (err) {
+      console.error('bot move failed', { room: this.meta.code, actor, error: err instanceof Error ? err.message : 'unknown error' });
+      return false;
+    }
+  }
+
+  /** One retry 1 s later; a second failure at the same state stops the bot (the next human action re-plans). */
+  private async afterBotFailure(now: number): Promise<void> {
+    const seq = this.state?.seq ?? null;
+    const retry = this.botFailedAtSeq !== seq;
+    this.botFailedAtSeq = seq;
+    if (!retry) console.error('bot move failed twice; giving up until the next action', { room: this.meta?.code, seq });
+    this.schedule = { bot: retry ? now + BOT_RETRY_MS : null, cleanup: this.schedule.cleanup };
+    this.store.putSchedule(this.schedule);
+    await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+  }
+
+  /**
+   * Mirrors SeatMeta.botFor into the engine seats (engine ignores it; views show it). Returns whether any
+   * seat changed. Replay determinism: seat flags are an overlay that is NOT in the action log, and seq is not
+   * bumped, so a replay (createGame(gameOptions) + log) equals the live state except for `seats[].botFor`.
+   */
+  private syncBotFlags(): boolean {
+    if (!this.state || !this.meta) return false;
+    const seats = lobby.withBotFlags(this.state.seats, this.meta);
+    if (seats.every((s, i) => s.botFor === this.state!.seats[i]?.botFor)) return false;
+    this.state = { ...this.state, seats };
+    this.store.putState(this.state);
+    return true;
+  }
+
+  /**
+   * Presence sweep: after eviction or a redeploy no close handler ran, so a human seat with no live socket
+   * and no awaySince gets awaySince = now (otherwise botFor could never become available).
+   */
+  private sweepPresence(now: number): void {
+    const meta = this.meta;
+    if (!meta || meta.status !== 'playing') return;
+    const connected = this.connectedIds();
+    let next = meta;
+    for (const seat of meta.seats) {
+      if (seat && !seat.isBot && seat.awaySince === null && !connected.has(seat.id)) next = lobby.markAway(next, seat.id, now);
+    }
+    if (next === meta) return;
+    this.setMeta(next);
+    this.broadcastRoom();
   }
 
   // ---------- internals ----------
@@ -309,9 +413,22 @@ export class Room extends DurableObject<Env> {
     this.store.putMeta(meta);
   }
 
-  /** Activity: cleanup moves to now + 7 days; the single alarm is re-armed. */
-  private async reschedule(now: number): Promise<void> {
-    this.schedule = { bot: null, cleanup: now + CLEANUP_AFTER_MS };
+  /**
+   * The one place the bot schedule is computed: a bot move is due iff botActor(state, meta) says a bot (or
+   * bot-for) seat must act. `events` = what just happened (fresh delay, spec §6); null keeps an already
+   * pending time (hello, lobby ops, botFor) but still drops it when nobody needs a bot any more.
+   */
+  private planBot(now: number, events: readonly GameEvent[] | null): number | null {
+    const actor = this.state && this.meta ? botActor(this.state, this.meta) : null;
+    if (actor === null) return null;
+    if (events === null && this.schedule.bot !== null) return this.schedule.bot;
+    return now + botDelayMs(events ?? [], Math.random, parseScale(this.env.BOT_DELAY_SCALE));
+  }
+
+  /** Re-plans the bot move and (unless `touch` is false) moves cleanup to now + 7 days; re-arms the alarm. */
+  private async reschedule(now: number, events: readonly GameEvent[] | null = null, opts: { touch?: boolean } = {}): Promise<void> {
+    const cleanup = opts.touch === false ? this.schedule.cleanup : now + CLEANUP_AFTER_MS;
+    this.schedule = { bot: this.planBot(now, events), cleanup };
     this.store.putSchedule(this.schedule);
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
   }
@@ -360,12 +477,12 @@ export class Room extends DurableObject<Env> {
   }
 
   /** Personalised `state` (own view + events this player may see) to every joined socket. */
-  private broadcastState(events: GameEvent[]): void {
+  private broadcastState(events: GameEvent[], skip?: WebSocket): void {
     const state = this.state;
     if (!state) return;
     for (const ws of this.ctx.getWebSockets()) {
       const id = attachmentOf(ws).playerId;
-      if (id === null) continue;
+      if (id === null || ws === skip) continue;
       this.send(ws, { t: 'state', seq: state.seq, view: viewFor(state, id), events: eventsFor(events, id) });
     }
   }

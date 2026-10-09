@@ -15,6 +15,7 @@ describe('botDelayMs', () => {
   it('adds 1100 ms after a trick and 1500 ms after a scored round (cumulative)', () => {
     expect(botDelayMs([{ type: 'cardPlayed' }, { type: 'trickWon' }], fixed(0))).toBe(1700);
     expect(botDelayMs([{ type: 'roundScored' }], fixed(0))).toBe(2100);
+    expect(botDelayMs([{ type: 'threw' }], fixed(0))).toBe(2100);
     expect(botDelayMs([{ type: 'cardPlayed' }, { type: 'trickWon' }, { type: 'roundScored' }, { type: 'dealt' }], fixed(0))).toBe(3200);
   });
 
