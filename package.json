@@ -9,6 +9,7 @@
     "test": "turbo test",
     "dev:web": "turbo dev --filter=@tysiac/web",
     "dev:server": "turbo dev --filter=@tysiac/server",
+    "dev:app": "pnpm --filter @tysiac/app dev",
     "db:generate": "pnpm --filter=@tysiac/server db:generate",
     "db:migrate": "pnpm --filter=@tysiac/server db:migrate",
     "db:push": "pnpm --filter=@tysiac/server db:push"
@@ -16,11 +17,5 @@
   "dependencies": {
     "turbo": "^2.0.0",
     "typescript": "^5.4.0"
-  },
-  "pnpm": {
-    "overrides": {
-      "react": "18.3.1",
-      "react-dom": "18.3.1"
-    }
   }
 }
