@@ -28,12 +28,12 @@ export function viewFor(s: GameState, me: PlayerId): PlayerView {
 function roundView(s: GameState, r: Round, me: PlayerId): RoundView {
   const bidder = r.bid.high;
   const talonVisible = s.phase !== 'bidding' && (r.talonPublic || me === bidder);
-  const myHand = r.hands[me];
+  const myHand = Object.hasOwn(r.hands, me) ? r.hands[me] : undefined;
   let handout: Partial<Record<PlayerId, Card>> | null = null;
   if (r.handoutGiven) {
     if (me === bidder) handout = clone(r.handoutGiven);
     else {
-      const mine = r.handoutGiven[me];
+      const mine = Object.hasOwn(r.handoutGiven, me) ? r.handoutGiven[me] : undefined;
       handout = mine ? { [me]: { ...mine } } : {};
     }
   }

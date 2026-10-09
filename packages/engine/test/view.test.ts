@@ -113,6 +113,35 @@ describe('viewFor', () => {
     expect(JSON.stringify(v)).not.toContain(s.rng);
   });
 
+  it('prototype-key ids do not throw and get an empty hand', () => {
+    const s = createGame({ seed: 'proto', seats: SEATS3, maxPlayers: 3, firstDealer: 2 });
+    for (const id of ['constructor', 'toString', '__proto__']) {
+      const v = viewFor(s, id);
+      expect(v.round!.hand).toEqual([]);
+      expect(v.round!.maxBid).toBe(0);
+      expect(v.legal).toEqual([]);
+      expect(() => explainIllegal(v, c('AH'))).not.toThrow();
+    }
+    const h = scenario({
+      phase: 'handout', bid: { high: 'a', amount: 100 },
+      hands: { a: 'AH 10H KH QH AS 10S AD 9C 9D JS', b: 'KS QS JH 9H KC QC JC', c: '10C AC 10D KD QD JD 9S' },
+    });
+    const st = ok(reduce(h, 'a', { type: 'handout', to: { b: c('9C'), c: c('9D') } }, 1)).state;
+    for (const id of ['constructor', '__proto__']) expect(viewFor(st, id).round!.handout).toEqual({});
+  });
+
+  it('4p hand-out: bidder sees both, recipients one, sitting-out dealer none', () => {
+    const s = scenario({
+      seats: SEATS4, phase: 'handout', bid: { high: 'a', amount: 100 },
+      hands: { a: 'AH 10H KH QH AS 10S AD 9C 9D JS', b: 'KS QS JH 9H KC QC JC', c: '10C AC 10D KD QD JD 9S' },
+    });
+    const st = ok(reduce(s, 'a', { type: 'handout', to: { b: c('9C'), c: c('9D') } }, 1)).state;
+    expect(viewFor(st, 'a').round!.handout).toEqual({ b: c('9C'), c: c('9D') });
+    expect(viewFor(st, 'b').round!.handout).toEqual({ b: c('9C') });
+    expect(viewFor(st, 'd').round!.handout).toEqual({});
+    for (const me of ['a', 'b', 'c', 'd']) expectNoLeak(st, me);
+  });
+
   it('is JSON-serializable', () => {
     const s = createGame({ seed: 'json', seats: SEATS3, maxPlayers: 3, firstDealer: 0 });
     const v = viewFor(s, 'a');
