@@ -1,23 +1,29 @@
 import type { CSSProperties } from 'react';
 import { m } from 'motion/react';
-import { SUIT_SYMBOL, cardKey, cardLabel, type Card } from '@tysiac/engine';
-import { isRed } from './cards';
+import { cardKey, cardLabel, type Card } from '@tysiac/engine';
+import { SUIT_TEXT, isRed, type CardGlow } from './cards';
 import './card.css';
 
 export type CardLook = 'normal' | 'dim' | 'raised' | 'recommended';
 
+export { SUIT_TEXT };
+
 export function CardFace({ card }: { card: Card }) {
-  const s = SUIT_SYMBOL[card.suit];
+  const s = SUIT_TEXT[card.suit];
+  const idx = (br: boolean) => (
+    <span className={`card__idx ${br ? 'card__idx--br' : ''}`} aria-hidden="true">
+      <span className="card__rank">{card.rank}</span>
+      <span className="card__suit">{s}</span>
+    </span>
+  );
   return (
-    <>
-      <span className="card__idx" aria-hidden="true">
-        <span className="card__rank">{card.rank}</span>
-        <span className="card__suit">{s}</span>
-      </span>
+    <span className="card__face">
+      {idx(false)}
       <span className="card__pip" aria-hidden="true">
         {s}
       </span>
-    </>
+      {idx(true)}
+    </span>
   );
 }
 
@@ -26,18 +32,19 @@ export interface CardButtonProps {
   look: CardLook;
   tag?: string | null;
   shake?: boolean;
+  glow?: CardGlow;
   className?: string;
   style?: CSSProperties;
   onTap(): void;
 }
 
-export function CardButton({ card, look, tag, shake, className = '', style, onTap }: CardButtonProps) {
+export function CardButton({ card, look, tag, shake, glow, className = '', style, onTap }: CardButtonProps) {
   return (
     <m.button
       type="button"
       layout
       layoutId={cardKey(card)}
-      className={`card ${isRed(card) ? 'card--red' : ''} card--${look} ${className}`}
+      className={`card ${isRed(card) ? 'card--red' : ''} card--${look} ${glow ? `card--glow-${glow}` : ''} ${className}`}
       aria-label={cardLabel(card)}
       aria-pressed={look === 'raised'}
       aria-disabled={look === 'dim' ? true : undefined}

@@ -2,15 +2,16 @@ import { cardLabel, type Card, type PlayerId, type PlayerView } from '@tysiac/en
 import type { RoomInfo, RoomSeat } from '../net/protocol';
 import { CardBack, MiniCard } from './Card';
 import { opponentIds } from './seating';
+import { BARREL, PASS_CHIP, bidChip, onBarrel, pts } from './format';
 
 export function chipFor(view: PlayerView, id: PlayerId): { text: string; muted: boolean } | null {
   const r = view.round;
   if (!r || r.sittingOut === id) return null;
   if (view.phase === 'bidding') {
-    if (r.bid.passed.includes(id)) return { text: 'pass', muted: true };
-    return r.bid.high === id ? { text: String(r.bid.amount), muted: false } : null;
+    if (r.bid.passed.includes(id)) return { text: PASS_CHIP, muted: true };
+    return r.bid.high === id ? { text: bidChip(r.bid.amount), muted: false } : null;
   }
-  return r.bid.high === id ? { text: String(r.bid.amount), muted: false } : null;
+  return r.bid.high === id ? { text: bidChip(r.bid.amount), muted: false } : null;
 }
 
 export interface OpponentsProps {
@@ -58,6 +59,7 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
   const sittingOut = r?.sittingOut === id;
   const count = r?.handCounts[id] ?? 0;
   const chip = chipFor(view, id);
+  const total = view.scores[id]?.total ?? 0;
   const away = seat !== null && !seat.isBot && !seat.connected;
   const cls = `opp ${view.turn === id && !view.paused ? 'opp--turn' : ''} ${targetable && !given && !sittingOut ? 'opp--target' : ''}`;
   const body = (
@@ -71,7 +73,15 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
         {seat?.coach && <span role="img" aria-label="coach on"> 🎓</span>}
       </span>
       <span className="opp__meta">
-        <span className="opp__score">{view.scores[id]?.total ?? 0}</span>
+        <span className="opp__score" aria-label={`Score ${pts(total)}`}>
+          {pts(total)}
+          {onBarrel(total) && (
+            <span className="opp__barrel" role="img" aria-label="on the barrel">
+              {' '}
+              {BARREL}
+            </span>
+          )}
+        </span>
         {chip && <span className={`chip ${chip.muted ? 'chip--muted' : ''}`}>{chip.text}</span>}
       </span>
       {sittingOut ? (

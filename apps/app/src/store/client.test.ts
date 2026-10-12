@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cardEquals, cardKey, turnOf, type Action, type Card, type GameEvent, type GameState } from '@tysiac/engine';
 import {
-  FLIGHT_MS, HOLD_MS, advance, applyServer, beginAct, beginPlay, dismissResult, initialClient, isIdle,
+  FLIGHT_MS, HOLD_MS, NOTE_MS, advance, applyServer, beginAct, beginPlay, dismissResult, initialClient, isIdle,
   type ClientState, type Step,
 } from './client';
 import { eventNote } from './notes';
@@ -220,8 +220,8 @@ describe('advance', () => {
 describe('eventNote', () => {
   const s = findState(x => x.phase === 'tricks');
   const v = viewOf(s);
-  it('announces marriages without the coach', () => {
-    expect(eventNote({ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }, v, false)).toBe('Bot Basia declared the ♥ marriage: +100. ♥ are trumps.');
+  it('leaves marriages to the ticker without the coach', () => {
+    expect(eventNote({ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }, v, false)).toBeNull();
   });
   it('stays quiet for ordinary events without the coach', () => {
     expect(eventNote({ type: 'passed', p: 'b', audience: 'all' }, v, false)).toBeNull();
@@ -229,5 +229,60 @@ describe('eventNote', () => {
   it('uses the engine explanation with the coach', () => {
     const e: GameEvent = { type: 'trickWon', p: 'me', cards: [], card: { suit: 'hearts', rank: 'A' }, points: 0, byTrump: true, audience: 'all' };
     expect(eventNote(e, v, true)).toContain('You won with A♥');
+  });
+});
+
+describe('table fx', () => {
+  const v = viewOf(findState(x => x.phase === 'tricks'));
+  const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+  it('a marriage sets the table fx, and a trump-won trick bursts while it is held', () => {
+    const m = advance({ ...base, queue: [{ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }] }, false)!;
+    expect(m.state.fx).toMatchObject({ kind: 'marriage', suit: 'hearts' });
+    expect(m.sound).toBe('marriage');
+    const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: true, audience: 'all' };
+    const hold = advance({ ...base, queue: [won] }, false)!;
+    expect(hold.state.fx).toMatchObject({ kind: 'trumpWin' });
+    const sweep = advance(hold.state, false)!;
+    expect(sweep.state.fx).toBeNull();
+  });
+});
+
+describe('announcements in the store', () => {
+  it('each played event sets the announcement', () => {
+    const v = viewOf(findState(x => x.phase === 'tricks'));
+    const s: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v, queue: [{ type: 'passed', p: 'b', audience: 'all' } as GameEvent] };
+    const step = advance(s, false)!;
+    expect(step.state.announce?.a).toEqual({ kind: 'pass', p: 'b' });
+  });
+});
+
+describe('received card', () => {
+  const v = viewOf(findState(x => x.phase === 'tricks'));
+  const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+  it('a hand-out to me records the received card and who gave it', () => {
+    const e = { type: 'handedOut', p: 'b', recipients: ['me', 'z'], cards: { me: { suit: 'hearts', rank: 'Q' } }, audience: ['me'] } as GameEvent;
+    const step = advance({ ...base, queue: [e] }, false)!;
+    expect(step.state.received).toEqual({ card: { suit: 'hearts', rank: 'Q' }, from: 'b' });
+    expect(step.wait).toBe(NOTE_MS);
+  });
+  it('the first card played clears the received overlay', () => {
+    const e = { type: 'cardPlayed', p: 'b', card: { suit: 'clubs', rank: '9' }, audience: 'all' } as GameEvent;
+    const step = advance({ ...base, received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' }, queue: [e] }, false)!;
+    expect(step.state.received).toBeNull();
+  });
+  it('the bidder does not get a received overlay', () => {
+    const e = { type: 'handedOut', p: 'me', recipients: ['b', 'z'], cards: {}, audience: ['me'] } as GameEvent;
+    expect(advance({ ...base, queue: [e] }, false)!.state.received).toBeNull();
+  });
+});
+
+describe('sounds for round end and game win', () => {
+  it('round end and game win have their own sounds', () => {
+    const v = viewOf(findState(x => x.phase === 'tricks'));
+    const summary = viewOf(findState(x => x.rounds.length > 0)).rounds[0];
+    const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+    expect(advance({ ...base, queue: [{ type: 'roundScored', summary, audience: 'all' } as GameEvent] }, false)!.sound).toBe('roundEnd');
+    const won = { type: 'gameWon', p: 'me', totals: {}, audience: 'all' } as GameEvent;
+    expect(advance({ ...base, queue: [{ type: 'roundScored', summary, audience: 'all' } as GameEvent, won] }, false)!.sound).toBe('gameWin');
   });
 });

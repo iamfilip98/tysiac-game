@@ -3,12 +3,14 @@ import { useLocation } from 'wouter';
 import { useShallow } from 'zustand/react/shallow';
 import { advise, cardEquals, cardKey, explainIllegal, type Card, type PlayerId } from '@tysiac/engine';
 import { coachOn, useRoom } from '../store/room';
-import { isIdle } from '../store/client';
+import { RECEIVED_MS, isIdle } from '../store/client';
 import { useSelection } from '../game/selection';
 import { useNow } from '../game/useNow';
 import { TopBar } from '../game/TopBar';
 import { Opponents } from '../game/Opponents';
 import { Table } from '../game/Table';
+import { Ticker } from '../game/Ticker';
+import { ReceivedCard } from '../game/ReceivedCard';
 import { Hand } from '../game/Hand';
 import { SelfStrip } from '../game/SelfStrip';
 import { ActionZone } from '../game/ActionZone';
@@ -27,7 +29,7 @@ type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
 export default function Game() {
   const s = useRoom(
     useShallow(st => ({
-      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo,
+      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo, fx: st.fx, announce: st.announce, received: st.received,
       pending: st.pending, inflight: st.inflight, shake: st.shake, toast: st.toast, roundResult: st.roundResult, note: st.note,
       clockOffset: st.clockOffset,
     })),
@@ -63,6 +65,11 @@ export default function Game() {
   useEffect(() => {
     if (!turnLive) useSelection.getState().select(null);
   }, [turnLive]);
+  useEffect(() => {
+    if (!s.received) return;
+    const t = setTimeout(() => useRoom.getState().clearReceived(), RECEIVED_MS);
+    return () => clearTimeout(t);
+  }, [s.received]);
   useEffect(() => {
     if (!s.shake) return;
     const t = setTimeout(() => useRoom.getState().clearShake(), 600);
@@ -142,7 +149,9 @@ export default function Game() {
           onTarget={onTarget}
           onUngive={sel.ungive}
         />
-        <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} />
+        <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} fx={s.fx} />
+        <Ticker view={shown} announce={s.announce} />
+        {s.received && <ReceivedCard view={shown} received={s.received} onDismiss={() => room.clearReceived()} />}
         <ActionZone
           view={shown}
           room={s.room}
@@ -161,13 +170,15 @@ export default function Game() {
           onBotFor={p => room.send({ t: 'botFor', playerId: p })}
           onWhy={() => setSheet('why')}
         />
-        <SelfStrip view={shown} coach={coach} />
+        <SelfStrip view={shown} coach={coach} myTurn={myTurn} />
         <Hand
           cards={hand}
           selected={sel.selected}
           isPlayable={isPlayable}
           recommended={recommended}
           declared={r?.marriages[shown.me] ?? []}
+          trump={r?.trump ?? null}
+          fresh={s.received ? cardKey(s.received.card) : null}
           shake={s.shake}
           onTap={onCardTap}
         />

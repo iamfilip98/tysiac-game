@@ -1,10 +1,12 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cardEquals, cardLabel, explainIllegal, turnOf, type Action, type Card, type GameState } from '@tysiac/engine';
 import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
+import { RECEIVED_MS } from '../store/client';
+import { textSuits } from '../game/cards';
 import { useSelection } from '../game/selection';
 import { FakeConnection } from '../test/fakes';
 import { findState, roomInfo, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
@@ -25,6 +27,37 @@ beforeEach(() => {
 });
 
 describe('Game screen: tricks', () => {
+  it('shows who gave me which card, then hides it after RECEIVED_MS', () => {
+    vi.useFakeTimers();
+    try {
+      join(findState(s => s.phase === 'tricks'));
+      render(<Game />);
+      act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+      const pill = screen.getByRole('button', { name: /Card received/ });
+      expect(pill).toHaveTextContent('Bot Basia');
+      expect(pill.getAttribute('aria-label')).toContain('\uFE0E');
+      act(() => { vi.advanceTimersByTime(RECEIVED_MS + 10); });
+      expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('the received pill is dismissed by a click', () => {
+    join(findState(s => s.phase === 'tricks'));
+    render(<Game />);
+    act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+    act(() => { screen.getByRole('button', { name: /Card received/ }).click(); });
+    expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+  });
+
+  it('shows Your turn on my strip when I must act', () => {
+    join(findState(s => s.phase === 'tricks' && turnOf(s) === 'me'));
+    render(<Game />);
+    expect(screen.getByText('Your turn', { selector: '.selfstrip__turn' })).toBeInTheDocument();
+  });
+
+
   it('tapping a card only raises it; Play commits and the card moves to the table at once', async () => {
     const user = userEvent.setup();
     const s0 = findState(s => s.phase === 'tricks' && turnOf(s) === 'me');
@@ -34,7 +67,7 @@ describe('Game screen: tricks', () => {
     await user.click(within(hand()).getByRole('button', { name: label }));
     expect(within(hand()).getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true');
     expect(conn.acts()).toHaveLength(0);
-    await user.click(screen.getByRole('button', { name: `Play ${label}` }));
+    await user.click(screen.getByRole('button', { name: `Play ${textSuits(label)}` }));
     expect(conn.acts()).toHaveLength(1);
     expect(within(hand()).queryByRole('button', { name: label })).toBeNull();
     expect(within(screen.getByRole('region', { name: 'Table' })).getByRole('img', { name: label })).toBeInTheDocument();
@@ -47,7 +80,7 @@ describe('Game screen: tricks', () => {
     render(<Game />);
     const label = cardLabel(legalCards(s0)[0]);
     await user.click(within(hand()).getByRole('button', { name: label }));
-    await user.dblClick(screen.getByRole('button', { name: `Play ${label}` }));
+    await user.dblClick(screen.getByRole('button', { name: `Play ${textSuits(label)}` }));
     expect(conn.acts()).toHaveLength(1);
   });
 
@@ -72,7 +105,7 @@ describe('Game screen: tricks', () => {
     render(<Game />);
     const label = cardLabel(legalCards(s0)[0]);
     await user.click(within(hand()).getByRole('button', { name: label }));
-    await user.click(screen.getByRole('button', { name: `Play ${label}` }));
+    await user.click(screen.getByRole('button', { name: `Play ${textSuits(label)}` }));
     conn.push({ t: 'reject', id: conn.acts()[0].id, code: 'illegalCard', message: 'Nope' });
     expect(await within(hand()).findByRole('button', { name: label })).toBeInTheDocument();
     expect(screen.getByText('Nope')).toBeInTheDocument();
@@ -114,8 +147,8 @@ describe('Game screen: other phases', () => {
     const user = userEvent.setup();
     join(findState(s => s.phase === 'bidding'));
     render(<Game />);
-    await user.click(screen.getByRole('button', { name: 'Score sheet' }));
-    expect(screen.getByRole('dialog', { name: 'Score sheet' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Score sheet/ }));
+    expect(screen.getByRole('dialog', { name: /^Score sheet/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Close' }));
     await user.click(screen.getByRole('button', { name: 'Menu' }));
     await user.click(screen.getByRole('button', { name: 'Settings' }));
@@ -184,11 +217,8 @@ describe('Game screen: layout and private info', () => {
     expect(useSelection.getState().selected).toBeNull();
   });
 
-  it('keeps the page from scrolling and the action zone tall enough (CSS sanity)', () => {
-    const zone = /--zone-h:\s*clamp\((\d+)px/g;
-    const mins = [...css.matchAll(zone)].map(m => Number(m[1]));
-    expect(mins).toHaveLength(2);
-    for (const m of mins) expect(m).toBeGreaterThanOrEqual(172);
+  it('keeps the page from scrolling and sizes the action zone to its content (CSS sanity)', () => {
+    expect(css).not.toContain('--zone-h');
     expect(css).toMatch(/height: var\(--vvh, 100vh\);\s*height: 100dvh;/);
     expect(css).toMatch(/body:has\(\.game\)[^}]*overflow: hidden/);
   });

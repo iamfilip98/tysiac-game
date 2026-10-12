@@ -1,13 +1,16 @@
 :root {
-  --card-w: clamp(44px, min(13.5vw, 8.4dvh), 92px);
-  --hand-h: calc(var(--card-w) * 1.72);
-  /* Tallest action panel (decision: play vs throw-in) is ~170px, so never go below 172px. */
-  --zone-h: clamp(172px, 26dvh, 200px);
+  /* The hand row is the screen width minus the side gutters. A 10-card hand must fit with >= 40% of
+     each card visible: total width = w + 9 x 0.4w = 4.6w. */
+  --hand-avail: calc(min(100vw, 720px) - max(var(--sa-left), 12px) - max(var(--sa-right), 12px));
+  --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), 12.6dvh), 104px);
+  /* Table cards: a little smaller than the hand (3-4 cards side by side in a ring). */
+  --card-w: clamp(46px, min(17vw, 9.6dvh), 92px);
+  --hand-h: calc(var(--hand-card-w) * 1.66 + 4px);
 }
 @supports not (height: 1dvh) {
   :root {
-    --card-w: clamp(44px, min(13.5vw, calc(var(--vvh, 100vh) * 0.084)), 92px);
-    --zone-h: clamp(172px, calc(var(--vvh, 100vh) * 0.26), 200px);
+    --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), calc(var(--vvh, 100vh) * 0.126)), 104px);
+    --card-w: clamp(46px, min(17vw, calc(var(--vvh, 100vh) * 0.096)), 92px);
   }
 }
 
@@ -28,11 +31,11 @@ html:has(.game), body:has(.game) {
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) var(--zone-h) auto var(--hand-h);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto var(--hand-h);
   grid-template-areas: 'top' 'opps' 'table' 'zone' 'self' 'hand';
   gap: 6px;
   /* +8px: iOS 26 blurs content just below the status bar in home-screen apps. */
-  padding: calc(var(--sa-top) + 8px) max(var(--sa-right), 12px) max(var(--sa-bottom), 8px)
+  padding: calc(var(--sa-top) + 8px) max(var(--sa-right), 12px) max(var(--sa-bottom), 14px)
     max(var(--sa-left), 12px);
   overflow: hidden;
   overscroll-behavior: none;
@@ -52,7 +55,7 @@ html:has(.game), body:has(.game) {
   gap: 6px;
   min-width: 0;
   min-height: 22px;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1;
 }
 .selfstrip__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -60,10 +63,10 @@ html:has(.game), body:has(.game) {
   font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
   background: var(--ink); color: var(--bg-solid);
 }
-.selfstrip__score { margin-left: auto; font-weight: 700; font-family: var(--font-display); }
+.selfstrip__score { margin-left: auto; font-weight: 700; font-family: var(--font-display); font-size: 15px; font-variant-numeric: tabular-nums; }
 
 @media (orientation: landscape) and (max-height: 520px) {
-  :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); }
+  :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
   .game {
     max-width: none;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -74,3 +77,8 @@ html:has(.game), body:has(.game) {
   .opps { --avatar: clamp(28px, 8dvh, 38px); }
   .zone { min-height: 172px; }
 }
+
+.topbar__score { flex-direction: column; line-height: 1; padding: 4px 10px; min-width: 56px; }
+.topbar__scorelbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; }
+.topbar__scoreval { font-size: 18px; font-variant-numeric: tabular-nums; }
+.topbar__info b { color: var(--ink); }

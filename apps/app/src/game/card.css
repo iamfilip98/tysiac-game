@@ -16,25 +16,37 @@
 }
 .card--red { color: var(--card-red); }
 .card--mini { --w: calc(var(--card-w, 56px) * 0.5); box-shadow: none; }
-.card__idx { position: absolute; top: 6%; left: 9%; display: flex; flex-direction: column; align-items: center; line-height: 1; }
-.card__rank { font-size: calc(var(--w) * 0.28); font-weight: 700; }
-.card__suit { font-size: calc(var(--w) * 0.21); margin-top: 1px; }
-.card__pip { position: absolute; right: 10%; bottom: 5%; font-size: calc(var(--w) * 0.48); line-height: 1; }
-.card--mini .card__pip { display: none; }
-.card--dim { filter: saturate(0.55) brightness(0.82); }
-.card--raised { box-shadow: 0 0 0 2px var(--accent), 0 10px 18px rgba(0, 0, 0, 0.45); }
-.card--recommended { outline: 1.5px solid var(--accent); outline-offset: 1px; }
-.card__tag {
-  position: absolute;
-  top: -9px;
-  left: 0;
-  font: 700 9px/1 'Inter', system-ui, sans-serif;
-  padding: 2px 5px;
-  border-radius: 8px;
-  background: var(--accent);
-  color: var(--accent-ink);
-  white-space: nowrap;
+.card__face { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
+.card__idx {
+  position: absolute; top: 4%; left: 5%;
+  width: calc(var(--w) * 0.3);
+  display: flex; flex-direction: column; align-items: center;
+  line-height: 0.92;
 }
+.card__idx--br { top: auto; left: auto; right: 5%; bottom: 4%; transform: rotate(180deg); }
+.card__rank { font-size: calc(var(--w) * 0.34); font-weight: 800; letter-spacing: -0.05em; }
+.card__suit { font-size: calc(var(--w) * 0.3); margin-top: calc(var(--w) * 0.01); }
+.card__rank, .card__suit, .card__pip { font-family: var(--font-card); font-variant-emoji: text; }
+.card__pip {
+  position: absolute; left: 50%; top: 52%;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--w) * 0.62); line-height: 1;
+}
+.card--mini .card__pip, .card--mini .card__idx--br { display: none; }
+.card--mini .card__rank { font-size: calc(var(--w) * 0.44); }
+.card--mini .card__suit { font-size: calc(var(--w) * 0.4); }
+.card--dim { filter: saturate(0.4) brightness(0.72); }
+.card--raised { outline: 2.5px solid var(--accent); outline-offset: 1px; box-shadow: var(--card-shadow), 0 10px 18px rgba(0, 0, 0, 0.45); }
+.card--glow-marriage { box-shadow: 0 0 8px 3px rgba(212, 175, 55, 0.85), var(--card-shadow); }
+.card--glow-trump { box-shadow: 0 0 0 2px #60a5fa, 0 0 8px 2px rgba(96, 165, 250, 0.7), var(--card-shadow); }
+.card--glow-marriage::before, .card--glow-trump::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; z-index: 1;
+}
+.card--glow-marriage::before { background: linear-gradient(135deg, rgba(245, 231, 163, 0.28), transparent 55%); }
+.card--glow-trump::before { background: linear-gradient(135deg, rgba(147, 197, 253, 0.25), transparent 55%); }
+/* Coach pick: a crisp solid gold ring and a small lift. Marriage is a soft glow instead, so the two read apart in every theme. */
+.card--recommended { outline: 2.5px solid var(--coach); outline-offset: 1px; }
+.hand__card.card--recommended { bottom: 4px; }
 .back {
   --w: var(--card-w, 56px);
   display: block;
@@ -46,15 +58,15 @@
 }
 .back--mini { --w: 13px; border-radius: 2.5px; }
 
-.hand { grid-area: hand; position: relative; height: var(--hand-h); min-width: 0; }
+.hand { grid-area: hand; position: relative; height: var(--hand-h); min-width: 0; --card-w: var(--hand-card-w, 64px); }
+.hand { --step: min(calc(var(--card-w) * 0.74), calc((100% - var(--card-w)) / max(var(--n) - 1, 1))); }
 .hand__card {
-  --step: min(calc(var(--card-w, 64px) * 0.68), calc((100% - var(--card-w, 64px)) / max(var(--n) - 1, 1)));
   position: absolute;
   bottom: 0;
-  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w, 64px)) / 2 + var(--step) * var(--i));
+  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w)) / 2 + var(--step) * var(--i));
   transition: bottom 0.16s ease;
 }
-.hand__card.card--raised { bottom: calc(var(--card-w, 64px) * 0.24); }
+.hand__card.card--raised { bottom: calc(var(--card-w) * 0.24); }
 
 /* Generous tap targets. An invisible strip above each card extends its hit area; the raised
    card always stacks above its overlapping neighbours so they never steal its taps. */
@@ -62,3 +74,21 @@
 .hand__card::after { content: ''; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }
 .hand__card.card--raised { z-index: 10; }
 .hand__card.card--raised::after { left: -6px; right: -6px; top: -16px; height: 16px; }
+.card--fresh { outline: 2.5px solid var(--accent); outline-offset: 2px; animation: fresh-pulse 1s ease-in-out 4; }
+@keyframes fresh-pulse { 50% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .card--fresh { animation: none; } }
+
+/* The marriage pill spans the K and Q; it never takes a tap and rides up with a raised card. */
+.hand__mtag {
+  position: absolute; z-index: 20; pointer-events: none;
+  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w)) / 2 + var(--step) * var(--i));
+  width: calc(var(--step) * (var(--span) - 1) + var(--card-w));
+  bottom: calc(var(--card-w) * 1.42 + 3px);
+  box-sizing: border-box; text-align: center;
+  font: 700 11px/1 var(--font-ui, 'Inter', system-ui, sans-serif);
+  padding: 3px 4px; border-radius: 8px 8px 2px 2px;
+  background: var(--accent); color: var(--accent-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+  transition: bottom 0.16s ease;
+}
+.hand__mtag--up { bottom: calc(var(--card-w) * 1.66 + 3px); }

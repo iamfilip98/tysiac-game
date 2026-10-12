@@ -1,7 +1,8 @@
 import {
-  RULES, SUIT_SYMBOL, actionsEqual, advise, cardLabel, marriagesInHand,
+  RULES, actionsEqual, advise, cardLabel, marriagesInHand,
   type Action, type Advice, type PlayerId, type PlayerView, type Rank, type Suit,
 } from '@tysiac/engine';
+import { SUIT_TEXT } from '../game/cards';
 import { throwCost } from '../game/panels';
 import { cannotFollowNow, marriageLead, mustBeatNow } from './lesson';
 
@@ -15,7 +16,7 @@ export interface Beat {
 }
 
 const nameOf = (v: PlayerView, id: PlayerId): string => v.seats.find(s => s.id === id)?.name ?? id;
-const sym = (s: Suit): string => SUIT_SYMBOL[s];
+const sym = (s: Suit): string => SUIT_TEXT[s];
 const myTurn = (v: PlayerView): boolean => v.turn === v.me && !v.paused;
 const HIGH_FIRST = [...RULES.ranks].sort((a, b) => RULES.rankStrength[b] - RULES.rankStrength[a]) as Rank[];
 const firstMarriage = (v: PlayerView): Suit | undefined => (v.round ? marriagesInHand(v.round.hand)[0] : undefined);
