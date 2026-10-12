@@ -11,7 +11,7 @@ export const LESSON_SECRET = 'lesson-local-secret';
 export const LESSON_BOT_IDS = ['bot-1', 'bot-2'] as const;
 export const LESSON_FIRST_DEALER = 0;
 /** Found with findSeed.test.ts; lesson.test.ts proves it still teaches every beat. */
-export const LESSON_SEED = 'lesson-88';
+export const LESSON_SEED = 'lesson-95';
 
 export interface LessonEntry {
   seq: number;

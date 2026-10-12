@@ -1,8 +1,10 @@
-import type { Action, PlayerView } from '../types';
+import type { Action, Card, PlayerId, PlayerView } from '../types';
 import { actionsEqual } from '../actions';
-import { isOnBarrel } from '../scoring';
 import { decideBid, decideHandout, decidePlayOrThrow } from './eval';
-import { decideCard, marriageToDeclare } from './play';
+import { chooseCard } from './play';
+import type { BotChoice } from './reasons';
+
+export type { BotChoice, Reason } from './reasons';
 
 /**
  * True exactly when `botAction(view, ...)` is safe to call: it is this player's turn, the game is not
@@ -21,50 +23,49 @@ export function botShouldAct(view: PlayerView): boolean {
 export function botAction(view: PlayerView, rng: () => number): Action {
   const options = view.legal.filter(a => a.type !== 'pause' && a.type !== 'resume');
   if (options.length === 0) throw new Error(`botAction: ${view.me} has nothing to do`);
-  const chosen = decide(view, options);
+  const chosen = botChoice(view)?.action;
   if (chosen && options.some(a => actionsEqual(a, chosen))) return chosen;
   return options[Math.floor(rng() * options.length)];
 }
 
-function decide(view: PlayerView, options: Action[]): Action | null {
+export interface BotChoiceOptions {
+  /** Hand-out cards the player has already assigned; the choice then covers only the rest. */
+  handoutGiven?: Partial<Record<PlayerId, Card>>;
+}
+
+/**
+ * The bot's move for the viewer plus the reason (with the numbers) it was chosen; the coach explains
+ * exactly this. Null when there is no decision to make or the phase has no strategy (the caller picks).
+ */
+export function botChoice(view: PlayerView, opts: BotChoiceOptions = {}): BotChoice | null {
   const r = view.round;
-  if (!r) return null;
+  if (!r || view.turn !== view.me) return null;
   const hand = r.hand;
   switch (view.phase) {
-    case 'bidding': {
-      const d = decideBid(hand, r.bid.amount, r.bid.passed.length);
-      return d.shouldBid ? { type: 'bid', amount: d.amount } : { type: 'pass' };
-    }
-    case 'talon':
-      return { type: 'ackTalon' };
-    case 'decision': {
-      const onBarrel = isOnBarrel(view.scores[view.me]?.total ?? 0);
-      return decidePlayOrThrow(hand, r.bid.amount, onBarrel) === 'play' ? { type: 'play' } : { type: 'throw' };
-    }
+    case 'bidding':
+      return decideBid(hand, r.bid.amount, r.bid.passed.length);
+    case 'decision':
+      return decidePlayOrThrow(hand, r.bid.amount);
+    // 'talon': turn is null there, so we returned above; botAction's fallback picks the only option, ackTalon.
     case 'handout': {
       const recipients = r.active.filter(p => p !== view.me);
       const totals = Object.fromEntries(recipients.map(p => [p, view.scores[p]?.total ?? 0]));
-      return { type: 'handout', to: decideHandout(hand, recipients, totals) };
+      return decideHandout(hand, recipients, totals, opts.handoutGiven);
     }
     case 'tricks': {
-      if (r.trick.cards.length === 0) {
-        const suit = marriageToDeclare(hand, r.marriages[view.me] ?? []);
-        if (suit) return { type: 'card', card: { suit, rank: 'Q' } };
-      }
-      const valid = options.flatMap(a => (a.type === 'card' ? [a.card] : []));
-      return {
-        type: 'card',
-        card: decideCard({
-          valid,
-          trick: r.trick.cards,
-          trump: r.trump,
-          isBidder: view.me === r.bid.high,
-          bidder: r.bid.high,
-          hand,
-          played: r.played,
-          declared: r.marriages[view.me] ?? [],
-        }),
-      };
+      const valid = view.legal.flatMap(a => (a.type === 'card' ? [a.card] : []));
+      if (valid.length === 0) return null;
+      const { card, reason } = chooseCard({
+        valid,
+        trick: r.trick.cards,
+        trump: r.trump,
+        isBidder: view.me === r.bid.high,
+        bidder: r.bid.high,
+        hand,
+        played: r.played,
+        declared: r.marriages[view.me] ?? [],
+      });
+      return { action: { type: 'card', card }, reason };
     }
     default:
       return null;

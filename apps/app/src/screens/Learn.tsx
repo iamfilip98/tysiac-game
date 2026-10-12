@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
-import type { PlayerView } from '@tysiac/engine';
+import type { AdviseOptions, PlayerView } from '@tysiac/engine';
 import { LocalHub, localService } from '../net/localService';
 import { isFastLocal } from '../net/service';
 import { createRoomAs } from '../net/rooms';
@@ -58,7 +58,7 @@ export default function Learn() {
     gate.set(beat === null);
   }, [gate, beat]);
 
-  const control = useMemo<LessonControl>(() => ({ advice: (v: PlayerView) => lessonAdvice(v, expectedAt(lesson, v.seq)) }), [lesson]);
+  const control = useMemo<LessonControl>(() => ({ advice: (v: PlayerView, opts?: AdviseOptions) => lessonAdvice(v, expectedAt(lesson, v.seq), opts) }), [lesson]);
   const expected = shown && idle && !beat && shown.turn === shown.me ? expectedAt(lesson, shown.seq) : null;
 
   if (!name) {

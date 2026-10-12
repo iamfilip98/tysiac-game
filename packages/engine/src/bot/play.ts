@@ -1,6 +1,7 @@
 import type { Card, PlayerId, Suit, TrickCard } from '../types';
+import type { CardReason } from './reasons';
 import { RANKS, RULES, SUITS } from '../rules';
-import { cardEquals, hasMarriage } from '../cards';
+import { cardEquals, handPoints, hasMarriage } from '../cards';
 import { cardValue } from './eval';
 
 const PTS = RULES.cardPoints;
@@ -12,10 +13,6 @@ export function lowestValue(cards: Card[]): Card {
 
 export function highestValue(cards: Card[]): Card {
   return [...cards].sort((a, b) => cardValue(b) - cardValue(a))[0];
-}
-
-export function highestPoints(cards: Card[]): Card {
-  return [...cards].sort((a, b) => PTS[b.rank] - PTS[a.rank])[0];
 }
 
 function groupBySuit(cards: Card[]): Map<Suit, Card[]> {
@@ -114,136 +111,143 @@ export interface CardContext {
   declared?: Suit[];
 }
 
-export function decideCard(ctx: CardContext): Card {
-  if (ctx.valid.length === 1) return ctx.valid[0];
-  if (ctx.trick.length > 0) {
-    // Following: the K or Q of a held, undeclared marriage is thrown away unless nothing else is legal.
-    const spare = ctx.valid.filter(c => !isMarriageCard(c, ctx.hand, ctx.declared ?? []));
-    if (spare.length > 0 && spare.length < ctx.valid.length) return decideCard({ ...ctx, valid: spare });
-  }
-  const remaining = remainingCards(ctx.hand, [...ctx.played, ...ctx.trick.map(t => t.card)]);
-  if (ctx.trick.length === 0) return decideLeadCard(ctx.valid, ctx.trump, ctx.isBidder, remaining);
-  return decideFollowCard(ctx.valid, ctx.trick, ctx.trump, ctx.isBidder, ctx.bidder, remaining);
+export interface CardChoice {
+  card: Card;
+  reason: CardReason;
 }
 
-function decideLeadCard(valid: Card[], trump: Suit | null, isBidder: boolean, remaining: Card[]): Card {
+export function decideCard(ctx: CardContext): Card {
+  return chooseCard(ctx).card;
+}
+
+export function chooseCard(ctx: CardContext): CardChoice {
+  const declared = ctx.declared ?? [];
+  if (ctx.valid.length === 1) return { card: ctx.valid[0], reason: { code: 'only', card: ctx.valid[0] } };
+  if (ctx.trick.length > 0) {
+    // Following: the K or Q of a held, undeclared marriage is thrown away unless nothing else is legal.
+    const spare = ctx.valid.filter(c => !isMarriageCard(c, ctx.hand, declared));
+    if (spare.length === 1 && spare.length < ctx.valid.length) {
+      const kept = ctx.valid.find(c => isMarriageCard(c, ctx.hand, declared))!;
+      return { card: spare[0], reason: { code: 'follow.keepMarriage', card: spare[0], suit: kept.suit } };
+    }
+    if (spare.length > 0 && spare.length < ctx.valid.length) return chooseCard({ ...ctx, valid: spare });
+  }
+  const unseen = remainingCards(ctx.hand, [...ctx.played, ...ctx.trick.map(t => t.card)]);
+  if (ctx.trick.length === 0) return chooseLead(ctx, declared, unseen);
+  return chooseFollow(ctx, unseen);
+}
+
+/** No unseen card of its suit outranks `card`. */
+function isTop(card: Card, unseen: Card[]): boolean {
+  return !unseen.some(u => u.suit === card.suit && STR[u.rank] > STR[card.rank]);
+}
+
+const lead = (card: Card, code: 'lead.top' | 'lead.drawTrump' | 'lead.lowTrump' | 'lead.probe' | 'lead.cheap'): CardChoice => ({
+  card,
+  reason: { code, card },
+});
+
+function chooseLead(ctx: CardContext, declared: Suit[], unseen: Card[]): CardChoice {
+  const { valid, hand, trump, isBidder } = ctx;
+  const marriage = marriageToDeclare(hand, declared);
+  const queen = marriage && valid.find(c => c.suit === marriage && c.rank === 'Q');
+  if (marriage && queen) {
+    // No trump yet, so a side ace can't be trumped: cash those before the marriage sets one.
+    const aces = isBidder && trump === null ? valid.filter(c => c.rank === 'A' && !hasMarriage(hand, c.suit)) : [];
+    if (aces.length > 0) {
+      const ace = pickSuitWithMostPoints(aces, unseen);
+      return { card: ace, reason: { code: 'lead.cashAce', card: ace, marriage } };
+    }
+    return { card: queen, reason: { code: 'lead.declare', card: queen, suit: marriage, points: RULES.marriageValues[marriage] } };
+  }
+  const nonTrump = valid.filter(c => c.suit !== trump);
   if (isBidder) {
     // Lead aces first (non-trump: suit with most outstanding points).
     const aces = valid.filter(c => c.rank === 'A');
     if (aces.length > 0) {
       const nonTrumpAces = aces.filter(c => c.suit !== trump);
-      if (nonTrumpAces.length > 0) return pickSuitWithMostPoints(nonTrumpAces, remaining);
-      return aces[0];
+      return lead(nonTrumpAces.length > 0 ? pickSuitWithMostPoints(nonTrumpAces, unseen) : aces[0], 'lead.top');
     }
     // 10s whose ace is gone.
     for (const ten of valid.filter(c => c.rank === '10')) {
-      if (!remaining.some(r => r.suit === ten.suit && r.rank === 'A')) return ten;
+      if (!unseen.some(r => r.suit === ten.suit && r.rank === 'A')) return lead(ten, 'lead.top');
     }
-    // Pull trumps with a strong trump holding.
+    // Draw trumps: with the top trump if held, else with the lowest one (never a 10 into an unseen ace).
     if (trump) {
       const myTrumps = valid.filter(c => c.suit === trump);
-      if (myTrumps.length >= 2 && remaining.some(c => c.suit === trump)) return highestValue(myTrumps);
+      if (myTrumps.length >= 2 && unseen.some(c => c.suit === trump)) {
+        const top = myTrumps.filter(c => isTop(c, unseen));
+        if (top.length > 0) return lead(highestValue(top), 'lead.drawTrump');
+        const loose = myTrumps.filter(c => !isMarriageCard(c, hand, declared));
+        return lead(lowestValue(loose.length > 0 ? loose : myTrumps), 'lead.lowTrump');
+      }
     }
     // Probe low from the longest non-trump suit.
-    const nonTrump = valid.filter(c => c.suit !== trump);
     if (nonTrump.length > 0) {
-      let longest: Card[] | null = null;
-      for (const cards of groupBySuit(nonTrump).values()) {
-        if (!longest || cards.length > longest.length) longest = cards;
-      }
-      if (longest) return lowestValue(longest);
+      let longest: Card[] = [];
+      for (const cards of groupBySuit(nonTrump).values()) if (cards.length > longest.length) longest = cards;
+      return lead(lowestValue(longest), 'lead.probe');
     }
-    return lowestValue(valid);
+    return lead(lowestValue(valid), 'lead.cheap');
   }
 
-  // Defender leading: grab points.
-  const nonTrumpAces = valid.filter(c => c.rank === 'A' && c.suit !== trump);
-  if (nonTrumpAces.length > 0) return pickSuitWithMostPoints(nonTrumpAces, remaining);
-  const safeTens = valid.filter(
-    c => c.rank === '10' && c.suit !== trump && !remaining.some(r => r.suit === c.suit && r.rank === 'A'),
-  );
-  if (safeTens.length > 0) return safeTens[0];
-  if (trump) {
-    const myTrumps = valid.filter(c => c.suit === trump);
-    if (myTrumps.length >= 2 && remaining.some(c => c.suit === trump)) return lowestValue(myTrumps);
-  }
-  const nonTrumpCards = valid.filter(c => c.suit !== trump);
-  if (nonTrumpCards.length > 0) {
+  // Defender leading: cash sure side winners; never lead trumps (the bidder usually holds them).
+  const nonTrumpAces = nonTrump.filter(c => c.rank === 'A');
+  if (nonTrumpAces.length > 0) return lead(pickSuitWithMostPoints(nonTrumpAces, unseen), 'lead.top');
+  const safeTens = nonTrump.filter(c => c.rank === '10' && !unseen.some(r => r.suit === c.suit && r.rank === 'A'));
+  if (safeTens.length > 0) return lead(safeTens[0], 'lead.top');
+  if (nonTrump.length > 0) {
     let bestSuit: Card[] | null = null;
     let bestScore = -1;
-    for (const [suit, cards] of groupBySuit(nonTrumpCards)) {
-      const opponentCards = remaining.filter(c => c.suit === suit).length;
+    const anyCheap = nonTrump.some(c => PTS[c.rank] < 10);
+    for (const [suit, cards] of groupBySuit(nonTrump)) {
+      const opponentCards = unseen.filter(c => c.suit === suit).length;
       if (opponentCards === 0) continue; // they'd trump us
+      if (anyCheap && PTS[lowestValue(cards).rank] >= 10) continue; // don't give a 10 away to an unseen ace
       const score = cards.length * 2 + opponentCards;
       if (score > bestScore) {
         bestScore = score;
         bestSuit = cards;
       }
     }
-    if (bestSuit) return lowestValue(bestSuit);
-    return lowestValue(nonTrumpCards);
+    return lead(lowestValue(bestSuit ?? nonTrump), 'lead.cheap');
   }
-  return lowestValue(valid);
+  return lead(lowestValue(valid), 'lead.cheap');
 }
 
-function decideFollowCard(
-  valid: Card[],
-  trick: TrickCard[],
-  trump: Suit | null,
-  isBidder: boolean,
-  bidder: PlayerId,
-  remaining: Card[],
-): Card {
+function chooseFollow(ctx: CardContext, unseen: Card[]): CardChoice {
+  const { valid, trick, trump, isBidder, bidder } = ctx;
   const leadSuit = trick[0].card.suit;
   const played = trick.map(t => t.card);
   const winningCard = currentWinner(played, leadSuit, trump);
-  const winningPlayer = trick[played.indexOf(winningCard)].p;
-  const followingSuit = valid.some(c => c.suit === leadSuit);
+  const winner = trick[played.indexOf(winningCard)].p;
+  // Three players are active in every trick (a fourth player sits out), so the third card is the last.
+  const last = trick.length >= 2;
+  const take = (card: Card, code: 'follow.beat' | 'follow.trump'): CardChoice => ({
+    card,
+    reason: { code, card, last, points: handPoints([...played, card]) },
+  });
+  /** Losing (or not trying): lowest card; say so differently when the bidder is not the one winning. */
+  const yieldTo = (card: Card): CardChoice =>
+    !isBidder && winner !== bidder
+      ? { card, reason: { code: 'follow.keepPoints', card, winner } }
+      : { card, reason: { code: 'follow.cantWin', card } };
+
+  if (!valid.some(c => c.suit === leadSuit)) {
+    const myTrumps = trump ? valid.filter(c => c.suit === trump) : [];
+    const beatingTrumps = myTrumps.filter(c => aiCanBeat(c, winningCard, leadSuit, trump));
+    const dump = lowestExpendable(valid, trump);
+    const discard: CardChoice = { card: dump, reason: { code: 'follow.discard', card: dump, led: leadSuit } };
+    if (beatingTrumps.length === 0) return discard;
+    if (isBidder) return take(lowestValue(beatingTrumps), 'follow.trump');
+    if (winner !== bidder) return discard;
+    // The bidder is winning: trump any trick with points in it (or when trumps are plentiful, or late on).
+    const worthIt = handPoints(played) >= 4 || myTrumps.length >= 2 || unseen.length <= 12;
+    return worthIt ? take(lowestValue(beatingTrumps), 'follow.trump') : discard;
+  }
+  // Following suit. Never feed points to anyone: win as cheaply as possible, else play the lowest card.
+  // (The first responder must beat the lead when they can, so `beating` is often all that is legal.)
   const beating = valid.filter(c => aiCanBeat(c, winningCard, leadSuit, trump));
-
-  if (!followingSuit) {
-    return decideOffSuitCard(valid, trick, trump, isBidder, bidder, winningCard, winningPlayer, remaining);
-  }
-  if (isBidder) return beating.length > 0 ? lowestValue(beating) : lowestValue(valid);
-
-  if (trick.length === 1) {
-    if (trick[0].p === bidder) return beating.length > 0 ? lowestValue(beating) : lowestValue(valid);
-    const partnerCard = played[0];
-    if (STR[partnerCard.rank] >= 4) {
-      // Partner led a 10 or A: feed points without overtaking.
-      const feed = valid.filter(c => !aiCanBeat(c, partnerCard, leadSuit, trump));
-      return feed.length > 0 ? highestPoints(feed) : lowestValue(valid);
-    }
-    return beating.length > 0 ? lowestValue(beating) : lowestValue(valid);
-  }
-
-  if (winningPlayer !== bidder) {
-    const feed = valid.filter(c => !aiCanBeat(c, winningCard, leadSuit, trump));
-    return feed.length > 0 ? highestPoints(feed) : lowestValue(valid);
-  }
-  return beating.length > 0 ? lowestValue(beating) : lowestValue(valid);
-}
-
-function decideOffSuitCard(
-  valid: Card[],
-  trick: TrickCard[],
-  trump: Suit | null,
-  isBidder: boolean,
-  bidder: PlayerId,
-  winningCard: Card,
-  winningPlayer: PlayerId,
-  remaining: Card[],
-): Card {
-  const leadSuit = trick[0].card.suit;
-  const myTrumps = trump ? valid.filter(c => c.suit === trump) : [];
-  const trickPointValue = trick.reduce((sum, t) => sum + PTS[t.card.rank], 0);
-  const beatingTrumps = myTrumps.filter(c => aiCanBeat(c, winningCard, leadSuit, trump));
-
-  if (isBidder) return beatingTrumps.length > 0 ? lowestValue(beatingTrumps) : lowestExpendable(valid, trump);
-  if (winningPlayer !== bidder) return lowestExpendable(valid, trump); // partner winning: dump
-  if (beatingTrumps.length > 0) {
-    if (trickPointValue >= 10 || myTrumps.length >= 2) return lowestValue(beatingTrumps);
-    if (remaining.length <= 12) return lowestValue(beatingTrumps); // late game: fight for every trick
-  }
-  return lowestExpendable(valid, trump);
+  if (beating.length > 0) return take(lowestValue(beating), 'follow.beat');
+  return yieldTo(lowestValue(valid));
 }

@@ -1,200 +1,250 @@
 import type { Action, Advice, Card, PlayerId, PlayerView, Suit } from '../types';
-import { RANKS, RULES, SUITS, SUIT_SYMBOL } from '../rules';
+import { RULES, SUITS, SUIT_SYMBOL } from '../rules';
 import { cardEquals, cardLabel, handPoints, hasMarriage, marriagesInHand } from '../cards';
-import { maxBidFor } from '../bidding';
 import { canBeat, getHighestCardInTrick } from '../tricks';
-import { roundToTen } from '../scoring';
-import { botAction } from '../bot';
+import { botAction, botChoice } from '../bot';
+import { decideHandout } from '../bot/eval';
+import { actionsEqual } from '../actions';
+import { isOnBarrel } from '../scoring';
 import { isMarriageCard } from '../bot/play';
-import { expectedBidPoints, postTalonExpectedPoints } from '../bot/eval';
+import type { BidReason, CardReason, DecisionReason, HandoutReason } from '../bot/reasons';
 import { nameOf } from './names';
+import { say } from './messages';
 
 const MV = RULES.marriageValues;
-const STR = RULES.rankStrength;
+const PTS = RULES.cardPoints;
 const sym = (suit: Suit): string => SUIT_SYMBOL[suit];
 
-/** The coach's recommendation for the viewer's current decision, or null when there is none. */
-export function advise(view: PlayerView): Advice | null {
+export interface AdviseOptions {
+  /** Hand-out cards the player has already assigned in the UI; the advice then covers the rest. */
+  handoutGiven?: Partial<Record<PlayerId, Card>>;
+}
+
+/**
+ * The coach's recommendation for the viewer's current decision, or null when there is none.
+ * The action and the explanation both come from the bot's own choice (`botChoice`), so the text always
+ * quotes the numbers and the rule the decision actually used.
+ */
+export function advise(view: PlayerView, opts: AdviseOptions = {}): Advice | null {
   const r = view.round;
   if (!r || view.paused || view.turn !== view.me) return null;
   if (!view.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) return null;
-  const action = botAction(view, () => 0);
-  switch (action.type) {
-    case 'bid':
-    case 'pass':
-      return adviseBid(view, action);
-    case 'play':
-    case 'throw':
-      return adviseDecision(view, action);
+  const choice = botChoice(view, opts);
+  if (!choice) return null;
+  const { action, reason } = choice;
+  if (!view.legal.some(a => actionsEqual(a, action))) {
+    // Never advise an illegal move: fall back to the bot's own legal pick, without an explanation we can't vouch for.
+    const fallback = botAction(view, () => 0);
+    return fallback.type === 'card' ? { action: fallback, headline: say('play', { card: cardLabel(fallback.card) }), reasons: [] } : null;
+  }
+  switch (reason.code) {
+    case 'bid.worth':
+    case 'bid.close':
+    case 'pass.overMax':
+    case 'pass.worth':
+      return adviseBid(view, action, reason);
+    case 'play.enough':
+    case 'play.close':
+    case 'play.noThrow':
+    case 'throw.free':
+      return adviseDecision(view, action, reason);
     case 'handout':
-      return adviseHandout(view, action, action.to);
-    case 'card':
-      return adviseCard(view, action, action.card);
+      return adviseHandout(view, action, reason);
     default:
-      return null;
+      return adviseCard(view, action, reason);
   }
 }
 
-function adviseBid(view: PlayerView, action: Action): Advice {
-  const r = view.round!;
-  const hand = r.hand;
-  const next = r.bid.amount + RULES.bidStep;
-  const max = maxBidFor(hand);
-  const worth = roundToTen(Math.round(expectedBidPoints(hand)));
+function adviseBid(view: PlayerView, action: Action, reason: BidReason): Advice {
+  const hand = view.round!.hand;
+  const max = view.round!.maxBid;
   const headline =
-    action.type === 'bid'
-      ? `Bid ${next} — this hand looks worth about ${worth}`
-      : next > max
-        ? `Pass — you can't bid above ${max}`
-        : `Pass — ${next} is more than this hand is likely to make`;
-  const reasons = [`Your max bid is ${max} (120 + marriages in hand)`];
-  for (const suit of marriagesInHand(hand)) {
-    reasons.push(`K+Q ${sym(suit)} marriage: +${MV[suit]} when you lead the Q and win a trick`);
-  }
+    reason.code === 'pass.overMax'
+      ? say(reason.code, { max: reason.max })
+      : say(reason.code, { next: reason.next, worth: reason.worth });
+  const reasons = [say('why.maxBid', { max })];
+  if (reason.code === 'pass.overMax') return { action, headline, reasons };
+  for (const suit of marriagesInHand(hand)) reasons.push(say('why.marriageBid', { suit: sym(suit), points: MV[suit] }));
   const aces = hand.filter(c => c.rank === 'A').length;
-  if (aces > 0) reasons.push(`${aces} ace${aces > 1 ? 's' : ''} — 11 points each and usually a trick`);
-  reasons.push('The talon adds 3 unseen cards — count on roughly 10 points from it');
-  if (action.type === 'bid' && r.bid.passed.length > 0) reasons.push('Someone already passed, so a little extra risk is fine');
+  if (aces === 1) reasons.push(say('why.ace'));
+  if (aces > 1) reasons.push(say('why.aces', { count: aces }));
+  reasons.push(say('why.talon'));
+  if (reason.boosted) reasons.push(say('why.boosted'));
+  if (reason.code === 'bid.close') reasons.push(say('why.closeBid'));
   return { action, headline, reasons: reasons.slice(0, 6) };
 }
 
-function adviseDecision(view: PlayerView, action: Action): Advice {
+function adviseDecision(view: PlayerView, action: Action, reason: DecisionReason): Advice {
   const r = view.round!;
   const hand = r.hand;
-  const bid = r.bid.amount;
-  const est = roundToTen(Math.round(postTalonExpectedPoints(hand)));
-  const free = bid <= RULES.autoBid;
-  const headline =
-    action.type === 'play'
-      ? `Play — you can expect about ${est} toward your ${bid}`
-      : free
-        ? "Throw in — it's free at 100 and this hand looks weak"
-        : `Throw in — ${bid} looks out of reach (about ${est})`;
+  const { bid, est } = reason;
   const share = Math.floor(RULES.throwPool / 2);
-  const reasons = [
-    free
-      ? 'Throwing at 100 costs nothing: the cards are simply dealt again'
-      : `Throwing costs you ${bid} and gives each opponent ${share} (0 if on the barrel)`,
-    `Playing and falling short costs ${bid}`,
-  ];
-  for (const suit of marriagesInHand(hand)) reasons.push(`Your K+Q ${sym(suit)} marriage is worth ${MV[suit]}`);
+  const opponents = r.active.filter(p => p !== view.me);
+  const onBarrel = opponents.filter(p => isOnBarrel(view.scores[p]?.total ?? 0));
+  let headline: string;
+  if (reason.code === 'throw.free') headline = say(est < 10 ? 'throw.freeNothing' : 'throw.free', { est });
+  else if (reason.code === 'play.noThrow' && onBarrel.length === opponents.length) headline = say('play.noThrowBarrel', { bid });
+  else if (reason.code === 'play.noThrow' && onBarrel.length > 0) {
+    const other = opponents.find(p => !onBarrel.includes(p))!;
+    headline = say('play.noThrowOne', { bid, name: nameOf(view, other), share, barrel: nameOf(view, onBarrel[0]) });
+  } else headline = say(reason.code, { est, bid, share });
+  const reasons: string[] = [];
+  if (reason.code === 'play.noThrow') reasons.push(say('why.estimate', { est }));
+  if (bid <= RULES.autoBid) reasons.push(say('why.throwFree'));
+  else if (reason.code !== 'play.noThrow') reasons.push(say('why.throwCost', { bid, share }));
+  reasons.push(say('why.failCost', { bid }));
+  for (const suit of marriagesInHand(hand)) reasons.push(say('why.marriageWorth', { suit: sym(suit), points: MV[suit] }));
   const voids = SUITS.filter(s => !hand.some(c => c.suit === s));
-  if (voids.length > 0) reasons.push(`You're void in ${voids.map(sym).join(' ')} — ${voidBenefit(r.trump)}`);
+  if (voids.length > 0) reasons.push(say(r.trump ? 'why.voidTrump' : 'why.voidNoTrump', { suits: voids.map(sym).join(' ') }));
   return { action, headline, reasons };
 }
 
-function voidBenefit(trump: Suit | null): string {
-  return trump
-    ? `you can discard or trump when it is led`
-    : 'you can throw away low cards or trump once a marriage sets a trump suit';
-}
-
-function adviseHandout(view: PlayerView, action: Action, to: Record<PlayerId, Card>): Advice {
+function adviseHandout(
+  view: PlayerView,
+  action: Action,
+  reason: HandoutReason,
+): Advice {
   const r = view.round!;
-  const entries = Object.entries(to);
-  const headline = `Give ${entries.map(([p, card]) => `${cardLabel(card)} to ${nameOf(view, p)}`).join(' and ')}`;
-  const given = entries.map(([, card]) => card);
-  const after = r.hand.filter(h => !given.some(g => cardEquals(g, h)));
-  const reasons: string[] = [];
-  for (const card of given) {
-    if (!after.some(h => h.suit === card.suit)) {
-      reasons.push(`Giving ${cardLabel(card)} leaves you void in ${sym(card.suit)} — ${voidBenefit(r.trump)}`);
-    } else if (handPoints([card]) === 0) {
-      reasons.push(`${cardLabel(card)} is worth 0 points`);
-    } else {
-      reasons.push(`${cardLabel(card)} is one of your least useful cards`);
+  const to = action.type === 'handout' ? action.to : {};
+  const gives = reason.gives;
+  const named = (p: PlayerId, card: Card) => ({ card: cardLabel(card), name: nameOf(view, p) });
+  const warnings: string[] = [];
+  let headline: string;
+  if (gives.length === 2) {
+    const [a, b] = gives.map(g => named(g.to, g.card));
+    headline = say('handout.two', { card1: a.card, name1: a.name, card2: b.card, name2: b.name });
+  } else if (gives.length === 1) {
+    headline = say('handout.one', named(gives[0].to, gives[0].card));
+  } else {
+    // Every card is assigned already: the player's own choice. Praise it only if it is what the bot would give.
+    const [a, b] = Object.entries(to).map(([p, card]) => named(p, card));
+    const best = decideHandout(r.hand, Object.keys(to), Object.fromEntries(Object.keys(to).map(p => [p, view.scores[p]?.total ?? 0]))).action;
+    const bestTo = best.type === 'handout' ? best.to : {};
+    const same = Object.entries(to).every(([p, card]) => bestTo[p] && cardEquals(bestTo[p], card));
+    headline = say(same ? 'handout.confirm' : 'handout.confirmNeutral', { card1: a.card, name1: a.name, card2: b.card, name2: b.name });
+    if (!same) {
+      const better = Object.values(bestTo).map(cardLabel).join(' and ');
+      for (const card of Object.values(to)) {
+        if ((card.rank === 'K' || card.rank === 'Q') && hasMarriage(r.hand, card.suit)) {
+          warnings.push(say('warn.marriage', { card: cardLabel(card), suit: sym(card.suit), better }));
+        } else if (card.rank === 'A' || card.rank === '10') {
+          warnings.push(say('warn.points', { card: cardLabel(card), points: PTS[card.rank], better }));
+        }
+      }
     }
   }
-  if (marriagesInHand(after).length > 0) reasons.push('Keep your K+Q pairs — each one is a marriage');
-  if (after.some(h => h.rank === 'A')) reasons.push('Keep your aces — they win tricks');
-  if (entries.length === 2) {
-    const [p1, p2] = entries.map(([p]) => p);
-    const t1 = view.scores[p1]?.total ?? 0;
-    const t2 = view.scores[p2]?.total ?? 0;
-    if (t1 !== t2) reasons.push(`The better card goes to ${nameOf(view, t1 < t2 ? p1 : p2)}, who has the lower score`);
+  const all = Object.values(to);
+  const after = r.hand.filter(h => !all.some(g => cardEquals(g, h)));
+  const reasons: string[] = [...warnings];
+  for (const { card, why } of gives) {
+    const label = cardLabel(card);
+    if (why === 'void') reasons.push(say(r.trump ? 'give.voidTrump' : 'give.voidNoTrump', { card: label, suit: sym(card.suit) }));
+    else if (why === 'zero') reasons.push(say('give.zero', { card: label }));
+    else if (why === 'low') reasons.push(say('give.low', { card: label, points: PTS[card.rank] }));
+    else reasons.push(say('give.forced', { card: label }));
   }
-  return { action, headline, reasons: [...new Set(reasons)] };
+  if (marriagesInHand(after).length > 0) reasons.push(say('why.keepMarriages'));
+  if (after.some(h => h.rank === 'A')) reasons.push(say('why.keepAces'));
+  if (after.some(h => (h.rank === 'K' || h.rank === 'Q') && !hasMarriage(r.hand, h.suit))) reasons.push(say('why.keepLoneKQ'));
+  if (reason.betterTo) reasons.push(say('why.betterTo', { name: nameOf(view, reason.betterTo) }));
+  return { action, headline, reasons: [...new Set(reasons)].slice(0, 6) };
 }
 
-function adviseCard(view: PlayerView, action: Action, card: Card): Advice {
+function adviseCard(view: PlayerView, action: Action, reason: CardReason): Advice {
   const r = view.round!;
+  const card = reason.card;
   const label = cardLabel(card);
   const legalCards = view.legal.flatMap(a => (a.type === 'card' ? [a.card] : []));
+  const declared = r.marriages[view.me] ?? [];
+  const isBidder = view.me === r.bid.high;
   const reasons: string[] = [];
-  if (legalCards.length === 1) reasons.push("It's your only legal card");
+  if (legalCards.length === 1) reasons.push(say('why.only'));
 
   if (r.trick.cards.length === 0) {
-    const declared = r.marriages[view.me] ?? [];
-    if (card.rank === 'Q' && hasMarriage(r.hand, card.suit) && !declared.includes(card.suit)) {
-      return {
-        action,
-        headline: `Lead ${label} to declare your ${sym(card.suit)} marriage`,
-        reasons: [
-          `Leading a Q with its K in hand declares the marriage: +${MV[card.suit]}`,
-          `${sym(card.suit)} become trumps straight away — even for this trick`,
-          'Marriage points only count if you win at least one trick',
-        ],
-      };
+    let headline: string;
+    switch (reason.code) {
+      case 'lead.declare':
+        return {
+          action,
+          headline: say('lead.declare', { card: label, suit: sym(reason.suit) }),
+          reasons: [
+            say('why.declare', { points: reason.points }),
+            say('why.declareTrump', { suit: sym(reason.suit) }),
+            say('why.declareTrick'),
+          ],
+        };
+      case 'lead.cashAce':
+        headline = say('lead.cashAce', { card: label });
+        reasons.push(say('why.cashAce', { card: label }), say('why.cashAceThen', { suit: sym(reason.marriage), points: MV[reason.marriage] }));
+        break;
+      case 'lead.top':
+        headline = say('lead.top', { card: label, suit: sym(card.suit) });
+        reasons.push(say(r.trump && card.suit !== r.trump ? 'why.top' : 'why.topSafe', { suit: sym(card.suit) }));
+        break;
+      case 'lead.drawTrump':
+        headline = say('lead.drawTrump', { card: label });
+        reasons.push(say('why.drawTrump'));
+        break;
+      case 'lead.lowTrump':
+        headline = say('lead.lowTrump', { card: label });
+        reasons.push(say('why.lowTrump'));
+        break;
+      case 'lead.probe':
+        headline = say('lead.probe', { card: label });
+        reasons.push(say('why.probe'));
+        break;
+      case 'lead.cheap':
+        headline = say('lead.cheap', { card: label });
+        reasons.push(PTS[card.rank] < 10 ? say('why.cheap', { card: label, points: PTS[card.rank] }) : say('why.cheapest'));
+        break;
+      default:
+        headline = say(reason.code === 'only' ? 'lead.only' : 'play', { card: label });
     }
-    const known = [...r.played, ...r.hand];
-    const higherOut = RANKS.some(
-      rank => STR[rank] > STR[card.rank] && !known.some(k => k.suit === card.suit && k.rank === rank),
-    );
-    if (!higherOut) reasons.push(`${label} is the highest ${sym(card.suit)} left — a likely winner`);
-    else if (r.trump === card.suit) reasons.push("Leading trumps pulls trumps out of your opponents' hands");
-    else if (handPoints([card]) === 0) reasons.push('A 9 is worth 0 points, so leading it risks nothing');
-    else reasons.push('Leading a mid card keeps your aces back');
-    return { action, headline: `Lead ${label}`, reasons };
+    if (!isBidder && r.trump && card.suit !== r.trump && r.hand.some(h => h.suit === r.trump)) reasons.push(say('why.noTrumpLead'));
+    return { action, headline, reasons };
   }
 
+  // Following: first the rule that limits the choice, then why this card.
   const lead = r.trick.cards[0].card;
-  const declared = r.marriages[view.me] ?? [];
-  const breaksMarriage = isMarriageCard(card, r.hand, declared);
-  const onTable = r.trick.cards.map(t => t.card);
-  const winning = getHighestCardInTrick(onTable, lead.suit, r.trump);
-  const winner = r.trick.cards.find(t => cardEquals(t.card, winning))!.p;
-  const wins = cardEquals(getHighestCardInTrick([...onTable, card], lead.suit, r.trump), card);
-  const holdsLead = r.hand.some(h => h.suit === lead.suit);
-  if (!holdsLead) {
-    reasons.push(`You have no ${sym(lead.suit)}, so any card is allowed`);
+  if (!r.hand.some(h => h.suit === lead.suit)) {
+    reasons.push(say('why.noSuit', { suit: sym(lead.suit) }));
   } else if (r.trick.cards.length === 1 && r.hand.some(h => h.suit === lead.suit && canBeat(h, lead, lead.suit, r.trump))) {
-    reasons.push(`As first to respond you must beat ${cardLabel(lead)} if you can`);
-  } else if (holdsLead && r.trick.cards.length >= 2) {
-    reasons.push('You only need to follow suit — only the first player to respond must beat the lead');
+    reasons.push(say('why.mustBeat', { card: cardLabel(lead) }));
+  } else if (r.trick.cards.length >= 2) {
+    reasons.push(say('why.followOnly'));
   }
-  if (wins) {
-    const last = r.trick.cards.length === r.active.length - 1;
-    reasons.push(
-      last
-        ? `${label} takes the trick (${handPoints([...onTable, card])} points)`
-        : `${label} beats everything played so far`,
-    );
-    if (r.trump && card.suit === r.trump && lead.suit !== r.trump) {
-      reasons.push(`Trumps (${sym(r.trump)}) beat every other suit`);
+  switch (reason.code) {
+    case 'follow.beat':
+    case 'follow.trump':
+      reasons.push(reason.last ? say('follow.takes', { card: label, points: reason.points }) : say('follow.beats', { card: label }));
+      if (reason.code === 'follow.trump') reasons.push(say('why.trumps', { suit: sym(r.trump!) }));
+      break;
+    case 'follow.cantWin':
+      reasons.push(say('follow.cantWin'));
+      break;
+    case 'follow.keepPoints':
+      reasons.push(say('follow.keepPoints', { name: nameOf(view, reason.winner) }));
+      break;
+    case 'follow.keepMarriage':
+      reasons.push(say('follow.keepMarriage', { card: label, suit: sym(reason.suit) }));
+      break;
+    case 'follow.discard':
+      reasons.push(say('follow.discard'));
+      break;
+    case 'only': {
+      const onTable = r.trick.cards.map(t => t.card);
+      if (cardEquals(getHighestCardInTrick([...onTable, card], lead.suit, r.trump), card)) {
+        const last = r.trick.cards.length === r.active.length - 1;
+        reasons.push(last ? say('follow.takes', { card: label, points: handPoints([...onTable, card]) }) : say('follow.beats', { card: label }));
+      }
+      break;
     }
-  } else if (view.me !== r.bid.high && winner !== r.bid.high) {
-    const pts = handPoints([card]);
-    reasons.push(
-      pts > 0
-        ? `${nameOf(view, winner)} is winning — ${label} gives the trick winner ${pts} points`
-        : `${nameOf(view, winner)} is winning — no need to fight for it`,
-    );
-  } else {
-    const canWin = legalCards.some(lc =>
-      cardEquals(getHighestCardInTrick([...onTable, lc], lead.suit, r.trump), lc),
-    );
-    reasons.push(
-      canWin
-        ? "This trick isn't worth fighting for — play your least useful card"
-        : "You can't win this one, so play your least useful card",
-    );
+    default:
+      break;
   }
-  if (breaksMarriage) {
-    reasons.push(
-      `This gives up your ${sym(card.suit)} marriage: it only counts when you lead the Q${
-        legalCards.every(lc => isMarriageCard(lc, r.hand, declared)) ? ' — and every legal card here is part of a marriage' : ''
-      }`,
-    );
+  if (isMarriageCard(card, r.hand, declared)) {
+    const forced = legalCards.every(lc => isMarriageCard(lc, r.hand, declared));
+    reasons.push(say(forced ? 'why.breaksMarriageForced' : 'why.breaksMarriage', { suit: sym(card.suit) }));
   }
-  return { action, headline: `Play ${label}`, reasons };
+  return { action, headline: say('play', { card: label }), reasons: [...new Set(reasons)] };
 }
