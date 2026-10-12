@@ -8,8 +8,8 @@ import { loadLang } from '../i18n';
 
 function props(view: PlayerView, over: Partial<ActionZoneProps> = {}): ActionZoneProps {
   return {
-    view, room: roomInfo(), idle: true, busy: false, selected: null, given: {}, hint: null, coach: false, advice: null, note: null, now: 0,
-    onAct: vi.fn(), onPlay: vi.fn(), onConfirmHandout: vi.fn(), onBotFor: vi.fn(), onWhy: vi.fn(), ...over,
+    view, room: roomInfo(), idle: true, busy: false, selected: null, given: {}, next: null, hint: null, coach: false, advice: null, note: null, now: 0,
+    onAct: vi.fn(), onPlay: vi.fn(), onConfirmHandout: vi.fn(), onSlot: vi.fn(), onBotFor: vi.fn(), onWhy: vi.fn(), ...over,
   };
 }
 const watching = findState(s => s.phase === 'talon' && s.round!.bid.high !== 'me');

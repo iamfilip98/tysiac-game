@@ -7,7 +7,7 @@ import { t } from '../i18n';
 import { useT } from '../i18n/useT';
 import './card.css';
 
-export type CardLook = 'normal' | 'dim' | 'raised' | 'recommended';
+export type CardLook = 'normal' | 'dim' | 'raised';
 
 export { SUIT_TEXT };
 
@@ -39,12 +39,14 @@ export interface CardButtonProps {
   tag?: string | null;
   shake?: boolean;
   glow?: CardGlow;
+  /** The coach recommends this card (an arrow is drawn above it by the hand; the card itself never moves). */
+  coach?: boolean;
   className?: string;
   style?: CSSProperties;
   onTap(): void;
 }
 
-export function CardButton({ card, look, tag, shake, glow, className = '', style, onTap }: CardButtonProps) {
+export function CardButton({ card, look, tag, shake, glow, coach, className = '', style, onTap }: CardButtonProps) {
   useT();
   return (
     <m.button
@@ -56,6 +58,7 @@ export function CardButton({ card, look, tag, shake, glow, className = '', style
       aria-pressed={look === 'raised'}
       aria-disabled={look === 'dim' ? true : undefined}
       data-card={cardKey(card)}
+      data-coach={coach || undefined}
       style={style}
       onClick={onTap}
       animate={shake ? { x: [0, -9, 9, -6, 6, 0] } : { x: 0 }}

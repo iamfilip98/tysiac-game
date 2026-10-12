@@ -18,19 +18,21 @@
 .card--mini { --w: calc(var(--card-w, 56px) * 0.5); box-shadow: none; }
 .card__face { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .card__idx {
-  position: absolute; top: 4%; left: 5%;
+  position: absolute; top: 4%; left: 3%;
   width: calc(var(--w) * 0.3);
   display: flex; flex-direction: column; align-items: center;
   line-height: 0.92;
 }
-.card__idx--br { top: auto; left: auto; right: 5%; bottom: 4%; transform: rotate(180deg); }
+.card__idx--br { top: auto; left: auto; right: 3%; bottom: 4%; transform: rotate(180deg); }
 .card__rank { font-size: calc(var(--w) * 0.34); font-weight: 800; letter-spacing: -0.05em; }
-.card__suit { font-size: calc(var(--w) * 0.3); margin-top: calc(var(--w) * 0.01); }
+.card__suit { font-size: calc(var(--w) * 0.27); margin-top: calc(var(--w) * 0.01); }
 .card__rank, .card__suit, .card__pip { font-family: var(--font-card); font-variant-emoji: text; }
+/* The centre pip sits in the column between the two corner indexes. Suit glyphs ink about 1em wide,
+   so at 0.27w (the corner suit size) it keeps >= 0.04w clear of both index suits on every rank (e2e cards.spec). */
 .card__pip {
-  position: absolute; left: 50%; top: 52%;
+  position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  font-size: calc(var(--w) * 0.62); line-height: 1;
+  font-size: calc(var(--w) * 0.27); line-height: 1;
 }
 .card--mini .card__pip, .card--mini .card__idx--br { display: none; }
 .card--mini .card__rank { font-size: calc(var(--w) * 0.44); }
@@ -44,9 +46,6 @@
 }
 .card--glow-marriage::before { background: linear-gradient(135deg, rgba(245, 231, 163, 0.28), transparent 55%); }
 .card--glow-trump::before { background: linear-gradient(135deg, rgba(147, 197, 253, 0.25), transparent 55%); }
-/* Coach pick: a crisp solid gold ring and a small lift. Marriage is a soft glow instead, so the two read apart in every theme. */
-.card--recommended { outline: 2.5px solid var(--coach); outline-offset: 1px; }
-.hand__card.card--recommended { bottom: 4px; }
 .back {
   --w: var(--card-w, 56px);
   display: block;
@@ -92,3 +91,20 @@
   transition: bottom 0.16s ease;
 }
 .hand__mtag--up { bottom: calc(var(--card-w) * 1.66 + 3px); }
+
+/* Coach pick: a gold arrow above the card's visible strip. The card itself never moves or gets selected. */
+.hand__coach {
+  position: absolute; z-index: 21; pointer-events: none; width: 24px; height: 20px;
+  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w)) / 2 + var(--step) * var(--i)
+    + (var(--step) + (var(--card-w) - var(--step)) * var(--last)) / 2 - 12px);
+  bottom: calc(var(--card-w) * 1.42 + 2px);
+  transition: bottom 0.16s ease;
+  animation: coach-bob 1.2s ease-in-out infinite;
+}
+.hand__coach svg { display: block; overflow: visible; }
+.hand__coach path { fill: var(--coach); stroke: var(--coach-edge, rgba(0, 0, 0, 0.55)); stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)); }
+.hand__coach--pill { bottom: calc(var(--card-w) * 1.42 + 21px); }
+.hand__coach--up { bottom: calc(var(--card-w) * 1.66 + 2px); }
+.hand__coach--up.hand__coach--pill { bottom: calc(var(--card-w) * 1.66 + 21px); }
+@keyframes coach-bob { 50% { translate: 0 -3px; } }
+@media (prefers-reduced-motion: reduce) { .hand__coach { animation: none; } }

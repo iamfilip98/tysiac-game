@@ -10,8 +10,8 @@ import { loadLang } from '../i18n';
 
 function props(view: PlayerView, over: Partial<ActionZoneProps> = {}): ActionZoneProps {
   return {
-    view, room: roomInfo(), idle: true, busy: false, selected: null, given: {}, hint: null, coach: false, advice: null, note: null, now: 0,
-    onAct: vi.fn(), onPlay: vi.fn(), onConfirmHandout: vi.fn(), onBotFor: vi.fn(), onWhy: vi.fn(), ...over,
+    view, room: roomInfo(), idle: true, busy: false, selected: null, given: {}, next: null, hint: null, coach: false, advice: null, note: null, now: 0,
+    onAct: vi.fn(), onPlay: vi.fn(), onConfirmHandout: vi.fn(), onSlot: vi.fn(), onBotFor: vi.fn(), onWhy: vi.fn(), ...over,
   };
 }
 const zone = () => document.querySelector('.zone') as HTMLElement;
@@ -118,6 +118,39 @@ describe('ActionZone: hand-out', () => {
     render(<ActionZone {...p} />);
     await userEvent.click(screen.getByRole('button', { name: 'Confirm hand-out' }));
     expect(p.onConfirmHandout).toHaveBeenCalledOnce();
+  });
+
+  it('shows a labelled slot per recipient: the next empty one is marked, a filled one gives its card back', async () => {
+    const [x, y] = handout.round!.active.filter(p => p !== 'me');
+    const [c1] = handout.round!.hand;
+    const p = props(handout, { given: { [x]: c1 }, next: y });
+    render(<ActionZone {...p} />);
+    const name = (id: string) => handout.seats.find(s => s.id === id)!.name;
+    const empty = screen.getByRole('button', { name: `Give to ${name(y)}` });
+    expect(empty).toHaveAttribute('aria-pressed', 'true');
+    expect(empty).toHaveTextContent(name(y));
+    expect(screen.getByText(`Tap a card for ${name(y)}.`)).toBeInTheDocument();
+    const filled = screen.getByRole('button', { name: `Take back ${cardLabel(c1)}` });
+    expect(filled.querySelector('.card .card__rank')).toHaveTextContent(c1.rank);
+    await userEvent.click(filled);
+    expect(p.onSlot).toHaveBeenCalledWith(x);
+  });
+});
+
+describe('ActionZone: waiting while the table catches up', () => {
+  const caught: PlayerView = { ...tricks, turn: null };
+  it('a held trick says who takes it', () => {
+    render(<ActionZone {...props(caught, { idle: false, held: { p: 'b', card: { suit: 'hearts', rank: 'A' }, byTrump: false, points: 15 } })} />);
+    expect(screen.getByText('Bot Basia takes the trick (+15)')).toBeInTheDocument();
+    expect(screen.queryByText('…')).toBeNull();
+  });
+  it('with no turn on the table it names whose turn the server says it is', () => {
+    render(<ActionZone {...props(caught, { idle: false, waitFor: 'z' })} />);
+    expect(screen.getByText('Bot Zenek is playing…')).toBeInTheDocument();
+  });
+  it('catching up to my own turn says One moment, never a bare ellipsis', () => {
+    render(<ActionZone {...props(caught, { idle: false, waitFor: 'me' })} />);
+    expect(screen.getByText('One moment…')).toBeInTheDocument();
   });
 });
 

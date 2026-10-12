@@ -5,7 +5,6 @@ import { advise, cardEquals, cardKey, cardLabel, explainIllegal, turnOf, type Ac
 import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
-import { RECEIVED_MS } from '../store/client';
 import { textSuits } from '../game/cards';
 import { engineText } from '../i18n/engineText';
 import { useSelection } from '../game/selection';
@@ -28,28 +27,46 @@ beforeEach(() => {
 });
 
 describe('Game screen: tricks', () => {
-  it('shows who gave me which card, then hides it after RECEIVED_MS', () => {
+  it('shows who gave me which card, big, until dismissed (no timeout)', () => {
     vi.useFakeTimers();
     try {
       join(findState(s => s.phase === 'tricks'));
       render(<Game />);
-      act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+      act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b', open: true } }));
       const pill = screen.getByRole('button', { name: /Card received/ });
       expect(pill).toHaveTextContent('Bot Basia');
       expect(pill.getAttribute('aria-label')).toContain('\uFE0E');
-      act(() => { vi.advanceTimersByTime(RECEIVED_MS + 10); });
-      expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+      act(() => { vi.advanceTimersByTime(60_000); });
+      expect(screen.getByRole('button', { name: /Card received/ })).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it('a tap on the table area skips the trick hold; a tap on a button does not', () => {
+    join(findState(s => s.phase === 'tricks'));
+    const real = useRoom.getState().skipHold;
+    const skipHold = vi.fn();
+    useRoom.setState({ skipHold });
+    try {
+      const { container } = render(<Game />);
+      act(() => { (container.querySelector('main.game') as HTMLElement).click(); });
+      expect(skipHold).toHaveBeenCalledTimes(1);
+      act(() => { screen.getByRole('button', { name: 'Menu' }).click(); });
+      expect(skipHold).toHaveBeenCalledTimes(1);
+    } finally {
+      useRoom.setState({ skipHold: real });
     }
   });
 
   it('the received pill is dismissed by a click', () => {
     join(findState(s => s.phase === 'tricks'));
     render(<Game />);
-    act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+    act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b', open: true } }));
     act(() => { screen.getByRole('button', { name: /Card received/ }).click(); });
     expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+    // Still marked in the hand until it is played or the first trick ends.
+    expect(useRoom.getState().received).toMatchObject({ open: false });
   });
 
   it('shows Your turn on my strip when I must act', () => {
@@ -122,26 +139,26 @@ describe('Game screen: other phases', () => {
     expect(conn.acts()[0].action).toEqual({ type: 'pass' });
   });
 
-  it('hand-out: tap a card, tap an opponent, take back, then confirm both', async () => {
+  it('hand-out: one tap per card fills the next slot; a slot can be picked first; a filled slot gives it back', async () => {
     const user = userEvent.setup();
     const conn = join(findState(s => s.phase === 'handout' && turnOf(s) === 'me'));
     render(<Game />);
     const first = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: first }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
     expect(within(hand()).queryByRole('button', { name: first })).toBeNull();
+    expect(useSelection.getState().selected).toBeNull();
     await user.click(screen.getByRole('button', { name: `Take back ${first}` }));
     expect(within(hand()).getByRole('button', { name: first })).toBeInTheDocument();
 
+    // Pick Bot Zenek's slot first: the next card goes there.
+    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
     await user.click(within(hand()).getByRole('button', { name: first }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
     const second = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: second }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
     await user.click(screen.getByRole('button', { name: 'Confirm hand-out' }));
     const action = conn.acts()[0].action as Extract<Action, { type: 'handout' }>;
-    expect(cardLabel(action.to.b)).toBe(first);
-    expect(cardLabel(action.to.z)).toBe(second);
+    expect(cardLabel(action.to.z)).toBe(first);
+    expect(cardLabel(action.to.b)).toBe(second);
   });
 
   it('menu opens the score sheet and settings without a name field', async () => {
@@ -167,10 +184,8 @@ describe('Game screen: fix round 1', () => {
     render(<Game />);
     const first = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: first }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
     const second = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: second }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
     await user.click(screen.getByRole('button', { name: 'Confirm hand-out' }));
     expect(conn.acts()).toHaveLength(1);
     expect(within(hand()).queryByRole('button', { name: first })).toBeNull();
@@ -199,9 +214,9 @@ describe('Game screen: fix round 1', () => {
 
 describe('Game screen: coach hand-out hints (D12)', () => {
   const recommendedKeys = () =>
-    within(hand()).getAllByRole('button').filter(b => b.classList.contains('card--recommended')).map(b => b.getAttribute('data-card'));
+    Array.from(hand().querySelectorAll('[data-coach-arrow]')).map(b => b.getAttribute('data-coach-arrow'));
 
-  it('outlines both suggested cards, then only the remaining one with a headline that names it', async () => {
+  it('points an arrow at both suggested cards (never raising them), then only the remaining one', async () => {
     const user = userEvent.setup();
     const s0 = findState(s => s.phase === 'handout' && turnOf(s) === 'me');
     const conn = join(s0);
@@ -213,10 +228,12 @@ describe('Game screen: coach hand-out hints (D12)', () => {
     const [[p1, c1], [p2, c2]] = Object.entries(to);
     const name = (p: string) => (p === 'b' ? 'Bot Basia' : 'Bot Zenek');
     expect(recommendedKeys().sort()).toEqual([cardKey(c1), cardKey(c2)].sort());
+    expect(within(hand()).queryAllByRole('button', { pressed: true })).toEqual([]);
+    expect(useSelection.getState().selected).toBeNull();
     expect(screen.getByText(textSuits(engineText(advice.headline, viewOf(s0))))).toBeInTheDocument();
 
-    await user.click(within(hand()).getByRole('button', { name: cardLabel(c1) }));
     await user.click(screen.getByRole('button', { name: `Give to ${name(p1)}` }));
+    await user.click(within(hand()).getByRole('button', { name: cardLabel(c1) }));
     expect(recommendedKeys()).toEqual([cardKey(c2)]);
     expect(screen.getByText(textSuits(`Give ${cardLabel(c2)} to ${name(p2)}`))).toBeInTheDocument();
   });

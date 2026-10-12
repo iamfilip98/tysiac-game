@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cardKey, turnOf, type Action, type Card, type GameState } from '@tysiac/engine';
 import { pump, setSoundSink, stepWait, useRoom } from './room';
+import { FLIGHT_MS } from './client';
 import { FakeConnection } from '../test/fakes';
 import { botStep, findState, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
 
@@ -99,6 +100,18 @@ describe('useRoom', () => {
     expect(useRoom.getState().shown).toBe(useRoom.getState().view);
     pump();
     expect(useRoom.getState().shown).toBe(useRoom.getState().view);
+  });
+
+  it('a tap on the table (skipHold) ends the hold of a completed trick at once', () => {
+    const s0 = findState(s => s.phase === 'tricks' && turnOf(s) === 'z' && s.round!.trick.cards.length === 2 && s.round!.hands.z.length > 1);
+    const conn = joinAt(s0);
+    const { state: s1, events } = botStep(s0);
+    conn.push(stateMsg(s1, events));
+    vi.advanceTimersByTime(FLIGHT_MS + 10);
+    expect(useRoom.getState().holding).toBe(true);
+    useRoom.getState().skipHold();
+    expect(useRoom.getState().holding).toBe(false);
+    expect(useRoom.getState().shown!.round!.trick.cards).toEqual([]);
   });
 
   it('a newer state with no events and an empty queue syncs shown to view', () => {

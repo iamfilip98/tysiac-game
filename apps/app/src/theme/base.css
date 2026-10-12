@@ -4,6 +4,10 @@
   --sa-right: env(safe-area-inset-right, 0px);
   --sa-bottom: env(safe-area-inset-bottom, 0px);
   --sa-left: env(safe-area-inset-left, 0px);
+  /* iOS 26 home-screen apps draw a soft blur ("scroll edge effect") under the black-translucent status
+     bar that reaches ~20-25px below the safe-area inset. Fixed game chrome starts below it. In a browser
+     tab (inset 0) this is just 8px. */
+  --status-clear: calc(var(--sa-top) + 8px + min(var(--sa-top) * 0.4, 24px));
 }
 
 *,
@@ -72,6 +76,8 @@ input, select, textarea { font: inherit; font-size: 16px; }
 .linkbtn { background: none; border: 0; padding: 0 4px; color: var(--accent-soft); font-weight: 700; text-decoration: underline; }
 .chip { font-size: 10px; padding: 2px 8px; border-radius: 20px; font-weight: 700; background: var(--accent); color: var(--accent-ink); white-space: nowrap; }
 .chip--muted { background: var(--chip-muted-bg); color: var(--ink); }
+/* "Coach" chip next to a player using coach hints (gold coach token, dark text in every theme). */
+.chip--coach { background: var(--coach); color: #1b1408; font-size: 10px; padding: 2px 7px; letter-spacing: 0.02em; }
 .badge { font-size: 10px; padding: 1px 6px; border-radius: 8px; background: var(--chip-muted-bg); white-space: nowrap; }
 .avatar {
   position: relative;

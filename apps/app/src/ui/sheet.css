@@ -38,7 +38,33 @@
 .zapis__failed { color: var(--danger); text-decoration: line-through; }
 .zapis__barrel { background: color-mix(in srgb, var(--accent) 16%, transparent); }
 .neg { color: var(--danger); }
-.result__headline { font-size: 18px; margin: 4px 0 10px; }
+/* Round result (OG RoundResultModal): a banner, then one card per player with the round's points big. */
+.result__headline { padding: 10px 12px; border-radius: 12px; text-align: center; font-size: 19px; line-height: 1.25; margin: 4px 0 12px;
+  background: color-mix(in srgb, var(--accent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--accent) 45%, transparent); }
+.result__headline--failed { color: var(--danger); background: color-mix(in srgb, var(--danger) 12%, transparent); border-color: color-mix(in srgb, var(--danger) 45%, transparent); }
+.result__headline--thrown { background: var(--chip-muted-bg); border-color: transparent; }
+.rrows { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.rrow {
+  display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+  grid-template-areas: 'av who delta' 'av detail total';
+  column-gap: 10px; row-gap: 3px; padding: 10px 12px; border-radius: 14px;
+  background: color-mix(in srgb, var(--ink) 5%, transparent); border: 1px solid var(--chip-muted-bg);
+  --avatar: 36px;
+}
+.rrow--bidder { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
+.rrow--out { opacity: 0.7; }
+.rrow__avatar { grid-area: av; }
+.rrow__who { grid-area: who; display: flex; align-items: center; gap: 8px; min-width: 0; }
+.rrow__name { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.rrow--me .rrow__name { color: var(--accent-soft); }
+.rrow__bid { flex: none; font-size: 11px; padding: 2px 8px; }
+.rrow__bid--failed { background: var(--danger); color: #fff; }
+.rrow__bid--thrown { background: var(--chip-muted-bg); color: var(--ink); }
+.rrow__delta { grid-area: delta; font-size: 26px; font-weight: 800; line-height: 1; text-align: right; font-variant-numeric: lining-nums proportional-nums; }
+.rrow__detail { grid-area: detail; font-size: 13px; color: var(--ink-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rrow__fell { color: var(--danger); }
+.rrow__total { grid-area: total; font-size: 13px; color: var(--ink-dim); text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.rrow__total b { color: var(--ink); font-size: 16px; }
 .coachnote { font-size: 13px; line-height: 1.4; margin: 10px 0 0; }
 .coachnote b { color: var(--accent-soft); }
 

@@ -1,9 +1,10 @@
 import { AnimatePresence, m } from 'motion/react';
-import { cardKey, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
+import type { CSSProperties } from 'react';
+import { cardEquals, cardKey, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
 import { CardBack, CardFace } from './Card';
 import { isRed } from './cards';
 import { spotsFor, type Spot } from './seating';
-import type { TableFx } from '../store/client';
+import type { HeldTrick, MarriageFx } from '../store/client';
 import { cardText } from '../i18n/engineText';
 import { useT } from '../i18n/useT';
 import './table.css';
@@ -28,10 +29,40 @@ export interface TableProps {
   pending: Card | null;
   /** Winner of the trick being swept away. */
   sweepTo: PlayerId | null;
-  fx: TableFx | null;
+  /** A marriage declared in this trick: gold ring, the led Q drawn gold. */
+  marriage: MarriageFx | null;
+  /** The completed trick on hold: its winning card is marked (blue when a trump took it). */
+  held: HeldTrick | null;
 }
 
-export function Table({ view, pending, sweepTo, fx }: TableProps) {
+const SPARKS = [0, 1, 2, 3, 4, 5, 6, 7];
+
+/** OG TrickPile: rotating conic gold ring, pulsing inner glow and 8 sparks (static gold ring with reduced motion). */
+function MarriageRing() {
+  return (
+    <div className="fx fx--marriage" aria-hidden="true">
+      <span className="fx__ring" />
+      <span className="fx__glow" />
+      {SPARKS.map(i => (
+        <span key={i} className="fx__spark" style={{ '--a': `${i * 45}deg`, '--d': `${i * 0.25}s` } as CSSProperties} />
+      ))}
+    </div>
+  );
+}
+
+/** OG trump win: blue glow pulse and 8 blue sparks, kept (pulsing) for the whole hold. */
+function TrumpBurst() {
+  return (
+    <div className="fx fx--trumpwin" aria-hidden="true">
+      <span className="fx__glow" />
+      {SPARKS.map(i => (
+        <span key={i} className="fx__spark" style={{ '--a': `${i * 45}deg`, '--d': `${i * 0.05}s` } as CSSProperties} />
+      ))}
+    </div>
+  );
+}
+
+export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
   const t = useT();
   const r = view.round;
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
@@ -39,12 +70,19 @@ export function Table({ view, pending, sweepTo, fx }: TableProps) {
   const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'talon' || view.phase === 'decision');
   return (
     <section className="table" aria-label={t('game.table')}>
-      {fx && <div key={fx.id} className={`fx fx--${fx.kind === 'marriage' ? 'marriage' : 'trumpwin'}`} aria-hidden="true" />}
+      {marriage && <MarriageRing key={marriage.id} />}
+      {held?.byTrump && <TrumpBurst />}
       {showTalon && <Talon cards={view.phase === 'bidding' ? null : (r?.talon ?? null)} />}
       <AnimatePresence custom={(sweepTo && spots[sweepTo]) || 'top'}>
         {trick.map(tc => {
           const spot = spots[tc.p] ?? 'top';
           const mine = tc.p === view.me;
+          const gold = !!marriage && tc.p === marriage.p && tc.card.suit === marriage.suit && (tc.card.rank === 'Q' || tc.card.rank === 'K');
+          const win = !!held && cardEquals(held.card, tc.card);
+          const look = [
+            gold ? 'card--gold' : r?.trump && tc.card.suit === r.trump ? 'card--glow-trump' : '',
+            win ? (held!.byTrump ? 'tcard--win tcard--win-trump' : 'tcard--win') : held ? 'tcard--lost' : '',
+          ].join(' ');
           return (
             <m.div
               key={cardKey(tc.card)}
@@ -55,9 +93,10 @@ export function Table({ view, pending, sweepTo, fx }: TableProps) {
               animate="rest"
               exit="gone"
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-              className={`card tcard tcard--${spot} ${isRed(tc.card) ? 'card--red' : ''} ${r?.trump && tc.card.suit === r.trump ? 'card--glow-trump' : ''}`}
+              className={`card tcard tcard--${spot} ${isRed(tc.card) ? 'card--red' : ''} ${look}`}
               role="img"
               aria-label={cardText(tc.card)}
+              data-win={win || undefined}
             >
               <CardFace card={tc.card} />
             </m.div>

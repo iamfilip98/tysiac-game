@@ -3,7 +3,6 @@ import type { RoomInfo, RoomSeat } from '../net/protocol';
 import { CardBack, MiniCard } from './Card';
 import { opponentIds } from './seating';
 import { BARREL, bidChip, onBarrel, passChip, pts } from './format';
-import { cardText } from '../i18n/engineText';
 import { useT } from '../i18n/useT';
 
 export function chipFor(view: PlayerView, id: PlayerId): { text: string; muted: boolean } | null {
@@ -20,12 +19,14 @@ export interface OpponentsProps {
   view: PlayerView;
   room: RoomInfo | null;
   given?: Partial<Record<PlayerId, Card>>;
+  /** Hand-out: seats without a card can be tapped to pick who gets the next card. */
   targetable?: boolean;
+  /** Hand-out: the seat the next tapped card goes to (highlighted). */
+  next?: PlayerId | null;
   onTarget?(p: PlayerId): void;
-  onUngive?(p: PlayerId): void;
 }
 
-export function Opponents({ view, room, given = {}, targetable = false, onTarget, onUngive }: OpponentsProps) {
+export function Opponents({ view, room, given = {}, targetable = false, next = null, onTarget }: OpponentsProps) {
   useT();
   const ids = opponentIds(view.seats.map(s => s.id), view.me);
   return (
@@ -38,8 +39,8 @@ export function Opponents({ view, room, given = {}, targetable = false, onTarget
           seat={room?.seats.find((s): s is RoomSeat => s?.id === id) ?? null}
           given={given[id] ?? null}
           targetable={targetable}
+          next={next === id}
           onTarget={onTarget}
-          onUngive={onUngive}
         />
       ))}
     </div>
@@ -52,11 +53,11 @@ interface OpponentProps {
   seat: RoomSeat | null;
   given: Card | null;
   targetable: boolean;
+  next: boolean;
   onTarget?(p: PlayerId): void;
-  onUngive?(p: PlayerId): void;
 }
 
-function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: OpponentProps) {
+function Opponent({ id, view, seat, given, targetable, next, onTarget }: OpponentProps) {
   const t = useT();
   const s = view.seats.find(x => x.id === id)!;
   const r = view.round;
@@ -68,7 +69,7 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
   const inTalon = view.phase === 'talon' && r !== null && id !== r.bid.high;
   const looking = inTalon && r.talonWaiting.includes(id);
   const seen = inTalon && !looking;
-  const cls = `opp ${view.turn === id && !view.paused ? 'opp--turn' : ''} ${targetable && !given && !sittingOut ? 'opp--target' : ''}`;
+  const cls = `opp ${view.turn === id && !view.paused ? 'opp--turn' : ''} ${targetable && next && !given && !sittingOut ? 'opp--target' : ''}`;
   const body = (
     <>
       <span className="avatar">
@@ -77,8 +78,8 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
       </span>
       <span className="opp__name">
         {s.name}
-        {seat?.coach && <span role="img" aria-label={t('game.opp.coach')}> 🎓</span>}
       </span>
+      {seat?.coach && <span className="chip chip--coach">{t('game.coachChip')}</span>}
       <span className="opp__meta">
         <span className="opp__score" aria-label={t('game.opp.score', { points: pts(total) })}>
           {pts(total)}
@@ -105,24 +106,25 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
       {away && <span className="badge">{seat.botFor ? t('game.opp.botPlaying') : t('game.opp.away')}</span>}
     </>
   );
-  if (targetable && !given && !sittingOut) {
+  // The given card, shown as a real (small) card under the seat until the hand-out is confirmed.
+  const givenEl = given && (
+    <span className="opp__given">
+      <MiniCard card={given} />
+    </span>
+  );
+  if (targetable && !sittingOut) {
+    // A touch shortcut for the hand-out slots in the action zone (which carry the accessible labels).
     return (
-      <button type="button" className={cls} data-seat={id} aria-label={t('game.opp.giveTo', { name: s.name })} onClick={() => onTarget?.(id)}>
+      <button type="button" className={cls} data-seat={id} aria-hidden="true" tabIndex={-1} onClick={() => onTarget?.(id)}>
         {body}
+        {givenEl}
       </button>
     );
   }
   return (
     <div className={cls} data-seat={id}>
       {body}
-      {given && (
-        <span className="opp__given">
-          {t('game.opp.gets')} <MiniCard card={given} />
-          <button type="button" className="iconbtn opp__ungive" aria-label={t('game.opp.takeBack', { card: cardText(given) })} onClick={() => onUngive?.(id)}>
-            ✕
-          </button>
-        </span>
-      )}
+      {givenEl}
     </div>
   );
 }

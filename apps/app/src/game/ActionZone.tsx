@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { explainIllegal, type Action, type Card, type EngineMsg, type PlayerId, type PlayerView } from '@tysiac/engine';
 import type { RoomInfo } from '../net/protocol';
+import type { HeldTrick } from '../store/client';
 import { BidPanel, DecisionPanel, HandoutPanel, PausedPanel, TrickPanel, WaitLine } from './panels';
 import { TalonPanel } from './TalonPanel';
 import { CoachLine } from './CoachLine';
@@ -18,6 +19,12 @@ export interface ActionZoneProps {
   busy: boolean;
   selected: Card | null;
   given: Partial<Record<PlayerId, Card>>;
+  /** Hand-out: the slot the next tapped card goes to. */
+  next: PlayerId | null;
+  /** Whose turn it is in the latest server view (while the table catches up). */
+  waitFor?: PlayerId | null;
+  /** The completed trick held on the table. */
+  held?: HeldTrick | null;
   hint: string | null;
   coach: boolean;
   advice: CoachAdvice | null;
@@ -27,6 +34,7 @@ export interface ActionZoneProps {
   onAct(a: Action): void;
   onPlay(card: Card): void;
   onConfirmHandout(): void;
+  onSlot(p: PlayerId): void;
   onBotFor(p: PlayerId): void;
   onWhy(): void;
 }
@@ -44,7 +52,7 @@ export function ActionZone(p: ActionZoneProps) {
   const t = useT();
   const phase = zonePhase(view, p.idle);
   const myTurn = phase === view.phase;
-  const wait = <WaitLine view={view} room={p.room} now={p.now} busy={p.busy} onBotFor={p.onBotFor} />;
+  const wait = <WaitLine view={view} room={p.room} now={p.now} busy={p.busy} waitFor={p.waitFor} held={p.held} onBotFor={p.onBotFor} />;
   let body: ReactNode;
   if (view.paused) body = <PausedPanel view={view} busy={p.busy} onAct={p.onAct} />;
   else if (view.phase === 'gameEnd') body = <p className="zone__text">{t('game.gameOver')}</p>;
@@ -65,7 +73,7 @@ export function ActionZone(p: ActionZoneProps) {
         body = <DecisionPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} onAct={p.onAct} />;
         break;
       case 'handout':
-        body = <HandoutPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} given={p.given} selected={p.selected} onConfirm={p.onConfirmHandout} />;
+        body = <HandoutPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} given={p.given} next={p.next} onSlot={p.onSlot} onConfirm={p.onConfirmHandout} />;
         break;
       case 'tricks':
         body = <TrickPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} selected={p.selected} onPlay={p.onPlay} />;

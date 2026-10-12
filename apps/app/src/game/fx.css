@@ -1,9 +1,92 @@
-.fx { position: absolute; left: 50%; top: 50%; width: calc(var(--card-w) * 3.2); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; }
-.fx--marriage { border: 3px solid rgba(212, 175, 55, 0.85); box-shadow: 0 0 24px 6px rgba(212, 175, 55, 0.45), inset 0 0 18px rgba(245, 231, 163, 0.4); animation: fx-ring 1.4s ease-out forwards; }
-.fx--trumpwin { background: radial-gradient(circle, rgba(96, 165, 250, 0.55), transparent 65%); animation: fx-burst 0.8s ease-out forwards; }
-@keyframes fx-ring { from { opacity: 0; scale: 0.6; } 25% { opacity: 1; } to { opacity: 0; scale: 1.15; } }
-@keyframes fx-burst { from { opacity: 0.9; scale: 0.5; } to { opacity: 0; scale: 1.3; } }
+/* Table effects, ported from the OG app (apps/web TrickPile.tsx / Card.tsx), same palette:
+   gold #d4af37 / highlight #f5e7a3 / dark #b8941f, blue #60a5fa / #93c5fd. They sit under the trick cards. */
+/* About the trick's size, but never much taller than the table cell (se). */
+.fx { position: absolute; left: 50%; top: 50%; height: min(calc(var(--card-w) * 3.3), 100% + 24px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; z-index: 0; }
+.fx > span { position: absolute; border-radius: 50%; pointer-events: none; }
+
+/* Marriage: a rotating gold ring (conic, 8 s loop), a pulsing inner glow (2 s) and 8 sparks drifting out. */
+.fx--marriage .fx__ring {
+  inset: 0;
+  background: conic-gradient(from 0deg, transparent 0deg, rgba(212, 175, 55, 0.75) 30deg, rgba(245, 231, 163, 0.95) 60deg,
+    rgba(212, 175, 55, 0.75) 90deg, transparent 120deg, transparent 180deg, rgba(212, 175, 55, 0.75) 210deg,
+    rgba(245, 231, 163, 0.95) 240deg, rgba(212, 175, 55, 0.75) 270deg, transparent 300deg, transparent 360deg);
+  -webkit-mask: radial-gradient(closest-side, transparent 86%, #000 89%, #000 100%);
+  mask: radial-gradient(closest-side, transparent 86%, #000 89%, #000 100%);
+  filter: drop-shadow(0 0 6px rgba(212, 175, 55, 0.9));
+  animation: fx-spin 8s linear infinite, fx-in 0.5s ease-out;
+}
+/* A steady gold hairline under the rotating arcs, so the circle reads as a whole ring. */
+.fx--marriage::before {
+  content: ''; position: absolute; inset: 1.5%; border-radius: 50%;
+  border: 2px solid rgba(212, 175, 55, 0.7);
+  box-shadow: 0 0 18px 4px rgba(212, 175, 55, 0.45), inset 0 0 22px rgba(245, 231, 163, 0.35);
+  animation: fx-in 0.5s ease-out;
+}
+.fx--marriage .fx__glow {
+  inset: 14%;
+  background: radial-gradient(circle, rgba(212, 175, 55, 0.5) 0%, rgba(245, 231, 163, 0.28) 40%, transparent 70%);
+  box-shadow: 0 0 30px 10px rgba(212, 175, 55, 0.35);
+  animation: fx-pulse 2s ease-in-out infinite;
+}
+.fx__spark {
+  left: 50%; top: 50%; width: 7px; height: 7px; margin: -3.5px 0 0 -3.5px; opacity: 0;
+  background: radial-gradient(circle, #fff 0%, #f5e7a3 50%, #d4af37 100%);
+  box-shadow: 0 0 8px 2px rgba(245, 231, 163, 0.85);
+  animation: fx-spark 2s ease-out var(--d, 0s) infinite;
+}
+.fx--trumpwin .fx__spark {
+  background: radial-gradient(circle, #fff 0%, #93c5fd 50%, #60a5fa 100%);
+  box-shadow: 0 0 8px 2px rgba(147, 197, 253, 0.9);
+  animation: fx-spark 0.9s ease-out var(--d, 0s) 2 both;
+}
+
+/* Trump win: a blue glow that pulses for the whole hold (OG: 1.2 s once, too quick to notice). */
+.fx--trumpwin .fx__glow {
+  inset: 6%;
+  background: radial-gradient(circle, rgba(147, 197, 253, 0.65) 0%, rgba(96, 165, 250, 0.35) 42%, transparent 70%);
+  box-shadow: 0 0 34px 12px rgba(96, 165, 250, 0.45);
+  animation: fx-in 0.3s ease-out, fx-pulse 1.3s ease-in-out 0.3s infinite;
+}
+
+@keyframes fx-spin { to { rotate: 360deg; } }
+@keyframes fx-in { from { opacity: 0; scale: 0.7; } }
+@keyframes fx-pulse { 0%, 100% { opacity: 0.55; scale: 1; } 50% { opacity: 1; scale: 1.08; } }
+@keyframes fx-spark {
+  0% { opacity: 0; transform: rotate(var(--a)) translateX(0) scale(0); }
+  30% { opacity: 1; transform: rotate(var(--a)) translateX(calc(var(--card-w) * 0.9)) scale(1.1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateX(calc(var(--card-w) * 1.6)) scale(0); }
+}
+
+/* The declared queen on the table: OG metallic gold face, gold frame and glow. */
+.card--gold {
+  background: linear-gradient(135deg, #d4af37 0%, #f5e7a3 15%, #d4af37 30%, #b8941f 45%, #d4af37 60%, #f5e7a3 75%, #d4af37 100%);
+  border-color: #b8941f;
+  box-shadow: 0 0 0 2px #f5e7a3, 0 0 20px 4px rgba(212, 175, 55, 0.8), 0 0 40px 8px rgba(245, 231, 163, 0.35);
+}
+.card--gold.card--red { color: #8f1a14; }
+.card--gold:not(.card--red) { color: #1b1408; }
+.card--gold .card__face::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 45%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.28) 55%, transparent 70%);
+  background-size: 250% 100%;
+  animation: gold-shimmer 2.5s ease-in-out infinite;
+}
+@keyframes gold-shimmer { from { background-position: 150% 0; } to { background-position: -100% 0; } }
+
+/* The card that took the held trick: on top, a little larger, ringed. Blue and pulsing when a trump took it. */
+.tcard--win { z-index: 5; scale: 1.1; box-shadow: 0 0 0 3px var(--accent), 0 0 18px 4px color-mix(in srgb, var(--accent) 70%, transparent), var(--card-shadow); }
+.tcard--win.card--gold { box-shadow: 0 0 0 3px #f5e7a3, 0 0 22px 6px rgba(212, 175, 55, 0.9), 0 0 44px 10px rgba(245, 231, 163, 0.4); }
+.tcard--win-trump {
+  box-shadow: 0 0 0 3px #60a5fa, 0 0 22px 8px rgba(96, 165, 250, 0.9), 0 0 46px 16px rgba(147, 197, 253, 0.5);
+  animation: trump-win 1.3s ease-in-out infinite;
+}
+@keyframes trump-win { 50% { box-shadow: 0 0 0 4px #93c5fd, 0 0 30px 12px rgba(96, 165, 250, 1), 0 0 60px 22px rgba(147, 197, 253, 0.6); } }
+.tcard--lost { filter: saturate(0.8) brightness(0.93); }
+
 @media (prefers-reduced-motion: reduce) {
-  .fx--marriage, .fx--trumpwin { animation: fx-fade 1.5s ease-out forwards; scale: 1; }
-  @keyframes fx-fade { from { opacity: 0.8; } to { opacity: 0; } }
+  /* Static gold ring and glow; static blue glow; no sparks or shimmer. */
+  .fx--marriage .fx__ring, .fx--marriage::before, .fx--marriage .fx__glow, .fx--trumpwin .fx__glow { animation: none; opacity: 1; scale: 1; }
+  .fx__spark { display: none; }
+  .card--gold .card__face::after { animation: none; background: none; }
+  .tcard--win-trump { animation: none; }
 }

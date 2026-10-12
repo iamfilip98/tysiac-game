@@ -3,6 +3,7 @@ import { textSuits } from './cards';
 import { engineText } from '../i18n/engineText';
 import { Sheet } from '../ui/Sheet';
 import { who } from '../store/notes';
+import { BARREL, bidChip } from './format';
 import { t } from '../i18n';
 import { useT } from '../i18n/useT';
 
@@ -15,7 +16,8 @@ export function roundHeadline(summary: RoundSummary, view: PlayerView): string {
   return t(you ? 'game.result.failed.you' : 'game.result.failed', p);
 }
 
-const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
+/** Signed with a real minus sign. */
+const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
 
 export interface RoundResultSheetProps {
   summary: RoundSummary;
@@ -24,6 +26,10 @@ export interface RoundResultSheetProps {
   onContinue(): void;
 }
 
+/**
+ * OG RoundResultModal: a made/failed banner, then one card per player (name and the round's points big,
+ * tricks and marriages, the running total), the bidder highlighted with a made or failed badge.
+ */
 export function RoundResultSheet({ summary, view, note, onContinue }: RoundResultSheetProps) {
   useT();
   return (
@@ -35,32 +41,52 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
         </button>
       }
     >
-      <p className="result__headline display">{roundHeadline(summary, view)}</p>
-      <table className="result">
-        <thead>
-          <tr>
-            <th>{t('game.col.player')}</th>
-            <th>{t('game.col.tricks')}</th>
-            <th>{t('game.col.marriages')}</th>
-            <th>{t('game.col.round')}</th>
-            <th>{t('game.col.total')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {summary.players.map(p => (
-            <tr key={p.playerId}>
-              <td>{who(view, p.playerId)}</td>
-              <td>{p.sittingOut ? '·' : p.trickPoints}</td>
-              <td>{p.marriagePoints || ''}</td>
-              <td className={p.scoreChange < 0 ? 'neg' : ''}>{signed(p.scoreChange)}</td>
-              <td>
-                {p.newTotalScore}
-                {p.newTotalScore >= RULES.barrelAt && p.newTotalScore < RULES.winAt ? ' 🛢' : ''}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <p className={`result__headline result__headline--${summary.outcome} display`}>{roundHeadline(summary, view)}</p>
+      <ul className="rrows">
+        {summary.players.map(p => {
+          const seat = view.seats.find(s => s.id === p.playerId);
+          const bidder = p.playerId === summary.bidder;
+          const barrel = p.newTotalScore >= RULES.barrelAt && p.newTotalScore < RULES.winAt;
+          return (
+            <li
+              key={p.playerId}
+              className={`rrow ${bidder ? 'rrow--bidder' : ''} ${p.playerId === view.me ? 'rrow--me' : ''} ${p.sittingOut ? 'rrow--out' : ''}`}
+            >
+              <span className="avatar rrow__avatar" aria-hidden="true">
+                {seat?.avatar}
+              </span>
+              <span className="rrow__who">
+                <span className="rrow__name">{who(view, p.playerId)}</span>
+                {bidder && (
+                  <span className={`chip rrow__bid rrow__bid--${summary.outcome}`}>
+                    {summary.outcome === 'made'
+                      ? t('game.result.badgeMade', { bid: bidChip(summary.bid) })
+                      : summary.outcome === 'failed'
+                        ? t('game.result.badgeFailed', { bid: bidChip(summary.bid) })
+                        : bidChip(summary.bid)}
+                  </span>
+                )}
+              </span>
+              <span className={`rrow__delta display ${p.scoreChange < 0 ? 'neg' : p.scoreChange > 0 ? 'pos' : ''}`}>{signed(p.scoreChange)}</span>
+              <span className="rrow__detail">
+                {p.sittingOut ? (
+                  t('game.opp.sitsOut')
+                ) : (
+                  <>
+                    {t('game.col.tricks')} {p.trickPoints}
+                    {p.marriagePoints > 0 && <> · {t('game.col.marriages')} +{p.marriagePoints}</>}
+                  </>
+                )}
+                {p.fellOffBarrel && <span className="rrow__fell"> · {t('game.result.fellOff')}</span>}
+              </span>
+              <span className="rrow__total">
+                {t('game.col.total')} <b>{p.newTotalScore}</b>
+                {barrel && ` ${BARREL}`}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
       {note && (
         <p className="coachnote">
           <b>{t('game.coach.label')}</b> {textSuits(engineText(note, view))}

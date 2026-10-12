@@ -34,8 +34,8 @@ html:has(.game), body:has(.game) {
   grid-template-rows: auto auto minmax(0, 1fr) auto auto var(--hand-h);
   grid-template-areas: 'top' 'opps' 'table' 'zone' 'self' 'hand';
   gap: 6px;
-  /* +8px: iOS 26 blurs content just below the status bar in home-screen apps. */
-  padding: calc(var(--sa-top) + 8px) max(var(--sa-right), 12px) max(var(--sa-bottom), 14px)
+  /* Below the status bar and its iOS 26 blur (see --status-clear). */
+  padding: var(--status-clear) max(var(--sa-right), 12px) max(var(--sa-bottom), 14px)
     max(var(--sa-left), 12px);
   overflow: hidden;
   overscroll-behavior: none;

@@ -34,6 +34,11 @@ for (const mode of MODES) {
     await page.getByRole('button', { name: 'Practice vs bots' }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await setSafeInsets(page, mode.insets);
+    if (mode.insets.top > 0) {
+      // iOS 26 blurs ~20-25px below the status bar in a web clip: the top bar must start below that.
+      const top = await page.locator('.topbar').evaluate(e => e.getBoundingClientRect().top);
+      expect(top, 'top bar clears the status-bar blur').toBeGreaterThanOrEqual(mode.insets.top + 28);
+    }
     await openMenuSheetCheck(page, safe);
     // Bid until the human wins, so decision and hand-out are reached; stop after one round result.
     const seen = new Set<string>();

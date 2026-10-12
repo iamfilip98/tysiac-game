@@ -9,7 +9,7 @@ export interface HandProps {
   /** cardKey of the raised card. */
   selected: string | null;
   isPlayable(card: Card): boolean;
-  /** cardKeys the coach recommends (thin accent outline): the card to play, or the hand-out cards. */
+  /** cardKeys the coach recommends (gold arrow above; never raised or selected): the card to play, or the hand-out cards. */
   recommended: readonly string[];
   /** Marriages already declared by the viewer (no tag for those). */
   declared: readonly Suit[];
@@ -34,17 +34,20 @@ export function Hand({ cards, selected, isPlayable, recommended, declared, trump
     const raised = [k, sorted[iq]].some(c => cardKey(c) === selected);
     return [{ suit: k.suit, text, i: adjacent ? ik : iq, span: adjacent ? 2 : 1, raised }];
   });
+  const underPill = (i: number) => tags.some(t => i >= t.i && i < t.i + t.span);
+  const arrows = sorted.flatMap((c, i) => (recommended.includes(cardKey(c)) ? [{ key: cardKey(c), i, raised: cardKey(c) === selected }] : []));
   return (
     <div className="hand" role="group" aria-label={t('game.hand')} style={{ '--n': sorted.length } as CSSProperties}>
       {sorted.map((card, i) => {
         const key = cardKey(card);
-        const look: CardLook = key === selected ? 'raised' : !isPlayable(card) ? 'dim' : recommended.includes(key) ? 'recommended' : 'normal';
+        const look: CardLook = key === selected ? 'raised' : !isPlayable(card) ? 'dim' : 'normal';
         return (
           <CardButton
             key={key}
             card={card}
             look={look}
             glow={glowFor(card, cards, declared, trump)}
+            coach={recommended.includes(key)}
             shake={shake === key}
             className={`hand__card ${key === fresh ? 'card--fresh' : ''}`}
             style={{ '--i': i } as CSSProperties}
@@ -61,6 +64,19 @@ export function Hand({ cards, selected, isPlayable, recommended, declared, trump
           aria-hidden="true"
         >
           {t.text}
+        </span>
+      ))}
+      {arrows.map(a => (
+        <span
+          key={a.key}
+          className={`hand__coach ${a.raised ? 'hand__coach--up' : ''} ${underPill(a.i) ? 'hand__coach--pill' : ''}`}
+          data-coach-arrow={a.key}
+          style={{ '--i': a.i, '--last': a.i === sorted.length - 1 ? 1 : 0 } as CSSProperties}
+          aria-hidden="true"
+        >
+          <svg viewBox="0 0 24 20" width="24" height="20">
+            <path d="M3 3h18L12 17z" />
+          </svg>
         </span>
       ))}
     </div>

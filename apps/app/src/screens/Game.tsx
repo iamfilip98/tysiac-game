@@ -3,8 +3,8 @@ import { useLocation } from 'wouter';
 import { useShallow } from 'zustand/react/shallow';
 import { advise, cardEquals, cardKey, explainIllegal, type Card, type PlayerId, type PlayerView } from '@tysiac/engine';
 import { coachOn, useRoom } from '../store/room';
-import { RECEIVED_MS, isIdle } from '../store/client';
-import { useSelection } from '../game/selection';
+import { isIdle } from '../store/client';
+import { nextRecipient, useSelection } from '../game/selection';
 import { useNow } from '../game/useNow';
 import { TopBar } from '../game/TopBar';
 import { Opponents } from '../game/Opponents';
@@ -47,7 +47,7 @@ function illegalText(view: PlayerView, card: Card): string | null {
 export default function Game() {
   const s = useRoom(
     useShallow(st => ({
-      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo, fx: st.fx, announce: st.announce, received: st.received,
+      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo, marriage: st.marriage, held: st.held, announce: st.announce, received: st.received,
       pending: st.pending, inflight: st.inflight, shake: st.shake, toast: st.toast, roundResult: st.roundResult, note: st.note,
       clockOffset: st.clockOffset,
     })),
@@ -87,11 +87,6 @@ export default function Game() {
     if (!turnLive) useSelection.getState().select(null);
   }, [turnLive]);
   useEffect(() => {
-    if (!s.received) return;
-    const timer = setTimeout(() => useRoom.getState().clearReceived(), RECEIVED_MS);
-    return () => clearTimeout(timer);
-  }, [s.received]);
-  useEffect(() => {
     if (!s.shake) return;
     const timer = setTimeout(() => useRoom.getState().clearShake(), 600);
     return () => clearTimeout(timer);
@@ -116,6 +111,9 @@ export default function Game() {
   const selectedCard = hand.find(c => cardKey(c) === sel.selected) ?? null;
   const recommended = recommendedKeys(advice, givenCards);
   const isHost = s.room?.hostId === s.me;
+  const handingOut = myTurn && shown.phase === 'handout';
+  const recipients = r ? r.active.filter(p => p !== shown.me) : [];
+  const next = handingOut ? nextRecipient(recipients, sel.given, sel.target) : null;
 
   const onCardTap = (card: Card) => {
     room.clearToast();
@@ -136,9 +134,10 @@ export default function Game() {
       sel.select(sel.selected === key ? null : key);
       return;
     }
-    if (shown.phase === 'handout' && myTurn) {
+    if (handingOut) {
+      // One tap per card: it goes straight to the next empty slot (or the slot tapped first).
       sel.setHint(null);
-      sel.select(sel.selected === key ? null : key);
+      if (next) sel.give(next, card);
     }
   };
   const onPlay = (card: Card) => {
@@ -149,8 +148,9 @@ export default function Game() {
     // Keep `given` (cards stay out of the hand, chips stay) until the phase changes; a reject leaves it restorable.
     room.act({ type: 'handout', to: { ...sel.given } });
   };
-  const onTarget = (p: PlayerId) => {
-    if (selectedCard) sel.give(p, selectedCard);
+  const onSlot = (p: PlayerId) => {
+    if (sel.given[p]) sel.ungive(p);
+    else sel.setTarget(p);
   };
   const leave = () => {
     room.detach();
@@ -160,19 +160,28 @@ export default function Game() {
 
   return (
     <>
-      <main className="game" data-phase={shown.phase} data-seq={s.view?.seq ?? 0}>
+      <main
+        className="game"
+        data-phase={shown.phase}
+        data-seq={s.view?.seq ?? 0}
+        data-holding={s.holding || undefined}
+        onClick={e => {
+          // The table takes no taps (pointer-events: none), so a tap on it lands here: it skips the trick hold.
+          if (e.target === e.currentTarget) room.skipHold();
+        }}
+      >
         <TopBar view={shown} onMenu={() => setSheet('menu')} onScores={() => setSheet('score')} />
         <Opponents
           view={shown}
           room={s.room}
           given={sel.given}
-          targetable={myTurn && shown.phase === 'handout' && selectedCard !== null}
-          onTarget={onTarget}
-          onUngive={sel.ungive}
+          targetable={handingOut}
+          next={next}
+          onTarget={onSlot}
         />
-        <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} fx={s.fx} />
+        <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} marriage={s.marriage} held={s.holding ? s.held : null} />
         <Ticker view={shown} announce={s.announce} />
-        {s.received && <ReceivedCard view={shown} received={s.received} onDismiss={() => room.clearReceived()} />}
+        {s.received?.open && <ReceivedCard view={shown} received={s.received} onDismiss={() => room.clearReceived()} />}
         <ActionZone
           view={shown}
           room={s.room}
@@ -180,6 +189,9 @@ export default function Game() {
           busy={s.inflight !== null || s.pending !== null}
           selected={selectedCard}
           given={sel.given}
+          next={next}
+          waitFor={s.view?.turn ?? null}
+          held={s.holding ? s.held : null}
           hint={sel.hint ?? s.toast}
           coach={coach}
           advice={advice}
@@ -188,6 +200,7 @@ export default function Game() {
           onAct={a => room.act(a)}
           onPlay={onPlay}
           onConfirmHandout={onConfirmHandout}
+          onSlot={onSlot}
           onBotFor={p => room.send({ t: 'botFor', playerId: p })}
           onWhy={() => setSheet('why')}
         />
