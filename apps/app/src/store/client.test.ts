@@ -48,7 +48,7 @@ describe('applyServer', () => {
   it('a resync state drops the queue and the pending card', () => {
     const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'me');
     let c = beginPlay(ready(s0), 'p1', firstCard(s0));
-    c = { ...c, queue: [{ type: 'paused', p: 'b', audience: 'all' }] };
+    c = { ...c, queue: [{ type: 'paused', p: 'b', audience: 'all' }], needsResync: true };
     const c2 = applyServer(c, stateMsg(s0), 0);
     expect(c2.queue).toEqual([]);
     expect(c2.pending).toBeNull();
@@ -103,6 +103,29 @@ describe('applyServer', () => {
     expect(c.queue).toEqual([]);
     expect(c.shown).toBe(c.view);
     expect(c.seq).toBe(s1.seq);
+  });
+
+  it('an empty-events newer state mid-playback keeps the queue', () => {
+    const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'b' && x.round!.trick.cards.length === 1);
+    const { state: s1, events } = botStep(s0);
+    const queued = applyServer(ready(s0), stateMsg(s1, events), 0);
+    const c = applyServer(queued, { ...stateMsg(s1), seq: s1.seq + 1 }, 0);
+    expect(c.queue).toHaveLength(1);
+    expect(c.seq).toBe(s1.seq + 1);
+    expect(c.shown).not.toBe(c.view);
+    expect(advance(c, false)!.kind).toBe('flight');
+  });
+
+  it('welcome clears in-flight, pending and queued state', () => {
+    const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'me');
+    let c = beginAct(beginPlay(ready(s0), 'p1', firstCard(s0)), 'a1');
+    c = { ...c, queue: [{ type: 'paused', p: 'b', audience: 'all' }], holding: true };
+    c = applyServer(c, welcomeMsg(), 0);
+    expect(c.inflight).toBeNull();
+    expect(c.pending).toBeNull();
+    expect(c.queue).toEqual([]);
+    expect(c.holding).toBe(false);
+    expect(c.needsResync).toBe(true);
   });
 
   it('error is stored', () => {

@@ -20,6 +20,8 @@ export interface ClientState {
   clockOffset: number;
   /** Seq of the last applied `state` message (-1 before the first, reset on welcome). */
   seq: number;
+  /** Set on welcome: the next state replaces everything silently (no animation). */
+  needsResync: boolean;
   /** Latest view from the server. */
   view: PlayerView | null;
   /** What the table shows; catches up with `view` as the event queue plays. */
@@ -42,14 +44,14 @@ export interface ClientState {
 }
 
 export const initialClient: ClientState = {
-  me: null, room: null, clockOffset: 0, seq: -1, view: null, shown: null, queue: [], holding: false, sweepTo: null,
+  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null,
   pending: null, inflight: null, shake: null, toast: null, roundResult: null, note: null, error: null,
 };
 
 export function applyServer(s: ClientState, msg: ServerMessage, localNow: number): ClientState {
   switch (msg.t) {
     case 'welcome':
-      return { ...s, me: msg.you, room: msg.room, clockOffset: msg.serverTime - localNow, seq: -1, error: null };
+      return { ...s, me: msg.you, room: msg.room, clockOffset: msg.serverTime - localNow, seq: -1, needsResync: true, queue: [], holding: false, pending: null, inflight: null, error: null };
     case 'room':
       return { ...s, room: msg.room };
     case 'state':
@@ -61,10 +63,14 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
         const idle = s.queue.length === 0 && !s.holding;
         return { ...s, view: msg.view, shown: idle ? msg.view : s.shown };
       }
-      // Newer with no events (first state, reconnect resync): replace everything, no animation.
-      if (msg.events.length === 0 || s.shown === null) {
-        return { ...s, seq: msg.seq, view: msg.view, shown: msg.view, queue: [], holding: false, pending: null, inflight: null };
+      // First state after a (re)connect: replace everything, no animation.
+      if (s.needsResync || s.shown === null) {
+        return {
+          ...s, seq: msg.seq, needsResync: false, view: msg.view, shown: msg.view, queue: [], holding: false,
+          pending: null, inflight: null, note: null, sweepTo: null, roundResult: null,
+        };
       }
+      // Newer state: queue its events (possibly none, e.g. choosing to play); `advance` syncs `shown`.
       return { ...s, seq: msg.seq, view: msg.view, queue: [...s.queue, ...msg.events] };
     case 'ack':
       return s.inflight === msg.id ? { ...s, inflight: null } : s;
