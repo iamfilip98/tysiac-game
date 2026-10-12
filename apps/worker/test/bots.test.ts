@@ -1,0 +1,73 @@
+import { describe, it, expect } from 'vitest';
+import { actionsEqual, createGame, legalActions, turnOf } from '@tysiac/engine';
+import type { GameState, Seat } from '@tysiac/engine';
+import { botActor, chooseBotAction } from '../src/room/bots';
+import type { RoomMeta } from '../src/room/types';
+import { setupTable } from './client';
+import { debugDump, sleep } from './helpers';
+
+const SEATS: Seat[] = [
+  { id: 'a', name: 'Ala', avatar: '🦊', isBot: false },
+  { id: 'b', name: 'Bartek', avatar: '🐻', isBot: false },
+  { id: 'c', name: 'Celina', avatar: '🦉', isBot: false },
+];
+
+function metaFor(state: GameState, bots: string[], botFor: string[] = []): RoomMeta {
+  return {
+    code: 'ABCDEF', maxPlayers: 3, hostId: 'a', status: 'playing', createdAt: 0, firstDealer: 0, gameId: 'g', startedAt: 0,
+    seats: state.seats.map((s) => ({
+      id: s.id, name: s.name, avatar: s.avatar, isBot: bots.includes(s.id), secretHash: null,
+      awaySince: null, botFor: botFor.includes(s.id), coach: false,
+    })),
+  };
+}
+
+describe('botActor / chooseBotAction', () => {
+  const state = createGame({ seed: 'bots-unit', seats: SEATS, maxPlayers: 3, firstDealer: 0 });
+  const actor = turnOf(state)!;
+
+  it('returns the player to act only when a bot (or bot-for) controls that seat', () => {
+    expect(botActor(state, metaFor(state, [actor]))).toBe(actor);
+    expect(botActor(state, metaFor(state, [], [actor]))).toBe(actor);
+    expect(botActor(state, metaFor(state, []))).toBeNull();
+    expect(botActor(state, metaFor(state, SEATS.map((s) => s.id).filter((id) => id !== actor)))).toBeNull();
+  });
+
+  it('never acts while paused or after the game', () => {
+    const meta = metaFor(state, [actor]);
+    expect(botActor({ ...state, paused: { by: 'a', at: 1 } }, meta)).toBeNull();
+    expect(botActor({ ...state, winner: 'a', phase: 'gameEnd' }, meta)).toBeNull();
+  });
+
+  it('chooses a legal, non-pause action', () => {
+    const action = chooseBotAction(state, actor, () => 0.5);
+    expect(action.type).not.toBe('pause');
+    expect(legalActions(state, actor).some((a) => actionsEqual(a, action))).toBe(true);
+  });
+});
+
+describe('bots in a room', () => {
+  it('play their turns via the alarm until a round has been scored', async () => {
+    const { host } = await setupTable({ humans: ['Ala'], bots: 2 });
+    host.autoplay = true;
+    host.playIfMyTurn();
+    const s = await host.next('state', (m) => m.view.rounds.length >= 1, 30_000);
+    expect(s.view.rounds[0].players).toHaveLength(3);
+    host.autoplay = false;
+  });
+
+  it('do not move while the game is paused, and continue after resume', async () => {
+    const { code, host } = await setupTable({ humans: ['Ala'], bots: 2 });
+    host.act({ type: 'pause' });
+    const paused = await host.next('state', (m) => m.view.paused !== null);
+    await sleep(300);
+    const dump = await debugDump(code);
+    expect(dump.state?.seq).toBe(paused.seq);
+    expect(dump.schedule.bot).toBeNull();
+
+    host.autoplay = true;
+    host.act({ type: 'resume' });
+    await host.next('state', (m) => m.seq >= paused.seq + 4, 10_000);
+    host.autoplay = false;
+  });
+});

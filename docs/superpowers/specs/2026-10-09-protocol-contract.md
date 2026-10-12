@@ -79,4 +79,5 @@ Behaviour notes:
 - After every accepted engine action the server sends each connected human `state` (personalised view + filtered events), and `ack` to the sender. Illegal → `reject` to the sender only.
 - `room` is broadcast on any lobby/seat/connection change.
 - Bots in the engine `Seat` have `isBot: true`; a human seat with an active bot-for has engine `Seat.botFor` = `'bot'`.
+- Close codes (exported from `@tysiac/protocol`): `CLOSE_REPLACED = 4000` = replaced by another connection of the same player; `CLOSE_PROTOCOL = 1008` = protocol violation or refused hello (preceded by an `error`). The client MUST NOT reconnect after either. An `error` with `versionMismatch` or `badSecret` is also terminal. (1000 = left, 1001 = room expired.)
 - Client keeps `playerId`/`secret` in localStorage (`tysiac.identity`), reconnects with backoff 0.5 s → 5 s and re-sends `hello`.
