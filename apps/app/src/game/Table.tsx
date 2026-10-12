@@ -29,7 +29,7 @@ export interface TableProps {
 export function Table({ view, pending, sweepTo }: TableProps) {
   const r = view.round;
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
-  const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending ? [{ p: view.me, card: pending }] : [])] : [];
+  const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending && !r.trick.cards.some(t => cardKey(t.card) === cardKey(pending)) ? [{ p: view.me, card: pending }] : [])] : [];
   const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'decision');
   return (
     <section className="table" aria-label="Table">

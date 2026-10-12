@@ -48,13 +48,13 @@
 
 .hand { grid-area: hand; position: relative; height: var(--hand-h); min-width: 0; }
 .hand__card {
-  --step: min(calc(var(--card-w) * 0.68), calc((100% - var(--card-w)) / max(var(--n) - 1, 1)));
+  --step: min(calc(var(--card-w, 64px) * 0.68), calc((100% - var(--card-w, 64px)) / max(var(--n) - 1, 1)));
   position: absolute;
   bottom: 0;
-  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w)) / 2 + var(--step) * var(--i));
+  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w, 64px)) / 2 + var(--step) * var(--i));
   transition: bottom 0.16s ease;
 }
-.hand__card.card--raised { bottom: calc(var(--card-w) * 0.24); }
+.hand__card.card--raised { bottom: calc(var(--card-w, 64px) * 0.24); }
 
 /* Generous tap targets. An invisible strip above each card extends its hit area; the raised
    card always stacks above its overlapping neighbours so they never steal its taps. */

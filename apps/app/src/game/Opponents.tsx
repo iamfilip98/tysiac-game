@@ -68,7 +68,7 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
       </span>
       <span className="opp__name">
         {s.name}
-        {seat?.coach && <span aria-label="coach on"> 🎓</span>}
+        {seat?.coach && <span role="img" aria-label="coach on"> 🎓</span>}
       </span>
       <span className="opp__meta">
         <span className="opp__score">{view.scores[id]?.total ?? 0}</span>
@@ -77,7 +77,7 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
       {sittingOut ? (
         <span className="opp__out">sits out</span>
       ) : (
-        <span className="backs" aria-label={`${count} cards`}>
+        <span className="backs" role="img" aria-label={`${count} cards`}>
           {Array.from({ length: count }, (_, i) => (
             <CardBack key={i} size="mini" />
           ))}
