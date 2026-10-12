@@ -2,7 +2,7 @@ import type { SoundName } from '../store/client';
 import { setSoundSink } from '../store/room';
 import { usePrefs } from '../store/prefs';
 
-export const SOUND_FILES: Record<SoundName, string> = {
+export const SOUND_FILES: Partial<Record<SoundName, string>> = {
   card: '/sounds/card.m4a',
   shuffle: '/sounds/shuffle.m4a',
   sweep: '/sounds/sweep.m4a',
@@ -14,18 +14,21 @@ export type AudioContextLike = Pick<
   'state' | 'resume' | 'currentTime' | 'destination' | 'createBufferSource' | 'createGain' | 'createOscillator' | 'decodeAudioData'
 >;
 
-interface Synth {
-  freqs: number[];
-  dur: number;
-  type: OscillatorType;
-  vol: number;
-}
+interface Note { f: number[]; at: number; dur: number }
+interface Synth { type: OscillatorType; vol: number; notes: Note[] }
+const seq = (fs: number[], dur: number): Note[] => fs.map((f, i) => ({ f: [f], at: i * dur * 0.6, dur }));
 
 const SYNTH: Record<SoundName, Synth> = {
-  card: { freqs: [180], dur: 0.06, type: 'triangle', vol: 0.18 },
-  shuffle: { freqs: [140, 190, 160], dur: 0.12, type: 'sawtooth', vol: 0.05 },
-  sweep: { freqs: [320, 240], dur: 0.14, type: 'triangle', vol: 0.08 },
-  turn: { freqs: [660, 880], dur: 0.18, type: 'sine', vol: 0.1 },
+  card: { type: 'triangle', vol: 0.18, notes: seq([180], 0.06) },
+  shuffle: { type: 'sawtooth', vol: 0.05, notes: seq([140, 190, 160], 0.12) },
+  sweep: { type: 'triangle', vol: 0.08, notes: seq([320, 240], 0.14) },
+  turn: { type: 'sine', vol: 0.1, notes: seq([660, 880], 0.18) },
+  marriage: { type: 'sine', vol: 0.08, notes: [{ f: [523, 659, 784], at: 0, dur: 0.4 }, { f: [587, 740, 880], at: 0.3, dur: 0.5 }] },
+  roundEnd: { type: 'triangle', vol: 0.08, notes: [{ f: [440, 554, 659], at: 0, dur: 0.6 }] },
+  gameWin: {
+    type: 'sine', vol: 0.1,
+    notes: [...seq([523, 659, 784, 1047], 0.25).map((n, i) => ({ ...n, at: i * 0.15 })), { f: [1047, 1319, 1568], at: 0.6, dur: 0.8 }],
+  },
 };
 
 function defaultContext(): AudioContextLike | null {
@@ -68,9 +71,9 @@ export class SoundPlayer {
     const ctx = this.context();
     if (!ctx) return Promise.resolve();
     this.loading ??= Promise.all(
-      (Object.keys(SOUND_FILES) as SoundName[]).map(async name => {
+      (Object.entries(SOUND_FILES) as [SoundName, string][]).map(async ([name, url]) => {
         try {
-          const res = await this.fetcher(SOUND_FILES[name]);
+          const res = await this.fetcher(url);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           this.buffers.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
           return true;
@@ -109,19 +112,21 @@ export class SoundPlayer {
   }
 
   private synth(ctx: AudioContextLike, s: Synth): void {
-    s.freqs.forEach((f, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      const t = ctx.currentTime + i * s.dur * 0.6;
-      osc.type = s.type;
-      osc.frequency.value = f;
-      gain.gain.setValueAtTime(s.vol, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + s.dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(t);
-      osc.stop(t + s.dur);
-    });
+    for (const n of s.notes) {
+      for (const f of n.f) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        const t = ctx.currentTime + n.at;
+        osc.type = s.type;
+        osc.frequency.value = f;
+        gain.gain.setValueAtTime(s.vol / Math.sqrt(n.f.length), t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + n.dur);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(t);
+        osc.stop(t + n.dur);
+      }
+    }
   }
 
   private context(): AudioContextLike | null {

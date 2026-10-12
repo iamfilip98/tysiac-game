@@ -6,7 +6,7 @@ import type { RoomInfo, ServerMessage } from '../net/protocol';
 import { eventNote } from './notes';
 import { announcementFor, type Announcement } from '../game/announce';
 
-export type SoundName = 'card' | 'shuffle' | 'sweep' | 'turn';
+export type SoundName = 'card' | 'shuffle' | 'sweep' | 'turn' | 'marriage' | 'roundEnd' | 'gameWin';
 
 export const FLIGHT_MS = 280;
 export const HOLD_MS = 1000;
@@ -214,11 +214,16 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
       };
     case 'roundScored':
     case 'threw':
-      return { state: { ...s, queue: rest, roundResult: e.summary, note: note() }, wait: 0, kind: 'pause' };
+      return {
+        state: { ...s, queue: rest, roundResult: e.summary, note: note() },
+        wait: 0,
+        kind: 'pause',
+        sound: rest.some(x => x.type === 'gameWon') ? 'gameWin' : 'roundEnd',
+      };
     case 'dealt':
       return { state: { ...s, queue: rest, note: null, sweepTo: null, fx: null, received: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
     case 'marriage':
-      return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), fx: { kind: 'marriage', suit: e.suit, id: ++fxId } }, wait: NOTE_MS, kind: 'beat' };
+      return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), fx: { kind: 'marriage', suit: e.suit, id: ++fxId } }, wait: NOTE_MS, kind: 'beat', sound: 'marriage' };
     case 'biddingWon':
     case 'wykladana':
       return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat' };

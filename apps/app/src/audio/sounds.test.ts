@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SOUND_FILES, SoundPlayer, installSounds, type AudioContextLike } from './sounds';
 
@@ -117,5 +119,30 @@ describe('installSounds', () => {
     document.dispatchEvent(new Event('visibilitychange'));
     expect(raw.resume).toHaveBeenCalled();
     vi.unstubAllGlobals();
+  });
+});
+
+/** Duration (s) from the MP4 'mvhd' box. */
+function m4aSeconds(path: string): number {
+  const b = readFileSync(path);
+  const i = b.indexOf('mvhd');
+  const version = b[i + 4];
+  const base = i + 8 + (version === 1 ? 16 : 8);
+  const timescale = b.readUInt32BE(base);
+  const duration = version === 1 ? Number(b.readBigUInt64BE(base + 4)) : b.readUInt32BE(base + 4);
+  return duration / timescale;
+}
+
+describe('sound assets', () => {
+  it('shuffle lasts at most 0.8 s', () => {
+    expect(m4aSeconds(join(process.cwd(), 'public/sounds/shuffle.m4a'))).toBeLessThanOrEqual(0.8);
+  });
+  it('marriage, roundEnd and gameWin are synthesised (no file) and actually schedule notes', () => {
+    for (const name of ['marriage', 'roundEnd', 'gameWin'] as const) {
+      expect(SOUND_FILES[name]).toBeUndefined();
+      const { ctx, started } = fakeCtx();
+      new SoundPlayer(() => true, () => ctx, () => Promise.reject(new Error('offline'))).play(name);
+      expect(started.length).toBeGreaterThanOrEqual(3);
+    }
   });
 });

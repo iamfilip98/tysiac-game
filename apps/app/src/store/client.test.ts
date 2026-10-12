@@ -238,6 +238,7 @@ describe('table fx', () => {
   it('a marriage sets the table fx, and a trump-won trick bursts while it is held', () => {
     const m = advance({ ...base, queue: [{ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }] }, false)!;
     expect(m.state.fx).toMatchObject({ kind: 'marriage', suit: 'hearts' });
+    expect(m.sound).toBe('marriage');
     const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: true, audience: 'all' };
     const hold = advance({ ...base, queue: [won] }, false)!;
     expect(hold.state.fx).toMatchObject({ kind: 'trumpWin' });
@@ -267,5 +268,16 @@ describe('received card', () => {
   it('the bidder does not get a received overlay', () => {
     const e = { type: 'handedOut', p: 'me', recipients: ['b', 'z'], cards: {}, audience: ['me'] } as GameEvent;
     expect(advance({ ...base, queue: [e] }, false)!.state.received).toBeNull();
+  });
+});
+
+describe('sounds for round end and game win', () => {
+  it('round end and game win have their own sounds', () => {
+    const v = viewOf(findState(x => x.phase === 'tricks'));
+    const summary = viewOf(findState(x => x.rounds.length > 0)).rounds[0];
+    const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+    expect(advance({ ...base, queue: [{ type: 'roundScored', summary, audience: 'all' } as GameEvent] }, false)!.sound).toBe('roundEnd');
+    const won = { type: 'gameWon', p: 'me', totals: {}, audience: 'all' } as GameEvent;
+    expect(advance({ ...base, queue: [{ type: 'roundScored', summary, audience: 'all' } as GameEvent, won] }, false)!.sound).toBe('gameWin');
   });
 });
