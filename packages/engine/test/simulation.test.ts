@@ -91,6 +91,15 @@ function deepFreeze<T>(x: T): T {
   return x;
 }
 
+/**
+ * Bots never throw in above 100 (it is always worse than playing), but people do: a quarter of those
+ * decisions throw here, so the throw-above-100 scoring branch is still exercised.
+ */
+function humanish(s: GameState, p: PlayerId, action: Action, rand: () => number): Action {
+  const over100 = s.phase === 'decision' && (s.round?.bid.amount ?? 0) > 100;
+  return over100 && rand() < 0.25 && legalActions(s, p).some(a => a.type === 'throw') ? { type: 'throw' } : action;
+}
+
 interface Played {
   state: GameState;
   log: Array<{ p: PlayerId; action: Action }>;
@@ -109,7 +118,7 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
     assert(p, `${tag}: nobody to act`);
     if (fullViews) for (const seat of seats) checkNoLeak(s, seat.id, tag);
     else checkNoLeak(s, p, tag);
-    const action = botAction(viewFor(s, p), rand);
+    const action = humanish(s, p, botAction(viewFor(s, p), rand), rand);
     assert(legalActions(s, p).some(a => actionsEqual(a, action)), `${tag}: bot chose illegal ${JSON.stringify(action)}`);
     const prevTotals = Object.fromEntries(Object.entries(s.scores).map(([id, x]) => [id, x.total]));
     const before = JSON.stringify(s);

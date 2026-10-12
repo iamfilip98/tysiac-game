@@ -1,6 +1,7 @@
-import type { Card, PlayerId, Rank, Suit } from '../types';
+import type { Action, Card, PlayerId, Rank, Suit } from '../types';
+import type { BidReason, DecisionReason, GiveWhy, HandoutReason } from './reasons';
 import { RULES, SUITS } from '../rules';
-import { hasMarriage, marriagesInHand, totalMarriageValue } from '../cards';
+import { cardEquals, hasMarriage, marriagesInHand, totalMarriageValue } from '../cards';
 import { maxBidFor } from '../bidding';
 
 // Port of the original AIPlayer evaluation heuristics (apps/server/src/ai/index.ts).
@@ -20,19 +21,6 @@ function suitCounts(hand: Card[]): number[] {
   return SUITS.map(suit => hand.filter(c => c.suit === suit).length);
 }
 
-export function evaluateHandStrength(hand: Card[]): number {
-  let strength = 0;
-  strength += hand.filter(c => c.rank === 'A').length * 0.15;
-  strength += hand.filter(c => c.rank === '10').length * 0.1;
-  for (const suit of SUITS) if (has(hand, suit, 'A') && has(hand, suit, '10')) strength += 0.1;
-  strength += hand.filter(c => c.rank === 'K').length * 0.05;
-  strength += marriagesInHand(hand).length * 0.2;
-  const counts = suitCounts(hand);
-  if (Math.max(...counts) >= 4) strength += 0.1;
-  strength += counts.filter(n => n === 0).length * 0.08;
-  return Math.min(1, strength);
-}
-
 /** Expected round points for a 7-card hand before seeing the talon. */
 export function expectedBidPoints(hand: Card[]): number {
   let points = totalMarriageValue(hand);
@@ -50,18 +38,24 @@ export function expectedBidPoints(hand: Card[]): number {
   return points + talonEstimate;
 }
 
-export type BidDecision = { shouldBid: true; amount: number } | { shouldBid: false };
+/** Floors to a multiple of 10: the figure the decisions compare and the coach quotes. */
+export function floorTen(points: number): number {
+  return Math.floor(points / 10) * 10;
+}
 
-export function decideBid(hand: Card[], currentBid: number, passedCount: number): BidDecision {
-  const maxBid = maxBidFor(hand);
-  const minBid = currentBid + RULES.bidStep;
-  if (minBid > maxBid) return { shouldBid: false };
-  const expected = expectedBidPoints(hand);
-  const aggression = passedCount > 0 ? 1.15 : 1.0;
-  const targetBid = Math.min(Math.floor((expected * aggression) / 10) * 10, maxBid);
-  if (targetBid >= minBid) return { shouldBid: true, amount: minBid };
-  if (evaluateHandStrength(hand) > 0.7 && minBid <= RULES.maxBidBase) return { shouldBid: true, amount: minBid };
-  return { shouldBid: false };
+/** Bid while the estimate is at least this far below the next bid (measured best of −10/0/+10/+20). */
+export const BID_MARGIN = -10;
+/** Estimate multiplier once someone has passed. */
+export const PASSED_BOOST = 1.15;
+
+export function decideBid(hand: Card[], currentBid: number, passedCount: number): { action: Action; reason: BidReason } {
+  const max = maxBidFor(hand);
+  const next = currentBid + RULES.bidStep;
+  if (next > max) return { action: { type: 'pass' }, reason: { code: 'pass.overMax', next, max } };
+  const boosted = passedCount > 0;
+  const worth = floorTen(expectedBidPoints(hand) * (boosted ? PASSED_BOOST : 1));
+  if (worth < next + BID_MARGIN) return { action: { type: 'pass' }, reason: { code: 'pass.worth', next, worth, boosted } };
+  return { action: { type: 'bid', amount: next }, reason: { code: worth >= next ? 'bid.worth' : 'bid.close', next, worth, boosted } };
 }
 
 /** Expected round points for the 10-card hand (7 + talon) before the hand-out. */
@@ -83,14 +77,23 @@ export function postTalonExpectedPoints(hand: Card[]): number {
   return points;
 }
 
-export function decidePlayOrThrow(hand: Card[], bid: number, onBarrel: boolean): 'play' | 'throw' {
-  const expected = postTalonExpectedPoints(hand);
-  // Throwing at 100 is free; playing and failing costs 100.
-  if (bid <= RULES.autoBid) return expected >= 80 ? 'play' : 'throw';
-  // On the barrel a throw costs the bid anyway — always play.
-  if (onBarrel) return 'play';
-  const threshold = bid <= 130 ? 0.8 : bid <= 170 ? 0.85 : 0.9;
-  return expected >= bid * threshold ? 'play' : 'throw';
+/** At 100 (a free throw) play only with at least this estimate. */
+export const PLAY_AT_100 = 80;
+
+/**
+ * Above 100 the bot always plays: a throw costs the bid exactly like a failed round, and also pays each
+ * opponent their share of the throw pool, while playing keeps a chance of making it.
+ */
+export function decidePlayOrThrow(hand: Card[], bid: number): { action: Action; reason: DecisionReason } {
+  const est = floorTen(postTalonExpectedPoints(hand));
+  const play = { type: 'play' } as const;
+  if (est >= bid) return { action: play, reason: { code: 'play.enough', est, bid } };
+  if (bid <= RULES.autoBid) {
+    return est >= PLAY_AT_100
+      ? { action: play, reason: { code: 'play.close', est, bid } }
+      : { action: { type: 'throw' }, reason: { code: 'throw.free', est, bid } };
+  }
+  return { action: play, reason: { code: 'play.noThrow', est, bid, share: Math.floor(RULES.throwPool / 2) } };
 }
 
 /** Higher = more willing to give this card away in the hand-out. */
@@ -106,22 +109,55 @@ export function handoutGiveScore(card: Card, hand: Card[]): number {
   if (card.rank === '10') score += has(hand, card.suit, 'A') ? -10 : 2;
   if (card.rank === 'Q' || card.rank === 'K') score -= 3;
   if (card.rank === '9') score += 8;
+  // A lone K or Q can complete an opponent's marriage; a 10 or A hands them points.
+  if (card.rank === 'Q' || card.rank === 'K') score -= 25;
+  if (card.rank === '10' || card.rank === 'A') score -= 25;
   return score;
 }
 
-/** Picks the two most expendable cards; the better one goes to the opponent with the lower score. */
+function giveWhy(card: Card, after: Card[]): GiveWhy {
+  if (!after.some(c => c.suit === card.suit)) return 'void';
+  if (PTS[card.rank] === 0) return 'zero';
+  return card.rank === 'J' ? 'low' : 'forced';
+}
+
+/**
+ * Picks the two most expendable cards; the better one goes to the opponent with the lower score.
+ * `fixed`: cards the player has already assigned (the coach then recommends only the rest).
+ */
 export function decideHandout(
   hand: Card[],
   recipients: PlayerId[],
   totals: Record<PlayerId, number>,
-): Record<PlayerId, Card> {
-  const scored = hand
+  fixed: Partial<Record<PlayerId, Card>> = {},
+): { action: Action; reason: HandoutReason } {
+  const done = recipients.filter(p => fixed[p] && hand.some(h => cardEquals(h, fixed[p]!)));
+  const open = recipients.filter(p => !done.includes(p));
+  const taken = done.map(p => fixed[p]!);
+  const ranked = hand
+    .filter(card => !taken.some(t => cardEquals(t, card)))
     .map(card => ({ card, score: handoutGiveScore(card, hand) }))
-    .sort((a, b) => b.score - a.score);
-  const card1 = scored[0].card;
-  const card2 = scored[1].card;
-  const [x, y] = recipients;
-  const [better, worse] = cardValue(card1) >= cardValue(card2) ? [card1, card2] : [card2, card1];
-  const [weaker, stronger] = (totals[x] ?? 0) <= (totals[y] ?? 0) ? [x, y] : [y, x];
-  return { [weaker]: { ...better }, [stronger]: { ...worse } };
+    .sort((a, b) => b.score - a.score)
+    .map(x => x.card);
+  const to: Record<PlayerId, Card> = {};
+  let betterTo: PlayerId | null = null;
+  if (open.length === 2) {
+    const [card1, card2] = ranked;
+    const [x, y] = open;
+    const [better, worse] = cardValue(card1) >= cardValue(card2) ? [card1, card2] : [card2, card1];
+    const [weaker, stronger] = (totals[x] ?? 0) <= (totals[y] ?? 0) ? [x, y] : [y, x];
+    to[weaker] = { ...better };
+    to[stronger] = { ...worse };
+    if ((totals[x] ?? 0) !== (totals[y] ?? 0)) betterTo = weaker;
+  } else {
+    open.forEach((p, i) => (to[p] = { ...ranked[i] }));
+  }
+  const gives = Object.entries(to);
+  const all = [...taken, ...gives.map(([, card]) => card)];
+  const after = hand.filter(h => !all.some(g => cardEquals(g, h)));
+  for (const p of done) to[p] = { ...fixed[p]! };
+  return {
+    action: { type: 'handout', to },
+    reason: { code: 'handout', gives: gives.map(([p, card]) => ({ to: p, card, why: giveWhy(card, after) })), betterTo },
+  };
 }
