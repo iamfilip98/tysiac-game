@@ -2,13 +2,23 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, rebuild]
   pull_request:
-    branches: [main]
+    branches: [main, rebuild]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  WRANGLER_SEND_METRICS: 'false'
 
 jobs:
-  test:
+  check:
+    name: typecheck, unit tests, build
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -18,4 +28,39 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      - run: pnpm test
+      - name: Unit tests (one package at a time; the app suite times out under parallel load)
+        run: pnpm -r --workspace-concurrency=1 --if-present test
+      - name: Build app (initial-JS budget + PWA checks)
+        run: pnpm --filter @tysiac/app build
+
+  e2e:
+    name: e2e (${{ matrix.suite }})
+    needs: check
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [local, worker]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Install WebKit
+        run: pnpm --filter @tysiac/app exec playwright install --with-deps webkit
+      - name: Playwright (vite preview, in-browser rooms, 5 viewports)
+        if: matrix.suite == 'local'
+        run: pnpm --filter @tysiac/app e2e
+      - name: Playwright (wrangler dev, real Worker)
+        if: matrix.suite == 'worker'
+        run: pnpm --filter @tysiac/app e2e:worker
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-${{ matrix.suite }}
+          path: apps/app/test-results
+          retention-days: 7
