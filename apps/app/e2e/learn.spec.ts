@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { firstLaunch, move } from './helpers';
+import { CARD_STRIP, firstLaunch, move } from './helpers';
 import { expectFits, expectSafe, setSafeInsets } from './layout';
 
 interface ExpectedHint { type: string; amount?: number; card?: string; give?: { card: string; to: string }[] }
@@ -16,11 +16,11 @@ async function perform(page: Page, e: ExpectedHint): Promise<void> {
     case 'throw':
       return page.getByRole('button', { name: 'Throw in' }).click();
     case 'card':
-      await hand.getByRole('button', { name: e.card! }).click();
+      await hand.getByRole('button', { name: e.card! }).click({ position: CARD_STRIP });
       return page.getByRole('button', { name: `Play ${e.card}` }).click();
     case 'handout':
       for (const g of e.give!) {
-        await hand.getByRole('button', { name: g.card }).click();
+        await hand.getByRole('button', { name: g.card }).click({ position: CARD_STRIP });
         await page.getByRole('button', { name: `Give to ${g.to}` }).click();
       }
       return page.getByRole('button', { name: 'Confirm hand-out' }).click();

@@ -1,22 +1,34 @@
 import type { CSSProperties } from 'react';
 import { m } from 'motion/react';
-import { SUIT_SYMBOL, cardKey, cardLabel, type Card } from '@tysiac/engine';
+import { cardKey, cardLabel, type Card } from '@tysiac/engine';
 import { isRed } from './cards';
 import './card.css';
 
 export type CardLook = 'normal' | 'dim' | 'raised' | 'recommended';
 
+/** Suit glyphs with U+FE0E: iOS otherwise may draw ♥/♦ as colour emoji. */
+export const SUIT_TEXT: Record<Card['suit'], string> = {
+  hearts: '♥\uFE0E',
+  diamonds: '♦\uFE0E',
+  clubs: '♣\uFE0E',
+  spades: '♠\uFE0E',
+};
+
 export function CardFace({ card }: { card: Card }) {
-  const s = SUIT_SYMBOL[card.suit];
+  const s = SUIT_TEXT[card.suit];
+  const idx = (br: boolean) => (
+    <span className={`card__idx ${br ? 'card__idx--br' : ''}`} aria-hidden="true">
+      <span className="card__rank">{card.rank}</span>
+      <span className="card__suit">{s}</span>
+    </span>
+  );
   return (
     <>
-      <span className="card__idx" aria-hidden="true">
-        <span className="card__rank">{card.rank}</span>
-        <span className="card__suit">{s}</span>
-      </span>
+      {idx(false)}
       <span className="card__pip" aria-hidden="true">
         {s}
       </span>
+      {idx(true)}
     </>
   );
 }

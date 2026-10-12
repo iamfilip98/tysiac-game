@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
 import { cardKey, parseCards, type Card } from '@tysiac/engine';
 import { Hand } from './Hand';
+import { CardFace, SUIT_TEXT } from './Card';
 import { marriageTag, sortHand } from './cards';
 
 const cards = parseCards('9S KH 10D QH AS');
@@ -51,5 +52,24 @@ describe('Hand', () => {
     const copy = [...cards];
     sortHand(cards);
     expect(cards).toEqual(copy);
+  });
+});
+
+describe('CardFace', () => {
+  it('draws a top-left index, a mirrored bottom-right index and a centre suit', () => {
+    const { container } = render(
+      <span className="card">
+        <CardFace card={{ suit: 'hearts', rank: 'Q' }} />
+      </span>,
+    );
+    const idx = container.querySelectorAll('.card__idx');
+    expect(idx).toHaveLength(2);
+    expect(idx[1]).toHaveClass('card__idx--br');
+    expect(idx[0].textContent).toBe(`Q${SUIT_TEXT.hearts}`);
+    expect(container.querySelector('.card__pip')?.textContent).toBe(SUIT_TEXT.hearts);
+  });
+
+  it('uses text-presentation suit glyphs (never emoji)', () => {
+    for (const s of Object.values(SUIT_TEXT)) expect(s.endsWith('\uFE0E')).toBe(true);
   });
 });

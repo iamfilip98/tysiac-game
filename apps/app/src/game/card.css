@@ -16,11 +16,25 @@
 }
 .card--red { color: var(--card-red); }
 .card--mini { --w: calc(var(--card-w, 56px) * 0.5); box-shadow: none; }
-.card__idx { position: absolute; top: 6%; left: 9%; display: flex; flex-direction: column; align-items: center; line-height: 1; }
-.card__rank { font-size: calc(var(--w) * 0.28); font-weight: 700; }
-.card__suit { font-size: calc(var(--w) * 0.21); margin-top: 1px; }
-.card__pip { position: absolute; right: 10%; bottom: 5%; font-size: calc(var(--w) * 0.48); line-height: 1; }
-.card--mini .card__pip { display: none; }
+.card { overflow: hidden; }
+.card__idx {
+  position: absolute; top: 4%; left: 5%;
+  width: calc(var(--w) * 0.3);
+  display: flex; flex-direction: column; align-items: center;
+  line-height: 0.92;
+}
+.card__idx--br { top: auto; left: auto; right: 5%; bottom: 4%; transform: rotate(180deg); }
+.card__rank { font-size: calc(var(--w) * 0.34); font-weight: 800; letter-spacing: -0.05em; }
+.card__suit { font-size: calc(var(--w) * 0.3); margin-top: calc(var(--w) * 0.01); }
+.card__rank, .card__suit, .card__pip { font-family: var(--font-card); font-variant-emoji: text; }
+.card__pip {
+  position: absolute; left: 50%; top: 52%;
+  transform: translate(-50%, -50%);
+  font-size: calc(var(--w) * 0.62); line-height: 1;
+}
+.card--mini .card__pip, .card--mini .card__idx--br { display: none; }
+.card--mini .card__rank { font-size: calc(var(--w) * 0.44); }
+.card--mini .card__suit { font-size: calc(var(--w) * 0.4); }
 .card--dim { filter: saturate(0.55) brightness(0.82); }
 .card--raised { box-shadow: 0 0 0 2px var(--accent), 0 10px 18px rgba(0, 0, 0, 0.45); }
 .card--recommended { outline: 1.5px solid var(--accent); outline-offset: 1px; }
@@ -46,15 +60,15 @@
 }
 .back--mini { --w: 13px; border-radius: 2.5px; }
 
-.hand { grid-area: hand; position: relative; height: var(--hand-h); min-width: 0; }
+.hand { grid-area: hand; position: relative; height: var(--hand-h); min-width: 0; --card-w: var(--hand-card-w, 64px); }
 .hand__card {
-  --step: min(calc(var(--card-w, 64px) * 0.68), calc((100% - var(--card-w, 64px)) / max(var(--n) - 1, 1)));
+  --step: min(calc(var(--card-w) * 0.74), calc((100% - var(--card-w)) / max(var(--n) - 1, 1)));
   position: absolute;
   bottom: 0;
-  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w, 64px)) / 2 + var(--step) * var(--i));
+  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w)) / 2 + var(--step) * var(--i));
   transition: bottom 0.16s ease;
 }
-.hand__card.card--raised { bottom: calc(var(--card-w, 64px) * 0.24); }
+.hand__card.card--raised { bottom: calc(var(--card-w) * 0.24); }
 
 /* Generous tap targets. An invisible strip above each card extends its hit area; the raised
    card always stacks above its overlapping neighbours so they never steal its taps. */

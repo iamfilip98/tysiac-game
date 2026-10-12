@@ -69,7 +69,7 @@ export async function expectTableIgnoresTaps(page: Page): Promise<void> {
 export async function handOut(page: Page): Promise<void> {
   const hand = page.getByRole('group', { name: 'Your hand' });
   for (let k = 0; k < 2; k++) {
-    await hand.getByRole('button').first().click();
+    await hand.getByRole('button').first().click({ position: CARD_STRIP }); // the visible index strip: later cards overlap the centre
     await page.getByRole('button', { name: /^Give to / }).first().click();
   }
   await page.getByRole('button', { name: 'Confirm hand-out' }).click();
@@ -81,13 +81,16 @@ export async function selectLegalCard(page: Page, checkTapDoesNotPlay: boolean):
   const selected = hand.locator('button[aria-pressed="true"]');
   const card = (await selected.count()) > 0 ? selected.first() : hand.locator('button:not([aria-disabled="true"])').first();
   const label = (await card.getAttribute('aria-label'))!;
-  if ((await card.getAttribute('aria-pressed')) !== 'true') await card.click(); // tapping a selected card again would deselect it
+  if ((await card.getAttribute('aria-pressed')) !== 'true') await card.click({ position: CARD_STRIP }); // tapping a selected card again would deselect it
   if (checkTapDoesNotPlay) {
     await page.waitForTimeout(300);
     await expect(hand.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true');
   }
   return label;
 }
+
+/** Hand cards overlap; only their left strip is always uncovered. */
+export const CARD_STRIP = { x: 6, y: 10 };
 
 export interface DriveOptions {
   /** Called once per distinct screen key, at the moment it is on screen. */
