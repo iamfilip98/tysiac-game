@@ -49,8 +49,19 @@ export class SoundPlayer {
   unlock(): void {
     const ctx = this.context();
     if (!ctx) return;
-    if (ctx.state === 'suspended') void ctx.resume();
+    this.resume();
     void this.preload();
+  }
+
+  /** iOS leaves the context 'suspended' or 'interrupted' (backgrounding, calls); resume whenever it is not running. */
+  resume(): void {
+    const ctx = this.context();
+    if (!ctx || ctx.state === 'running') return;
+    try {
+      void ctx.resume().catch(() => {});
+    } catch {
+      /* best effort */
+    }
   }
 
   preload(): Promise<void> {
@@ -62,11 +73,19 @@ export class SoundPlayer {
           const res = await this.fetcher(SOUND_FILES[name]);
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
           this.buffers.set(name, await ctx.decodeAudioData(await res.arrayBuffer()));
+          return true;
         } catch {
           this.buffers.set(name, 'missing');
+          return false;
         }
       }),
-    ).then(() => undefined);
+    ).then(results => {
+      // A failure is not permanent: forget it so the next gesture retries (synth covers meanwhile).
+      if (results.includes(false)) {
+        this.loading = null;
+        for (const [name, b] of this.buffers) if (b === 'missing') this.buffers.delete(name);
+      }
+    });
     return this.loading;
   }
 
@@ -74,6 +93,7 @@ export class SoundPlayer {
     if (!this.enabled()) return;
     const ctx = this.context();
     if (!ctx) return;
+    this.resume();
     const buffer = this.buffers.get(name);
     if (buffer && buffer !== 'missing') {
       const src = ctx.createBufferSource();
@@ -122,8 +142,10 @@ export function installSounds(): SoundPlayer {
   if (installed) return installed;
   const player = new SoundPlayer(() => usePrefs.getState().sound);
   const unlock = () => player.unlock();
-  window.addEventListener('pointerdown', unlock, { passive: true });
-  window.addEventListener('keydown', unlock);
+  for (const type of ['pointerdown', 'touchend', 'click', 'keydown']) window.addEventListener(type, unlock, { passive: true });
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') player.resume();
+  });
   setSoundSink(name => player.play(name));
   installed = player;
   return player;

@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-import { SOUND_FILES, SoundPlayer, type AudioContextLike } from './sounds';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { SOUND_FILES, SoundPlayer, installSounds, type AudioContextLike } from './sounds';
 
 function fakeCtx() {
   const started: string[] = [];
@@ -57,5 +57,65 @@ describe('SoundPlayer', () => {
   it('does nothing without Web Audio', () => {
     const p = new SoundPlayer(() => true, () => null, async () => new Response(new ArrayBuffer(8)));
     expect(() => p.play('card')).not.toThrow();
+  });
+
+  it('resumes an interrupted context on unlock and on play', () => {
+    const { ctx, raw } = fakeCtx();
+    (raw as { state: string }).state = 'interrupted';
+    const p = new SoundPlayer(() => true, () => ctx, async () => new Response('', { status: 404 }));
+    p.unlock();
+    expect(raw.resume).toHaveBeenCalledTimes(1);
+    (raw as { state: string }).state = 'interrupted';
+    p.play('card');
+    expect(raw.resume).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not resume a running context', () => {
+    const { ctx, raw } = fakeCtx();
+    (raw as { state: string }).state = 'running';
+    new SoundPlayer(() => true, () => ctx, async () => new Response('', { status: 404 })).play('card');
+    expect(raw.resume).not.toHaveBeenCalled();
+  });
+
+  it('retries a failed preload on the next call', async () => {
+    const { ctx, started } = fakeCtx();
+    let ok = false;
+    const fetcher = vi.fn(async () => (ok ? new Response(new ArrayBuffer(8)) : new Response('', { status: 503 })));
+    const p = new SoundPlayer(() => true, () => ctx, fetcher);
+    await p.preload();
+    p.play('card');
+    expect(started).toEqual(['synth']);
+    ok = true;
+    await p.preload();
+    expect(fetcher).toHaveBeenCalledTimes(2 * Object.keys(SOUND_FILES).length);
+    p.play('card');
+    expect(started).toEqual(['synth', 'sample']);
+  });
+});
+
+describe('installSounds', () => {
+  afterEach(() => vi.restoreAllMocks());
+
+  it('unlocks on pointerdown, touchend and click and resumes when the tab becomes visible', () => {
+    const { raw } = fakeCtx();
+    class FakeAC {
+      constructor() {
+        return raw as unknown as FakeAC;
+      }
+    }
+    vi.stubGlobal('AudioContext', FakeAC);
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('', { status: 404 })));
+    installSounds();
+    for (const type of ['pointerdown', 'touchend', 'click']) {
+      raw.state = 'suspended';
+      raw.resume.mockClear();
+      window.dispatchEvent(new Event(type));
+      expect(raw.resume, type).toHaveBeenCalled();
+    }
+    raw.state = 'suspended';
+    raw.resume.mockClear();
+    document.dispatchEvent(new Event('visibilitychange'));
+    expect(raw.resume).toHaveBeenCalled();
+    vi.unstubAllGlobals();
   });
 });

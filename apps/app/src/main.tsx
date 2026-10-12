@@ -15,5 +15,7 @@ createRoot(document.getElementById('root')!).render(
 );
 
 if (import.meta.env.PROD) {
-  void import('virtual:pwa-register').then(({ registerSW }) => registerSW({ immediate: true }));
+  void Promise.all([import('virtual:pwa-register'), import('./pwa/update')]).then(([{ registerSW }, { installUpdates }]) =>
+    installUpdates(registerSW),
+  );
 }
