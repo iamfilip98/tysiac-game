@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { installViewportVar } from './viewport';
+import { installViewportVar, standaloneAppHeight } from './viewport';
 
 describe('installViewportVar', () => {
   it('sets --vvh from visualViewport and follows resizes', () => {
@@ -37,5 +37,29 @@ describe('installViewportVar', () => {
     input.remove();
     vi.useRealTimers();
     Object.defineProperty(window, 'scrollY', { value: 0, configurable: true });
+  });
+});
+
+describe('standaloneAppHeight', () => {
+  const fakeWin = (o: { standalone: boolean; sw: number; sh: number; iw: number; ih: number }) =>
+    ({
+      navigator: { standalone: o.standalone },
+      matchMedia: () => ({ matches: false }),
+      screen: { width: o.sw, height: o.sh },
+      innerWidth: o.iw,
+      innerHeight: o.ih,
+    }) as unknown as Window;
+
+  it('uses the full screen height when iOS reports a viewport short by the status bar', () => {
+    expect(standaloneAppHeight(fakeWin({ standalone: true, sw: 402, sh: 874, iw: 402, ih: 812 }))).toBe(874);
+  });
+  it('handles landscape', () => {
+    expect(standaloneAppHeight(fakeWin({ standalone: true, sw: 402, sh: 874, iw: 874, ih: 380 }))).toBe(402);
+  });
+  it('does nothing in a browser tab', () => {
+    expect(standaloneAppHeight(fakeWin({ standalone: false, sw: 402, sh: 874, iw: 402, ih: 700 }))).toBeNull();
+  });
+  it('does nothing when the window is narrower than the screen (split view)', () => {
+    expect(standaloneAppHeight(fakeWin({ standalone: true, sw: 1024, sh: 1366, iw: 500, ih: 1300 }))).toBeNull();
   });
 });

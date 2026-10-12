@@ -1,6 +1,7 @@
 .sheet-backdrop {
   position: fixed;
   inset: 0;
+  height: var(--app-h, auto);
   z-index: 50;
   background: rgba(0, 0, 0, 0.45);
   display: flex;
@@ -12,6 +13,7 @@
   max-width: 560px;
   max-height: calc(100vh - 36px);
   max-height: calc(100dvh - max(var(--sa-top), 12px) - 24px);
+  max-height: calc(var(--app-h, 100dvh) - max(var(--sa-top), 12px) - 24px);
   display: flex;
   flex-direction: column;
   background: var(--sheet-bg);

@@ -21,6 +21,7 @@ html, body { margin: 0; }
 body {
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: var(--app-h, 100dvh);
   background: var(--bg);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
@@ -32,6 +33,7 @@ input, select, textarea { font: inherit; font-size: 16px; }
 .screen {
   min-height: 100vh;
   min-height: 100dvh;
+  min-height: var(--app-h, 100dvh);
   max-width: 520px;
   margin: 0 auto;
   padding: max(var(--sa-top), 16px) max(var(--sa-right), 16px)

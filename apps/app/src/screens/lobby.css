@@ -35,7 +35,7 @@
 .lobby__picked { justify-content: center; }
 .lobby__actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
 .lobby__actions .row .btn { flex: 1; }
-.lobby { height: 100dvh; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 10px; }
+.lobby { height: 100dvh; height: var(--app-h, 100dvh); min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 10px; }
 .lobby .avatar { position: relative; }
 .lobby .avatar__dealer {
   position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px;
