@@ -7,6 +7,7 @@ import { RoundResultSheet, roundHeadline } from './RoundResultSheet';
 import { GameOverSheet } from './GameOverSheet';
 import { gameStats } from './stats';
 import { SEATS, findState, viewOf } from '../test/fixtures';
+import { loadLang } from '../i18n';
 
 const mid = viewOf(findState(s => s.rounds.filter(r => r.outcome !== 'thrown').length >= 2, SEATS, 600));
 const over = viewOf(findState(s => s.phase === 'gameEnd', SEATS, 5000));
@@ -46,6 +47,13 @@ describe('RoundResultSheet', () => {
     expect(roundHeadline({ ...base, outcome: 'failed', wykladana: false }, mid)).toBe(`${name} failed ${base.bid}`);
     expect(roundHeadline({ ...base, outcome: 'thrown', wykladana: false }, mid)).toBe(`${name} threw in at ${base.bid}`);
     expect(roundHeadline({ ...base, outcome: 'made', wykladana: true }, mid)).toBe(`${name} won every trick — wykładana!`);
+  });
+
+  it('headlines in Polish use the viewer form for the viewer', async () => {
+    await loadLang('pl');
+    const mine = { ...base, bidder: 'me', outcome: 'made' as const, wykladana: false };
+    expect(roundHeadline(mine, mid)).toBe(`Ugrywasz ${base.bid}`);
+    expect(roundHeadline({ ...mine, bidder: 'b', outcome: 'failed' }, mid)).toBe(`Bot Basia nie ugrywa ${base.bid}`);
   });
 
   it('lists every player and continues', async () => {

@@ -2,6 +2,7 @@ import type { CSSProperties } from 'react';
 import { cardKey, type Card, type Suit } from '@tysiac/engine';
 import { CardButton, type CardLook } from './Card';
 import { glowFor, marriageTag, sortHand } from './cards';
+import { useT } from '../i18n/useT';
 
 export interface HandProps {
   cards: Card[];
@@ -22,6 +23,7 @@ export interface HandProps {
 
 /** The viewer's cards. Tapping only reports the tap — it never plays a card. */
 export function Hand({ cards, selected, isPlayable, recommended, declared, trump, fresh, shake, onTap }: HandProps) {
+  const t = useT();
   const sorted = sortHand(cards);
   // One pill per undeclared marriage, spanning its K and Q (adjacent in the sort); on the Q alone if they ever are not.
   const tags = sorted.flatMap((k, ik) => {
@@ -33,7 +35,7 @@ export function Hand({ cards, selected, isPlayable, recommended, declared, trump
     return [{ suit: k.suit, text, i: adjacent ? ik : iq, span: adjacent ? 2 : 1, raised }];
   });
   return (
-    <div className="hand" role="group" aria-label="Your hand" style={{ '--n': sorted.length } as CSSProperties}>
+    <div className="hand" role="group" aria-label={t('game.hand')} style={{ '--n': sorted.length } as CSSProperties}>
       {sorted.map((card, i) => {
         const key = cardKey(card);
         const look: CardLook = key === selected ? 'raised' : !isPlayable(card) ? 'dim' : recommended.includes(key) ? 'recommended' : 'normal';

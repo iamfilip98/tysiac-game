@@ -1,6 +1,8 @@
-import { cardLabel, type Card, type GameEvent, type PlayerId, type PlayerView, type Suit } from '@tysiac/engine';
+import { type Card, type GameEvent, type PlayerId, type PlayerView, type Suit } from '@tysiac/engine';
 import { who } from '../store/notes';
 import { SUIT_TEXT, textSuits } from './cards';
+import { t } from '../i18n';
+import { cardText } from '../i18n/engineText';
 
 export type Announcement =
   | { kind: 'deal'; round: number; dealer: PlayerId }
@@ -44,30 +46,29 @@ export function announcementFor(e: GameEvent, me: PlayerId | null): Announcement
 
 const isMe = (v: PlayerView, p: PlayerId) => p === v.me;
 
-/** English text. Stream P replaces every literal here with t(...). */
+/** The ticker line in the active language. Sentences about the viewer use their own `.you` keys. */
 export function announceText(a: Announcement, v: PlayerView): string {
   return textSuits(announceRaw(a, v));
 }
 
 function announceRaw(a: Announcement, v: PlayerView): string {
+  const player = 'p' in a ? who(v, a.p) : '';
+  const me = 'p' in a && isMe(v, a.p);
   switch (a.kind) {
-    case 'deal': return `Round ${a.round} — ${isMe(v, a.dealer) ? 'you deal' : `${who(v, a.dealer)} deals`}`;
-    case 'bid': return `${who(v, a.p)} bid ${a.amount}`;
-    case 'pass': return `${who(v, a.p)} passed`;
-    case 'bidWon': return `${who(v, a.p)} won the bid at ${a.amount}`;
-    case 'threw': return `${who(v, a.p)} threw in at ${a.amount}`;
-    case 'talonSeen': return isMe(v, a.p) ? 'You have seen the talon' : `${who(v, a.p)} has seen the talon`;
-    case 'handout': return isMe(v, a.p) ? 'You handed out 2 cards' : `${who(v, a.p)} handed out cards`;
-    case 'received': return `You got ${cardLabel(a.card)} from ${who(v, a.from)}`;
-    case 'wykladana': return `${who(v, a.p)} won every trick — wykładana!`;
-    case 'played': return `${who(v, a.p)} played ${cardLabel(a.card)}`;
-    case 'marriage': {
-      const s = SUIT_TEXT[a.suit];
-      return `${who(v, a.p)}: marriage ${s} +${a.points} — trump is ${s}`;
-    }
-    case 'trick': return `${who(v, a.p)} ${isMe(v, a.p) ? 'take' : 'takes'} the trick (+${a.points})`;
-    case 'won': return `${who(v, a.p)} ${isMe(v, a.p) ? 'win' : 'wins'} the game!`;
-    case 'paused': return `${who(v, a.p)} paused the game`;
-    case 'resumed': return `${who(v, a.p)} resumed the game`;
+    case 'deal': return isMe(v, a.dealer) ? t('game.ann.deal.you', { round: a.round }) : t('game.ann.deal', { round: a.round, player: who(v, a.dealer) });
+    case 'bid': return t(me ? 'game.ann.bid.you' : 'game.ann.bid', { player, amount: a.amount });
+    case 'pass': return t(me ? 'game.ann.pass.you' : 'game.ann.pass', { player });
+    case 'bidWon': return t(me ? 'game.ann.bidWon.you' : 'game.ann.bidWon', { player, amount: a.amount });
+    case 'threw': return t(me ? 'game.ann.threw.you' : 'game.ann.threw', { player, amount: a.amount });
+    case 'talonSeen': return t(me ? 'game.ann.talonSeen.you' : 'game.ann.talonSeen', { player });
+    case 'handout': return t(me ? 'game.ann.handout.you' : 'game.ann.handout', { player });
+    case 'received': return t('game.ann.received', { card: cardText(a.card), player: who(v, a.from) });
+    case 'wykladana': return t(me ? 'game.ann.wykladana.you' : 'game.ann.wykladana', { player });
+    case 'played': return t('game.ann.played', { player, card: cardText(a.card) });
+    case 'marriage': return t(me ? 'game.ann.marriage.you' : 'game.ann.marriage', { player, suit: SUIT_TEXT[a.suit], points: a.points });
+    case 'trick': return t(me ? 'game.ann.trick.you' : 'game.ann.trick', { player, points: a.points });
+    case 'won': return t(me ? 'game.ann.won.you' : 'game.ann.won', { player });
+    case 'paused': return t(me ? 'game.ann.paused.you' : 'game.ann.paused', { player });
+    case 'resumed': return t(me ? 'game.ann.resumed.you' : 'game.ann.resumed', { player });
   }
 }

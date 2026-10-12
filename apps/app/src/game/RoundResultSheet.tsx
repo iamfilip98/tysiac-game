@@ -3,12 +3,16 @@ import { textSuits } from './cards';
 import { engineText } from '../i18n/engineText';
 import { Sheet } from '../ui/Sheet';
 import { who } from '../store/notes';
+import { t } from '../i18n';
+import { useT } from '../i18n/useT';
 
 export function roundHeadline(summary: RoundSummary, view: PlayerView): string {
-  const name = who(view, summary.bidder);
-  if (summary.outcome === 'thrown') return `${name} threw in at ${summary.bid}`;
-  if (summary.wykladana) return `${name} won every trick — wykładana!`;
-  return summary.outcome === 'made' ? `${name} made ${summary.bid}` : `${name} failed ${summary.bid}`;
+  const p = { player: who(view, summary.bidder), bid: summary.bid };
+  const you = summary.bidder === view.me;
+  if (summary.outcome === 'thrown') return t(you ? 'game.result.threw.you' : 'game.result.threw', p);
+  if (summary.wykladana) return t(you ? 'game.result.wykladana.you' : 'game.result.wykladana', p);
+  if (summary.outcome === 'made') return t(you ? 'game.result.made.you' : 'game.result.made', p);
+  return t(you ? 'game.result.failed.you' : 'game.result.failed', p);
 }
 
 const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
@@ -21,12 +25,13 @@ export interface RoundResultSheetProps {
 }
 
 export function RoundResultSheet({ summary, view, note, onContinue }: RoundResultSheetProps) {
+  useT();
   return (
     <Sheet
-      title={`Round ${summary.number}`}
+      title={t('game.result.title', { n: summary.number })}
       footer={
         <button type="button" className="btn btn--pri" onClick={onContinue}>
-          Continue
+          {t('game.result.continue')}
         </button>
       }
     >
@@ -34,11 +39,11 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
       <table className="result">
         <thead>
           <tr>
-            <th>Player</th>
-            <th>Tricks</th>
-            <th>Marriages</th>
-            <th>Round</th>
-            <th>Total</th>
+            <th>{t('game.col.player')}</th>
+            <th>{t('game.col.tricks')}</th>
+            <th>{t('game.col.marriages')}</th>
+            <th>{t('game.col.round')}</th>
+            <th>{t('game.col.total')}</th>
           </tr>
         </thead>
         <tbody>
@@ -58,7 +63,7 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
       </table>
       {note && (
         <p className="coachnote">
-          <b>Coach:</b> {textSuits(engineText(note, view))}
+          <b>{t('game.coach.label')}</b> {textSuits(engineText(note, view))}
         </p>
       )}
     </Sheet>

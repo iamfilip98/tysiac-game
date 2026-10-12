@@ -24,6 +24,7 @@ import { RulesSheet } from './RulesSheet';
 import { LessonContext } from '../learn/context';
 import { engineText, type CoachAdvice } from '../i18n/engineText';
 import { textSuits } from '../game/cards';
+import { useT } from '../i18n/useT';
 import './game.css';
 
 type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
@@ -52,6 +53,7 @@ export default function Game() {
     })),
   );
   const sel = useSelection();
+  const t = useT();
   const [sheet, setSheet] = useState<SheetName | null>(null);
   // Coach default comes from the seat once per mount (the selector); the settings toggle overrides it locally.
   const [coachOverride, setCoachOverride] = useState<boolean | null>(null);
@@ -86,19 +88,19 @@ export default function Game() {
   }, [turnLive]);
   useEffect(() => {
     if (!s.received) return;
-    const t = setTimeout(() => useRoom.getState().clearReceived(), RECEIVED_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => useRoom.getState().clearReceived(), RECEIVED_MS);
+    return () => clearTimeout(timer);
   }, [s.received]);
   useEffect(() => {
     if (!s.shake) return;
-    const t = setTimeout(() => useRoom.getState().clearShake(), 600);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => useRoom.getState().clearShake(), 600);
+    return () => clearTimeout(timer);
   }, [s.shake]);
 
   if (!shown) {
     return (
       <main className="game game--loading">
-        <p>Dealing…</p>
+        <p>{t('game.dealing')}</p>
       </main>
     );
   }
@@ -120,13 +122,13 @@ export default function Game() {
     const key = cardKey(card);
     if (shown.phase === 'tricks') {
       if (!myTurn) {
-        sel.setHint(illegalText(shown, card) ?? 'One moment…');
+        sel.setHint(illegalText(shown, card) ?? t('game.hint.wait'));
         return;
       }
       if (!isLegal(card)) {
         // A dimmed card shakes and explains itself; it never raises.
         sel.select(null);
-        sel.setHint(illegalText(shown, card) ?? "You can't play that card now");
+        sel.setHint(illegalText(shown, card) ?? t('game.hint.cantPlay'));
         useRoom.setState({ shake: key });
         return;
       }

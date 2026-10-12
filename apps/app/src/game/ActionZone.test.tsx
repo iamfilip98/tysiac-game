@@ -6,6 +6,7 @@ import { cardLabel, createGame, explainIllegal, msg, turnOf, type Action, type P
 import { engineText } from '../i18n/engineText';
 import { ActionZone, throwCost, type ActionZoneProps } from './ActionZone';
 import { SEATS4, findState, roomInfo, viewOf } from '../test/fixtures';
+import { loadLang } from '../i18n';
 
 function props(view: PlayerView, over: Partial<ActionZoneProps> = {}): ActionZoneProps {
   return {
@@ -131,6 +132,22 @@ describe('ActionZone: tricks', () => {
     expect(screen.getByText('You must follow ♦')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: `Play ${textSuits(cardLabel(card))}` }));
     expect(p.onPlay).toHaveBeenCalledWith(card);
+  });
+});
+
+describe('ActionZone: Polish and Danish', () => {
+  it('renders the bidding panel in Polish', async () => {
+    await loadLang('pl');
+    render(<ActionZone {...props(bidMine)} />);
+    expect(screen.getByRole('button', { name: 'Pas' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `Licytuj ${bidMine.round!.bid.amount + 10}` })).toBeInTheDocument();
+    expect(screen.getByText('Obecna licytacja')).toBeInTheDocument();
+  });
+  it('renders the decision panel in Danish', async () => {
+    await loadLang('da');
+    render(<ActionZone {...props(decision)} />);
+    expect(screen.getByRole('button', { name: 'Giv op' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Spil' })).toBeInTheDocument();
   });
 });
 

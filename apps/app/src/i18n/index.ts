@@ -40,8 +40,10 @@ function pick(m: Msg, params?: Params): string {
 }
 
 /** The params a key needs: one per placeholder of its English text (none → no argument). */
-export type ParamsOf<K extends MsgKey> = { [P in PlaceholdersOf<(typeof en)[K]>]: string | number };
-type TArgs<K extends MsgKey> = [PlaceholdersOf<(typeof en)[K]>] extends [never] ? [] : [params: ParamsOf<K>];
+/** Plural messages also need the count `n` (it picks the form) even when the text does not show it. */
+type ParamNames<K extends MsgKey> = PlaceholdersOf<(typeof en)[K]> | ((typeof en)[K] extends string ? never : 'n');
+export type ParamsOf<K extends MsgKey> = { [P in ParamNames<K>]: P extends 'n' ? number : string | number };
+type TArgs<K extends MsgKey> = [ParamNames<K>] extends [never] ? [] : [params: ParamsOf<K>];
 
 /**
  * The text for `key` in the active language, with `{name}` placeholders filled from `params` (`n` picks the

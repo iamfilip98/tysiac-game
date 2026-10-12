@@ -1,13 +1,16 @@
 import { isOnBarrel } from '@tysiac/engine';
+import { t } from '../i18n';
 
-/** Score with its unit. Uses a real minus sign. Stream P localises these strings. */
+/** Score with its unit, in the active language ("230 pts", "230 punktów"). Uses a real minus sign. */
 export function pts(n: number): string {
-  return `${n < 0 ? `\u2212${-n}` : n} pts`;
+  return t('common.points', { n }).replace(/-(?=\d)/, '−');
 }
 export function bidChip(n: number): string {
-  return `bid ${n}`;
+  return t('game.chip.bid', { n });
 }
-export const PASS_CHIP = 'pass';
+export function passChip(): string {
+  return t('game.chip.pass');
+}
 export const BARREL = '🛢';
 export function onBarrel(total: number): boolean {
   return isOnBarrel(total);

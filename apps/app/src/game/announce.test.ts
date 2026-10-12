@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { GameEvent } from '@tysiac/engine';
 import { findState, viewOf } from '../test/fixtures';
 import { announceText, announcementFor } from './announce';
+import { loadLang } from '../i18n';
 
 const view = viewOf(findState(s => s.phase === 'tricks'));
 const ev = (e: Record<string, unknown>) => ({ audience: 'all', ...e }) as GameEvent;
@@ -11,6 +12,16 @@ const text = (e: Record<string, unknown>, me = 'me') => {
 };
 
 describe('announcements', () => {
+  it('announces in Polish without gendered verbs', async () => {
+    await loadLang('pl');
+    expect(text({ type: 'trickWon', p: 'z', cards: [], card: { suit: 'spades', rank: 'A' }, points: 25, byTrump: false })).toBe('Lewę bierze Bot Zenek (+25)');
+    expect(text({ type: 'trickWon', p: 'me', cards: [], card: { suit: 'spades', rank: 'A' }, points: 25, byTrump: false })).toBe('Bierzesz lewę (+25)');
+    expect(text({ type: 'cardPlayed', p: 'b', card: { suit: 'hearts', rank: 'Q' } })).toBe('Bot Basia zagrywa D♥\uFE0E');
+    await loadLang('da');
+    expect(text({ type: 'cardPlayed', p: 'b', card: { suit: 'hearts', rank: 'A' } })).toBe('Bot Basia spiller E♥\uFE0E');
+    await loadLang('en');
+  });
+
   it('says what others played and who took the trick', () => {
     expect(text({ type: 'cardPlayed', p: 'b', card: { suit: 'spades', rank: 'K' } })).toBe('Bot Basia played K♠\uFE0E');
     expect(text({ type: 'trickWon', p: 'z', cards: [], card: { suit: 'spades', rank: 'A' }, points: 25, byTrump: false })).toBe('Bot Zenek takes the trick (+25)');

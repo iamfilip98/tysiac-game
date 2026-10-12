@@ -41,18 +41,18 @@ export function zonePhase(view: PlayerView, idle: boolean): string {
 
 export function ActionZone(p: ActionZoneProps) {
   const { view } = p;
-  useT();
+  const t = useT();
   const phase = zonePhase(view, p.idle);
   const myTurn = phase === view.phase;
   const wait = <WaitLine view={view} room={p.room} now={p.now} busy={p.busy} onBotFor={p.onBotFor} />;
   let body: ReactNode;
   if (view.paused) body = <PausedPanel view={view} busy={p.busy} onAct={p.onAct} />;
-  else if (view.phase === 'gameEnd') body = <p className="zone__text">Game over</p>;
+  else if (view.phase === 'gameEnd') body = <p className="zone__text">{t('game.gameOver')}</p>;
   else if (view.phase === 'talon') body = <TalonPanel view={view} room={p.room} now={p.now} busy={p.busy} idle={p.idle} onAct={p.onAct} onBotFor={p.onBotFor} />;
   else if (view.round?.sittingOut === view.me) {
     body = (
       <>
-        <p className="zone__text">You deal and sit out this round.</p>
+        <p className="zone__text">{t('game.sitOut')}</p>
         {wait}
       </>
     );
@@ -76,7 +76,7 @@ export function ActionZone(p: ActionZoneProps) {
   const illegal = myTurn && view.phase === 'tricks' && p.selected ? explainIllegal(view, p.selected) : null;
   const hint = p.hint ?? (illegal ? textSuits(engineText(illegal, view)) : null);
   return (
-    <section className="zone panel" data-phase={phase} aria-label="Actions">
+    <section className="zone panel" data-phase={phase} aria-label={t('game.actions')}>
       <div className="zone__main">{body}</div>
       {hint && (
         <p className="zone__hint" role="status">

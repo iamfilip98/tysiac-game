@@ -1,4 +1,5 @@
 import { Sheet } from '../ui/Sheet';
+import { useT } from '../i18n/useT';
 import './screens.css';
 
 export interface MenuSheetProps {
@@ -12,26 +13,27 @@ export interface MenuSheetProps {
 }
 
 export function MenuSheet({ paused, onPause, onResume, onSettings, onRules, onLeave, onClose }: MenuSheetProps) {
+  const t = useT();
   return (
-    <Sheet title="Menu" onClose={onClose}>
+    <Sheet title={t('game.menu.title')} onClose={onClose}>
       <div className="menu">
         {paused ? (
           <button type="button" className="btn btn--sec" onClick={onResume}>
-            Resume game
+            {t('game.menu.resume')}
           </button>
         ) : (
           <button type="button" className="btn btn--sec" onClick={onPause}>
-            Pause game
+            {t('game.menu.pause')}
           </button>
         )}
         <button type="button" className="btn btn--sec" onClick={onSettings}>
-          Settings
+          {t('common.settings')}
         </button>
         <button type="button" className="btn btn--sec" onClick={onRules}>
-          Rules
+          {t('common.rules')}
         </button>
         <button type="button" className="btn btn--sec" onClick={onLeave}>
-          Leave to home
+          {t('game.menu.leave')}
         </button>
       </div>
     </Sheet>
