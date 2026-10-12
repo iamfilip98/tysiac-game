@@ -1,6 +1,7 @@
 /* Table effects, ported from the OG app (apps/web TrickPile.tsx / Card.tsx), same palette:
    gold #d4af37 / highlight #f5e7a3 / dark #b8941f, blue #60a5fa / #93c5fd. They sit under the trick cards. */
-.fx { position: absolute; left: 50%; top: 50%; width: calc(var(--card-w) * 3.3); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; z-index: 0; }
+/* About the trick's size, but never much taller than the table cell (se). */
+.fx { position: absolute; left: 50%; top: 50%; height: min(calc(var(--card-w) * 3.3), 100% + 24px); aspect-ratio: 1; translate: -50% -50%; border-radius: 50%; pointer-events: none; z-index: 0; }
 .fx > span { position: absolute; border-radius: 50%; pointer-events: none; }
 
 /* Marriage: a rotating gold ring (conic, 8 s loop), a pulsing inner glow (2 s) and 8 sparks drifting out. */
@@ -66,7 +67,7 @@
 .card--gold:not(.card--red) { color: #1b1408; }
 .card--gold .card__face::after {
   content: ''; position: absolute; inset: 0; pointer-events: none;
-  background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.45) 40%, rgba(255, 255, 255, 0.65) 50%, rgba(255, 255, 255, 0.45) 60%, transparent 80%);
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.28) 45%, rgba(255, 255, 255, 0.4) 50%, rgba(255, 255, 255, 0.28) 55%, transparent 70%);
   background-size: 250% 100%;
   animation: gold-shimmer 2.5s ease-in-out infinite;
 }

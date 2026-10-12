@@ -79,23 +79,27 @@ test('a 10-card hand is big, fully on screen and every index is readable', async
   expect(geo.tag.b, 'tag sits above the cards').toBeLessThanOrEqual(k.t + 1);
   expect(geo.pe).toBe('none'); // never blocks a tap on either card
   expect(geo.hitIsTag).toBe(false); // so the hit test reaches whatever is beneath it
-  // The "You got X" pill is compact and sits at the top of the table: clear of the action zone and the trick spots.
+  // The "You got X" banner shows the card big at the foot of the table: inside the table cell, never over the
+  // action zone (portrait: above it; landscape: the zone is in the other column), the opponents or the hand.
   const pill = await page.evaluate(() => {
     const b = document.createElement('button');
     b.className = 'received';
-    b.innerHTML = '<span class="received__lbl">You got</span><span class="card received__card"></span><span class="received__from">from <b>Bot Basia</b></span>';
+    b.style.animation = 'none'; // measure the resting position, not the pop-in
+    b.innerHTML = '<span class="card received__card"></span><span class="received__text"><span class="received__lbl">You got</span><span class="received__from">from <b>Bot Basia</b></span></span><span class="received__x">✕</span>';
     document.querySelector('.game')!.appendChild(b);
-    const r = b.getBoundingClientRect();
-    const z = document.querySelector('.zone')!.getBoundingClientRect();
-    const t = document.querySelector('.table')!.getBoundingClientRect();
-    const spots = Array.from(document.querySelectorAll('.tcard')).length;
+    const box = (sel: string | Element) => {
+      const r = (typeof sel === 'string' ? document.querySelector(sel)! : sel).getBoundingClientRect();
+      return { l: r.left, r: r.right, t: r.top, b: r.bottom, h: r.height };
+    };
+    const out = { pill: box(b), zone: box('.zone'), table: box('.table'), opps: box('.opps'), hand: box('.hand'), self: box('.selfstrip') };
     b.remove();
-    return { top: r.top, bottom: r.bottom, h: r.height, zoneTop: z.top, tableTop: t.top, tableH: t.height, spots };
+    return out;
   });
-  expect(pill.bottom).toBeLessThanOrEqual(pill.zoneTop);
-  expect(pill.top).toBeGreaterThanOrEqual(pill.tableTop);
-  expect(pill.h).toBeLessThanOrEqual(60);
-  expect(pill.h).toBeLessThan(pill.tableH * 0.45);
+  const overlaps = (a: typeof pill.pill, b: typeof pill.pill) => a.l < b.r - 1 && b.l < a.r - 1 && a.t < b.b - 1 && b.t < a.b - 1;
+  for (const k of ['zone', 'opps', 'hand', 'self'] as const) expect(overlaps(pill.pill, pill[k]), `received banner overlaps ${k}`).toBe(false);
+  expect(pill.pill.t).toBeGreaterThanOrEqual(pill.table.t - 1);
+  expect(pill.pill.b).toBeLessThanOrEqual(pill.table.b + 1);
+  expect(pill.pill.h).toBeGreaterThanOrEqual(70); // the card is shown big
   await expectFits(page, '10-card hand with glows');
 });
 
