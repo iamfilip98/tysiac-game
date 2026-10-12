@@ -48,7 +48,7 @@
   --ink-dim: rgba(31, 39, 64, 0.7);
   --accent: #c8312b;
   --accent-ink: #fbf6ec;
-  --accent-soft: #c8312b;
+  --accent-soft: #c02d27;
   --panel: #fffaf0;
   --panel-border: 1.5px solid #1f2740;
   --panel-shadow: 3px 3px 0 #c8312b;
@@ -101,7 +101,7 @@
   --turn-ring: 2.5px solid #ff7a45;
   --card-bg: #fff;
   --card-ink: #11131a;
-  --card-red: #e5383b;
+  --card-red: #d02a2d;
   --card-border: 0 solid transparent;
   --card-shadow: 0 10px 24px rgba(0, 0, 0, 0.5);
   --back-bg: #252a37;

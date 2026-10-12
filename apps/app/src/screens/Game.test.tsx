@@ -114,8 +114,8 @@ describe('Game screen: other phases', () => {
     const user = userEvent.setup();
     join(findState(s => s.phase === 'bidding'));
     render(<Game />);
-    await user.click(screen.getByRole('button', { name: 'Score sheet' }));
-    expect(screen.getByRole('dialog', { name: 'Score sheet' })).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^Score sheet/ }));
+    expect(screen.getByRole('dialog', { name: /^Score sheet/ })).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Close' }));
     await user.click(screen.getByRole('button', { name: 'Menu' }));
     await user.click(screen.getByRole('button', { name: 'Settings' }));

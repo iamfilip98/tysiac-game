@@ -55,7 +55,7 @@ html:has(.game), body:has(.game) {
   gap: 6px;
   min-width: 0;
   min-height: 22px;
-  font-size: 12px;
+  font-size: 14px;
   line-height: 1;
 }
 .selfstrip__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
@@ -63,7 +63,7 @@ html:has(.game), body:has(.game) {
   font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
   background: var(--ink); color: var(--bg-solid);
 }
-.selfstrip__score { margin-left: auto; font-weight: 700; font-family: var(--font-display); }
+.selfstrip__score { margin-left: auto; font-weight: 700; font-family: var(--font-display); font-size: 15px; font-variant-numeric: tabular-nums; }
 
 @media (orientation: landscape) and (max-height: 520px) {
   :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
@@ -77,3 +77,8 @@ html:has(.game), body:has(.game) {
   .opps { --avatar: clamp(28px, 8dvh, 38px); }
   .zone { min-height: 172px; }
 }
+
+.topbar__score { flex-direction: column; line-height: 1; padding: 4px 10px; min-width: 56px; }
+.topbar__scorelbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; }
+.topbar__scoreval { font-size: 18px; font-variant-numeric: tabular-nums; }
+.topbar__info b { color: var(--ink); }

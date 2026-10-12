@@ -16,7 +16,7 @@ describe('TopBar', () => {
     render(<TopBar view={bidding} onMenu={() => {}} onScores={() => {}} />);
     expect(screen.getByText(`Round ${bidding.round!.number}`)).toBeInTheDocument();
     expect(screen.getByText(/deals? · bidding/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Score sheet' })).toHaveTextContent(String(bidding.scores.me.total));
+    expect(screen.getByRole('button', { name: /^Score sheet/ })).toHaveTextContent(String(bidding.scores.me.total));
   });
 
   it('shows contract and trump after bidding', () => {
@@ -30,7 +30,7 @@ describe('TopBar', () => {
     const onScores = vi.fn();
     render(<TopBar view={bidding} onMenu={onMenu} onScores={onScores} />);
     await userEvent.click(screen.getByRole('button', { name: 'Menu' }));
-    await userEvent.click(screen.getByRole('button', { name: 'Score sheet' }));
+    await userEvent.click(screen.getByRole('button', { name: /^Score sheet/ }));
     expect(onMenu).toHaveBeenCalledOnce();
     expect(onScores).toHaveBeenCalledOnce();
   });
@@ -44,6 +44,13 @@ describe('Opponents', () => {
     expect(chipFor(bidding, bidding.round!.bid.passed[0])).toEqual({ text: 'pass', muted: true });
     expect(screen.getByText('pass')).toBeInTheDocument();
     expect(screen.getAllByLabelText(/\d cards/).length).toBeGreaterThan(0);
+  });
+
+  it('labels scores with pts and the bid holder with a bid chip', () => {
+    render(<Opponents view={bidding} room={roomInfo()} />);
+    expect(screen.getAllByLabelText(/^Score -?\d+ pts$|^Score \u2212\d+ pts$/).length).toBeGreaterThan(0);
+    const high = bidding.round!.bid.high;
+    if (high && high !== bidding.me) expect(chipFor(bidding, high)?.text).toBe(`bid ${bidding.round!.bid.amount}`);
   });
 
   it('marks whose turn it is, coach and away players', () => {
