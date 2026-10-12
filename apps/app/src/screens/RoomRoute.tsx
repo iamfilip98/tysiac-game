@@ -2,6 +2,7 @@ import { lazy, useEffect, useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { PROTOCOL_VERSION } from '../net/protocol';
 import { FATAL_ERRORS, normalizeCode } from '../net/connection';
+import { installSounds } from '../audio/sounds';
 import { getService } from '../net/service';
 import { getIdentity } from '../net/identity';
 import { coachEnabled, usePrefs } from '../store/prefs';
@@ -49,6 +50,9 @@ export function usePracticeAutostart(enabled: boolean): void {
 }
 
 export default function RoomRoute({ code }: { code: string }) {
+  useEffect(() => {
+    installSounds();
+  }, []);
   const norm = normalizeCode(code);
   const name = usePrefs(s => s.name);
   const avatar = usePrefs(s => s.avatar);
