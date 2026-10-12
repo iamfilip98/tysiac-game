@@ -1,4 +1,39 @@
 import { expect, type Page } from '@playwright/test';
+import { en } from '../src/i18n/en';
+import { pl } from '../src/i18n/pl';
+import { da } from '../src/i18n/da';
+import type { Lang } from '../src/i18n/types';
+
+const DICTS = { en, pl, da } as const;
+const LANG_NAMES: Record<Lang, string> = { en: 'English', pl: 'Polski', da: 'Dansk' };
+const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+/** UI labels in one language, straight from the app's dictionaries (so the e2e follows any rewording). */
+export function labels(lang: Lang = 'en') {
+  const d = DICTS[lang];
+  const str = (k: keyof typeof en): string => {
+    const m = d[k];
+    return typeof m === 'string' ? m : m.other;
+  };
+  const withN = (k: keyof typeof en, n: string) => new RegExp(`^${escape(str(k)).replace(escape('{n}'), n)}$`);
+  return {
+    practice: str('screens.home.practice'),
+    /** Any Bid button, or (with `amounts`) only those amounts. */
+    bid: (amounts = '\\d+') => withN('game.bid.button', amounts),
+    pass: str('game.pass'),
+    play: str('game.decision.play'),
+    playCard: (card: string) => str('game.trick.playCard').replace('{card}', card),
+    seen: str('game.talon.seen'),
+    continue: str('game.result.continue'),
+    confirmHandout: str('game.handout.confirm'),
+    giveTo: new RegExp(`^${escape(str('game.opp.giveTo')).replace(escape('{name}'), '.+')}$`),
+    hand: str('game.hand'),
+    gameOver: str('game.over.title'),
+    rematch: str('game.over.rematch'),
+    settings: str('common.settings'),
+    close: str('common.close'),
+  };
+}
 
 /** Records the targets of recent pointer/click events so a failed move can say where a tap actually landed. */
 async function recordTaps(page: Page): Promise<void> {
@@ -18,7 +53,8 @@ async function recordTaps(page: Page): Promise<void> {
   });
 }
 
-export async function firstLaunch(page: Page): Promise<void> {
+/** First launch through the profile form; with a `lang`, picks it in Settings (the default is always English). */
+export async function firstLaunch(page: Page, lang: Lang = 'en'): Promise<void> {
   await recordTaps(page);
   await page.goto('/?local=1&fast=1');
   const name = page.getByLabel('Your name');
@@ -30,6 +66,15 @@ export async function firstLaunch(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Avatar 🐻' }).click();
   await page.getByRole('button', { name: 'Continue' }).click();
   await expect(page.getByRole('button', { name: 'Practice vs bots' })).toBeVisible();
+  if (lang !== 'en') {
+    await page.getByRole('button', { name: labels('en').settings }).click();
+    await page.getByRole('radio', { name: LANG_NAMES[lang] }).click();
+    const L = labels(lang);
+    const sheet = page.getByRole('dialog', { name: L.settings });
+    await expect(sheet).toBeVisible();
+    await sheet.getByRole('button', { name: L.close }).click();
+    await expect(page.getByRole('button', { name: L.practice })).toBeVisible();
+  }
 }
 
 /**
@@ -66,18 +111,19 @@ export async function expectTableIgnoresTaps(page: Page): Promise<void> {
   expect(problems, 'table elements that can intercept a tap').toEqual([]);
 }
 
-export async function handOut(page: Page): Promise<void> {
-  const hand = page.getByRole('group', { name: 'Your hand' });
+export async function handOut(page: Page, lang: Lang = 'en'): Promise<void> {
+  const L = labels(lang);
+  const hand = page.getByRole('group', { name: L.hand });
   for (let k = 0; k < 2; k++) {
     await hand.getByRole('button').first().click({ position: CARD_STRIP }); // the visible index strip: later cards overlap the centre
-    await page.getByRole('button', { name: /^Give to / }).first().click();
+    await page.getByRole('button', { name: L.giveTo }).first().click();
   }
-  await page.getByRole('button', { name: 'Confirm hand-out' }).click();
+  await page.getByRole('button', { name: L.confirmHandout }).click();
 }
 
 /** Taps the first legal card (selecting it) and returns its label; the caller taps Play. */
-export async function selectLegalCard(page: Page, checkTapDoesNotPlay: boolean): Promise<string> {
-  const hand = page.getByRole('group', { name: 'Your hand' });
+export async function selectLegalCard(page: Page, checkTapDoesNotPlay: boolean, lang: Lang = 'en'): Promise<string> {
+  const hand = page.getByRole('group', { name: labels(lang).hand });
   const selected = hand.locator('button[aria-pressed="true"]');
   const card = (await selected.count()) > 0 ? selected.first() : hand.locator('button:not([aria-disabled="true"])').first();
   const label = (await card.getAttribute('aria-label'))!;
@@ -101,22 +147,25 @@ export interface DriveOptions {
   bidAlways?: boolean;
   /** Pass at every auction, so a bot wins (and above 100 the human must confirm the talon). */
   passAlways?: boolean;
+  /** UI language the buttons are found in (default English). */
+  lang?: Lang;
 }
 
 /** Plays the game through the UI: bids, plays, hands out, continues past round results. */
 export async function drive(page: Page, opts: DriveOptions): Promise<void> {
   const zone = page.locator('.zone');
+  const L = labels(opts.lang);
   const seen = new Set<string>();
   const check = async (key: string) => {
     if (seen.has(key)) return;
     seen.add(key);
     await opts.check(key);
   };
-  const stop = opts.stop ?? (() => page.getByRole('dialog', { name: 'Game over' }).isVisible());
+  const stop = opts.stop ?? (() => page.getByRole('dialog', { name: L.gameOver }).isVisible());
   let tapChecked = false;
   for (let i = 0; i < 6000; i++) {
     if (await stop()) break;
-    const cont = page.getByRole('button', { name: 'Continue' });
+    const cont = page.getByRole('button', { name: L.continue });
     if (await cont.isVisible()) {
       await check('round result');
       if (await stop()) break;
@@ -126,29 +175,29 @@ export async function drive(page: Page, opts: DriveOptions): Promise<void> {
     const phase = await zone.getAttribute('data-phase');
     if (phase === 'bidding') {
       await check('bidding');
-      const bid = page.getByRole('button', { name: opts.bidAlways ? /^Bid \d+$/ : /^Bid (110|120)$/ }).first();
+      const bid = page.getByRole('button', { name: opts.bidAlways ? L.bid() : L.bid('(110|120)') }).first();
       await move(page, async () => {
         if (!opts.passAlways && (await bid.isVisible())) await bid.click();
-        else await page.getByRole('button', { name: 'Pass' }).click();
+        else await page.getByRole('button', { name: L.pass }).click();
       });
     } else if (phase === 'talon') {
       await check('talon');
-      const seen = page.getByRole('button', { name: 'Seen' });
+      const seen = page.getByRole('button', { name: L.seen });
       if (await seen.isVisible()) await move(page, () => seen.click());
       else await page.waitForTimeout(40);
     } else if (phase === 'decision') {
       await check('decision');
-      await move(page, () => page.getByRole('button', { name: 'Play', exact: true }).click());
+      await move(page, () => page.getByRole('button', { name: L.play, exact: true }).click());
     } else if (phase === 'handout') {
       await check('handout');
-      await move(page, () => handOut(page));
+      await move(page, () => handOut(page, opts.lang));
     } else if (phase === 'tricks') {
       await move(page, async () => {
-        const label = await selectLegalCard(page, !tapChecked);
+        const label = await selectLegalCard(page, !tapChecked, opts.lang);
         tapChecked = true;
         await check('tricks'); // a card is selected: the Play button is on screen
         await expectTableIgnoresTaps(page);
-        await page.getByRole('button', { name: `Play ${label}` }).click();
+        await page.getByRole('button', { name: L.playCard(label) }).click();
       });
     } else {
       if (phase === 'wait') await check('waiting');

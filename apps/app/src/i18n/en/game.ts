@@ -4,6 +4,7 @@ import type { Msg } from '../types';
 export const game = {
   'game.throwCost.free': 'Throw in: nobody scores, new deal.',
   'game.throwCost.paid': 'Throw in: you −{amount}, others +{share} each (0 on the barrel).',
+  'game.pts': { one: '{n} pt', other: '{n} pts' },
   'game.chip.bid': 'bid {n}',
   'game.chip.pass': 'pass',
   'game.ann.deal': 'Round {round} · {player} deals',

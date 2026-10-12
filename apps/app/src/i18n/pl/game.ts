@@ -4,7 +4,8 @@ import type { game as en } from '../en/game';
 export const game = {
   'game.throwCost.free': 'Bomba: nikt nie dostaje punktów, nowe rozdanie.',
   'game.throwCost.paid': 'Bomba: ty −{amount}, pozostali po +{share} (0 na beczce).',
-  'game.chip.bid': 'licytacja {n}',
+  'game.pts': { one: '{n} pkt', few: '{n} pkt', many: '{n} pkt', other: '{n} pkt' },
+  'game.chip.bid': 'lic. {n}',
   'game.chip.pass': 'pas',
   'game.ann.deal': 'Runda {round} · rozdaje {player}',
   'game.ann.deal.you': 'Runda {round} · rozdajesz',

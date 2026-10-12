@@ -4,6 +4,7 @@ import type { game as en } from '../en/game';
 export const game = {
   'game.throwCost.free': 'Giv op: ingen får point, kortene gives igen.',
   'game.throwCost.paid': 'Giv op: du −{amount}, de andre +{share} hver (0 på tønden).',
+  'game.pts': { one: '{n} point', other: '{n} point' },
   'game.chip.bid': 'bud {n}',
   'game.chip.pass': 'pas',
   'game.ann.deal': 'Runde {round} · {player} giver',

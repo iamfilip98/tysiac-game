@@ -1,9 +1,9 @@
 import { isOnBarrel } from '@tysiac/engine';
 import { t } from '../i18n';
 
-/** Score with its unit, in the active language ("230 pts", "230 punktów"). Uses a real minus sign. */
+/** Score with its short unit, in the active language ("230 pts", "230 pkt"). Uses a real minus sign. */
 export function pts(n: number): string {
-  return t('common.points', { n }).replace(/-(?=\d)/, '−');
+  return t('game.pts', { n }).replace(/-(?=\d)/, '−');
 }
 export function bidChip(n: number): string {
   return t('game.chip.bid', { n });
