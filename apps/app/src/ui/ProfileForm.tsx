@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AVATARS, NAME_MAX, cleanName } from '../store/prefs';
+import { AVATARS, NAME_MAX_UNITS, cleanName } from '../store/prefs';
 
 export interface ProfileFormProps {
   initialName: string;
@@ -25,7 +25,7 @@ export function ProfileForm({ initialName, initialAvatar, submitLabel, onSubmit 
         <input
           name="name"
           value={name}
-          maxLength={NAME_MAX * 2}
+          maxLength={NAME_MAX_UNITS}
           autoComplete="nickname"
           autoCapitalize="words"
           enterKeyHint="done"

@@ -10,6 +10,9 @@ export interface SheetProps {
   footer?: ReactNode;
 }
 
+/** Open sheets, oldest first. Only the last (topmost) one reacts to Escape. */
+const openSheets: symbol[] = [];
+
 export function Sheet({ title, onClose, children, footer }: SheetProps) {
   const ref = useRef<HTMLElement>(null);
   // Move focus into the dialog, and hand it back to the trigger on close.
@@ -19,14 +22,20 @@ export function Sheet({ title, onClose, children, footer }: SheetProps) {
     return () => trigger?.focus();
   }, []);
 
+  const closeRef = useRef(onClose);
+  closeRef.current = onClose;
   useEffect(() => {
-    if (!onClose) return;
+    const id = Symbol('sheet');
+    openSheets.push(id);
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
+      if (e.key === 'Escape' && openSheets[openSheets.length - 1] === id) closeRef.current?.();
     };
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [onClose]);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      openSheets.splice(openSheets.indexOf(id), 1);
+    };
+  }, []);
 
   return createPortal(
     <div
