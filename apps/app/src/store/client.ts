@@ -4,6 +4,7 @@ import {
 } from '@tysiac/engine';
 import type { RoomInfo, ServerMessage } from '../net/protocol';
 import { eventNote } from './notes';
+import { announcementFor, type Announcement } from '../game/announce';
 
 export type SoundName = 'card' | 'shuffle' | 'sweep' | 'turn';
 
@@ -15,6 +16,7 @@ export const NOTE_MS = 700;
 
 export type TableFx = { kind: 'marriage'; suit: Suit; id: number } | { kind: 'trumpWin'; id: number };
 let fxId = 0;
+let annId = 0;
 
 export interface ClientState {
   me: PlayerId | null;
@@ -34,6 +36,8 @@ export interface ClientState {
   holding: boolean;
   /** Winner of the last swept trick (exit animation target). */
   sweepTo: PlayerId | null;
+  /** The latest table event, as a line of text. */
+  announce: { a: Announcement; id: number } | null;
   /** Transient table effect (marriage ring, trump burst). */
   fx: TableFx | null;
   /** Card played optimistically, awaiting the server. */
@@ -49,7 +53,7 @@ export interface ClientState {
 }
 
 export const initialClient: ClientState = {
-  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, fx: null,
+  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, fx: null, announce: null,
   pending: null, inflight: null, shake: null, toast: null, roundResult: null, note: null, error: null,
 };
 
@@ -62,7 +66,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.room?.status === 'finished' && msg.room.status === 'playing') {
         return {
           ...s, room: msg.room, seq: -1, needsResync: true, queue: [], holding: false, roundResult: null,
-          pending: null, inflight: null, note: null, sweepTo: null, fx: null,
+          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null,
         };
       }
       return { ...s, room: msg.room };
@@ -79,7 +83,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.needsResync || s.shown === null) {
         return {
           ...s, seq: msg.seq, needsResync: false, view: msg.view, shown: msg.view, queue: [], holding: false,
-          pending: null, inflight: null, note: null, sweepTo: null, fx: null, roundResult: null,
+          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null, roundResult: null,
         };
       }
       // Newer state: queue its events (possibly none, e.g. choosing to play); `advance` syncs `shown`.
@@ -161,7 +165,20 @@ export interface Step {
 }
 
 /** Plays the next queued event onto `shown`. Returns null when there is nothing to do (or a sheet blocks). */
+function withAnnounce(step: Step, e: GameEvent, me: PlayerId | null): Step {
+  const a = announcementFor(e, me);
+  return a ? { ...step, state: { ...step.state, announce: { a, id: ++annId } } } : step;
+}
+
 export function advance(s: ClientState, coach: boolean): Step | null {
+  const step = advanceRaw(s, coach);
+  const e = s.queue[0];
+  if (!step || !e) return step;
+  if (e.type === 'trickWon' && s.holding) return step;
+  return withAnnounce(step, e, s.me);
+}
+
+function advanceRaw(s: ClientState, coach: boolean): Step | null {
   if (s.roundResult) return null;
   const e = s.queue[0];
   if (!e) {
@@ -202,6 +219,9 @@ export function advance(s: ClientState, coach: boolean): Step | null {
     case 'biddingWon':
     case 'wykladana':
       return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat' };
+    case 'bid':
+    case 'passed':
+      return { state: { ...s, queue: rest }, wait: NOTE_MS / 2, kind: 'beat' };
     default:
       return { state: { ...s, queue: rest }, wait: 0, kind: 'beat' };
   }

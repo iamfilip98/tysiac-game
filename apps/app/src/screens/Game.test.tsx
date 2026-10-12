@@ -25,6 +25,13 @@ beforeEach(() => {
 });
 
 describe('Game screen: tricks', () => {
+  it('shows Your turn on my strip when I must act', () => {
+    join(findState(s => s.phase === 'tricks' && turnOf(s) === 'me'));
+    render(<Game />);
+    expect(screen.getByText('Your turn', { selector: '.selfstrip__turn' })).toBeInTheDocument();
+  });
+
+
   it('tapping a card only raises it; Play commits and the card moves to the table at once', async () => {
     const user = userEvent.setup();
     const s0 = findState(s => s.phase === 'tricks' && turnOf(s) === 'me');

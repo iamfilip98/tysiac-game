@@ -9,6 +9,7 @@ import { useNow } from '../game/useNow';
 import { TopBar } from '../game/TopBar';
 import { Opponents } from '../game/Opponents';
 import { Table } from '../game/Table';
+import { Ticker } from '../game/Ticker';
 import { Hand } from '../game/Hand';
 import { SelfStrip } from '../game/SelfStrip';
 import { ActionZone } from '../game/ActionZone';
@@ -27,7 +28,7 @@ type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
 export default function Game() {
   const s = useRoom(
     useShallow(st => ({
-      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo, fx: st.fx,
+      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo, fx: st.fx, announce: st.announce,
       pending: st.pending, inflight: st.inflight, shake: st.shake, toast: st.toast, roundResult: st.roundResult, note: st.note,
       clockOffset: st.clockOffset,
     })),
@@ -143,6 +144,7 @@ export default function Game() {
           onUngive={sel.ungive}
         />
         <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} fx={s.fx} />
+        <Ticker view={shown} announce={s.announce} />
         <ActionZone
           view={shown}
           room={s.room}
@@ -161,7 +163,7 @@ export default function Game() {
           onBotFor={p => room.send({ t: 'botFor', playerId: p })}
           onWhy={() => setSheet('why')}
         />
-        <SelfStrip view={shown} coach={coach} />
+        <SelfStrip view={shown} coach={coach} myTurn={myTurn} />
         <Hand
           cards={hand}
           selected={sel.selected}

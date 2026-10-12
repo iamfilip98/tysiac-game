@@ -62,3 +62,13 @@
 .tcard--top { translate: 0 calc(var(--card-w, 64px) * -0.62); rotate: 3deg; }
 .talon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; align-content: center; }
 .talon__lbl { flex-basis: 100%; text-align: center; font-size: 11px; opacity: 0.6; }
+.ticker { grid-area: table; align-self: start; justify-self: center; z-index: 2; margin: 2px 0 0; max-width: 100%; pointer-events: none;
+  font: 600 14px/1.25 var(--font-ui); text-align: center; min-height: 1.25em; }
+.ticker__text { display: inline-block; padding: 3px 10px; border-radius: 12px; background: var(--panel); border: var(--panel-border);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 32px); animation: ticker-in .25s ease-out; }
+@keyframes ticker-in { from { opacity: 0; translate: 0 -4px; } }
+@media (prefers-reduced-motion: reduce) { .ticker__text { animation: none; } }
+.selfstrip--turn .selfstrip__avatar { border-radius: 50%; box-shadow: 0 0 0 2px var(--accent), 0 0 10px var(--accent); }
+.selfstrip__turn { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); animation: turn-pulse 1.6s ease-in-out infinite; }
+@keyframes turn-pulse { 50% { opacity: .55; } }
+@media (prefers-reduced-motion: reduce) { .selfstrip__turn { animation: none; } }

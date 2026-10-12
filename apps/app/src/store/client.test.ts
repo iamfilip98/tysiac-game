@@ -220,8 +220,8 @@ describe('advance', () => {
 describe('eventNote', () => {
   const s = findState(x => x.phase === 'tricks');
   const v = viewOf(s);
-  it('announces marriages without the coach', () => {
-    expect(eventNote({ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }, v, false)).toBe('Bot Basia declared the ♥ marriage: +100. ♥ are trumps.');
+  it('leaves marriages to the ticker without the coach', () => {
+    expect(eventNote({ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }, v, false)).toBeNull();
   });
   it('stays quiet for ordinary events without the coach', () => {
     expect(eventNote({ type: 'passed', p: 'b', audience: 'all' }, v, false)).toBeNull();
@@ -243,5 +243,14 @@ describe('table fx', () => {
     expect(hold.state.fx).toMatchObject({ kind: 'trumpWin' });
     const sweep = advance(hold.state, false)!;
     expect(sweep.state.fx).toBeNull();
+  });
+});
+
+describe('announcements in the store', () => {
+  it('each played event sets the announcement', () => {
+    const v = viewOf(findState(x => x.phase === 'tricks'));
+    const s: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v, queue: [{ type: 'passed', p: 'b', audience: 'all' } as GameEvent] };
+    const step = advance(s, false)!;
+    expect(step.state.announce?.a).toEqual({ kind: 'pass', p: 'b' });
   });
 });
