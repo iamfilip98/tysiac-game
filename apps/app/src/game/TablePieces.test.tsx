@@ -89,4 +89,10 @@ describe('Table', () => {
     expect(table.querySelector('.tcard--me')).not.toBeNull();
     expect(within(screen.getByLabelText('Last trick')).getAllByRole('img')).toHaveLength(3);
   });
+
+  it('does not duplicate a pending card the server trick already has', () => {
+    const pending = tricks.round!.trick.cards[0].card;
+    render(<Table view={tricks} pending={pending} sweepTo={null} />);
+    expect(screen.getByRole('region', { name: 'Table' }).querySelectorAll('.tcard')).toHaveLength(2);
+  });
 });
