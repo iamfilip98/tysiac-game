@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { m } from 'motion/react';
+import { useT } from '../i18n/useT';
 import './sheet.css';
 
 export interface SheetProps {
@@ -14,6 +15,7 @@ export interface SheetProps {
 const openSheets: symbol[] = [];
 
 export function Sheet({ title, onClose, children, footer }: SheetProps) {
+  const t = useT();
   const ref = useRef<HTMLElement>(null);
   // Move focus into the dialog, and hand it back to the trigger on close.
   useEffect(() => {
@@ -58,7 +60,7 @@ export function Sheet({ title, onClose, children, footer }: SheetProps) {
         <header className="sheet__head">
           <h2 className="display">{title}</h2>
           {onClose && (
-            <button type="button" className="iconbtn" aria-label="Close" onClick={onClose}>
+            <button type="button" className="iconbtn" aria-label={t('common.close')} onClick={onClose}>
               ✕
             </button>
           )}

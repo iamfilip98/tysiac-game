@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { applyTheme, isThemeId, type ThemeId } from '../theme/theme';
 import { safeLocalStorage } from './storage';
+import { LANGS, type Lang } from '../i18n/types';
+import { loadLang } from '../i18n';
 
 export type Speed = 'normal' | 'fast';
 export interface LastRoom {
@@ -22,6 +24,8 @@ export interface Prefs {
   gamesStarted: number;
   countedRoom: string | null;
   lastRoom: LastRoom | null;
+  /** UI language. Always 'en' until the player picks another in Settings (never read from the phone). */
+  lang: Lang;
 }
 interface PrefsActions {
   setProfile(name: string, avatar: string): void;
@@ -31,6 +35,8 @@ interface PrefsActions {
   setSpeed(speed: Speed): void;
   setLastRoom(room: LastRoom | null): void;
   noteGameStarted(code: string): void;
+  /** Loads the dictionary (lazy chunk for pl/da), then switches: every useT() component re-renders. */
+  setLang(lang: Lang): Promise<void>;
 }
 
 export const AVATARS = ['🦊', '🐻', '🦉', '🐺', '🐸', '🐼', '🦁', '🐯', '🐨', '🐙', '🦄', '🐝'] as const;
@@ -90,6 +96,7 @@ export const usePrefs = create<Prefs & PrefsActions>()(
       gamesStarted: 0,
       countedRoom: null,
       lastRoom: null,
+      lang: 'en',
       setProfile: (name, avatar) => set({ name: cleanName(name), avatar }),
       setTheme: id => {
         applyTheme(id);
@@ -103,6 +110,10 @@ export const usePrefs = create<Prefs & PrefsActions>()(
       setLastRoom: room => set({ lastRoom: room }),
       noteGameStarted: code =>
         set(s => (s.countedRoom === code ? s : { gamesStarted: s.gamesStarted + 1, countedRoom: code })),
+      setLang: async lang => {
+        await loadLang(lang);
+        set({ lang });
+      },
     }),
     {
       name: 'tysiac.prefs',
@@ -110,7 +121,7 @@ export const usePrefs = create<Prefs & PrefsActions>()(
       storage: createJSONStorage(() => safeLocalStorage()),
       partialize: s => ({
         name: s.name, avatar: s.avatar, theme: s.theme, sound: s.sound, coach: s.coach, speed: s.speed,
-        gamesStarted: s.gamesStarted, countedRoom: s.countedRoom, lastRoom: s.lastRoom,
+        gamesStarted: s.gamesStarted, countedRoom: s.countedRoom, lastRoom: s.lastRoom, lang: s.lang,
       }),
       onRehydrateStorage: () => state => {
         if (state && isThemeId(state.theme)) applyTheme(state.theme);
@@ -118,3 +129,16 @@ export const usePrefs = create<Prefs & PrefsActions>()(
     },
   ),
 );
+
+/** Before the first render: load the saved language's dictionary. Unknown value or a failed chunk load → English. */
+export async function initLang(): Promise<void> {
+  const saved = usePrefs.getState().lang;
+  const lang: Lang = LANGS.includes(saved) ? saved : 'en';
+  try {
+    await loadLang(lang);
+    if (lang !== saved) usePrefs.setState({ lang });
+  } catch {
+    await loadLang('en');
+    usePrefs.setState({ lang: 'en' });
+  }
+}
