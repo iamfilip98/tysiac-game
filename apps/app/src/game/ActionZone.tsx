@@ -43,7 +43,7 @@ export function ActionZone(p: ActionZoneProps) {
   let body: ReactNode;
   if (view.paused) body = <PausedPanel view={view} busy={p.busy} onAct={p.onAct} />;
   else if (view.phase === 'gameEnd') body = <p className="zone__text">Game over</p>;
-  else if (view.phase === 'talon') body = <TalonPanel view={view} room={p.room} now={p.now} busy={p.busy} onAct={p.onAct} onBotFor={p.onBotFor} />;
+  else if (view.phase === 'talon') body = <TalonPanel view={view} room={p.room} now={p.now} busy={p.busy} idle={p.idle} onAct={p.onAct} onBotFor={p.onBotFor} />;
   else if (view.round?.sittingOut === view.me) {
     body = (
       <>

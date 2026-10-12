@@ -31,7 +31,7 @@ describe('TalonPanel', () => {
 
   it('after confirming (or after a reconnect), a watcher waits too', () => {
     const acked = step(watching, 'me', { type: 'ackTalon' }).state;
-    if (acked.phase !== 'talon') return; // I was the last to confirm in this seed; nothing to wait for
+    expect(acked.phase).toBe('talon');
     render(<ActionZone {...props(viewOf(acked))} />);
     expect(screen.queryByRole('button', { name: 'Seen' })).toBeNull();
     expect(screen.getByText(/Waiting for/)).toBeInTheDocument();

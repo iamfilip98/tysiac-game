@@ -24,7 +24,7 @@ When the user reports a game issue:
 3. **Live logs:** `cd apps/worker && pnpm exec wrangler tail tysiac --format pretty` (narrow it with `--status error` or `--search "history insert failed"`). Older logs are in the Cloudflare dashboard → Workers & Pages → tysiac → Logs (observability is on).
 4. **Finished games:** `curl -s "https://tysiac.iamfilip98.workers.dev/api/history?player=<playerId>"`, or query D1 directly:
    `cd apps/worker && pnpm exec wrangler d1 execute tysiac --remote --command "SELECT id, room_code, winner_id, datetime(finished_at/1000,'unixepoch') AS finished FROM games ORDER BY finished_at DESC LIMIT 10"`
-5. **Reproduce:** the game is deterministic. Replay `gameOptions` plus the `log` actions with `createGame`/`reduce` from `@tysiac/engine` in a vitest under `packages/engine/test`, and assert what went wrong.
+5. **Reproduce:** the game is deterministic. Replay `gameOptions` plus the `log` actions with `createGame`/`reduce` from `@tysiac/engine` in a vitest under `packages/engine/test`, and assert what went wrong. Action logs from before the talon-confirmation change (protocol v2) with a bid above 100 won't replay on the current engine; replay them against the commit before 0a0311c.
 6. Find the root cause before changing code. The rules live in `packages/engine` (the source of truth). The app never re-implements them.
 
 Local: `pnpm --filter @tysiac/worker dev` runs wrangler dev on :8787, with `DEBUG_KEY` in `apps/worker/.dev.vars`. The same debug curl works against `http://127.0.0.1:8787`. Real-Worker e2e: `pnpm --filter @tysiac/app e2e:worker`. Deploy: `pnpm --filter @tysiac/worker ship` (it builds the app, deploys and runs a live smoke test).
