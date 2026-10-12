@@ -21,6 +21,17 @@ export async function layoutProblems(page: Page, opts: FitOptions = {}): Promise
     if (zone && zone.scrollHeight > zone.clientHeight + 1) {
       out.push(`zone overflows (${zone.scrollHeight} > ${zone.clientHeight})`);
     }
+    if (zone) {
+      const cs = getComputedStyle(zone);
+      const pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+      const kids = Array.from(zone.children) as HTMLElement[];
+      const gap = parseFloat(cs.rowGap || '0') * Math.max(0, kids.length - 1);
+      const content = kids.reduce((sum, k) => sum + k.getBoundingClientRect().height, 0) + gap + pad;
+      const slack = zone.getBoundingClientRect().height - content;
+      if (slack > 16 && !window.matchMedia('(orientation: landscape) and (max-height: 520px)').matches) {
+        out.push(`zone has ${Math.round(slack)} px of empty space`);
+      }
+    }
     for (const el of Array.from(document.body.querySelectorAll<HTMLElement>('*'))) {
       if (el.parentElement?.closest('[data-scroll-clip]')) continue;
       const style = getComputedStyle(el);

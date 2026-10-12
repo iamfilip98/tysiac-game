@@ -184,11 +184,8 @@ describe('Game screen: layout and private info', () => {
     expect(useSelection.getState().selected).toBeNull();
   });
 
-  it('keeps the page from scrolling and the action zone tall enough (CSS sanity)', () => {
-    const zone = /--zone-h:\s*clamp\((\d+)px/g;
-    const mins = [...css.matchAll(zone)].map(m => Number(m[1]));
-    expect(mins).toHaveLength(2);
-    for (const m of mins) expect(m).toBeGreaterThanOrEqual(172);
+  it('keeps the page from scrolling and sizes the action zone to its content (CSS sanity)', () => {
+    expect(css).not.toContain('--zone-h');
     expect(css).toMatch(/height: var\(--vvh, 100vh\);\s*height: 100dvh;/);
     expect(css).toMatch(/body:has\(\.game\)[^}]*overflow: hidden/);
   });

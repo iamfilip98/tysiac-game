@@ -6,14 +6,11 @@
   /* Table cards: a little smaller than the hand (3-4 cards side by side in a ring). */
   --card-w: clamp(46px, min(17vw, 9.6dvh), 92px);
   --hand-h: calc(var(--hand-card-w) * 1.66 + 4px);
-  /* Tallest action panel (decision: play vs throw-in) is ~170px, so never go below 172px. */
-  --zone-h: clamp(172px, 26dvh, 200px);
 }
 @supports not (height: 1dvh) {
   :root {
     --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), calc(var(--vvh, 100vh) * 0.126)), 104px);
     --card-w: clamp(46px, min(17vw, calc(var(--vvh, 100vh) * 0.096)), 92px);
-    --zone-h: clamp(172px, calc(var(--vvh, 100vh) * 0.26), 200px);
   }
 }
 
@@ -34,7 +31,7 @@ html:has(.game), body:has(.game) {
   margin: 0 auto;
   display: grid;
   grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto auto minmax(0, 1fr) var(--zone-h) auto var(--hand-h);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto var(--hand-h);
   grid-template-areas: 'top' 'opps' 'table' 'zone' 'self' 'hand';
   gap: 6px;
   /* +8px: iOS 26 blurs content just below the status bar in home-screen apps. */
