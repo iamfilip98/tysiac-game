@@ -5,6 +5,7 @@ import Home from './screens/Home';
 import { Placeholder } from './screens/Placeholder';
 
 const RoomRoute = lazy(() => import('./screens/RoomRoute'));
+const Learn = lazy(() => import('./screens/Learn'));
 const loadFeatures = () => import('./game/motionFeatures').then(m => m.default);
 
 export function App() {
@@ -15,9 +16,7 @@ export function App() {
           <Switch>
             <Route path="/" component={Home} />
             <Route path="/r/:code">{params => <RoomRoute code={params.code} />}</Route>
-            <Route path="/learn">
-              <Placeholder title="Learn to play" text="The interactive lesson is coming soon. Until then, try Practice vs bots — the coach is on." back />
-            </Route>
+            <Route path="/learn" component={Learn} />
             <Route path="/history">
               <Placeholder title="History" text="Your finished games will show up here soon." back />
             </Route>

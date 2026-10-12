@@ -1,0 +1,4 @@
+.lesson { display: flex; flex-direction: column; gap: 8px; font-family: var(--font-ui, inherit); }
+.lesson p { margin: 0; font-size: 15px; line-height: 1.45; color: var(--ink); }
+.lesson__actions { display: flex; flex-direction: column; gap: 8px; }
+.lesson__error { color: var(--danger); }
