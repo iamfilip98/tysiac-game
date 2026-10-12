@@ -20,6 +20,7 @@
   color: inherit;
   font-size: 12px;
 }
+.opp .avatar { margin-bottom: 7px; flex: none; }
 .opp--turn .avatar::after { content: ''; position: absolute; inset: -5px; border-radius: 50%; border: var(--turn-ring); }
 .opp--target .avatar { box-shadow: var(--avatar-ring), 0 0 0 4px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 16px var(--accent); }
 .avatar__dealer {
@@ -68,6 +69,7 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 32px); animation: ticker-in .25s ease-out; }
 @keyframes ticker-in { from { opacity: 0; translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .ticker__text { animation: none; } }
+.selfstrip__avatar { margin-right: 5px; }
 .selfstrip--turn .selfstrip__avatar { border-radius: 50%; box-shadow: 0 0 0 2px var(--accent), 0 0 10px var(--accent); }
 .selfstrip__turn { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); animation: turn-pulse 1.6s ease-in-out 3; }
 @keyframes turn-pulse { 50% { opacity: .55; } }
