@@ -4,11 +4,14 @@ import type {
 
 export type HelloMessage = Extract<ClientMessage, { t: 'hello' }>;
 export type ConnStatus = 'connecting' | 'open' | 'reconnecting' | 'closed';
+/** Why a connection ended for good (status 'closed'); undefined while live or for LocalRoom. */
+export type CloseReason = 'user' | 'replaced' | 'protocol' | 'rejected';
 
 /** One live link to a room. SocketConnection talks to the Worker; LocalConnection to an in-browser LocalRoom. */
 export interface RoomConnection {
   readonly code: string;
   readonly status: ConnStatus;
+  readonly closeReason?: CloseReason;
   /** Returns false (and drops the message) when the link is not open. */
   send(msg: ClientMessage): boolean;
   onMessage(fn: (msg: ServerMessage) => void): () => void;

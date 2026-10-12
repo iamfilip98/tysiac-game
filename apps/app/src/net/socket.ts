@@ -1,5 +1,5 @@
 import type { ClientMessage, ServerMessage } from './protocol';
-import { Emitter, type ConnStatus, type HelloMessage, type RoomConnection } from './connection';
+import { Emitter, type CloseReason, type ConnStatus, type HelloMessage, type RoomConnection } from './connection';
 
 /** The part of the browser WebSocket this class uses (lets tests pass a fake). */
 export interface SocketLike {
@@ -24,7 +24,7 @@ const FATAL_CLOSE_CODES: ReadonlySet<number> = new Set([4000, 1008]);
 /** Server errors that end the connection for good. */
 const TERMINAL_ERRORS: ReadonlySet<string> = new Set(['versionMismatch', 'badSecret']);
 
-export type CloseReason = 'user' | 'replaced' | 'protocol' | 'rejected';
+export type { CloseReason };
 
 export function backoffDelay(attempt: number): number {
   return Math.min(500 * 2 ** attempt, 5000);
@@ -33,7 +33,7 @@ export function backoffDelay(attempt: number): number {
 export class SocketConnection implements RoomConnection {
   status: ConnStatus = 'connecting';
   /** Why the connection ended for good (set together with status 'closed'). */
-  closeReason: CloseReason | null = null;
+  closeReason?: CloseReason;
   private ws: SocketLike | null = null;
   /** True once `welcome` arrived on the current socket; nothing but `hello` is sent before. */
   private welcomed = false;
@@ -103,7 +103,6 @@ export class SocketConnection implements RoomConnection {
     ws.onopen = () => {
       if (this.ws !== ws) return;
       ws.send(JSON.stringify(this.hello()));
-      this.setStatus('open');
     };
     ws.onmessage = ev => {
       if (this.ws !== ws) return;
@@ -116,6 +115,7 @@ export class SocketConnection implements RoomConnection {
       if (msg.t === 'welcome' && !this.welcomed) {
         this.welcomed = true;
         this.attempt = 0;
+        this.setStatus('open');
         this.stopPing();
         this.ping = setInterval(() => this.send({ t: 'ping' }), this.opts.pingMs ?? 20_000);
       }

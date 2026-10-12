@@ -55,8 +55,23 @@ describe('SocketConnection', () => {
     expect(latest().url).toBe(`ws://${window.location.host}/ws/ABCDEF`);
     expect(conn.status).toBe('connecting');
     latest().accept();
-    expect(conn.status).toBe('open');
+    expect(conn.status).toBe('connecting');
     expect(sentMsgs()).toEqual([hello]);
+    latest().welcome();
+    expect(conn.status).toBe('open');
+    conn.close();
+  });
+
+  it('stays reconnecting after a re-open until welcome', () => {
+    const conn = make();
+    latest().accept();
+    latest().welcome();
+    latest().drop();
+    vi.advanceTimersByTime(500);
+    latest().accept();
+    expect(conn.status).toBe('reconnecting');
+    latest().welcome();
+    expect(conn.status).toBe('open');
     conn.close();
   });
 
@@ -170,6 +185,7 @@ describe('SocketConnection', () => {
   it('other errors do not end the connection', () => {
     const conn = make();
     latest().accept();
+    latest().welcome();
     latest().message({ t: 'error', code: 'rateLimited', message: 'x' });
     expect(conn.status).toBe('open');
     conn.close();
