@@ -71,7 +71,7 @@ describe('RulesSheet', () => {
     expect(text).toContain(`${RULES.maxBidBase} + your marriages`);
     expect(text).toContain(`${RULES.barrelAt}–${RULES.winAt - 1}`);
     expect(text).toContain(`First to ${RULES.winAt} wins`);
-    expect(text).toContain('♥ 100');
+    expect(text).toContain('♥\uFE0E 100');
     expect(text).toContain('Only the first player after the leader must also beat the lead card');
   });
 

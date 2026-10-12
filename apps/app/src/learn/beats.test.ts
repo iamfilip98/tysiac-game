@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { RULES, createGame, reduce, viewFor, type GameState, type PlayerView } from '@tysiac/engine';
 import { BEATS, describeExpected, lessonAdvice, lessonHint, nextBeat } from './beats';
 import { lineText } from '../i18n/engineText';
+import { loadLang } from '../i18n';
 import { LEARNER_ID, LESSON_FIRST_DEALER, LESSON_SEED, buildLesson, expectedAt, lessonSeats } from './lesson';
 
 const lesson = buildLesson(LESSON_SEED);
@@ -20,6 +21,22 @@ function views(): PlayerView[] {
 }
 
 describe('beats', () => {
+  it('every beat has a Polish and Danish title and body', async () => {
+    const vs = views();
+    for (const lang of ['pl', 'da'] as const) {
+      await loadLang(lang);
+      for (const b of BEATS) {
+        const v = vs.find(x => b.ready(x))!;
+        expect(b.title(v)).not.toMatch(/\b(the|you|your|and)\b/i); // no English left
+        expect(b.body(v).join(' ').length).toBeGreaterThan(10);
+        expect(b.body(v).join(' ')).not.toMatch(/\b(the|your)\b/i);
+      }
+    }
+    await loadLang('pl');
+    expect(BEATS.find(b => b.id === 'cards')!.body(vs[0])[0]).toContain('D = 3');
+    await loadLang('en');
+  });
+
   it('every beat becomes ready at some point of the scripted round, exactly once', () => {
     const vs = views();
     const seen: string[] = [];

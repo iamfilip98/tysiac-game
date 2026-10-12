@@ -1,3 +1,5 @@
+import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { en } from './en';
 import { loadLang, pluralCategory, t } from './index';
@@ -61,4 +63,18 @@ describe('punctuation (owner ruling: no em dashes, no en dashes as punctuation)'
     expect(bad).toEqual([]);
   });
 
+  it('no em dash in app code outside comments (user-visible literals)', () => {
+    const SRC = join(process.cwd(), 'src/');
+    const files = (d: string): string[] =>
+      readdirSync(d).flatMap(f => (statSync(join(d, f)).isDirectory() ? files(join(d, f)) : [join(d, f)]));
+    const bad: string[] = [];
+    for (const f of files(SRC).filter(x => /\.tsx?$/.test(x) && !/\.test\.tsx?$/.test(x))) {
+      readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+        const code = line.replace(/\/\/.*$/, '').replace(/\/\*.*?\*\//g, '');
+        if (/^\s*\*/.test(code)) return;
+        if (code.includes('—')) bad.push(`${f.slice(SRC.length)}:${i + 1}`);
+      });
+    }
+    expect(bad).toEqual([]);
+  });
 });

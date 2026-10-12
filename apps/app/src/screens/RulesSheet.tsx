@@ -1,52 +1,65 @@
-import { RULES } from '@tysiac/engine';
+import { Fragment } from 'react';
+import { RULES, type Rank } from '@tysiac/engine';
 import { Sheet } from '../ui/Sheet';
+import { useT } from '../i18n/useT';
+import { SUIT_TEXT } from '../game/cards';
 import './screens.css';
 
+const LOW_FIRST: readonly Rank[] = ['9', '10', 'J', 'Q', 'K', 'A'];
+const BY_POINTS: readonly Rank[] = ['A', '10', 'K', 'Q', 'J', '9'];
+
 export function RulesSheet({ onClose }: { onClose(): void }) {
-  const pts = RULES.cardPoints;
+  const t = useT();
+  const rank = (r: Rank) => t(`card.rank.${r}`);
   const mv = RULES.marriageValues;
-  const share = Math.floor(RULES.throwPool / 2);
+  const strength = [...RULES.ranks].sort((a, b) => RULES.rankStrength[b] - RULES.rankStrength[a]) as Rank[];
   const down = RULES.roundUpFrom - 1;
+  const sections = [
+    [
+      t('rules.cards.title'),
+      t('rules.cards', {
+        ranks: LOW_FIRST.map(rank).join(', '),
+        points: BY_POINTS.map(r => `${rank(r)} ${RULES.cardPoints[r]}`).join(', '),
+        total: RULES.pointsPerRound,
+        strength: strength.map(rank).join(' > '),
+      }),
+    ],
+    [
+      t('rules.marriages.title'),
+      t('rules.marriages', {
+        king: rank('K'),
+        queen: rank('Q'),
+        values: RULES.marriageOrder.map(s => `${SUIT_TEXT[s]} ${mv[s]}`).join(', '),
+      }),
+    ],
+    [
+      t('rules.dealing.title'),
+      t('rules.dealing', { hand: RULES.handSize, talon: RULES.talonSize, ace: RULES.talonAcePoints, redeal: RULES.redealBelow }),
+    ],
+    [t('rules.bidding.title'), t('rules.bidding', { auto: RULES.autoBid, step: RULES.bidStep, base: RULES.maxBidBase })],
+    [t('rules.talon.title'), t('rules.talon', { auto: RULES.autoBid, share: Math.floor(RULES.throwPool / 2) })],
+    [t('rules.tricks.title'), t('rules.tricks')],
+    [
+      t('rules.scoring.title'),
+      t('rules.scoring', {
+        up: RULES.roundUpFrom,
+        downEx: 100 + down,
+        upEx: 100 + RULES.roundUpFrom,
+        barrel: RULES.barrelAt,
+        last: RULES.winAt - 1,
+        win: RULES.winAt,
+      }),
+    ],
+  ];
   return (
-    <Sheet title="Rules" onClose={onClose}>
+    <Sheet title={t('common.rules')} onClose={onClose}>
       <div className="rules">
-        <h3>Cards</h3>
-        <p>
-          24 cards: 9, 10, J, Q, K, A in ♣ ♦ ♥ ♠. Points: A {pts.A}, 10 {pts['10']}, K {pts.K}, Q {pts.Q}, J {pts.J}, 9 {pts['9']} —{' '}
-          {RULES.pointsPerRound} per round. Strength: A &gt; 10 &gt; K &gt; Q &gt; J &gt; 9.
-        </p>
-        <h3>Marriages</h3>
-        <p>
-          K + Q of one suit: ♥ {mv.hearts}, ♦ {mv.diamonds}, ♣ {mv.clubs}, ♠ {mv.spades}. Lead the Q while holding its K and the marriage is declared
-          automatically — that suit becomes trump at once. Marriage points count only if you win at least one trick.
-        </p>
-        <h3>Dealing</h3>
-        <p>
-          {RULES.handSize} cards each and {RULES.talonSize} to the talon. With 4 players the dealer sits out and scores the talon's marriages plus{' '}
-          {RULES.talonAcePoints} per ace in it. A hand under {RULES.redealBelow} points with no marriage means a redeal.
-        </p>
-        <h3>Bidding</h3>
-        <p>
-          The player left of the dealer automatically holds {RULES.autoBid}. On your turn, bid exactly {RULES.bidStep} more than the current bid, or pass.
-          Your maximum is {RULES.maxBidBase} + your marriages. Bidding ends when two players have passed; the high bidder wins.
-        </p>
-        <h3>Talon, throw-in and hand-out</h3>
-        <p>
-          At {RULES.autoBid} only the bidder sees the talon; above that everyone does. The bidder may throw in: at {RULES.autoBid} nobody scores; above it the
-          bidder loses the bid and the others get {share} each (0 on the barrel). Otherwise the bidder gives one card to each opponent.
-        </p>
-        <h3>Tricks</h3>
-        <p>
-          The bidder leads first. Everyone must follow suit if they can. Only the first player after the leader must also beat the lead card if able. If you
-          can't follow suit, play anything — there is no obligation to trump. A trump beats every other suit.
-        </p>
-        <h3>Scoring</h3>
-        <p>
-          Points round to the nearest 10 (a remainder of {RULES.roundUpFrom} or more rounds up: {100 + down} becomes 100, {100 + RULES.roundUpFrom} becomes{' '}
-          {110}). The bidder needs at least the bid in raw points and then scores their points rounded; otherwise the bidder scores minus the bid.
-          Defenders score their own points rounded. On the barrel ({RULES.barrelAt}–{RULES.winAt - 1}) defenders score 0 — you only score as the
-          bidder. There is no limit on barrel attempts. First to {RULES.winAt} wins.
-        </p>
+        {sections.map(([title, text]) => (
+          <Fragment key={title}>
+            <h3>{title}</h3>
+            <p>{text}</p>
+          </Fragment>
+        ))}
       </div>
     </Sheet>
   );
