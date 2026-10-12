@@ -96,6 +96,11 @@ export function marriageToDeclare(hand: Card[], declared: Suit[]): Suit | null {
   return RULES.marriageOrder.find(suit => hasMarriage(hand, suit) && !declared.includes(suit)) ?? null;
 }
 
+/** True for the K or Q of a held marriage that has not been declared yet. */
+export function isMarriageCard(card: Card, hand: Card[], declared: Suit[]): boolean {
+  return (card.rank === 'K' || card.rank === 'Q') && hasMarriage(hand, card.suit) && !declared.includes(card.suit);
+}
+
 export interface CardContext {
   valid: Card[];
   trick: TrickCard[];
@@ -105,10 +110,17 @@ export interface CardContext {
   hand: Card[];
   /** Cards from completed tricks this round. */
   played: Card[];
+  /** Marriage suits this player has already declared. */
+  declared?: Suit[];
 }
 
 export function decideCard(ctx: CardContext): Card {
   if (ctx.valid.length === 1) return ctx.valid[0];
+  if (ctx.trick.length > 0) {
+    // Following: the K or Q of a held, undeclared marriage is thrown away unless nothing else is legal.
+    const spare = ctx.valid.filter(c => !isMarriageCard(c, ctx.hand, ctx.declared ?? []));
+    if (spare.length > 0 && spare.length < ctx.valid.length) return decideCard({ ...ctx, valid: spare });
+  }
   const remaining = remainingCards(ctx.hand, [...ctx.played, ...ctx.trick.map(t => t.card)]);
   if (ctx.trick.length === 0) return decideLeadCard(ctx.valid, ctx.trump, ctx.isBidder, remaining);
   return decideFollowCard(ctx.valid, ctx.trick, ctx.trump, ctx.isBidder, ctx.bidder, remaining);

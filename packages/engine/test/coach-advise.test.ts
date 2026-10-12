@@ -87,6 +87,51 @@ describe('advise: tricks', () => {
   });
 });
 
+describe('advise: held marriages', () => {
+  const isPair = (card: { suit: string; rank: string }) => card.rank === 'K' || card.rank === 'Q';
+  it('(a) leading: declares the Q of the most valuable marriage, never the K', () => {
+    const s = scenario({ phase: 'tricks', bid: { high: 'a' }, hands: { a: 'KD QD KS QS 9C 9H' } });
+    const a = advise(viewFor(s, 'a'))!;
+    expect(a.action).toEqual({ type: 'card', card: c('QD') });
+    expect(a.headline).toBe('Lead Q♦ to declare your ♦ marriage');
+  });
+  it('(a) leading with a declared marriage is not restricted', () => {
+    const s = scenario({
+      phase: 'tricks', bid: { high: 'a' }, trump: 'diamonds', marriages: { a: ['diamonds'] }, hands: { a: 'KD QD' },
+    });
+    expect(advise(viewFor(s, 'a'))!.action).toMatchObject({ type: 'card' });
+  });
+  it('(b) forced to follow the marriage suit: breaks it and says so', () => {
+    const s = scenario({
+      phase: 'tricks', bid: { high: 'b' }, hands: { a: 'KD QD 9C', b: '9S', c: '9H' },
+      trick: { leader: 'c', cards: [['c', '9D']] },
+    });
+    const a = advise(viewFor(s, 'a'))!;
+    expect(a.action).toMatchObject({ type: 'card', card: { suit: 'diamonds' } });
+    const text = a.reasons.join(' | ');
+    expect(text).toContain('This gives up your ♦ marriage: it only counts when you lead the Q');
+    expect(text).toContain('every legal card here is part of a marriage');
+  });
+  it('(c) following with a spare legal card: keeps the marriage', () => {
+    const s = scenario({
+      phase: 'tricks', bid: { high: 'b' }, hands: { a: 'KS QS 10S', b: '9C', c: '9H' },
+      trick: { leader: 'c', cards: [['c', '9S']] },
+    });
+    const a = advise(viewFor(s, 'a'))!;
+    expect(a.action).toEqual({ type: 'card', card: c('10S') });
+    expect(a.reasons.join(' ')).not.toContain('gives up');
+  });
+  it('(c) off-suit: never throws away a K or Q of a held marriage', () => {
+    const s = scenario({
+      phase: 'tricks', bid: { high: 'b' }, hands: { a: 'KD QD 9C', b: '9C', c: '9H' },
+      trick: { leader: 'c', cards: [['c', '9S']] },
+    });
+    const a = advise(viewFor(s, 'a'))!;
+    expect(a.action).toEqual({ type: 'card', card: c('9C') });
+    expect(isPair((a.action as { card: { suit: string; rank: string } }).card)).toBe(false);
+  });
+});
+
 describe('advise: second responder', () => {
   it('teaches that only the first responder must beat the lead', () => {
     const t = scenario({

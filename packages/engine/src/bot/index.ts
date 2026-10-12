@@ -60,6 +60,7 @@ function decide(view: PlayerView, options: Action[]): Action | null {
           bidder: r.bid.high,
           hand,
           played: r.played,
+          declared: r.marriages[view.me] ?? [],
         }),
       };
     }

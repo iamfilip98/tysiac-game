@@ -5,6 +5,7 @@ import { maxBidFor } from '../bidding';
 import { canBeat, getHighestCardInTrick } from '../tricks';
 import { roundToTen } from '../scoring';
 import { botAction } from '../bot';
+import { isMarriageCard } from '../bot/play';
 import { expectedBidPoints, postTalonExpectedPoints } from '../bot/eval';
 import { nameOf } from './names';
 
@@ -147,6 +148,8 @@ function adviseCard(view: PlayerView, action: Action, card: Card): Advice {
   }
 
   const lead = r.trick.cards[0].card;
+  const declared = r.marriages[view.me] ?? [];
+  const breaksMarriage = isMarriageCard(card, r.hand, declared);
   const onTable = r.trick.cards.map(t => t.card);
   const winning = getHighestCardInTrick(onTable, lead.suit, r.trump);
   const winner = r.trick.cards.find(t => cardEquals(t.card, winning))!.p;
@@ -184,6 +187,13 @@ function adviseCard(view: PlayerView, action: Action, card: Card): Advice {
       canWin
         ? "This trick isn't worth fighting for — play your least useful card"
         : "You can't win this one, so play your least useful card",
+    );
+  }
+  if (breaksMarriage) {
+    reasons.push(
+      `This gives up your ${sym(card.suit)} marriage: it only counts when you lead the Q${
+        legalCards.every(lc => isMarriageCard(lc, r.hand, declared)) ? ' — and every legal card here is part of a marriage' : ''
+      }`,
     );
   }
   return { action, headline: `Play ${label}`, reasons };
