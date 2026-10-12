@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "node scripts/ensure-local.mjs && wrangler dev",
-    "dev:e2e": "node scripts/ensure-local.mjs && wrangler d1 migrations apply tysiac --local && wrangler dev --ip 127.0.0.1 --port 8787 --var BOT_DELAY_SCALE:0.05 --show-interactive-dev-session=false",
+    "dev:e2e": "node scripts/ensure-local.mjs && wrangler d1 migrations apply tysiac --local && wrangler dev --ip 127.0.0.1 --port ${E2E_WORKER_PORT:-8787} --var BOT_DELAY_SCALE:0.05 --show-interactive-dev-session=false",
     "test": "node scripts/ensure-local.mjs && vitest run",
     "typecheck": "tsc --noEmit",
     "types": "wrangler types --strict-vars=false",
