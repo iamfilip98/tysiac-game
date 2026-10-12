@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { CARD_STRIP, drive, firstLaunch, move } from './helpers';
+import { CARD_STRIP, drive, firstLaunch, labels, move } from './helpers';
 import { setSafeInsets } from './layout';
 
 const SHOT_PROJECTS = new Set(['iphone15', 'se']);
@@ -93,5 +93,39 @@ for (const theme of ['Brass', 'Wycinanki', 'Midnight']) {
     await stage(page, 'trumpwin');
     await stage(page, 'summary');
     await shot('summary', 900);
+  });
+}
+
+// Polish and Danish at the smallest phone: the new hand-out slots, received banner, held trick and summary rows fit.
+for (const lang of ['pl', 'da'] as const) {
+  test(`screenshots in ${lang} (se)`, async ({ page }, info) => {
+    test.skip(info.project.name !== 'se', 'smallest phone only');
+    const L = labels(lang);
+    await firstLaunch(page, lang);
+    await page.getByRole('button', { name: L.practice }).click();
+    await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
+    await setSafeInsets(page, { top: 20, bottom: 0, left: 0, right: 0 });
+    const shot = async (name: string, settle = 900) => {
+      await page.waitForTimeout(settle);
+      await page.screenshot({ path: `e2e-shots/se-${lang}-${name}.png` });
+    };
+    await drive(page, { lang, bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
+    const hand = page.getByRole('group', { name: L.hand });
+    await hand.getByRole('button').first().click({ position: CARD_STRIP });
+    await shot('handout-one', 400);
+    await hand.getByRole('button').first().click({ position: CARD_STRIP });
+    await move(page, () => page.getByRole('button', { name: L.confirmHandout }).click());
+    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    for (const kind of ['received', 'held', 'summary'] as const) {
+      await stage(page, kind);
+      await shot(kind);
+    }
+    // Nothing clipped in the new UI.
+    const clipped = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>('.rrow__bid, .rrow__detail, .rrow__total, .received__lbl, .chip--coach'))
+        .filter(e => e.offsetParent !== null && e.scrollWidth > e.clientWidth + 1)
+        .map(e => `${e.className}: ${e.textContent}`),
+    );
+    expect(clipped).toEqual([]);
   });
 }
