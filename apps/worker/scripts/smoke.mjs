@@ -5,6 +5,7 @@ import { randomUUID } from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+const requireApp = process.argv.includes('--require-app');
 const base = process.argv[2]?.replace(/\/$/, '');
 if (!base) {
   console.error('usage: node scripts/smoke.mjs <base-url>');
@@ -85,7 +86,10 @@ if (history.status !== 200) throw new Error(`history returned ${history.status}`
 console.log('✓ GET /api/history');
 
 const spa = await fetch(`${base}/r/${code}`);
-if (spa.status !== 200 || !(await spa.text()).includes('<html')) throw new Error(`SPA fallback returned ${spa.status}`);
-console.log('✓ GET /r/:code serves the SPA shell');
+const spaHtml = await spa.text();
+if (spa.status !== 200 || !spaHtml.includes('<html')) throw new Error(`SPA fallback returned ${spa.status}`);
+if (spaHtml.includes('<div id="root">')) console.log('✓ GET /r/:code serves the SPA app');
+else if (requireApp) throw new Error('SPA: placeholder (no <div id="root">) — the real app is not deployed');
+else console.log('… GET /r/:code serves a placeholder shell (SPA: placeholder)');
 
 console.log(`SMOKE OK ${base}`);

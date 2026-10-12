@@ -12,7 +12,7 @@ if (!existsSync(join(dist, 'index.html'))) {
   mkdirSync(dist, { recursive: true });
   writeFileSync(
     join(dist, 'index.html'),
-    '<!doctype html>\n<html lang="en"><head><meta charset="utf-8">' +
+    '<!doctype html>\n<!-- tysiac-placeholder -->\n<html lang="en"><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width,initial-scale=1"><title>Tysiąc</title></head>\n' +
       '<body style="margin:0;min-height:100dvh;display:grid;place-items:center;font-family:system-ui;' +
       'background:#0f3d2e;color:#f5efe0"><p>Tysiąc — the app is coming soon.</p></body></html>\n',

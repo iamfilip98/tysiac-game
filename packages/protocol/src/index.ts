@@ -2,6 +2,11 @@ import type { Action, GameEvent, PlayerId, PlayerView } from '@tysiac/engine';
 
 export const PROTOCOL_VERSION = 1;
 
+/** WebSocket close code: another connection of the same player replaced this one. Do not reconnect. */
+export const CLOSE_REPLACED = 4000;
+/** WebSocket close code: protocol violation or refused hello. Do not reconnect. */
+export const CLOSE_PROTOCOL = 1008;
+
 // ---------- HTTP ----------
 // POST /api/rooms            body CreateRoomRequest → CreateRoomResponse | { error: string }
 export interface CreateRoomRequest { maxPlayers: 3 | 4; playerId: PlayerId; name: string; avatar: string }

@@ -1,7 +1,7 @@
 import { DurableObject } from 'cloudflare:workers';
 import { createGame, eventsFor, reduce, viewFor } from '@tysiac/engine';
 import type { Action, GameEvent, GameState, PlayerId } from '@tysiac/engine';
-import { parseClientMessage } from '@tysiac/protocol';
+import { CLOSE_PROTOCOL, CLOSE_REPLACED, parseClientMessage } from '@tysiac/protocol';
 import type { ClientMessage, ErrorCode, LobbyOp, ParseResult, RoomExistsResponse, RoomInfo, ServerMessage } from '@tysiac/protocol';
 import { gameRecordFrom, saveGameSafely, type GameRecord } from '../history';
 import { randomHex, sha256Hex } from '../identity';
@@ -163,19 +163,19 @@ export class Room extends DurableObject<Env> {
       typeof message === 'string' ? parseClientMessage(message) : { ok: false, code: 'badMessage', message: 'Messages must be text' };
     if (!parsed.ok) {
       this.sendError(ws, parsed.code, parsed.message);
-      if (me === null) this.safeClose(ws, 1008, parsed.code);
+      if (me === null) this.safeClose(ws, CLOSE_PROTOCOL, parsed.code);
       return;
     }
     if (!this.meta) {
       this.sendError(ws, 'notInRoom', 'This room no longer exists');
-      this.safeClose(ws, 1008, 'notInRoom');
+      this.safeClose(ws, CLOSE_PROTOCOL, 'notInRoom');
       return;
     }
     // The client must await `welcome` before sending anything but hello: until then this socket has no identity.
     if (me === null) {
       if (parsed.msg.t !== 'hello') {
         this.sendError(ws, 'badMessage', 'The first message must be hello');
-        this.safeClose(ws, 1008, 'badMessage');
+        this.safeClose(ws, CLOSE_PROTOCOL, 'badMessage');
         return;
       }
       return this.onHello(ws, parsed.msg, now);
@@ -202,12 +202,12 @@ export class Room extends DurableObject<Env> {
     if (!claim.ok) {
       ws.serializeAttachment({ playerId: null } satisfies SocketAttachment);
       this.sendError(ws, claim.code, claim.message);
-      this.safeClose(ws, 1008, claim.code);
+      this.safeClose(ws, CLOSE_PROTOCOL, claim.code);
       return;
     }
     for (const old of this.socketsOf(msg.playerId, ws)) {
       old.serializeAttachment({ playerId: null } satisfies SocketAttachment); // its close must not mark the player away
-      this.safeClose(old, 4000, 'replaced');
+      this.safeClose(old, CLOSE_REPLACED, 'replaced');
     }
     ws.serializeAttachment({ playerId: msg.playerId } satisfies SocketAttachment);
     this.setMeta(claim.meta);

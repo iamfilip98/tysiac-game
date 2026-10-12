@@ -36,6 +36,7 @@ async function api(token, method, path, body) {
     headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  if (!res.ok && !(res.headers.get('content-type') ?? '').includes('json')) throw new Error(`Cloudflare API ${method} ${path} → ${res.status}`);
   return res.json();
 }
 
@@ -96,11 +97,18 @@ async function main() {
   await ensureDatabase(token);
   process.stdout.write(wrangler(['d1', 'migrations', 'apply', DB_NAME, '--remote']));
   ensureDebugKey();
+  const appDir = join(ROOT, '..', 'app');
+  const hasApp = existsSync(join(appDir, 'package.json'));
+  if (hasApp) execFileSync('pnpm', ['--filter', '@tysiac/app', 'build'], { cwd: ROOT, stdio: 'inherit' });
   execFileSync(process.execPath, [join(ROOT, 'scripts', 'ensure-local.mjs')], { stdio: 'inherit' });
+  const indexHtml = readFileSync(join(appDir, 'dist', 'index.html'), 'utf8');
+  if (indexHtml.includes('tysiac-placeholder')) {
+    throw new Error('refusing to deploy: apps/app/dist holds only the placeholder index.html (build the app first)');
+  }
   const out = wrangler(['deploy', '--secrets-file', SECRETS]);
   process.stdout.write(out);
   const url = out.match(/https:\/\/[a-z0-9-]+\.[a-z0-9-]+\.workers\.dev/)?.[0] ?? `https://${WORKER_NAME}.${subdomain}.workers.dev`;
-  execFileSync(process.execPath, [join(ROOT, 'scripts', 'smoke.mjs'), url], { stdio: 'inherit' });
+  execFileSync(process.execPath, [join(ROOT, 'scripts', 'smoke.mjs'), url, ...(hasApp ? ['--require-app'] : [])], { stdio: 'inherit' });
   console.log(`\nLive: ${url}`);
 }
 
