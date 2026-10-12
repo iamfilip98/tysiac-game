@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import './profile.css';
 import { AVATARS, NAME_MAX_UNITS, cleanName } from '../store/prefs';
 
 export interface ProfileFormProps {
