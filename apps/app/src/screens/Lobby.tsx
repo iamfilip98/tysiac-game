@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { useLocation } from 'wouter';
 import { m } from 'motion/react';
 import type { LobbyOp, RoomSeat } from '../net/protocol';
+import { usePrefs } from '../store/prefs';
 import { useRoom } from '../store/room';
 import './lobby.css';
 
@@ -51,12 +52,13 @@ export default function Lobby() {
       }
       await navigator.clipboard.writeText(url);
       setNote('Link copied');
-    } catch {
-      setNote(url);
+    } catch (e) {
+      if ((e as { name?: string } | null)?.name !== 'AbortError') setNote(url);
     }
   };
   const leave = () => {
     send({ t: 'leave' });
+    usePrefs.getState().setLastRoom(null);
     useRoom.getState().detach();
     navigate('/');
   };

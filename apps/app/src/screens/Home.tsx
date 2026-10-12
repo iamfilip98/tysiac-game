@@ -84,7 +84,7 @@ export default function Home() {
       const r = await (await getService()).roomExists(c);
       if (r.exists) navigate(`/r/${c}`);
       else setError({ text: `No room with code ${c}.` });
-    } catch (e) {
+    } catch {
       setError({ text: "Can't reach the server", retry: () => void join() });
     } finally {
       setBusy(false);

@@ -13,6 +13,9 @@ import './home.css';
 const Lobby = lazy(() => import('./Lobby'));
 const Game = lazy(() => import('./Game'));
 
+/** First connect gives up (offers Retry) after this long without a welcome. */
+const CONNECT_TIMEOUT_MS = 8000;
+
 const FATAL_TEXT: Record<string, string> = {
   roomFull: 'This room is full.',
   gameInProgress: 'This game has already started without you.',
@@ -60,6 +63,8 @@ export default function RoomRoute({ code }: { code: string }) {
   /** Bumped by "Use here" / "Retry" to open a fresh connection. */
   const [attempt, setAttempt] = useState(0);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [stalled, setStalled] = useState(false);
+  const connected = room !== null;
 
   useEffect(() => {
     if (!norm || !name) return;
@@ -83,6 +88,16 @@ export default function RoomRoute({ code }: { code: string }) {
     };
   }, [norm, name, practice, attempt]);
 
+  // No welcome within CONNECT_TIMEOUT_MS of (re)starting a connection -> offer Retry.
+  useEffect(() => {
+    if (connected || !norm || !name) {
+      setStalled(false);
+      return;
+    }
+    const t = setTimeout(() => setStalled(true), CONNECT_TIMEOUT_MS);
+    return () => clearTimeout(t);
+  }, [connected, norm, name, attempt]);
+
   usePracticeAutostart(practice);
 
   useEffect(() => {
@@ -103,12 +118,16 @@ export default function RoomRoute({ code }: { code: string }) {
       Home
     </button>
   );
-  if (loadFailed) {
+  const unreachable = loadFailed || (!room && (stalled || status === 'reconnecting')) && !(error && FATAL_ERRORS.has(error.code)) && status !== 'closed';
+  if (unreachable) {
     return (
       <main className="screen">
         <h1 className="display">Can't reach the server</h1>
         <p>Check your connection and try again.</p>
-        <button type="button" className="btn btn--pri" onClick={() => setAttempt(a => a + 1)}>
+        <button type="button" className="btn btn--pri" onClick={() => {
+            setStalled(false);
+            setAttempt(a => a + 1);
+          }}>
           Retry
         </button>
         <button type="button" className="btn btn--sec" onClick={() => navigate('/')}>
@@ -131,6 +150,15 @@ export default function RoomRoute({ code }: { code: string }) {
       </main>
     );
   }
+  if (error && FATAL_ERRORS.has(error.code)) {
+    return (
+      <main className="screen">
+        <h1 className="display">Can't join</h1>
+        <p>{FATAL_TEXT[error.code] ?? error.message}</p>
+        {goHome}
+      </main>
+    );
+  }
   if (status === 'closed' && (conn?.closeReason === 'protocol' || conn?.closeReason === 'rejected')) {
     return (
       <main className="screen">
@@ -140,15 +168,6 @@ export default function RoomRoute({ code }: { code: string }) {
             ? 'The app and the server are out of sync — please reload the page.'
             : 'The server refused this connection.'}
         </p>
-        {goHome}
-      </main>
-    );
-  }
-  if (error && FATAL_ERRORS.has(error.code)) {
-    return (
-      <main className="screen">
-        <h1 className="display">Can't join</h1>
-        <p>{FATAL_TEXT[error.code] ?? error.message}</p>
         {goHome}
       </main>
     );

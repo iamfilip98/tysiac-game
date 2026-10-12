@@ -83,7 +83,7 @@ describe('Home', () => {
     const user = userEvent.setup();
     const err = Object.assign(new Error('x'), { kind: 'network' });
     let fail = true;
-    svc.createRoom = async req => {
+    svc.createRoom = async () => {
       if (fail) throw err;
       return { code: 'K7QX2M' };
     };

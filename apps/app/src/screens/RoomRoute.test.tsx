@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import RoomRoute from './RoomRoute';
 import { setServiceForTests } from '../net/service';
 import { usePrefs } from '../store/prefs';
@@ -128,5 +128,55 @@ describe('RoomRoute', () => {
     fail = false;
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     await waitFor(() => expect(svc.conns).toHaveLength(1));
+  });
+
+  it('badSecret keeps its specific text even though the socket closes as rejected', async () => {
+    renderRoute();
+    await waitFor(() => expect(svc.conns).toHaveLength(1));
+    const conn = svc.conns[0];
+    conn.push({ t: 'error', code: 'versionMismatch', message: 'old' });
+    conn.closeReason = 'rejected';
+    conn.setStatus('closed');
+    expect(await screen.findByText('The app was updated — please reload.')).toBeInTheDocument();
+    expect(screen.queryByText('The server refused this connection.')).toBeNull();
+  });
+
+  it('offers Retry when no welcome arrives within 8 s, and Retry reconnects fresh', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
+    try {
+      renderRoute();
+      await waitFor(() => expect(svc.conns).toHaveLength(1));
+      expect(screen.getByText('Connecting…')).toBeInTheDocument();
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(8100);
+      });
+      expect(screen.getByRole('heading', { name: "Can't reach the server" })).toBeInTheDocument();
+      fireEvent.click(screen.getByRole('button', { name: 'Retry' }));
+      await waitFor(() => expect(svc.conns).toHaveLength(2));
+      expect(svc.conns[0].status).toBe('closed');
+      expect(screen.getByText('Connecting…')).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('shows Retry when reconnecting before any welcome', async () => {
+    renderRoute();
+    await waitFor(() => expect(svc.conns).toHaveLength(1));
+    svc.conns[0].setStatus('reconnecting');
+    expect(await screen.findByRole('heading', { name: "Can't reach the server" })).toBeInTheDocument();
+  });
+
+  it('a refresh rejoins with the same playerId and secret', async () => {
+    const first = renderRoute();
+    await waitFor(() => expect(svc.conns).toHaveLength(1));
+    const a = svc.hellos[0]();
+    first.unmount();
+    renderRoute();
+    await waitFor(() => expect(svc.conns).toHaveLength(2));
+    const b = svc.hellos[1]();
+    expect(b.playerId).toBe(a.playerId);
+    expect(b.secret).toBe(a.secret);
+    expect(a.playerId).toMatch(/^[0-9a-f-]{36}$/);
   });
 });
