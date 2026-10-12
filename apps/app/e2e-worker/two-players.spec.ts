@@ -63,11 +63,11 @@ test('two people and a bot play through a trick on the real Worker', async ({ br
   const wrongKey = await host.request.get(`/api/debug/rooms/${code}`, { headers: { 'x-debug-key': 'nope' } });
   expect(wrongKey.status()).toBe(404);
 
-  // History API: a fresh player has no finished games.
-  // TODO(merge of Tasks 3-4): once the /history screen exists, also assert the UI text
-  // 'No finished games yet — play one with friends!' via host.goto('/history').
+  // History: a fresh player has no finished games (API and screen).
   const hist = await host.request.get('/api/history?player=00000000-0000-4000-8000-0000000000aa');
   expect(hist.status()).toBe(200);
+  await host.goto('/history');
+  await expect(host.getByText('No finished games yet — play one with friends!')).toBeVisible();
 
   await hostCtx.close();
   await guestCtx.close();
