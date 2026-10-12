@@ -15,7 +15,8 @@ export interface RoomStore extends ClientState {
   attach(conn: RoomConnection): void;
   detach(): void;
   send(msg: ClientMessage): boolean;
-  act(action: Action): void;
+  /** False (nothing sent) when another action is still in flight. */
+  act(action: Action): boolean;
   playCard(card: Card): void;
   dismissResult(): void;
   clearToast(): void;
@@ -84,9 +85,11 @@ export const useRoom = create<RoomStore>()((set, get) => ({
     return get().conn?.send(msg) ?? false;
   },
   act(action) {
+    if (get().inflight) return false;
     const id = newId();
     set(s => beginAct(s, id));
     if (!get().send({ t: 'act', id, action })) receive({ t: 'reject', id, code: 'offline', message: OFFLINE });
+    return true;
   },
   playCard(card) {
     const s = get();

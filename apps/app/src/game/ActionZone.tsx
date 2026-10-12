@@ -37,9 +37,9 @@ export function ActionZone(p: ActionZoneProps) {
   const { view } = p;
   const phase = zonePhase(view, p.idle);
   const myTurn = phase === view.phase;
-  const wait = <WaitLine view={view} room={p.room} now={p.now} onBotFor={p.onBotFor} />;
+  const wait = <WaitLine view={view} room={p.room} now={p.now} busy={p.busy} onBotFor={p.onBotFor} />;
   let body: ReactNode;
-  if (view.paused) body = <PausedPanel view={view} onAct={p.onAct} />;
+  if (view.paused) body = <PausedPanel view={view} busy={p.busy} onAct={p.onAct} />;
   else if (view.phase === 'gameEnd') body = <p className="zone__text">Game over</p>;
   else if (view.round?.sittingOut === view.me) {
     body = (

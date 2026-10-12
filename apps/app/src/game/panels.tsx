@@ -11,7 +11,7 @@ const VERB: Partial<Record<PlayerView['phase'], string>> = {
   tricks: 'is playing',
 };
 
-export function WaitLine({ view, room, now, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; onBotFor(p: PlayerId): void }) {
+export function WaitLine({ view, room, now, busy = false, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; busy?: boolean; onBotFor(p: PlayerId): void }) {
   const p = view.turn;
   if (!p || p === view.me) return <p className="zone__wait">…</p>;
   const seat = room?.seats.find((s): s is RoomSeat => s?.id === p) ?? null;
@@ -22,7 +22,7 @@ export function WaitLine({ view, room, now, onBotFor }: { view: PlayerView; room
       <div className="zone__wait">
         <span>{seat.name} is away</span>
         {left === 0 ? (
-          <button type="button" className="btn btn--sec" onClick={() => onBotFor(p)}>
+          <button type="button" className="btn btn--sec" disabled={busy} onClick={() => onBotFor(p)}>
             Let a bot play for {seat.name}
           </button>
         ) : (
@@ -89,6 +89,9 @@ export function BidPanel({ view, myTurn, busy, wait, onAct }: PanelProps & { onA
   );
 }
 
+/* Mirrors the engine's scoreThrow (no helper exposes it without full totals): at the auto-bid
+ * nothing changes, otherwise the bidder loses the bid and each other active player gets
+ * floor(RULES.throwPool / others). Keep in sync with packages/engine/src/scoring.ts. */
 export function throwCost(view: PlayerView): string {
   const r = view.round!;
   const amount = r.bid.amount;
@@ -179,7 +182,7 @@ export function TrickPanel({ view, myTurn, busy, wait, selected, onPlay }: Panel
   );
 }
 
-export function PausedPanel({ view, onAct }: { view: PlayerView; onAct(a: Action): void }) {
+export function PausedPanel({ view, busy = false, onAct }: { view: PlayerView; busy?: boolean; onAct(a: Action): void }) {
   const by = view.paused?.by;
   const text = by === view.me ? 'You paused the game.' : `${by ? who(view, by) : 'Someone'} paused the game.`;
   const canResume = view.legal.some(a => a.type === 'resume');
@@ -188,7 +191,7 @@ export function PausedPanel({ view, onAct }: { view: PlayerView; onAct(a: Action
       <p className="zone__text">{text}</p>
       {canResume && (
         <div className="zone__buttons">
-          <button type="button" className="btn btn--pri" onClick={() => onAct({ type: 'resume' })}>
+          <button type="button" className="btn btn--pri" disabled={busy} onClick={() => onAct({ type: 'resume' })}>
             Resume
           </button>
         </div>

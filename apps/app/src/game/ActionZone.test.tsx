@@ -155,10 +155,36 @@ describe('ActionZone: coach', () => {
 
 describe('ActionZone: illegal raised card', () => {
   it('disables Play and shows the engine reason', () => {
-    const illegal = tricks.round!.hand.find(c => explainIllegal(tricks, c));
-    if (!illegal) return; // lead or no restriction in this fixture
-    render(<ActionZone {...props(tricks, { selected: illegal })} />);
-    expect(screen.getByRole('button', { name: `Play ${cardLabel(illegal)}` })).toBeDisabled();
-    expect(screen.getByText(explainIllegal(tricks, illegal)!)).toBeInTheDocument();
+    const v = viewOf(findState(s => {
+      if (s.phase !== 'tricks' || turnOf(s) !== 'me') return false;
+      const w = viewOf(s);
+      return w.round!.hand.some(c => explainIllegal(w, c));
+    }));
+    const illegal = v.round!.hand.find(c => explainIllegal(v, c));
+    expect(illegal).toBeDefined();
+    render(<ActionZone {...props(v, { selected: illegal! })} />);
+    expect(screen.getByRole('button', { name: `Play ${cardLabel(illegal!)}` })).toBeDisabled();
+    expect(screen.getByText(explainIllegal(v, illegal!)!)).toBeInTheDocument();
+  });
+});
+
+describe('ActionZone: busy', () => {
+  it('disables every action button while an action is in flight', () => {
+    const card = tricks.round!.hand.find(c => !explainIllegal(tricks, c))!;
+    for (const [v, extra] of [[bidMine, {}], [decision, {}], [tricks, { selected: card }]] as const) {
+      const { unmount } = render(<ActionZone {...props(v, { busy: true, ...extra })} />);
+      for (const b of screen.getAllByRole('button')) if (/^(Pass|Bid|Throw|Play)/.test(b.textContent ?? '')) expect(b).toBeDisabled();
+      unmount();
+    }
+    const paused: PlayerView = { ...bidOther, paused: { by: 'b', at: 0 }, legal: [{ type: 'resume' }] };
+    render(<ActionZone {...props(paused, { busy: true })} />);
+    expect(screen.getByRole('button', { name: 'Resume' })).toBeDisabled();
+  });
+
+  it('disables the bot button while busy', () => {
+    const room = roomInfo();
+    room.seats[1] = { ...room.seats[1]!, isBot: false, connected: false, awaySince: 100_000 };
+    render(<ActionZone {...props(bidOther, { room, now: 131_000, busy: true })} />);
+    expect(screen.getByRole('button', { name: 'Let a bot play for Bot Basia' })).toBeDisabled();
   });
 });

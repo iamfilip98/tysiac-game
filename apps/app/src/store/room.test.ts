@@ -78,6 +78,14 @@ describe('useRoom', () => {
     expect(useRoom.getState().inflight).toBeNull();
   });
 
+  it('a second act while one is in flight sends nothing', () => {
+    const s0 = findState(s => s.phase === 'bidding' && turnOf(s) === 'me');
+    const conn = joinAt(s0);
+    expect(useRoom.getState().act({ type: 'pass' })).toBe(true);
+    expect(useRoom.getState().act({ type: 'pass' })).toBe(false);
+    expect(conn.acts()).toHaveLength(1);
+  });
+
   it('plays queued events on timers until the table catches up, with sounds', () => {
     const sink = vi.fn();
     setSoundSink(sink);
