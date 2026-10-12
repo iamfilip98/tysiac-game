@@ -39,7 +39,7 @@ describe('advise: decision and hand-out', () => {
     const weak = scenario({ phase: 'decision', bid: { high: 'a', amount: 100 }, hands: { a: '9H JH 9S JS 9C JC 9D JD QH QS' } });
     const b = advise(viewFor(weak, 'a'))!;
     expect(b.action).toEqual({ type: 'throw' });
-    expect(b.headline).toBe("Throw in — it's free at 100 and this hand looks worth only about 0");
+    expect(b.headline).toBe("Throw in — it's free at 100 and this hand looks nearly worthless");
     expect(b.reasons[0]).toBe('Throwing at 100 costs nothing: the cards are simply dealt again');
   });
   it('hand-out', () => {
@@ -210,7 +210,7 @@ describe('advise: research repro positions (M5)', () => {
   it('D4: a lead explains itself by the rule that chose it (no "keeps your aces back" for a hand without aces)', () => {
     const a = at({ phase: 'tricks', bid: { high: 'b' }, trick: { leader: 'a', cards: [] }, hands: { a: '10C KD 9S QS JS 9H JH 9D' } }, 'a');
     expect(a.action).toEqual({ type: 'card', card: c('9S') });
-    expect(a.headline).toBe('Lead 9♠ — the cheapest way to give up the lead');
+    expect(a.headline).toBe('Lead 9♠ — a low card to give up the lead');
     expect(a.reasons).toEqual(['9♠ is worth 0 points, so losing it costs little']);
   });
 
@@ -231,7 +231,37 @@ describe('advise: research repro positions (M5)', () => {
     expect(a.headline).toBe('Give 9♦ to Bartek');
     expect(a.action).toEqual({ type: 'handout', to: { b: c('9D'), c: c('9C') } });
     const both = at(sc, 'a', { handoutGiven: { c: c('9C'), b: c('JS') } });
-    expect(both.headline).toBe('Hand out J♠ to Bartek and 9♣ to Celina — good choice');
+    expect(both.headline).toBe('Confirm: J♠ to Bartek and 9♣ to Celina');
+    const best = at(sc, 'a', { handoutGiven: { c: c('9C'), b: c('9D') } });
+    expect(best.headline).toBe('Hand out 9♦ to Bartek and 9♣ to Celina — good choice');
+  });
+
+  it('I1: confirming a poor hand-out is neutral and warns about marriage halves, aces and tens', () => {
+    const sc = {
+      phase: 'handout' as const, bid: { high: 'a', amount: 110 }, totals: { a: 0, b: 100, c: 50 },
+      hands: { a: 'AH 10H KH QH AS 10S AD 9C 9D JS', b: '', c: '' },
+    };
+    const a = at(sc, 'a', { handoutGiven: { c: c('KH'), b: c('AS') } });
+    expect(a.headline).toBe('Confirm: A♠ to Bartek and K♥ to Celina');
+    expect(a.headline).not.toMatch(/good choice/);
+    expect(a.reasons).toContain('Giving away K♥ breaks your ♥ marriage — better to give 9♣ and 9♦');
+    expect(a.reasons).toContain('Giving away A♠ hands an opponent 11 points — better to give 9♣ and 9♦');
+    const t = at(sc, 'a', { handoutGiven: { c: c('10S'), b: c('9D') } });
+    expect(t.reasons).toContain('Giving away 10♠ hands an opponent 10 points — better to give 9♣ and 9♦');
+  });
+
+  it('M3: the no-throw headline accounts for opponents on the barrel', () => {
+    const hands = { a: '9H JH 9S JS 9C JC 9D JD QH QS', b: '', c: '' };
+    const base = { phase: 'decision' as const, bid: { high: 'a', amount: 110 }, hands };
+    expect(at({ ...base, totals: { a: 0, b: 100, c: 50 } }, 'a').headline).toBe('Play — throwing in at 110 costs 110 too, and gives each opponent 60');
+    expect(at({ ...base, totals: { a: 0, b: 850, c: 900 } }, 'a').headline).toBe('Play — throwing in costs 110 too, and opponents on the barrel get nothing');
+    expect(at({ ...base, totals: { a: 0, b: 850, c: 50 } }, 'a').headline).toBe('Play — throwing in costs 110 too, and gives Celina 60 (Bartek is on the barrel)');
+  });
+
+  it('M4: a lone legal lead says Lead, and lead.cheap does not claim to be the cheapest card', () => {
+    const a = at({ phase: 'tricks', bid: { high: 'b' }, trick: { leader: 'a', cards: [] }, hands: { a: '9S', b: '', c: '' } }, 'a');
+    expect(a.headline).toBe('Lead 9♠');
+    expect(a.reasons).toEqual(["It's your only legal card"]);
   });
 
   it('P9: cashes side aces before declaring while there is no trump', () => {

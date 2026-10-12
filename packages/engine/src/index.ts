@@ -25,3 +25,4 @@ export { reduce } from './reduce';
 export { viewFor, eventsFor, explainIllegal } from './view';
 export { botAction, botShouldAct } from './bot';
 export { advise, explainEvent } from './coach';
+export type { AdviseOptions } from './coach';

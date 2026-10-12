@@ -2,7 +2,10 @@ import type { Action, Advice, Card, PlayerId, PlayerView, Suit } from '../types'
 import { RULES, SUITS, SUIT_SYMBOL } from '../rules';
 import { cardEquals, cardLabel, handPoints, hasMarriage, marriagesInHand } from '../cards';
 import { canBeat, getHighestCardInTrick } from '../tricks';
-import { botChoice } from '../bot';
+import { botAction, botChoice } from '../bot';
+import { decideHandout } from '../bot/eval';
+import { actionsEqual } from '../actions';
+import { isOnBarrel } from '../scoring';
 import { isMarriageCard } from '../bot/play';
 import type { BidReason, CardReason, DecisionReason, HandoutReason } from '../bot/reasons';
 import { nameOf } from './names';
@@ -29,6 +32,11 @@ export function advise(view: PlayerView, opts: AdviseOptions = {}): Advice | nul
   const choice = botChoice(view, opts);
   if (!choice) return null;
   const { action, reason } = choice;
+  if (!view.legal.some(a => actionsEqual(a, action))) {
+    // Never advise an illegal move: fall back to the bot's own legal pick, without an explanation we can't vouch for.
+    const fallback = botAction(view, () => 0);
+    return fallback.type === 'card' ? { action: fallback, headline: say('play', { card: cardLabel(fallback.card) }), reasons: [] } : null;
+  }
   switch (reason.code) {
     case 'bid.worth':
     case 'bid.close':
@@ -71,7 +79,15 @@ function adviseDecision(view: PlayerView, action: Action, reason: DecisionReason
   const hand = r.hand;
   const { bid, est } = reason;
   const share = Math.floor(RULES.throwPool / 2);
-  const headline = say(reason.code, { est, bid, share });
+  const opponents = r.active.filter(p => p !== view.me);
+  const onBarrel = opponents.filter(p => isOnBarrel(view.scores[p]?.total ?? 0));
+  let headline: string;
+  if (reason.code === 'throw.free') headline = say(est < 10 ? 'throw.freeNothing' : 'throw.free', { est });
+  else if (reason.code === 'play.noThrow' && onBarrel.length === opponents.length) headline = say('play.noThrowBarrel', { bid });
+  else if (reason.code === 'play.noThrow' && onBarrel.length > 0) {
+    const other = opponents.find(p => !onBarrel.includes(p))!;
+    headline = say('play.noThrowOne', { bid, name: nameOf(view, other), share, barrel: nameOf(view, onBarrel[0]) });
+  } else headline = say(reason.code, { est, bid, share });
   const reasons: string[] = [];
   if (reason.code === 'play.noThrow') reasons.push(say('why.estimate', { est }));
   if (bid <= RULES.autoBid) reasons.push(say('why.throwFree'));
@@ -92,6 +108,7 @@ function adviseHandout(
   const to = action.type === 'handout' ? action.to : {};
   const gives = reason.gives;
   const named = (p: PlayerId, card: Card) => ({ card: cardLabel(card), name: nameOf(view, p) });
+  const warnings: string[] = [];
   let headline: string;
   if (gives.length === 2) {
     const [a, b] = gives.map(g => named(g.to, g.card));
@@ -99,13 +116,26 @@ function adviseHandout(
   } else if (gives.length === 1) {
     headline = say('handout.one', named(gives[0].to, gives[0].card));
   } else {
-    // Every card is assigned already: the player's own choice, confirmed.
+    // Every card is assigned already: the player's own choice. Praise it only if it is what the bot would give.
     const [a, b] = Object.entries(to).map(([p, card]) => named(p, card));
-    headline = say('handout.confirm', { card1: a.card, name1: a.name, card2: b.card, name2: b.name });
+    const best = decideHandout(r.hand, Object.keys(to), Object.fromEntries(Object.keys(to).map(p => [p, view.scores[p]?.total ?? 0]))).action;
+    const bestTo = best.type === 'handout' ? best.to : {};
+    const same = Object.entries(to).every(([p, card]) => bestTo[p] && cardEquals(bestTo[p], card));
+    headline = say(same ? 'handout.confirm' : 'handout.confirmNeutral', { card1: a.card, name1: a.name, card2: b.card, name2: b.name });
+    if (!same) {
+      const better = Object.values(bestTo).map(cardLabel).join(' and ');
+      for (const card of Object.values(to)) {
+        if ((card.rank === 'K' || card.rank === 'Q') && hasMarriage(r.hand, card.suit)) {
+          warnings.push(say('warn.marriage', { card: cardLabel(card), suit: sym(card.suit), better }));
+        } else if (card.rank === 'A' || card.rank === '10') {
+          warnings.push(say('warn.points', { card: cardLabel(card), points: PTS[card.rank], better }));
+        }
+      }
+    }
   }
   const all = Object.values(to);
   const after = r.hand.filter(h => !all.some(g => cardEquals(g, h)));
-  const reasons: string[] = [];
+  const reasons: string[] = [...warnings];
   for (const { card, why } of gives) {
     const label = cardLabel(card);
     if (why === 'void') reasons.push(say(r.trump ? 'give.voidTrump' : 'give.voidNoTrump', { card: label, suit: sym(card.suit) }));
@@ -168,7 +198,7 @@ function adviseCard(view: PlayerView, action: Action, reason: CardReason): Advic
         reasons.push(PTS[card.rank] < 10 ? say('why.cheap', { card: label, points: PTS[card.rank] }) : say('why.cheapest'));
         break;
       default:
-        headline = say('play', { card: label });
+        headline = say(reason.code === 'only' ? 'lead.only' : 'play', { card: label });
     }
     if (!isBidder && r.trump && card.suit !== r.trump && r.hand.some(h => h.suit === r.trump)) reasons.push(say('why.noTrumpLead'));
     return { action, headline, reasons };

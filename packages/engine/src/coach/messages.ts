@@ -21,6 +21,9 @@ export const COACH_MESSAGES = {
   'play.close': 'Play — about {est} is close to {bid}, and good tricks can make up the rest',
   'play.noThrow': 'Play — throwing in at {bid} costs {bid} too, and gives each opponent {share}',
   'throw.free': "Throw in — it's free at 100 and this hand looks worth only about {est}",
+  'throw.freeNothing': "Throw in — it's free at 100 and this hand looks nearly worthless",
+  'play.noThrowBarrel': 'Play — throwing in costs {bid} too, and opponents on the barrel get nothing',
+  'play.noThrowOne': 'Play — throwing in costs {bid} too, and gives {name} {share} ({barrel} is on the barrel)',
   'why.estimate': 'This hand looks worth about {est}',
   'why.throwFree': 'Throwing at 100 costs nothing: the cards are simply dealt again',
   'why.throwCost': 'Throwing costs you {bid} and gives each opponent {share} (0 if on the barrel)',
@@ -32,6 +35,9 @@ export const COACH_MESSAGES = {
   'handout.two': 'Give {card1} to {name1} and {card2} to {name2}',
   'handout.one': 'Give {card} to {name}',
   'handout.confirm': 'Hand out {card1} to {name1} and {card2} to {name2} — good choice',
+  'handout.confirmNeutral': 'Confirm: {card1} to {name1} and {card2} to {name2}',
+  'warn.marriage': 'Giving away {card} breaks your {suit} marriage — better to give {better}',
+  'warn.points': 'Giving away {card} hands an opponent {points} points — better to give {better}',
   'give.voidTrump': 'Giving {card} leaves you void in {suit} — you can discard or trump when it is led',
   'give.voidNoTrump': 'Giving {card} leaves you void in {suit} — you can throw away low cards or trump once a marriage sets a trump suit',
   'give.zero': '{card} is worth 0 points',
@@ -58,12 +64,13 @@ export const COACH_MESSAGES = {
   'why.lowTrump': 'A higher trump is still out, so a high trump led now could be beaten',
   'lead.probe': 'Lead {card} — a low card from your longest suit',
   'why.probe': 'It gives little away and wears down the suit for your later cards',
-  'lead.cheap': 'Lead {card} — the cheapest way to give up the lead',
+  'lead.cheap': 'Lead {card} — a low card to give up the lead',
   'why.cheap': '{card} is worth {points} points, so losing it costs little',
   'why.cheapest': 'Every other card you could lead risks more',
   'why.noTrumpLead': "Don't lead trumps as a defender — the bidder usually holds most of them",
   // following
   'play': 'Play {card}',
+  'lead.only': 'Lead {card}',
   'why.only': "It's your only legal card",
   'why.noSuit': 'You have no {suit}, so any card is allowed',
   'why.mustBeat': 'As first to respond you must beat {card} if you can',
@@ -81,12 +88,33 @@ export const COACH_MESSAGES = {
 } as const;
 
 export type CoachMessageKey = keyof typeof COACH_MESSAGES;
-export type CoachParams = Record<string, string | number>;
 
-/** Fills a coach template. Throws on a missing param so a broken template can't ship silently. */
-export function say(key: CoachMessageKey, params: CoachParams = {}): string {
+/** The `{name}` placeholders of a template string, as a union. */
+type Placeholders<S extends string> = S extends `${string}{${infer P}}${infer Rest}` ? P | Placeholders<Rest> : never;
+/** The params a template needs: one entry per placeholder, so a missing one fails typecheck. */
+export type CoachParams<K extends CoachMessageKey = CoachMessageKey> = {
+  [P in Placeholders<(typeof COACH_MESSAGES)[K]>]: string | number;
+};
+type SayArgs<K extends CoachMessageKey> = [Placeholders<(typeof COACH_MESSAGES)[K]>] extends [never]
+  ? [params?: Record<string, never>]
+  : [params: CoachParams<K>];
+
+const strict = (): boolean => {
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  return !!env?.VITEST;
+};
+
+/**
+ * Fills a coach template. A missing param is a type error; if one slips through anyway it throws under test
+ * (so a broken template can't ship silently) but renders "…" in production so the UI never crashes.
+ */
+export function say<K extends CoachMessageKey>(key: K, ...args: SayArgs<K>): string {
+  const params = (args[0] ?? {}) as Record<string, string | number>;
   return COACH_MESSAGES[key].replace(/\{(\w+)\}/g, (_, name: string) => {
-    if (!(name in params)) throw new Error(`coach message ${key}: missing {${name}}`);
+    if (!(name in params)) {
+      if (strict()) throw new Error(`coach message ${key}: missing {${name}}`);
+      return '…';
+    }
     return String(params[name]);
   });
 }

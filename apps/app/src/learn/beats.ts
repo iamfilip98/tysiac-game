@@ -1,6 +1,6 @@
 import {
-  RULES, SUIT_SYMBOL, actionsEqual, advise, cardLabel, marriagesInHand,
-  type Action, type Advice, type PlayerId, type PlayerView, type Rank, type Suit,
+  RULES, SUIT_SYMBOL, actionsEqual, advise, cardEquals, cardLabel, marriagesInHand,
+  type Action, type Advice, type Card, type PlayerId, type PlayerView, type Rank, type Suit,
 } from '@tysiac/engine';
 import { throwCost } from '../game/panels';
 import { cannotFollowNow, marriageLead, mustBeatNow } from './lesson';
@@ -158,9 +158,13 @@ export function nextBeat(v: PlayerView, seen: readonly string[]): Beat | null {
 const PLAN = "That's the plan for this hand — later the coach will help you choose.";
 
 /** The coach line during the lesson: the scripted move, explained (reasons from advise() when it agrees). */
-export function lessonAdvice(v: PlayerView, expected: Action | null): Advice | null {
+export function lessonAdvice(
+  v: PlayerView,
+  expected: Action | null,
+  opts: { handoutGiven?: Partial<Record<string, Card>> } = {},
+): Advice | null {
   if (!expected || v.turn !== v.me || !v.round) return null;
-  const coach = advise(v);
+  const coach = advise(v, opts);
   const theirs = coach && actionsEqual(coach.action, expected) ? coach.reasons : [];
   const why = (fallback: string): string[] => (theirs.length > 0 ? theirs : [fallback]);
   switch (expected.type) {
@@ -173,8 +177,11 @@ export function lessonAdvice(v: PlayerView, expected: Action | null): Advice | n
     case 'throw':
       return { action: expected, headline: 'Throw in', reasons: why(throwCost(v)) };
     case 'handout': {
-      const parts = Object.entries(expected.to).map(([p, c]) => `${cardLabel(c)} to ${nameOf(v, p)}`);
-      return { action: expected, headline: `Give ${parts.join(' and ')}`, reasons: why(PLAN) };
+      // Cards the learner has already assigned as scripted are not named again.
+      const entries = Object.entries(expected.to);
+      const open = entries.filter(([p, c]) => !(opts.handoutGiven?.[p] && cardEquals(opts.handoutGiven[p]!, c)));
+      const parts = (open.length > 0 ? open : entries).map(([p, c]) => `${cardLabel(c)} to ${nameOf(v, p)}`);
+      return { action: expected, headline: `${open.length > 0 ? 'Give' : 'Confirm:'} ${parts.join(' and ')}`, reasons: why(PLAN) };
     }
     case 'card': {
       const lead = marriageLead(v);

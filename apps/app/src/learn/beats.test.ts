@@ -59,6 +59,18 @@ describe('beats', () => {
     }
   });
 
+  it('the hand-out headline skips cards the learner has already assigned', () => {
+    const vs = views();
+    const e = lesson.entries.find(x => x.pid === LEARNER_ID && x.action.type === 'handout');
+    if (!e || e.action.type !== 'handout') throw new Error('lesson has no learner hand-out');
+    const v = vs[e.seq - base];
+    const [[p1, c1]] = Object.entries(e.action.to);
+    const one = lessonAdvice(v, e.action, { handoutGiven: { [p1]: c1 } })!;
+    expect(one.headline).not.toContain(' and ');
+    const all = lessonAdvice(v, e.action, { handoutGiven: e.action.to })!;
+    expect(all.headline).toMatch(/^Confirm: /);
+  });
+
   it('the trick-1 lead is announced as a marriage declaration', () => {
     const vs = views();
     const lead = lesson.entries.find(e => e.pid === LEARNER_ID && e.action.type === 'card')!;

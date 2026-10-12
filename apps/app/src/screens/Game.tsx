@@ -58,7 +58,7 @@ export default function Game() {
   const handoutGiven = sel.given;
   const advice = useMemo(() => {
     if (!(coach && idle && shown && shown.turn === shown.me && !shown.paused)) return null;
-    return lesson ? lesson.advice(shown) : advise(shown, { handoutGiven });
+    return lesson ? lesson.advice(shown, { handoutGiven }) : advise(shown, { handoutGiven });
   }, [lesson, coach, idle, shown, handoutGiven]);
 
   useEffect(() => {
