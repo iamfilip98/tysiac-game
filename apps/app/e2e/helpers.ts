@@ -96,6 +96,8 @@ export interface DriveOptions {
   stop?: () => Promise<boolean>;
   /** Bid whenever any Bid button is offered, so the human wins the auction (reaches decision and hand-out). */
   bidAlways?: boolean;
+  /** Pass at every auction, so a bot wins (and above 100 the human must confirm the talon). */
+  passAlways?: boolean;
 }
 
 /** Plays the game through the UI: bids, plays, hands out, continues past round results. */
@@ -123,9 +125,14 @@ export async function drive(page: Page, opts: DriveOptions): Promise<void> {
       await check('bidding');
       const bid = page.getByRole('button', { name: opts.bidAlways ? /^Bid \d+$/ : /^Bid (110|120)$/ }).first();
       await move(page, async () => {
-        if (await bid.isVisible()) await bid.click();
+        if (!opts.passAlways && (await bid.isVisible())) await bid.click();
         else await page.getByRole('button', { name: 'Pass' }).click();
       });
+    } else if (phase === 'talon') {
+      await check('talon');
+      const seen = page.getByRole('button', { name: 'Seen' });
+      if (await seen.isVisible()) await move(page, () => seen.click());
+      else await page.waitForTimeout(40);
     } else if (phase === 'decision') {
       await check('decision');
       await move(page, () => page.getByRole('button', { name: 'Play', exact: true }).click());

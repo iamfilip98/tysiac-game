@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { explainIllegal, type Action, type Advice, type Card, type PlayerId, type PlayerView } from '@tysiac/engine';
 import type { RoomInfo } from '../net/protocol';
 import { BidPanel, DecisionPanel, HandoutPanel, PausedPanel, TrickPanel, WaitLine } from './panels';
+import { TalonPanel } from './TalonPanel';
 import { CoachLine } from './CoachLine';
 import './zone.css';
 
@@ -29,6 +30,7 @@ export interface ActionZoneProps {
 export function zonePhase(view: PlayerView, idle: boolean): string {
   if (view.paused) return 'paused';
   if (view.phase === 'gameEnd') return 'over';
+  if (view.phase === 'talon') return idle ? 'talon' : 'wait';
   if (!idle || view.turn !== view.me) return 'wait';
   return view.phase;
 }
@@ -41,6 +43,7 @@ export function ActionZone(p: ActionZoneProps) {
   let body: ReactNode;
   if (view.paused) body = <PausedPanel view={view} busy={p.busy} onAct={p.onAct} />;
   else if (view.phase === 'gameEnd') body = <p className="zone__text">Game over</p>;
+  else if (view.phase === 'talon') body = <TalonPanel view={view} room={p.room} now={p.now} busy={p.busy} onAct={p.onAct} onBotFor={p.onBotFor} />;
   else if (view.round?.sittingOut === view.me) {
     body = (
       <>

@@ -1,5 +1,5 @@
 import {
-  botAction, createGame, eventsFor, makeRandom, reduce, turnOf, viewFor,
+  botAction, createGame, eventsFor, makeRandom, reduce, actorsOf, viewFor,
   type Action, type GameEvent, type GameState, type PlayerId, type PlayerView, type Seat,
 } from '@tysiac/engine';
 import type { RoomInfo, RoomSeat, ServerMessage } from '../net/protocol';
@@ -23,7 +23,7 @@ export function step(state: GameState, p: PlayerId, action: Action): Stepped {
 }
 
 export function botStep(state: GameState, rng: () => number = () => 0.5): Stepped {
-  const p = turnOf(state);
+  const p = actorsOf(state)[0];
   if (!p) throw new Error('fixture: nobody to act');
   return step(state, p, botAction(viewFor(state, p), rng));
 }

@@ -1,5 +1,5 @@
 import {
-  botAction, botShouldAct, createGame, eventsFor, makeRandom, reduce, turnOf, viewFor,
+  botAction, botShouldAct, createGame, eventsFor, makeRandom, reduce, actorsOf, viewFor,
   type Action, type GameEvent, type GameState, type PlayerId, type PlayerView,
 } from '@tysiac/engine';
 import {
@@ -330,8 +330,8 @@ export class LocalRoom {
     this.cancelBot = null;
     const s = this.state;
     if (this.destroyed || this.idle || !s || s.phase === 'gameEnd' || s.paused) return;
-    const turn = turnOf(s);
-    if (!turn || !this.botControlled(turn) || !botShouldAct(viewFor(s, turn))) return;
+    const turn = actorsOf(s).find(a => this.botControlled(a) && botShouldAct(viewFor(s, a)));
+    if (!turn) return;
     let delay = 600 + Math.floor(this.rng() * 300);
     if (events.some(e => e.type === 'trickWon')) delay += 1100;
     if (events.some(e => e.type === 'roundScored' || e.type === 'threw')) delay += 1500;
@@ -343,7 +343,7 @@ export class LocalRoom {
 
   private botMove(pid: PlayerId): void {
     const s = this.state;
-    if (this.destroyed || this.idle || !s || s.paused || turnOf(s) !== pid || !this.botControlled(pid)) return;
+    if (this.destroyed || this.idle || !s || s.paused || !actorsOf(s).includes(pid) || !this.botControlled(pid)) return;
     const view = viewFor(s, pid);
     if (!botShouldAct(view)) return;
     try {

@@ -6,13 +6,14 @@ import { who } from '../store/notes';
 
 const VERB: Partial<Record<PlayerView['phase'], string>> = {
   bidding: 'is bidding',
+  talon: 'is looking at the talon',
   decision: 'is deciding: play or throw in',
   handout: 'is handing out cards',
   tricks: 'is playing',
 };
 
-export function WaitLine({ view, room, now, busy = false, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; busy?: boolean; onBotFor(p: PlayerId): void }) {
-  const p = view.turn;
+export function WaitLine({ view, room, now, busy = false, who: whoId, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; busy?: boolean; who?: PlayerId; onBotFor(p: PlayerId): void }) {
+  const p = whoId ?? view.turn;
   if (!p || p === view.me) return <p className="zone__wait">…</p>;
   const seat = room?.seats.find((s): s is RoomSeat => s?.id === p) ?? null;
   if (seat && !seat.isBot && !seat.connected && !seat.botFor) {
