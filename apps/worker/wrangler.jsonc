@@ -18,7 +18,7 @@
     {
       "binding": "DB",
       "database_name": "tysiac",
-      "database_id": "00000000-0000-0000-0000-000000000000",
+      "database_id": "0c636239-a0b0-4ba0-a1c1-ac6227e4e34f",
       "migrations_dir": "migrations"
     }
   ],
