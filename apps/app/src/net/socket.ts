@@ -24,6 +24,11 @@ const FATAL_CLOSE_CODES: ReadonlySet<number> = new Set([4000, 1008]);
 /** Server errors that end the connection for good. */
 const TERMINAL_ERRORS: ReadonlySet<string> = new Set(['versionMismatch', 'badSecret']);
 
+/** Silence longer than this while "open" makes a wake-up send a probe ping. */
+const STALE_MS = 10_000;
+/** A probe ping unanswered for this long means the socket is dead. */
+const PROBE_MS = 3_000;
+
 export type { CloseReason };
 
 export function backoffDelay(attempt: number): number {
@@ -41,6 +46,9 @@ export class SocketConnection implements RoomConnection {
   private retry: ReturnType<typeof setTimeout> | null = null;
   private ping: ReturnType<typeof setInterval> | null = null;
   private done = false;
+  /** Time of the last server message on the current socket (zombie-socket detection). */
+  private lastRx = 0;
+  private probe: ReturnType<typeof setTimeout> | null = null;
   private readonly msgs = new Emitter<ServerMessage>();
   private readonly statuses = new Emitter<ConnStatus>();
 
@@ -82,6 +90,7 @@ export class SocketConnection implements RoomConnection {
     if (this.retry) clearTimeout(this.retry);
     this.retry = null;
     this.stopPing();
+    this.clearProbe();
     const ws = this.ws;
     this.ws = null;
     this.welcomed = false;
@@ -106,6 +115,8 @@ export class SocketConnection implements RoomConnection {
     };
     ws.onmessage = ev => {
       if (this.ws !== ws) return;
+      this.lastRx = Date.now();
+      this.clearProbe();
       let msg: ServerMessage;
       try {
         msg = JSON.parse(String(ev.data)) as ServerMessage;
@@ -128,6 +139,7 @@ export class SocketConnection implements RoomConnection {
       this.ws = null;
       this.welcomed = false;
       this.stopPing();
+      this.clearProbe();
       if (this.done) return;
       const code = ev?.code;
       if (code !== undefined && FATAL_CLOSE_CODES.has(code)) {
@@ -144,18 +156,63 @@ export class SocketConnection implements RoomConnection {
     this.attempt += 1;
     this.retry = setTimeout(() => {
       this.retry = null;
-      this.connect();
+      this.tryConnect();
     }, delay);
   }
 
-  /** Back online / app visible again: retry now instead of waiting out the backoff. */
+  /** connect() can throw (bad URL, blocked constructor); keep retrying instead of stalling. */
+  private tryConnect(): void {
+    try {
+      this.connect();
+    } catch {
+      this.ws = null;
+      this.scheduleRetry();
+    }
+  }
+
+  /**
+   * Back online / app visible again. While waiting out a backoff: retry now. While "open" but silent
+   * for a while (iOS web clips silently kill sockets in the background): probe with a ping, and
+   * reconnect at once if nothing comes back.
+   */
   private readonly wake = (): void => {
-    if (this.done || document.visibilityState === 'hidden' || !this.retry) return;
-    clearTimeout(this.retry);
-    this.retry = null;
-    this.attempt = 0;
-    this.connect();
+    if (this.done || document.visibilityState === 'hidden') return;
+    if (this.retry) {
+      clearTimeout(this.retry);
+      this.retry = null;
+      this.attempt = 0;
+      this.tryConnect();
+      return;
+    }
+    if (this.status === 'open' && this.welcomed && !this.probe && Date.now() - this.lastRx > STALE_MS) {
+      if (!this.send({ t: 'ping' })) return;
+      this.probe = setTimeout(() => {
+        this.probe = null;
+        this.dropDeadSocket();
+      }, PROBE_MS);
+    }
   };
+
+  private dropDeadSocket(): void {
+    if (this.done) return;
+    const ws = this.ws;
+    this.ws = null;
+    this.welcomed = false;
+    this.stopPing();
+    try {
+      ws?.close();
+    } catch {
+      /* already dead */
+    }
+    this.attempt = 0;
+    this.setStatus('reconnecting');
+    this.tryConnect();
+  }
+
+  private clearProbe(): void {
+    if (this.probe) clearTimeout(this.probe);
+    this.probe = null;
+  }
 
   private stopPing(): void {
     if (this.ping) clearInterval(this.ping);

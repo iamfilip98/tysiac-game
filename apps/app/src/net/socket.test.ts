@@ -191,6 +191,88 @@ describe('SocketConnection', () => {
     conn.close();
   });
 
+  describe('stale-socket probe', () => {
+    const open = () => {
+      const conn = make();
+      latest().accept();
+      latest().welcome();
+      return conn;
+    };
+    const wake = () => document.dispatchEvent(new Event('visibilitychange'));
+
+    it('does nothing when the socket was heard from recently', () => {
+      const conn = open();
+      vi.advanceTimersByTime(5000);
+      wake();
+      expect(sentMsgs()).toEqual([hello]);
+      conn.close();
+    });
+
+    it('pings after >10 s of silence and keeps the socket if answered', () => {
+      const conn = open();
+      const first = latest();
+      vi.advanceTimersByTime(10_001);
+      const n = first.sent.length;
+      wake();
+      expect(first.sent.length).toBe(n + 1);
+      expect(JSON.parse(first.sent[n])).toEqual({ t: 'ping' });
+      first.message({ t: 'pong' });
+      vi.advanceTimersByTime(5000);
+      expect(FakeWS.instances).toHaveLength(1);
+      expect(conn.status).toBe('open');
+      conn.close();
+    });
+
+    it('closes and reconnects immediately (no backoff, not terminal) when unanswered', () => {
+      const conn = open();
+      const first = latest();
+      vi.advanceTimersByTime(10_001);
+      window.dispatchEvent(new Event('online'));
+      vi.advanceTimersByTime(2999);
+      expect(FakeWS.instances).toHaveLength(1);
+      vi.advanceTimersByTime(1);
+      expect(first.readyState).toBe(3);
+      expect(FakeWS.instances).toHaveLength(2);
+      expect(conn.status).toBe('reconnecting');
+      expect(conn.closeReason).toBeUndefined();
+      latest().accept();
+      expect(sentMsgs()).toEqual([hello]);
+      latest().welcome();
+      expect(conn.status).toBe('open');
+      conn.close();
+    });
+
+    it('does not probe twice while one is pending', () => {
+      const conn = open();
+      const first = latest();
+      vi.advanceTimersByTime(10_001);
+      wake();
+      wake();
+      expect(first.sent.filter(s => s.includes('ping'))).toHaveLength(1);
+      conn.close();
+    });
+  });
+
+  it('keeps retrying when connect() throws in the retry timer', () => {
+    let calls = 0;
+    class Flaky extends FakeWS {
+      constructor(url: string) {
+        super(url);
+        calls += 1;
+        if (calls === 2) throw new Error('blocked');
+      }
+    }
+    const conn = new SocketConnection('ABCDEF', () => hello, { WebSocketImpl: Flaky });
+    latest().accept();
+    latest().welcome();
+    latest().drop();
+    vi.advanceTimersByTime(500); // 2nd construct throws
+    expect(conn.status).toBe('reconnecting');
+    vi.advanceTimersByTime(1000);
+    expect(calls).toBe(3);
+    conn.close();
+  });
+
   it('backoffDelay doubles up to 5 s', () => {
     expect([0, 1, 2, 3, 4, 9].map(backoffDelay)).toEqual([500, 1000, 2000, 4000, 5000, 5000]);
   });
