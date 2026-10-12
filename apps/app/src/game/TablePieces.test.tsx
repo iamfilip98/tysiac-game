@@ -71,7 +71,7 @@ describe('Opponents', () => {
     room.seats[2] = { ...room.seats[2]!, isBot: false, connected: false, awaySince: 1 };
     const { container } = render(<Opponents view={v} room={room} />);
     expect(container.querySelector('[data-seat="b"]')).toHaveClass('opp--turn');
-    expect(within(container.querySelector('[data-seat="b"]') as HTMLElement).getByLabelText('coach on')).toBeInTheDocument();
+    expect(within(container.querySelector('[data-seat="b"]') as HTMLElement).getByText('Coach')).toHaveClass('chip--coach');
     expect(within(container.querySelector('[data-seat="z"]') as HTMLElement).getByText('away')).toBeInTheDocument();
   });
 

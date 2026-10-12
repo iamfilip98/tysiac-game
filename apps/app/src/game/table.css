@@ -90,3 +90,4 @@
 .badge--looking { background: transparent; box-shadow: inset 0 0 0 1px var(--chip-muted-bg); opacity: 0.85; animation: looking 1.6s ease-in-out infinite; }
 @keyframes looking { 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .badge--looking { animation: none; } }
+.opp .chip--coach { font-size: 10px; padding: 1px 7px; }

@@ -73,8 +73,8 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
       </span>
       <span className="opp__name">
         {s.name}
-        {seat?.coach && <span role="img" aria-label="coach on"> 🎓</span>}
       </span>
+      {seat?.coach && <span className="chip chip--coach">Coach</span>}
       <span className="opp__meta">
         <span className="opp__score" aria-label={`Score ${pts(total)}`}>
           {pts(total)}

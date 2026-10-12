@@ -1,7 +1,7 @@
 import type { PlayerView } from '@tysiac/engine';
 import { BARREL, onBarrel, pts } from './format';
 
-/** The viewer's own identity line above the hand: avatar, name, dealer marker, coach badge and score. */
+/** The viewer's own identity line above the hand: avatar, name, dealer marker, Coach chip and score. */
 export function SelfStrip({ view, coach, myTurn }: { view: PlayerView; coach: boolean; myTurn: boolean }) {
   const me = view.seats.find(s => s.id === view.me);
   const total = view.scores[view.me]?.total ?? 0;
@@ -12,7 +12,7 @@ export function SelfStrip({ view, coach, myTurn }: { view: PlayerView; coach: bo
       <span className="selfstrip__name">{me?.name ?? 'You'}</span>
       {myTurn && <span className="selfstrip__turn">Your turn</span>}
       {dealer && <span className="selfstrip__dealer" title="Dealer">Dealer</span>}
-      {coach && <span role="img" aria-label="coach on">🎓</span>}
+      {coach && <span className="chip chip--coach">Coach</span>}
       <span className="selfstrip__score" aria-label="Your score">
         {pts(total)}
         {onBarrel(total) && ` ${BARREL}`}
