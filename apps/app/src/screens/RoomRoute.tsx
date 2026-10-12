@@ -5,7 +5,7 @@ import { FATAL_ERRORS, normalizeCode } from '../net/connection';
 import { installSounds } from '../audio/sounds';
 import { getService } from '../net/service';
 import { getIdentity } from '../net/identity';
-import { coachEnabled, usePrefs } from '../store/prefs';
+import { coachForRoom, usePrefs } from '../store/prefs';
 import { useRoom } from '../store/room';
 import { ProfileForm } from '../ui/ProfileForm';
 import { Placeholder } from './Placeholder';
@@ -79,7 +79,7 @@ export default function RoomRoute({ code }: { code: string }) {
       const conn = svc.connect(norm, () => {
         const p = usePrefs.getState();
         const me = getIdentity();
-        return { t: 'hello', v: PROTOCOL_VERSION, playerId: me.playerId, secret: me.secret, name: p.name, avatar: p.avatar, coach: coachEnabled(p, practice) };
+        return { t: 'hello', v: PROTOCOL_VERSION, playerId: me.playerId, secret: me.secret, name: p.name, avatar: p.avatar, coach: coachForRoom(norm, p, practice) };
       });
       useRoom.getState().attach(conn);
       usePrefs.getState().setLastRoom({ code: norm, practice, at: Date.now() });

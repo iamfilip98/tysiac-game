@@ -23,7 +23,7 @@ export class LocalHub {
       code,
       maxPlayers: req.maxPlayers,
       host: { playerId: req.playerId, name: req.name, avatar: req.avatar },
-      seed: `${code}:${Date.now()}`,
+      seed: Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''),
       clock: this.opts.clock ?? realClock,
       botDelayScale: this.opts.botDelayScale,
     }));

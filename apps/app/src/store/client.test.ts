@@ -83,6 +83,19 @@ describe('applyServer', () => {
     expect(c.shown!.round!.trick.cards).toHaveLength(1);
   });
 
+  it('a rematch (finished -> playing) resets seq so the new game at seq 0 is applied', () => {
+    const s0 = findState(x => x.phase === 'bidding');
+    const old = { ...ready(s0), seq: 300, room: roomInfo({ status: 'finished' }), queue: [{ type: 'dealt' } as GameEvent] };
+    const c = applyServer(old, { t: 'room', room: roomInfo({ status: 'playing' }) }, 0);
+    expect(c.seq).toBe(-1);
+    expect(c.needsResync).toBe(true);
+    expect(c.queue).toEqual([]);
+    const next = applyServer(c, { ...stateMsg(s0), seq: 0 }, 0);
+    expect(next.seq).toBe(0);
+    expect(next.shown).toBe(next.view);
+    expect(next.needsResync).toBe(false);
+  });
+
   it('a same-seq state replaces the view and skips its events', () => {
     const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'b' && x.round!.trick.cards.length === 1);
     const { state: s1, events } = botStep(s0);

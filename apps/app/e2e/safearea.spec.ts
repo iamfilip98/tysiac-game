@@ -35,14 +35,18 @@ for (const mode of MODES) {
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await setSafeInsets(page, mode.insets);
     await openMenuSheetCheck(page, safe);
-    // Stop after one round result: bidding, decision, hand-out and tricks have all been checked by then.
+    // Bid until the human wins, so decision and hand-out are reached; stop after one round result.
+    const seen = new Set<string>();
     await drive(page, {
+      bidAlways: true,
       check: async key => {
+        seen.add(key);
         if (key === 'round result') await safe(key, '[role="dialog"]');
         else await safe(key);
       },
-      stop: async () => (await page.getByRole('button', { name: 'Continue' }).isVisible()),
+      stop: async () => seen.has('decision') && seen.has('handout') && seen.has('tricks') && (await page.getByRole('button', { name: 'Continue' }).isVisible()),
     });
+    for (const key of ['bidding', 'decision', 'handout', 'tricks']) expect(seen.has(key), `saw ${key}`).toBe(true);
   });
 }
 

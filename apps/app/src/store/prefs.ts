@@ -53,6 +53,29 @@ export function coachEnabled(p: Pick<Prefs, 'coach' | 'gamesStarted'>, practice:
   return p.coach ?? (practice || p.gamesStarted < 3);
 }
 
+/**
+ * The coach flag to send in `hello` for a room. The automatic default (practice / first 3 games) is decided
+ * once per room per browser session and remembered, so a reconnect never flips it mid-game; an explicit
+ * choice in Settings (`prefs.coach !== null`) always wins.
+ */
+export function coachForRoom(code: string, p: Pick<Prefs, 'coach' | 'gamesStarted'>, practice: boolean): boolean {
+  if (p.coach !== null) return p.coach;
+  const key = `tysiac.coach.${code}`;
+  try {
+    const saved = sessionStorage.getItem(key);
+    if (saved === '1' || saved === '0') return saved === '1';
+  } catch {
+    /* storage unavailable: fall through */
+  }
+  const value = coachEnabled(p, practice);
+  try {
+    sessionStorage.setItem(key, value ? '1' : '0');
+  } catch {
+    /* ignore */
+  }
+  return value;
+}
+
 export const usePrefs = create<Prefs & PrefsActions>()(
   persist(
     set => ({

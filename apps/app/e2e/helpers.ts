@@ -94,6 +94,8 @@ export interface DriveOptions {
   check: (key: string) => Promise<void>;
   /** Stop when this returns true (checked each step). Default: the Game over dialog. */
   stop?: () => Promise<boolean>;
+  /** Bid whenever any Bid button is offered, so the human wins the auction (reaches decision and hand-out). */
+  bidAlways?: boolean;
 }
 
 /** Plays the game through the UI: bids, plays, hands out, continues past round results. */
@@ -119,7 +121,7 @@ export async function drive(page: Page, opts: DriveOptions): Promise<void> {
     const phase = await zone.getAttribute('data-phase');
     if (phase === 'bidding') {
       await check('bidding');
-      const bid = page.getByRole('button', { name: /^Bid (110|120)$/ });
+      const bid = page.getByRole('button', { name: opts.bidAlways ? /^Bid \d+$/ : /^Bid (110|120)$/ }).first();
       await move(page, async () => {
         if (await bid.isVisible()) await bid.click();
         else await page.getByRole('button', { name: 'Pass' }).click();

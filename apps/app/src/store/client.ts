@@ -53,6 +53,13 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
     case 'welcome':
       return { ...s, me: msg.you, room: msg.room, clockOffset: msg.serverTime - localNow, seq: -1, needsResync: true, queue: [], holding: false, pending: null, inflight: null, error: null };
     case 'room':
+      // Rematch: the new game restarts at seq 0, so forget the finished game's seq and resync on its first state.
+      if (s.room?.status === 'finished' && msg.room.status === 'playing') {
+        return {
+          ...s, room: msg.room, seq: -1, needsResync: true, queue: [], holding: false, roundResult: null,
+          pending: null, inflight: null, note: null, sweepTo: null,
+        };
+      }
       return { ...s, room: msg.room };
     case 'state':
       // Older than what we have applied: stale, ignore.

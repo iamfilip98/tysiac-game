@@ -20,6 +20,7 @@ const renderRoute = (code = 'K7QX2M') =>
 const lobbyOps = (msgs: ClientMessage[]) => msgs.flatMap(m => (m.t === 'lobby' ? [m.op] : []));
 
 beforeEach(() => {
+  sessionStorage.clear();
   svc = new FakeService();
   setServiceForTests(svc);
   useRoom.getState().detach();
@@ -41,6 +42,16 @@ describe('RoomRoute', () => {
     await user.click(screen.getByRole('button', { name: 'Join' }));
     await waitFor(() => expect(svc.conns).toHaveLength(1));
     expect(svc.hellos[0]()).toMatchObject({ t: 'hello', v: 1, name: 'Kuba', avatar: '🦊', coach: true });
+  });
+
+  it('keeps the coach flag stable across reconnects even when the game count passes the default', async () => {
+    renderRoute();
+    await waitFor(() => expect(svc.conns).toHaveLength(1));
+    expect(svc.hellos[0]().coach).toBe(true);
+    usePrefs.setState({ gamesStarted: 5 });
+    expect(svc.hellos[0]().coach).toBe(true);
+    usePrefs.setState({ coach: false });
+    expect(svc.hellos[0]().coach).toBe(false);
   });
 
   it('rejects a malformed code without connecting', () => {

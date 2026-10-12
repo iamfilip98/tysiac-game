@@ -12,10 +12,12 @@ describe('update policy', () => {
     const a = showUpdateToast(document, onReload);
     expect(showUpdateToast(document, onReload)).toBe(a);
     expect(document.querySelectorAll('#update-toast')).toHaveLength(1);
-    expect(a.style.cssText).toContain('--sa-bottom');
-    a.click();
+    expect(a.style.cssText).toContain('--sa-top');
+    expect(a.style.cssText).not.toContain('bottom');
+    a.querySelector<HTMLButtonElement>('button:not([aria-label])')!.click();
     expect(onReload).toHaveBeenCalledOnce();
-    a.remove();
+    a.querySelector<HTMLButtonElement>('[aria-label="Dismiss"]')!.click();
+    expect(document.getElementById('update-toast')).toBeNull();
   });
 
   it('installUpdates reloads silently on home and toasts in a room', () => {
@@ -33,7 +35,7 @@ describe('update policy', () => {
     cb();
     expect(update).not.toHaveBeenCalled();
     const toast = document.getElementById('update-toast')!;
-    toast.click();
+    toast.querySelector('button')!.click();
     expect(update).toHaveBeenCalledWith(true);
     toast.remove();
     window.history.pushState({}, '', '/');
