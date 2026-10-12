@@ -35,7 +35,6 @@ export default function RoomRoute({ code }: { code: string }) {
   const avatar = usePrefs(s => s.avatar);
   const setProfile = usePrefs(s => s.setProfile);
   const practice = usePrefs(s => !!norm && s.lastRoom !== null && s.lastRoom.code === norm && s.lastRoom.practice);
-  const forceCoach = usePrefs(s => !!norm && s.lastRoom?.code === norm && s.lastRoom.coach === true);
   const room = useRoom(s => s.room);
   const view = useRoom(s => s.view);
   const status = useRoom(s => s.status);
@@ -57,10 +56,14 @@ export default function RoomRoute({ code }: { code: string }) {
       const conn = svc.connect(norm, () => {
         const p = usePrefs.getState();
         const me = getIdentity();
+        // Read live: turning the coach off in-game (setCoach) clears the forced flag, and that must stick on reconnect.
+        const forceCoach = p.lastRoom?.code === norm && p.lastRoom.coach === true;
         return { t: 'hello', v: PROTOCOL_VERSION, playerId: me.playerId, secret: me.secret, name: p.name, avatar: p.avatar, coach: forceCoach || coachForRoom(norm, p, practice) };
       });
       useRoom.getState().attach(conn);
-      usePrefs.getState().setLastRoom({ code: norm, practice, at: Date.now(), ...(forceCoach ? { coach: true } : {}) });
+      const last = usePrefs.getState().lastRoom;
+      const keepForce = last?.code === norm && last.coach === true;
+      usePrefs.getState().setLastRoom({ code: norm, practice, at: Date.now(), ...(keepForce ? { coach: true } : {}) });
     }).catch(() => {
       if (alive) setLoadFailed(true);
     });
@@ -68,7 +71,7 @@ export default function RoomRoute({ code }: { code: string }) {
       alive = false;
       useRoom.getState().detach();
     };
-  }, [norm, name, practice, forceCoach, attempt]);
+  }, [norm, name, practice, attempt]);
 
   // No welcome within CONNECT_TIMEOUT_MS of (re)starting a connection -> offer Retry.
   useEffect(() => {

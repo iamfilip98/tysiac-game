@@ -2,6 +2,7 @@
   height: 100vh;
   height: var(--vvh, 100vh);
   height: 100dvh;
+  height: var(--app-h, 100dvh);
   max-width: 520px;
   margin: 0 auto;
   box-sizing: border-box;

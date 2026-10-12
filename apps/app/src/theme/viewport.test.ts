@@ -59,6 +59,16 @@ describe('standaloneAppHeight', () => {
   it('does nothing in a browser tab', () => {
     expect(standaloneAppHeight(fakeWin({ standalone: false, sw: 402, sh: 874, iw: 402, ih: 700 }))).toBeNull();
   });
+  it('ignores display-mode: standalone without navigator.standalone (Android / desktop PWAs)', () => {
+    const win = {
+      navigator: {},
+      matchMedia: () => ({ matches: true }),
+      screen: { width: 402, height: 874 },
+      innerWidth: 402,
+      innerHeight: 812,
+    } as unknown as Window;
+    expect(standaloneAppHeight(win)).toBeNull();
+  });
   it('does nothing when the window is narrower than the screen (split view)', () => {
     expect(standaloneAppHeight(fakeWin({ standalone: true, sw: 1024, sh: 1366, iw: 500, ih: 1300 }))).toBeNull();
   });

@@ -9,8 +9,8 @@
  */
 export function standaloneAppHeight(win: Window): number | null {
   const nav = win.navigator as Navigator & { standalone?: boolean };
-  const standalone = nav.standalone === true || win.matchMedia?.('(display-mode: standalone)').matches === true;
-  if (!standalone || !win.screen) return null;
+  // Only iOS home-screen web clips (navigator.standalone); installed Android/desktop PWAs size correctly already.
+  if (nav.standalone !== true || !win.screen) return null;
   const { width: sw, height: sh } = win.screen;
   const portrait = win.innerHeight >= win.innerWidth;
   const screenW = portrait ? Math.min(sw, sh) : Math.max(sw, sh);

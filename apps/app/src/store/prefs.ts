@@ -96,7 +96,9 @@ export const usePrefs = create<Prefs & PrefsActions>()(
         set({ theme: id });
       },
       setSound: on => set({ sound: on }),
-      setCoach: on => set({ coach: on }),
+      setCoach: on =>
+        // An explicit choice overrides a "Practice with coach" forced flag for the current room.
+        set(s => ({ coach: on, lastRoom: s.lastRoom?.coach ? { ...s.lastRoom, coach: undefined } : s.lastRoom })),
       setSpeed: speed => set({ speed }),
       setLastRoom: room => set({ lastRoom: room }),
       noteGameStarted: code =>

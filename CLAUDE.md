@@ -6,7 +6,7 @@ Live: https://tysiac.iamfilip98.workers.dev. One Worker (`apps/worker`) serves t
 
 When the user reports a game issue:
 1. **Get the room code.** It is 6 characters and appears in the lobby and in the URL `/r/CODE`.
-2. **Dump the room.** The key is `DEBUG_KEY` in `apps/worker/.secrets.json` (gitignored, written by `pnpm --filter @tysiac/worker ship`). Never print, log or commit it. If this checkout has no `.secrets.json`, copy it from the checkout that last ran `ship` (as of M4: `/Users/filip/Code/tysiac-m2/apps/worker/.secrets.json`). Running `ship` without it generates and deploys a new key.
+2. **Dump the room.** The key is `DEBUG_KEY` in `apps/worker/.secrets.json` (gitignored, written by `pnpm --filter @tysiac/worker ship`). Never print, log or commit it. If this checkout has no `.secrets.json`, copy it from `apps/worker/.secrets.json` in the main checkout (`/Users/filip/Code/tysiac-game`), or from the owner's password manager. Running `ship` without it generates and deploys a new key.
    ```bash
    KEY=$(node -p "require('./apps/worker/.secrets.json').DEBUG_KEY")
    curl -s -H "x-debug-key: $KEY" https://tysiac.iamfilip98.workers.dev/api/debug/rooms/CODE \

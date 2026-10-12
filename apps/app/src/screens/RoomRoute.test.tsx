@@ -196,6 +196,16 @@ describe('RoomRoute', () => {
     await waitFor(() => expect(svc.hellos).toHaveLength(1));
     expect(svc.hellos[0]().coach).toBe(true);
   });
+  it('turning the coach off in-game clears the forced flag, so a reconnect keeps it off without reopening the connection', async () => {
+    usePrefs.setState({ coach: null, lastRoom: { code: 'K7QX2M', practice: true, coach: true, at: Date.now() } });
+    renderRoute();
+    await waitFor(() => expect(svc.hellos).toHaveLength(1));
+    expect(svc.hellos[0]().coach).toBe(true);
+    usePrefs.getState().setCoach(false);
+    expect(svc.hellos[0]().coach).toBe(false);
+    expect(usePrefs.getState().lastRoom?.coach).toBeUndefined();
+    expect(svc.hellos).toHaveLength(1);
+  });
   it('a normal room keeps the player coach setting', async () => {
     usePrefs.setState({ coach: false, lastRoom: { code: 'K7QX2M', practice: true, at: Date.now() } });
     renderRoute();
