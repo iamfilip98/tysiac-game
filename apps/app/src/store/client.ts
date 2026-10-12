@@ -13,6 +13,7 @@ export const HOLD_MS = 1000;
 export const SWEEP_MS = 380;
 export const DEAL_MS = 400;
 export const NOTE_MS = 700;
+export const RECEIVED_MS = 4000;
 
 export type TableFx = { kind: 'marriage'; suit: Suit; id: number } | { kind: 'trumpWin'; id: number };
 let fxId = 0;
@@ -38,6 +39,8 @@ export interface ClientState {
   sweepTo: PlayerId | null;
   /** The latest table event, as a line of text. */
   announce: { a: Announcement; id: number } | null;
+  /** A card just handed to me, and by whom (overlay + highlight in hand). */
+  received: { card: Card; from: PlayerId } | null;
   /** Transient table effect (marriage ring, trump burst). */
   fx: TableFx | null;
   /** Card played optimistically, awaiting the server. */
@@ -53,7 +56,7 @@ export interface ClientState {
 }
 
 export const initialClient: ClientState = {
-  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, fx: null, announce: null,
+  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, fx: null, announce: null, received: null,
   pending: null, inflight: null, shake: null, toast: null, roundResult: null, note: null, error: null,
 };
 
@@ -66,7 +69,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.room?.status === 'finished' && msg.room.status === 'playing') {
         return {
           ...s, room: msg.room, seq: -1, needsResync: true, queue: [], holding: false, roundResult: null,
-          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null,
+          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null, received: null,
         };
       }
       return { ...s, room: msg.room };
@@ -83,7 +86,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.needsResync || s.shown === null) {
         return {
           ...s, seq: msg.seq, needsResync: false, view: msg.view, shown: msg.view, queue: [], holding: false,
-          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null, roundResult: null,
+          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null, received: null, roundResult: null,
         };
       }
       // Newer state: queue its events (possibly none, e.g. choosing to play); `advance` syncs `shown`.
@@ -213,12 +216,16 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
     case 'threw':
       return { state: { ...s, queue: rest, roundResult: e.summary, note: note() }, wait: 0, kind: 'pause' };
     case 'dealt':
-      return { state: { ...s, queue: rest, note: null, sweepTo: null, fx: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
+      return { state: { ...s, queue: rest, note: null, sweepTo: null, fx: null, received: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
     case 'marriage':
       return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), fx: { kind: 'marriage', suit: e.suit, id: ++fxId } }, wait: NOTE_MS, kind: 'beat' };
     case 'biddingWon':
     case 'wykladana':
       return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat' };
+    case 'handedOut': {
+      const card = s.me && e.p !== s.me ? e.cards[s.me] : undefined;
+      return { state: { ...s, queue: rest, received: card ? { card, from: e.p } : s.received }, wait: card ? NOTE_MS : 0, kind: 'beat' };
+    }
     case 'bid':
     case 'passed':
       return { state: { ...s, queue: rest }, wait: NOTE_MS / 2, kind: 'beat' };

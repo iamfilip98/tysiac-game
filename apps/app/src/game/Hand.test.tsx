@@ -11,7 +11,7 @@ const labels = () => within(screen.getByRole('group', { name: 'Your hand' })).ge
 
 function renderHand(over: Partial<Parameters<typeof Hand>[0]> = {}) {
   const onTap = vi.fn<(c: Card) => void>();
-  render(<Hand cards={cards} selected={null} isPlayable={() => true} recommended={null} declared={[]} trump={null} shake={null} onTap={onTap} {...over} />);
+  render(<Hand cards={cards} selected={null} isPlayable={() => true} recommended={null} declared={[]} trump={null} fresh={null} shake={null} onTap={onTap} {...over} />);
   return onTap;
 }
 
@@ -87,8 +87,15 @@ describe('card glows', () => {
     expect(glowFor(hand[2], hand, [], null)).toBeNull();
   });
   it('renders the glow classes', () => {
-    render(<Hand cards={hand} selected={null} isPlayable={() => true} recommended={null} declared={[]} trump="diamonds" shake={null} onTap={vi.fn()} />);
+    render(<Hand cards={hand} selected={null} isPlayable={() => true} recommended={null} declared={[]} trump="diamonds" fresh={null} shake={null} onTap={vi.fn()} />);
     expect(screen.getByRole('button', { name: 'K♥' })).toHaveClass('card--glow-marriage');
     expect(screen.getByRole('button', { name: '10♦' })).toHaveClass('card--glow-trump');
+  });
+});
+
+describe('received card', () => {
+  it('highlights the freshly received card', () => {
+    renderHand({ fresh: cardKey(cards[1]) });
+    expect(screen.getByRole('button', { name: 'K♥' })).toHaveClass('card--fresh');
   });
 });

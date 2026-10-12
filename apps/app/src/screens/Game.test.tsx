@@ -1,10 +1,11 @@
-import { render, screen, within } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { cardEquals, cardLabel, explainIllegal, turnOf, type Action, type Card, type GameState } from '@tysiac/engine';
 import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
+import { RECEIVED_MS } from '../store/client';
 import { useSelection } from '../game/selection';
 import { FakeConnection } from '../test/fakes';
 import { findState, roomInfo, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
@@ -25,6 +26,18 @@ beforeEach(() => {
 });
 
 describe('Game screen: tricks', () => {
+  it('shows who gave me which card, then hides it after RECEIVED_MS', () => {
+    vi.useFakeTimers();
+    join(findState(s => s.phase === 'tricks'));
+    render(<Game />);
+    act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+    expect(screen.getByRole('status', { name: 'Card received' })).toHaveTextContent('Bot Basia');
+    act(() => { vi.advanceTimersByTime(RECEIVED_MS + 10); });
+    expect(screen.queryByRole('status', { name: 'Card received' })).toBeNull();
+    vi.useRealTimers();
+  });
+
+
   it('shows Your turn on my strip when I must act', () => {
     join(findState(s => s.phase === 'tricks' && turnOf(s) === 'me'));
     render(<Game />);

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { cardEquals, cardKey, turnOf, type Action, type Card, type GameEvent, type GameState } from '@tysiac/engine';
 import {
-  FLIGHT_MS, HOLD_MS, advance, applyServer, beginAct, beginPlay, dismissResult, initialClient, isIdle,
+  FLIGHT_MS, HOLD_MS, NOTE_MS, advance, applyServer, beginAct, beginPlay, dismissResult, initialClient, isIdle,
   type ClientState, type Step,
 } from './client';
 import { eventNote } from './notes';
@@ -252,5 +252,20 @@ describe('announcements in the store', () => {
     const s: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v, queue: [{ type: 'passed', p: 'b', audience: 'all' } as GameEvent] };
     const step = advance(s, false)!;
     expect(step.state.announce?.a).toEqual({ kind: 'pass', p: 'b' });
+  });
+});
+
+describe('received card', () => {
+  const v = viewOf(findState(x => x.phase === 'tricks'));
+  const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+  it('a hand-out to me records the received card and who gave it', () => {
+    const e = { type: 'handedOut', p: 'b', recipients: ['me', 'z'], cards: { me: { suit: 'hearts', rank: 'Q' } }, audience: ['me'] } as GameEvent;
+    const step = advance({ ...base, queue: [e] }, false)!;
+    expect(step.state.received).toEqual({ card: { suit: 'hearts', rank: 'Q' }, from: 'b' });
+    expect(step.wait).toBe(NOTE_MS);
+  });
+  it('the bidder does not get a received overlay', () => {
+    const e = { type: 'handedOut', p: 'me', recipients: ['b', 'z'], cards: {}, audience: ['me'] } as GameEvent;
+    expect(advance({ ...base, queue: [e] }, false)!.state.received).toBeNull();
   });
 });

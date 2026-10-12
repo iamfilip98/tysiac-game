@@ -19,6 +19,7 @@ export interface RoomStore extends ClientState {
   act(action: Action): boolean;
   playCard(card: Card): void;
   dismissResult(): void;
+  clearReceived(): void;
   clearToast(): void;
   clearShake(): void;
 }
@@ -98,6 +99,9 @@ export const useRoom = create<RoomStore>()((set, get) => ({
     set(st => beginPlay(st, id, card));
     sink('card');
     if (!get().send({ t: 'act', id, action: { type: 'card', card } })) receive({ t: 'reject', id, code: 'offline', message: OFFLINE });
+  },
+  clearReceived() {
+    set({ received: null });
   },
   dismissResult() {
     set(s => dismissResult(s));

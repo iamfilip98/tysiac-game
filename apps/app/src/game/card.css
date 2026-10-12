@@ -83,3 +83,6 @@
 .hand__card::after { content: ''; position: absolute; left: 0; right: 0; top: -14px; height: 14px; }
 .hand__card.card--raised { z-index: 10; }
 .hand__card.card--raised::after { left: -6px; right: -6px; top: -16px; height: 16px; }
+.card--fresh { outline: 2.5px solid var(--accent); outline-offset: 2px; animation: fresh-pulse 1s ease-in-out 4; }
+@keyframes fresh-pulse { 50% { outline-color: transparent; } }
+@media (prefers-reduced-motion: reduce) { .card--fresh { animation: none; } }

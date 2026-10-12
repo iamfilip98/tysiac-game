@@ -14,12 +14,14 @@ export interface HandProps {
   declared: readonly Suit[];
   /** The round's trump suit (blue glow on those cards). */
   trump: Suit | null;
+  /** cardKey of a card just received (pulsing outline). */
+  fresh: string | null;
   shake: string | null;
   onTap(card: Card): void;
 }
 
 /** The viewer's cards. Tapping only reports the tap — it never plays a card. */
-export function Hand({ cards, selected, isPlayable, recommended, declared, trump, shake, onTap }: HandProps) {
+export function Hand({ cards, selected, isPlayable, recommended, declared, trump, fresh, shake, onTap }: HandProps) {
   const sorted = sortHand(cards);
   return (
     <div className="hand" role="group" aria-label="Your hand" style={{ '--n': sorted.length } as CSSProperties}>
@@ -34,7 +36,7 @@ export function Hand({ cards, selected, isPlayable, recommended, declared, trump
             tag={marriageTag(card, cards, declared)}
             glow={glowFor(card, cards, declared, trump)}
             shake={shake === key}
-            className="hand__card"
+            className={`hand__card ${key === fresh ? 'card--fresh' : ''}`}
             style={{ '--i': i } as CSSProperties}
             onTap={() => onTap(card)}
           />
