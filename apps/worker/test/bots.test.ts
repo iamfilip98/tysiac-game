@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { actionsEqual, createGame, legalActions, turnOf } from '@tysiac/engine';
+import { actionsEqual, actorsOf, createGame, legalActions, reduce, talonWaiting, turnOf } from '@tysiac/engine';
 import type { GameState, Seat } from '@tysiac/engine';
 import { botActor, chooseBotAction } from '../src/room/bots';
 import type { RoomMeta } from '../src/room/types';
@@ -70,4 +70,50 @@ describe('bots in a room', () => {
     await host.next('state', (m) => m.seq >= paused.seq + 4, 10_000);
     host.autoplay = false;
   });
+});
+
+function talonState(): GameState {
+  for (let i = 0; i < 50; i++) {
+    let s = createGame({ seed: `talon-${i}`, seats: SEATS, maxPlayers: 3, firstDealer: 0 });
+    for (let n = 0; n < 400 && s.phase !== 'gameEnd'; n++) {
+      if (s.phase === 'talon') return s;
+      const p = actorsOf(s)[0]!;
+      const r = reduce(s, p, chooseBotAction(s, p, () => 0.5), n);
+      if (!r.ok) throw new Error(r.error.message);
+      s = r.state;
+    }
+  }
+  throw new Error('no talon phase reached');
+}
+
+describe('botActor in the talon phase', () => {
+  const s = talonState();
+  const [w1, w2] = talonWaiting(s);
+  const bidder = s.round!.bid.high;
+
+  it('picks the first bot-controlled watcher', () => {
+    expect(botActor(s, metaFor(s, [w1, w2]))).toBe(w1);
+    expect(botActor(s, metaFor(s, [w2]))).toBe(w2);
+  });
+  it('waits for human watchers, and a bot-for seat covers an away human', () => {
+    expect(botActor(s, metaFor(s, []))).toBeNull();
+    expect(botActor(s, metaFor(s, [], [w1]))).toBe(w1);
+  });
+  it('the bidder has nothing to do, and nobody acts while paused', () => {
+    expect(botActor(s, metaFor(s, [bidder]))).toBeNull();
+    expect(botActor({ ...s, paused: { by: bidder, at: 1 } }, metaFor(s, [w1, w2]))).toBeNull();
+  });
+  it('a bot confirmation is a legal ackTalon', () => {
+    expect(chooseBotAction(s, w1, () => 0.5)).toEqual({ type: 'ackTalon' });
+  });
+});
+
+it('a room with bots gets through a public talon to the decision', async () => {
+  const { host } = await setupTable({ humans: ['Ala'], bots: 2 });
+  host.autoplay = true;
+  host.playIfMyTurn();
+  await host.next('state', (m) => m.events.some((e) => e.type === 'talonSeen'), 60_000);
+  const s = await host.next('state', (m) => m.view.phase === 'decision' || m.view.phase === 'handout' || m.view.phase === 'tricks', 30_000);
+  expect(s.view.round!.talonWaiting).toEqual([]);
+  host.autoplay = false;
 });

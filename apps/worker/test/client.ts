@@ -1,5 +1,6 @@
 import { botAction, makeRandom } from '@tysiac/engine';
 import type { Action, PlayerView } from '@tysiac/engine';
+import { PROTOCOL_VERSION } from '@tysiac/protocol';
 import type { ClientMessage, RoomInfo, ServerMessage } from '@tysiac/protocol';
 import { call, createRoom, ident, type Ident } from './helpers';
 
@@ -87,7 +88,7 @@ export class Client {
 
   playIfMyTurn(): void {
     const view = this.view;
-    if (!view || view.paused || view.turn !== view.me || view.seq <= this.lastPlayedSeq) return;
+    if (!view || view.paused || !(view.turn === view.me || view.legal.some((a) => a.type === 'ackTalon')) || view.seq <= this.lastPlayedSeq) return;
     if (!view.legal.some(isMove)) return;
     this.lastPlayedSeq = view.seq;
     this.act(botAction(view, this.rand));
@@ -109,7 +110,7 @@ export class Client {
 }
 
 export function helloMsg(who: Ident, coach = false): ClientMessage {
-  return { t: 'hello', v: 1, playerId: who.playerId, secret: who.secret, name: who.name, avatar: who.avatar, coach };
+  return { t: 'hello', v: PROTOCOL_VERSION, playerId: who.playerId, secret: who.secret, name: who.name, avatar: who.avatar, coach };
 }
 
 export async function connect(code: string, who: Ident): Promise<Client> {

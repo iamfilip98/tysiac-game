@@ -5,7 +5,7 @@ import type { ClientMessage, PROTOCOL_VERSION } from './index';
 export const MAX_MESSAGE_BYTES = 4096;
 
 /** Must equal PROTOCOL_VERSION — the annotation makes tsc fail if they ever diverge. */
-const VERSION: typeof PROTOCOL_VERSION = 1;
+const VERSION: typeof PROTOCOL_VERSION = 2;
 
 export const PlayerIdSchema = z.string().min(1).max(64);
 const NameSchema = z.string().trim().min(1).max(24);
@@ -29,6 +29,7 @@ export const ActionSchema = z.discriminatedUnion('type', [
     to: z.record(PlayerIdSchema, CardSchema).refine((to) => Object.keys(to).length <= 3, 'Too many recipients'),
   }),
   z.strictObject({ type: z.literal('card'), card: CardSchema }),
+  z.strictObject({ type: z.literal('ackTalon') }),
   z.strictObject({ type: z.literal('pause') }),
   z.strictObject({ type: z.literal('resume') }),
 ]);

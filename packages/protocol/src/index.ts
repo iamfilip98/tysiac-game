@@ -1,6 +1,6 @@
 import type { Action, GameEvent, PlayerId, PlayerView } from '@tysiac/engine';
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 /** WebSocket close code: another connection of the same player replaced this one. Do not reconnect. */
 export const CLOSE_REPLACED = 4000;

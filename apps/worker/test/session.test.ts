@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import { PROTOCOL_VERSION } from '@tysiac/protocol';
 import { connect, helloMsg, join } from './client';
 import { createRoom, debugDump, ident, sleep } from './helpers';
 
@@ -67,7 +68,7 @@ describe('joining a room', () => {
     const ala = ident('Ala');
     const code = await createRoom(ala);
     const c = await connect(code, ala);
-    c.send({ ...helloMsg(ala), v: 2 });
+    c.send({ ...helloMsg(ala), v: 1 });
     expect((await c.next('error')).code).toBe('versionMismatch');
     expect(await c.closed()).toBe(1008);
   });
@@ -150,7 +151,7 @@ describe('message limits', () => {
     expect((await a.next('error')).message).toMatch(/too large/i);
     a.send({ t: 'setCoach', coach: 'yes' });
     expect((await a.next('error')).code).toBe('badMessage');
-    a.send({ t: 'hello', v: 1, playerId: ala.playerId, secret: ala.secret, name: 'Ala', avatar: '🙂', coach: false });
+    a.send({ t: 'hello', v: PROTOCOL_VERSION, playerId: ala.playerId, secret: ala.secret, name: 'Ala', avatar: '🙂', coach: false });
     expect((await a.next('error')).code).toBe('badMessage');
     a.send({ t: 'setCoach', coach: true });
     await a.next('room', (m) => m.room.seats[0]?.coach === true);
