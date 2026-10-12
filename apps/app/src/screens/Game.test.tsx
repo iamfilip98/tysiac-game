@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { cardEquals, cardLabel, explainIllegal, turnOf, type Action, type Card, type GameState } from '@tysiac/engine';
+import { advise, cardEquals, cardKey, cardLabel, explainIllegal, turnOf, type Action, type Card, type GameState } from '@tysiac/engine';
 import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
@@ -160,6 +160,31 @@ describe('Game screen: fix round 1', () => {
     const room = roomInfo();
     conn.push({ t: 'room', room: { ...room, seats: room.seats.map(x => (x?.id === 'me' ? { ...x, coach: true } : x)) } });
     expect(screen.getByRole('switch', { name: 'Coach hints' })).toHaveAttribute('aria-checked', 'true');
+  });
+});
+
+describe('Game screen: coach hand-out hints (D12)', () => {
+  const recommendedKeys = () =>
+    within(hand()).getAllByRole('button').filter(b => b.classList.contains('card--recommended')).map(b => b.getAttribute('data-card'));
+
+  it('outlines both suggested cards, then only the remaining one with a headline that names it', async () => {
+    const user = userEvent.setup();
+    const s0 = findState(s => s.phase === 'handout' && turnOf(s) === 'me');
+    const conn = join(s0);
+    const room = roomInfo();
+    conn.push({ t: 'room', room: { ...room, seats: room.seats.map(x => (x?.id === 'me' ? { ...x, coach: true } : x)) } });
+    render(<Game />);
+    const advice = advise(viewOf(s0))!;
+    const to = (advice.action as Extract<Action, { type: 'handout' }>).to;
+    const [[p1, c1], [p2, c2]] = Object.entries(to);
+    const name = (p: string) => (p === 'b' ? 'Bot Basia' : 'Bot Zenek');
+    expect(recommendedKeys().sort()).toEqual([cardKey(c1), cardKey(c2)].sort());
+    expect(screen.getByText(advice.headline)).toBeInTheDocument();
+
+    await user.click(within(hand()).getByRole('button', { name: cardLabel(c1) }));
+    await user.click(screen.getByRole('button', { name: `Give to ${name(p1)}` }));
+    expect(recommendedKeys()).toEqual([cardKey(c2)]);
+    expect(screen.getByText(`Give ${cardLabel(c2)} to ${name(p2)}`)).toBeInTheDocument();
   });
 });
 

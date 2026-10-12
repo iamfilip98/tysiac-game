@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useShallow } from 'zustand/react/shallow';
-import { advise, cardEquals, cardKey, explainIllegal, type Card, type PlayerId } from '@tysiac/engine';
+import { advise, cardEquals, cardKey, explainIllegal, type Advice, type Card, type PlayerId } from '@tysiac/engine';
 import { coachOn, useRoom } from '../store/room';
 import { isIdle } from '../store/client';
 import { useSelection } from '../game/selection';
@@ -24,6 +24,15 @@ import './game.css';
 
 type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
 
+/** Cards the coach suggests that are still in the hand: the card to play, or the hand-out cards not yet given. */
+function recommendedKeys(advice: Advice | null, given: Card[]): string[] {
+  if (advice?.action.type === 'card') return [cardKey(advice.action.card)];
+  if (advice?.action.type !== 'handout') return [];
+  return Object.values(advice.action.to)
+    .filter(c => !given.some(g => cardEquals(g, c)))
+    .map(cardKey);
+}
+
 export default function Game() {
   const s = useRoom(
     useShallow(st => ({
@@ -44,11 +53,13 @@ export default function Game() {
   const anyAway = !!s.room?.seats.some(x => x && !x.isBot && !x.connected && !x.botFor);
   const now = useNow(anyAway, s.clockOffset);
   const phaseKey = shown ? `${shown.round?.number ?? 0}:${shown.phase}` : '';
-  // Hints are private: only ever computed for the viewer's own turn.
+  // Hints are private: only ever computed for the viewer's own turn. During the hand-out the coach
+  // takes the cards already given into account and advises only on the rest.
+  const handoutGiven = sel.given;
   const advice = useMemo(() => {
     if (!(coach && idle && shown && shown.turn === shown.me && !shown.paused)) return null;
-    return lesson ? lesson.advice(shown) : advise(shown);
-  }, [lesson, coach, idle, shown]);
+    return lesson ? lesson.advice(shown) : advise(shown, { handoutGiven });
+  }, [lesson, coach, idle, shown, handoutGiven]);
 
   useEffect(() => {
     useSelection.getState().reset();
@@ -86,7 +97,7 @@ export default function Game() {
   const isLegal = (c: Card) => legalCards.some(l => cardEquals(l, c));
   const isPlayable = (c: Card) => shown.phase !== 'tricks' || !myTurn || isLegal(c);
   const selectedCard = hand.find(c => cardKey(c) === sel.selected) ?? null;
-  const recommended = advice?.action.type === 'card' ? cardKey(advice.action.card) : null;
+  const recommended = recommendedKeys(advice, givenCards);
   const isHost = s.room?.hostId === s.me;
 
   const onCardTap = (card: Card) => {

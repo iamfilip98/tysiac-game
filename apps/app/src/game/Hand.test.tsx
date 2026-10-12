@@ -10,7 +10,7 @@ const labels = () => within(screen.getByRole('group', { name: 'Your hand' })).ge
 
 function renderHand(over: Partial<Parameters<typeof Hand>[0]> = {}) {
   const onTap = vi.fn<(c: Card) => void>();
-  render(<Hand cards={cards} selected={null} isPlayable={() => true} recommended={null} declared={[]} shake={null} onTap={onTap} {...over} />);
+  render(<Hand cards={cards} selected={null} isPlayable={() => true} recommended={[]} declared={[]} shake={null} onTap={onTap} {...over} />);
   return onTap;
 }
 

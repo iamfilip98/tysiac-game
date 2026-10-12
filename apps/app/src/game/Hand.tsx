@@ -8,8 +8,8 @@ export interface HandProps {
   /** cardKey of the raised card. */
   selected: string | null;
   isPlayable(card: Card): boolean;
-  /** cardKey the coach recommends (thin accent outline). */
-  recommended: string | null;
+  /** cardKeys the coach recommends (thin accent outline): the card to play, or the hand-out cards. */
+  recommended: readonly string[];
   /** Marriages already declared by the viewer (no tag for those). */
   declared: readonly Suit[];
   shake: string | null;
@@ -23,7 +23,7 @@ export function Hand({ cards, selected, isPlayable, recommended, declared, shake
     <div className="hand" role="group" aria-label="Your hand" style={{ '--n': sorted.length } as CSSProperties}>
       {sorted.map((card, i) => {
         const key = cardKey(card);
-        const look: CardLook = key === selected ? 'raised' : !isPlayable(card) ? 'dim' : key === recommended ? 'recommended' : 'normal';
+        const look: CardLook = key === selected ? 'raised' : !isPlayable(card) ? 'dim' : recommended.includes(key) ? 'recommended' : 'normal';
         return (
           <CardButton
             key={key}
