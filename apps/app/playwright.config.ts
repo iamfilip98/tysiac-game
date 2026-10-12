@@ -11,6 +11,8 @@ const VIEWPORTS = [
 // WebKit-first (the owner plays on iPhone). E2E_BROWSER=chromium is a fallback when WebKit is unavailable.
 const BROWSER = process.env.E2E_BROWSER === 'chromium' ? 'chromium' : 'webkit';
 
+const PORT = Number(process.env.E2E_PORT ?? 4173);
+
 export default defineConfig({
   testDir: 'e2e',
   timeout: 10 * 60_000,
@@ -19,14 +21,14 @@ export default defineConfig({
   retries: 0,
   reporter: 'list',
   use: {
-    baseURL: 'http://localhost:4173',
+    baseURL: `http://localhost:${PORT}`,
     serviceWorkers: 'block',
     actionTimeout: 10_000,
     trace: 'retain-on-failure',
   },
   webServer: {
-    command: 'pnpm build && pnpm preview',
-    url: 'http://localhost:4173',
+    command: `pnpm build && pnpm exec vite preview --port ${PORT} --strictPort`,
+    url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 240_000,
   },

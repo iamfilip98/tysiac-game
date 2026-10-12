@@ -1,6 +1,6 @@
 import {
   botAction, botShouldAct, createGame, eventsFor, makeRandom, reduce, turnOf, viewFor,
-  type Action, type GameEvent, type GameState, type PlayerId,
+  type Action, type GameEvent, type GameState, type PlayerId, type PlayerView,
 } from '@tysiac/engine';
 import {
   PROTOCOL_VERSION,
@@ -37,6 +37,8 @@ export interface LocalRoomOptions {
   clock?: Clock;
   /** Multiplies bot thinking time (e2e uses 0.05). */
   botDelayScale?: number;
+  /** Replaces the bot AI (lesson replay). Return null to skip the move; nothing is rescheduled. */
+  botMove?: (view: PlayerView, pid: PlayerId) => Action | null;
 }
 
 export type Deliver = (msg: ServerMessage) => void;
@@ -69,6 +71,7 @@ export class LocalRoom {
   private readonly clock: Clock;
   private readonly botScale: number;
   private readonly rng: () => number;
+  private readonly scripted: LocalRoomOptions['botMove'];
   private cancelBot: (() => void) | null = null;
   private destroyed = false;
   /** True while no human is connected; bots rest, and the next hello wakes them. */
@@ -80,6 +83,7 @@ export class LocalRoom {
     this.clock = o.clock ?? realClock;
     this.botScale = o.botDelayScale ?? 1;
     this.rng = makeRandom(`${o.seed}:bots`);
+    this.scripted = o.botMove;
     const seats: (RoomSeat | null)[] = Array.from({ length: o.maxPlayers }, () => null);
     seats[0] = { ...human(o.host.playerId, o.host.name, o.host.avatar, false), connected: false };
     this.info = { code: o.code, status: 'lobby', maxPlayers: o.maxPlayers, hostId: o.host.playerId, seats, firstDealer: 0 };
@@ -343,7 +347,9 @@ export class LocalRoom {
     const view = viewFor(s, pid);
     if (!botShouldAct(view)) return;
     try {
-      const r = reduce(s, pid, botAction(view, this.rng), this.clock.now());
+      const action = this.scripted ? this.scripted(view, pid) : botAction(view, this.rng);
+      if (!action) return;
+      const r = reduce(s, pid, action, this.clock.now());
       if (!r.ok) {
         console.error(`LocalRoom: bot ${pid} chose an illegal move: ${r.error.message}`);
         return;

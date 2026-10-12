@@ -1,6 +1,6 @@
 import type { ClientMessage, CreateRoomRequest, ServerMessage } from './protocol';
 import { Emitter, randomCode, type ConnStatus, type HelloMessage, type RoomConnection, type RoomService } from './connection';
-import { LocalRoom, realClock, type Clock, type LocalSocket } from './localRoom';
+import { LocalRoom, randomSeed, realClock, type Clock, type LocalRoomOptions, type LocalSocket } from './localRoom';
 
 export interface LocalOptions {
   botDelayScale?: number;
@@ -16,16 +16,17 @@ export class LocalHub {
     this.latencyMs = opts.latencyMs ?? 0;
   }
 
-  create(req: CreateRoomRequest): string {
+  create(req: CreateRoomRequest, extra: { seed?: string; botMove?: LocalRoomOptions['botMove'] } = {}): string {
     let code = randomCode();
     while (this.rooms.has(code)) code = randomCode();
     this.rooms.set(code, new LocalRoom({
       code,
       maxPlayers: req.maxPlayers,
       host: { playerId: req.playerId, name: req.name, avatar: req.avatar },
-      seed: Array.from(crypto.getRandomValues(new Uint8Array(16)), b => b.toString(16).padStart(2, '0')).join(''),
+      seed: extra.seed ?? randomSeed(),
       clock: this.opts.clock ?? realClock,
       botDelayScale: this.opts.botDelayScale,
+      botMove: extra.botMove,
     }));
     return code;
   }

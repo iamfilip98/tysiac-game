@@ -8,6 +8,8 @@ export interface LastRoom {
   code: string;
   practice: boolean;
   at: number;
+  /** Set by "Practice with coach" (Learn): the coach is on in this room whatever the setting says. */
+  coach?: boolean;
 }
 export interface Prefs {
   name: string;
