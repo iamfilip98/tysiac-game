@@ -48,3 +48,7 @@ storybook-static
 .superpowers/
 .playwright-mcp/
 .wrangler/
+
+# Playwright output
+apps/app/test-results/
+apps/app/playwright-report/

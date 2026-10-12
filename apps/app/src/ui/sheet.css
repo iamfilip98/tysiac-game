@@ -11,7 +11,7 @@
   width: 100%;
   max-width: 560px;
   max-height: calc(100vh - 36px);
-  max-height: calc(100dvh - max(env(safe-area-inset-top), 12px) - 24px);
+  max-height: calc(100dvh - max(var(--sa-top), 12px) - 24px);
   display: flex;
   flex-direction: column;
   background: var(--sheet-bg);
@@ -20,7 +20,7 @@
   border: var(--panel-border);
   border-bottom: 0;
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
-  padding: 14px max(env(safe-area-inset-right), 16px) max(env(safe-area-inset-bottom), 14px) max(env(safe-area-inset-left), 16px);
+  padding: 14px max(var(--sa-right), 16px) max(var(--sa-bottom), 14px) max(var(--sa-left), 16px);
 }
 .sheet:focus { outline: none; }
 .sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }

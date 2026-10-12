@@ -9,7 +9,7 @@
 a.btn { text-decoration: none; display: inline-grid; place-items: center; color: var(--ink); }
 .netbanner {
   position: fixed;
-  top: max(env(safe-area-inset-top), 6px);
+  top: max(var(--sa-top), 6px);
   left: 50%;
   translate: -50% 0;
   z-index: 60;
