@@ -21,5 +21,9 @@ export const common = {
   'card.rank.J': 'J',
   'card.rank.10': '10',
   'card.rank.9': '9',
+  'common.home': 'Home',
+  'common.retry': 'Retry',
+  'common.loading': 'Loading…',
+  'common.dismiss': 'Dismiss',
   'common.points': { one: '{n} pt', other: '{n} pts' },
 } as const satisfies Record<string, Msg>;

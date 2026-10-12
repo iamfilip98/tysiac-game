@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import './profile.css';
 import { AVATARS, NAME_MAX_UNITS, cleanName } from '../store/prefs';
+import { useT } from '../i18n/useT';
 
 export interface ProfileFormProps {
   initialName: string;
@@ -10,6 +11,7 @@ export interface ProfileFormProps {
 }
 
 export function ProfileForm({ initialName, initialAvatar, submitLabel, onSubmit }: ProfileFormProps) {
+  const t = useT();
   const [name, setName] = useState(initialName);
   const [avatar, setAvatar] = useState(initialAvatar || AVATARS[0]);
   const clean = cleanName(name);
@@ -22,7 +24,7 @@ export function ProfileForm({ initialName, initialAvatar, submitLabel, onSubmit 
       }}
     >
       <label className="field">
-        <span className="lbl">Your name</span>
+        <span className="lbl">{t('screens.profile.name')}</span>
         <input
           name="name"
           value={name}
@@ -34,9 +36,9 @@ export function ProfileForm({ initialName, initialAvatar, submitLabel, onSubmit 
         />
       </label>
       <fieldset className="avatars">
-        <legend className="lbl">Avatar</legend>
+        <legend className="lbl">{t('screens.profile.avatar')}</legend>
         {AVATARS.map(a => (
-          <button key={a} type="button" className="avatar avatar--pick" aria-label={`Avatar ${a}`} aria-pressed={a === avatar} onClick={() => setAvatar(a)}>
+          <button key={a} type="button" className="avatar avatar--pick" aria-label={t('screens.profile.avatarAria', { avatar: a })} aria-pressed={a === avatar} onClick={() => setAvatar(a)}>
             {a}
           </button>
         ))}

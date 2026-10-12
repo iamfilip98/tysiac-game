@@ -22,5 +22,9 @@ export const common = {
   'card.rank.J': 'W',
   'card.rank.10': '10',
   'card.rank.9': '9',
+  'common.home': 'Start',
+  'common.retry': 'Ponów',
+  'common.loading': 'Ładowanie…',
+  'common.dismiss': 'Zamknij',
   'common.points': { one: '{n} punkt', few: '{n} punkty', many: '{n} punktów', other: '{n} punktu' },
 } as const satisfies AreaOf<typeof en>;
