@@ -1,3 +1,4 @@
+import type { GameRecord } from '../history';
 import type { Action, GameState } from '@tysiac/engine';
 import type { Schedule } from '../scheduler';
 import type { GameOptions, LogEntry, RoomMeta } from './types';
@@ -9,7 +10,7 @@ import type { GameOptions, LogEntry, RoomMeta } from './types';
  */
 export const LOG_CAP = 5000;
 
-type Key = 'meta' | 'state' | 'gameOptions' | 'schedule';
+type Key = 'meta' | 'state' | 'gameOptions' | 'schedule' | 'pendingRecord';
 type KvRow = { value: string };
 type LogRow = { seq: number; at: number; player: string; action: string };
 
@@ -58,6 +59,17 @@ export class RoomStore {
   }
   putSchedule(schedule: Schedule): void {
     this.put('schedule', schedule);
+  }
+
+  /** The finished game's history row while it is not yet in D1 (survives eviction and a rematch). */
+  getPendingRecord(): GameRecord | null {
+    return this.get<GameRecord>('pendingRecord');
+  }
+  putPendingRecord(record: GameRecord): void {
+    this.put('pendingRecord', record);
+  }
+  clearPendingRecord(): void {
+    this.sql.exec("DELETE FROM kv WHERE key = 'pendingRecord'");
   }
 
   appendLog(entry: LogEntry): void {

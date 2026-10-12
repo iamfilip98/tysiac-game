@@ -3,6 +3,7 @@ import { createGame, eventsFor, reduce, viewFor } from '@tysiac/engine';
 import type { Action, GameEvent, GameState, PlayerId } from '@tysiac/engine';
 import { parseClientMessage } from '@tysiac/protocol';
 import type { ClientMessage, ErrorCode, LobbyOp, ParseResult, RoomExistsResponse, RoomInfo, ServerMessage } from '@tysiac/protocol';
+import { gameRecordFrom, saveGameSafely, type GameRecord } from '../history';
 import { randomHex, sha256Hex } from '../identity';
 import { checkRate, newBucket, type RateBucket } from '../ratelimit';
 import { CLEANUP_AFTER_MS, botDelayMs, nextAlarmAt, parseScale, type Schedule } from '../scheduler';
@@ -15,6 +16,8 @@ type Hello = Extract<ClientMessage, { t: 'hello' }>;
 
 const EMPTY_SCHEDULE: Schedule = { bot: null, cleanup: 0 };
 const BOT_RETRY_MS = 1000;
+/** A finished game's D1 row that is not confirmed yet is retried (once) by the alarm after this long. */
+const HISTORY_RETRY_MS = 5000;
 /** After a bot move failed twice at the same state, the alarm keeps trying at this slower pace. */
 const BOT_GIVE_UP_RETRY_MS = 30_000;
 
@@ -104,6 +107,7 @@ export class Room extends DurableObject<Env> {
       if (!this.meta) return;
       const now = Date.now();
       if (now >= this.schedule.cleanup) return await this.destroy();
+      await this.retryHistory(now);
       this.sweepPresence(now);
       if (this.syncBotFlags()) this.broadcastState([]);
       if (this.schedule.bot !== null && now >= this.schedule.bot) {
@@ -236,7 +240,7 @@ export class Room extends DurableObject<Env> {
       case 'botFor':
         return this.onBotFor(ws, meta, me, msg.playerId, now);
       case 'rematch':
-        return this.sendError(ws, 'badMessage', '"rematch" is not available yet');
+        return this.startGame(ws, lobby.rematch(meta, me, crypto.randomUUID(), now, this.connectedIds()), now);
     }
   }
 
@@ -280,7 +284,7 @@ export class Room extends DurableObject<Env> {
     this.broadcastRoom();
   }
 
-  /** Shared by start and (Task 12) rematch: new seed, new GameState, fresh log. */
+  /** Shared by start and rematch: new seed, new GameState, fresh log. */
   private async startGame(ws: WebSocket, result: lobby.LobbyResult, now: number): Promise<void> {
     if (!result.ok) return this.sendError(ws, result.code, result.message);
     const options: GameOptions = {
@@ -298,7 +302,7 @@ export class Room extends DurableObject<Env> {
     this.meta = result.meta;
     this.state = state;
     this.botFailedAtSeq = null;
-    this.schedule = { bot: this.planBot(now, []), cleanup: now + CLEANUP_AFTER_MS };
+    this.schedule = { ...this.schedule, bot: this.planBot(now, []), cleanup: now + CLEANUP_AFTER_MS };
     this.ctx.storage.transactionSync(() => {
       this.store.putMeta(result.meta);
       this.store.putState(state);
@@ -330,19 +334,62 @@ export class Room extends DurableObject<Env> {
     this.broadcastRoom({ gone: ws });
   }
 
-  /** Persist + broadcast one accepted engine action (human or bot), then plan the next bot move. */
+  /**
+   * Persist + broadcast one accepted engine action (human or bot), then plan the next bot move. A winning action
+   * also marks the room 'finished' and writes the game to D1 before `room` is broadcast.
+   */
   private async commit(by: PlayerId, action: Action, state: GameState, events: GameEvent[], now: number): Promise<void> {
     this.state = state;
     this.botFailedAtSeq = null;
-    this.schedule = { bot: this.planBot(now, events), cleanup: now + CLEANUP_AFTER_MS };
-    // State, log entry and schedule land atomically (no await between the writes).
+    const finishedMeta: RoomMeta | null =
+      this.meta && events.some((e) => e.type === 'gameWon') ? { ...this.meta, status: 'finished' } : null;
+    const record = finishedMeta ? gameRecordFrom(finishedMeta, state, now) : null;
+    if (finishedMeta) this.meta = finishedMeta;
+    // `save` is armed before the D1 call: if the object is evicted mid-write, the alarm still retries it.
+    this.schedule = {
+      bot: this.planBot(now, events),
+      cleanup: now + CLEANUP_AFTER_MS,
+      save: record ? now + HISTORY_RETRY_MS : this.schedule.save ?? null,
+    };
+    // State, log entry, status, pending history row and schedule land atomically (no await between the writes).
     this.ctx.storage.transactionSync(() => {
       this.store.putState(state);
       this.store.appendLog({ seq: state.seq, at: now, player: by, action });
+      if (finishedMeta) this.store.putMeta(finishedMeta);
+      if (record) this.store.putPendingRecord(record);
       this.store.putSchedule(this.schedule);
     });
     this.broadcastState(events);
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+    if (finishedMeta) {
+      if (record) await this.saveHistory(record);
+      this.broadcastRoom();
+    }
+  }
+
+  /** Writes one pending history row. Success clears it; failure leaves it for the alarm's single retry. Never throws. */
+  private async saveHistory(record: GameRecord): Promise<boolean> {
+    const ok = await saveGameSafely(this.env.DB, record); // INSERT OR IGNORE: safe to repeat
+    if (ok && this.store.getPendingRecord()?.id === record.id) {
+      this.store.clearPendingRecord();
+      if (this.schedule.save != null) {
+        this.schedule = { ...this.schedule, save: null };
+        this.store.putSchedule(this.schedule);
+      }
+    }
+    return ok;
+  }
+
+  /** Alarm: the one retry of a history write that failed (or was cut off by an eviction). A second failure is logged and dropped. */
+  private async retryHistory(now: number): Promise<void> {
+    if (this.schedule.save == null || now < this.schedule.save) return;
+    const record = this.store.getPendingRecord();
+    if (record && !(await this.saveHistory(record))) {
+      console.error('history insert gave up', { game: record.id });
+      this.store.clearPendingRecord();
+    }
+    this.schedule = { ...this.schedule, save: null };
+    this.store.putSchedule(this.schedule);
   }
 
   /** Runs the due bot move. Returns false when it failed (nothing was committed). Never throws. */
@@ -373,7 +420,7 @@ export class Room extends DurableObject<Env> {
     const firstFailure = this.botFailedAtSeq !== seq;
     this.botFailedAtSeq = seq;
     if (!firstFailure) console.error('bot move failed again; retrying slowly', { room: this.meta?.code, seq });
-    this.schedule = { bot: now + (firstFailure ? BOT_RETRY_MS : BOT_GIVE_UP_RETRY_MS), cleanup: this.schedule.cleanup };
+    this.schedule = { ...this.schedule, bot: now + (firstFailure ? BOT_RETRY_MS : BOT_GIVE_UP_RETRY_MS) };
     this.store.putSchedule(this.schedule);
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
   }
@@ -439,7 +486,7 @@ export class Room extends DurableObject<Env> {
   /** Re-plans the bot move and (unless `touch` is false) moves cleanup to now + 7 days; re-arms the alarm. */
   private async reschedule(now: number, events: readonly GameEvent[] | null = null, opts: { touch?: boolean } = {}): Promise<void> {
     const cleanup = opts.touch === false ? this.schedule.cleanup : now + CLEANUP_AFTER_MS;
-    this.schedule = { bot: this.planBot(now, events), cleanup };
+    this.schedule = { ...this.schedule, bot: this.planBot(now, events), cleanup };
     this.store.putSchedule(this.schedule);
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
   }

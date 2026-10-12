@@ -11,6 +11,8 @@ export const CLEANUP_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
 export interface Schedule {
   bot: number | null;
   cleanup: number;
+  /** When an unsaved history row is next retried (absent/null = nothing pending). */
+  save?: number | null;
 }
 
 /**
@@ -26,7 +28,7 @@ export function botDelayMs(events: readonly Pick<GameEvent, 'type'>[], rand: () 
 }
 
 export function nextAlarmAt(s: Schedule): number {
-  return s.bot === null ? s.cleanup : Math.min(s.bot, s.cleanup);
+  return Math.min(s.cleanup, s.bot ?? Infinity, s.save ?? Infinity);
 }
 
 export function canTakeOver(awaySince: number | null, now: number): boolean {
