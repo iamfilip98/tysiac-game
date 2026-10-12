@@ -5,7 +5,7 @@ import { FATAL_ERRORS, type ConnStatus, type RoomConnection } from '../net/conne
 import { isFastLocal } from '../net/service';
 import { usePrefs, type Speed } from './prefs';
 import {
-  advance, applyServer, beginAct, beginPlay, dismissResult, initialClient,
+  advance, applyServer, beginAct, beginPlay, dismissReceived, dismissResult, initialClient,
   type ClientState, type SoundName, type Step,
 } from './client';
 
@@ -19,7 +19,10 @@ export interface RoomStore extends ClientState {
   act(action: Action): boolean;
   playCard(card: Card): void;
   dismissResult(): void;
+  /** Closes the received-card banner (the card stays marked in the hand). */
   clearReceived(): void;
+  /** Ends the hold of a completed trick now (tap on the table). */
+  skipHold(): void;
   clearToast(): void;
   clearShake(): void;
 }
@@ -101,7 +104,12 @@ export const useRoom = create<RoomStore>()((set, get) => ({
     if (!get().send({ t: 'act', id, action: { type: 'card', card } })) receive({ t: 'reject', id, code: 'offline', message: OFFLINE });
   },
   clearReceived() {
-    set({ received: null });
+    set(s => dismissReceived(s));
+  },
+  skipHold() {
+    if (!get().holding || get().roundResult) return;
+    clearTimer();
+    pump();
   },
   dismissResult() {
     set(s => dismissResult(s));
@@ -140,3 +148,6 @@ export function pump(): void {
     pump();
   }, wait);
 }
+
+// e2e only (?local=1&fast=1): screenshot specs stage table states (a held trick, a marriage) through the store.
+if (typeof window !== 'undefined' && isFastLocal()) (window as unknown as { __tysiacRoom?: typeof useRoom }).__tysiacRoom = useRoom;

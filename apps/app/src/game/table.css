@@ -74,13 +74,16 @@
 .selfstrip__turn { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); animation: turn-pulse 1.6s ease-in-out 3; }
 @keyframes turn-pulse { 50% { opacity: .55; } }
 @media (prefers-reduced-motion: reduce) { .selfstrip__turn { animation: none; } }
-.received { grid-area: table; align-self: start; justify-self: center; z-index: 3; display: flex; flex-direction: row; align-items: center; gap: 8px;
-  margin-top: 30px; padding: 4px 12px 4px 8px; border-radius: 14px; background: var(--panel); border: var(--panel-border); color: inherit; font: inherit;
-  box-shadow: 0 6px 16px rgba(0,0,0,.35); cursor: pointer; animation: received-in .3s ease-out; }
-.received__card { --w: calc(var(--card-w) * 0.5); box-shadow: 0 0 0 2px var(--accent), 0 0 8px var(--accent); }
-.received__lbl { font: 700 11px var(--font-ui); text-transform: uppercase; letter-spacing: .08em; opacity: .8; }
-.received__from { font-size: 13px; }
-@keyframes received-in { from { opacity: 0; scale: .8; } }
+.received { grid-area: table; align-self: end; justify-self: center; z-index: 3; display: flex; flex-direction: row; align-items: center; gap: 12px;
+  max-width: 100%; margin-bottom: 2px; padding: 8px 12px 8px 8px; border-radius: 16px; background: var(--panel); border: var(--panel-border);
+  color: inherit; font: inherit; text-align: left; cursor: pointer;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 55%, transparent), 0 10px 24px rgba(0,0,0,.35); animation: received-in .35s cubic-bezier(.2,1.4,.4,1); }
+.received__card { --w: min(var(--card-w), 72px); flex: none; box-shadow: 0 0 0 2.5px var(--accent), 0 0 14px var(--accent), var(--card-shadow); }
+.received__text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.received__lbl { font: 800 20px/1.1 var(--font-display); }
+.received__from { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.received__x { align-self: flex-start; font-size: 14px; opacity: .6; margin-left: 2px; }
+@keyframes received-in { from { opacity: 0; scale: .7; translate: 0 20px; } }
 @media (prefers-reduced-motion: reduce) { .received { animation: none; } }
 
 .badge--ok { background: color-mix(in srgb, var(--accent) 30%, transparent); }

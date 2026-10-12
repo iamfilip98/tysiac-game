@@ -251,15 +251,51 @@ describe('eventNote', () => {
 describe('table fx', () => {
   const v = viewOf(findState(x => x.phase === 'tricks'));
   const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
-  it('a marriage sets the table fx, and a trump-won trick bursts while it is held', () => {
+  it('a marriage stays on the table (gold ring) through the hold and goes with the sweep', () => {
     const m = advance({ ...base, queue: [{ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }] }, false)!;
-    expect(m.state.fx).toMatchObject({ kind: 'marriage', suit: 'hearts' });
+    expect(m.state.marriage).toMatchObject({ suit: 'hearts', p: 'b' });
     expect(m.sound).toBe('marriage');
+    const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: false, audience: 'all' };
+    const hold = advance({ ...m.state, queue: [won] }, false)!;
+    expect(hold.kind).toBe('hold');
+    expect(hold.state.marriage).toMatchObject({ suit: 'hearts' });
+    const sweep = advance(hold.state, false)!;
+    expect(sweep.state.marriage).toBeNull();
+  });
+  it('the held trick marks the winning card; a trump win keeps its effect for the whole hold', () => {
     const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: true, audience: 'all' };
     const hold = advance({ ...base, queue: [won] }, false)!;
-    expect(hold.state.fx).toMatchObject({ kind: 'trumpWin' });
+    expect(hold.wait).toBe(HOLD_MS);
+    expect(hold.state.held).toEqual({ p: 'b', card: { suit: 'hearts', rank: '9' }, byTrump: true });
+    expect(hold.sound).toBe('trumpWin');
     const sweep = advance(hold.state, false)!;
-    expect(sweep.state.fx).toBeNull();
+    expect(sweep.state.held).toBeNull();
+    expect(sweep.sound).toBe('sweep');
+  });
+  it('an ordinary trick win has its own sound', () => {
+    const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: false, audience: 'all' };
+    expect(advance({ ...base, queue: [won] }, false)!.sound).toBe('trickWon');
+  });
+});
+
+describe('trick hold timing', () => {
+  it('a completed trick stays on the table for at least 2.5 s', () => {
+    expect(HOLD_MS).toBeGreaterThanOrEqual(2500);
+  });
+  it('the last trick of a round stays on the table under the round result until the player continues', () => {
+    const s0 = findState(x => x.phase === 'tricks' && x.rounds.length === 0 && turnOf(x) === 'me' && x.round!.hands.me.length === 1 && x.round!.trick.cards.length === 2);
+    const { state: s1, events } = step(s0, 'me', { type: 'card', card: firstCard(s0) });
+    let c = applyServer(ready(s0), stateMsg(s1, events), 0);
+    const first = drain(c);
+    expect(first.steps.map(x => x.kind)).toEqual(['flight', 'hold', 'pause']);
+    expect(first.state.roundResult!.number).toBe(1);
+    expect(first.state.holding).toBe(true);
+    expect(first.state.shown!.round!.trick.cards).toHaveLength(3);
+    c = dismissResult(first.state);
+    const second = drain(c);
+    expect(second.steps[0].kind).toBe('sweep');
+    expect(second.state.shown).toBe(second.state.view);
+    expect(isIdle(second.state)).toBe(true);
   });
 });
 
@@ -275,20 +311,40 @@ describe('announcements in the store', () => {
 describe('received card', () => {
   const v = viewOf(findState(x => x.phase === 'tricks'));
   const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
-  it('a hand-out to me records the received card and who gave it', () => {
-    const e = { type: 'handedOut', p: 'b', recipients: ['me', 'z'], cards: { me: { suit: 'hearts', rank: 'Q' } }, audience: ['me'] } as GameEvent;
+  const q = { suit: 'hearts', rank: 'Q' } as const;
+  const got = { card: q, from: 'b', open: true };
+  it('a hand-out to me records the received card and who gave it, with its own sound', () => {
+    const e = { type: 'handedOut', p: 'b', recipients: ['me', 'z'], cards: { me: q }, audience: ['me'] } as GameEvent;
     const step = advance({ ...base, queue: [e] }, false)!;
-    expect(step.state.received).toEqual({ card: { suit: 'hearts', rank: 'Q' }, from: 'b' });
+    expect(step.state.received).toEqual(got);
     expect(step.wait).toBe(NOTE_MS);
+    expect(step.sound).toBe('receive');
   });
-  it('the first card played clears the received overlay', () => {
+  it("other players' cards do not clear the received banner", () => {
     const e = { type: 'cardPlayed', p: 'b', card: { suit: 'clubs', rank: '9' }, audience: 'all' } as GameEvent;
-    const step = advance({ ...base, received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' }, queue: [e] }, false)!;
-    expect(step.state.received).toBeNull();
+    const step = advance({ ...base, received: got, queue: [e] }, false)!;
+    expect(step.state.received).toEqual(got);
   });
-  it('the bidder does not get a received overlay', () => {
+  it('my first card closes the banner; the received card stays marked until it is played', () => {
+    let c = beginPlay({ ...base, received: got }, 'p1', { suit: 'clubs', rank: 'A' });
+    expect(c.received).toEqual({ ...got, open: false });
+    const mine = { type: 'cardPlayed', p: 'me', card: { suit: 'clubs', rank: 'A' }, audience: 'all' } as GameEvent;
+    c = advance({ ...c, queue: [mine] }, false)!.state;
+    expect(c.received).toEqual({ ...got, open: false });
+    const playQ = { type: 'cardPlayed', p: 'me', card: q, audience: 'all' } as GameEvent;
+    expect(advance({ ...c, queue: [playQ] }, false)!.state.received).toBeNull();
+  });
+  it('the received mark goes when the first trick ends', () => {
+    const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'clubs', rank: '9' }, points: 0, byTrump: false, audience: 'all' };
+    const hold = advance({ ...base, received: { ...got, open: false }, queue: [won] }, false)!;
+    expect(hold.state.received).not.toBeNull();
+    expect(advance(hold.state, false)!.state.received).toBeNull();
+  });
+  it('the bidder does not get a received banner but hears the give sound', () => {
     const e = { type: 'handedOut', p: 'me', recipients: ['b', 'z'], cards: {}, audience: ['me'] } as GameEvent;
-    expect(advance({ ...base, queue: [e] }, false)!.state.received).toBeNull();
+    const step = advance({ ...base, queue: [e] }, false)!;
+    expect(step.state.received).toBeNull();
+    expect(step.sound).toBe('give');
   });
 });
 

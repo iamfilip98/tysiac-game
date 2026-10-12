@@ -5,7 +5,6 @@ import { advise, cardEquals, cardKey, cardLabel, explainIllegal, turnOf, type Ac
 import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
-import { RECEIVED_MS } from '../store/client';
 import { textSuits } from '../game/cards';
 import { useSelection } from '../game/selection';
 import { FakeConnection } from '../test/fakes';
@@ -27,28 +26,46 @@ beforeEach(() => {
 });
 
 describe('Game screen: tricks', () => {
-  it('shows who gave me which card, then hides it after RECEIVED_MS', () => {
+  it('shows who gave me which card, big, until dismissed (no timeout)', () => {
     vi.useFakeTimers();
     try {
       join(findState(s => s.phase === 'tricks'));
       render(<Game />);
-      act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+      act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b', open: true } }));
       const pill = screen.getByRole('button', { name: /Card received/ });
       expect(pill).toHaveTextContent('Bot Basia');
       expect(pill.getAttribute('aria-label')).toContain('\uFE0E');
-      act(() => { vi.advanceTimersByTime(RECEIVED_MS + 10); });
-      expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+      act(() => { vi.advanceTimersByTime(60_000); });
+      expect(screen.getByRole('button', { name: /Card received/ })).toBeInTheDocument();
     } finally {
       vi.useRealTimers();
+    }
+  });
+
+  it('a tap on the table area skips the trick hold; a tap on a button does not', () => {
+    join(findState(s => s.phase === 'tricks'));
+    const real = useRoom.getState().skipHold;
+    const skipHold = vi.fn();
+    useRoom.setState({ skipHold });
+    try {
+      const { container } = render(<Game />);
+      act(() => { (container.querySelector('main.game') as HTMLElement).click(); });
+      expect(skipHold).toHaveBeenCalledTimes(1);
+      act(() => { screen.getByRole('button', { name: 'Menu' }).click(); });
+      expect(skipHold).toHaveBeenCalledTimes(1);
+    } finally {
+      useRoom.setState({ skipHold: real });
     }
   });
 
   it('the received pill is dismissed by a click', () => {
     join(findState(s => s.phase === 'tricks'));
     render(<Game />);
-    act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+    act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b', open: true } }));
     act(() => { screen.getByRole('button', { name: /Card received/ }).click(); });
     expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+    // Still marked in the hand until it is played or the first trick ends.
+    expect(useRoom.getState().received).toMatchObject({ open: false });
   });
 
   it('shows Your turn on my strip when I must act', () => {

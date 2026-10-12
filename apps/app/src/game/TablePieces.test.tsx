@@ -89,18 +89,18 @@ describe('Opponents', () => {
 
 describe('Table', () => {
   it('shows three talon backs while bidding', () => {
-    render(<Table view={bidding} pending={null} sweepTo={null} fx={null} />);
+    render(<Table view={bidding} pending={null} sweepTo={null} marriage={null} held={null} />);
     expect(screen.getByLabelText('Talon').querySelectorAll('.back')).toHaveLength(3);
   });
 
   it('shows the revealed talon in the decision phase', () => {
-    render(<Table view={decision} pending={null} sweepTo={null} fx={null} />);
+    render(<Table view={decision} pending={null} sweepTo={null} marriage={null} held={null} />);
     expect(within(screen.getByLabelText('Talon')).getAllByRole('img')).toHaveLength(3);
   });
 
   it('shows the trick, my pending card', () => {
     const pending = tricks.round!.hand[0];
-    render(<Table view={tricks} pending={pending} sweepTo={null} fx={null} />);
+    render(<Table view={tricks} pending={pending} sweepTo={null} marriage={null} held={null} />);
     const table = screen.getByRole('region', { name: 'Table' });
     for (const t of tricks.round!.trick.cards) expect(within(table).getAllByRole('img', { name: cardLabel(t.card) }).length).toBeGreaterThan(0);
     expect(table.querySelectorAll('.tcard')).toHaveLength(3);
@@ -109,22 +109,35 @@ describe('Table', () => {
 
   it('does not duplicate a pending card the server trick already has', () => {
     const pending = tricks.round!.trick.cards[0].card;
-    render(<Table view={tricks} pending={pending} sweepTo={null} fx={null} />);
+    render(<Table view={tricks} pending={pending} sweepTo={null} marriage={null} held={null} />);
     expect(screen.getByRole('region', { name: 'Table' }).querySelectorAll('.tcard')).toHaveLength(2);
   });
 });
 
 describe('Table effects', () => {
   it('never shows the last trick', () => {
-    render(<Table view={tricks} pending={null} sweepTo={null} fx={null} />);
+    render(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={null} />);
     expect(screen.queryByLabelText('Last trick')).toBeNull();
   });
 
-  it('marks trump cards on the table and shows the marriage ring', () => {
-    const trump = tricks.round!.trick.cards[0].card.suit;
-    const view: PlayerView = { ...tricks, round: { ...tricks.round!, trump } };
-    const { container } = render(<Table view={view} pending={null} sweepTo={null} fx={{ kind: 'marriage', suit: trump, id: 1 }} />);
-    expect(container.querySelector('.tcard.card--glow-trump')).not.toBeNull();
+  it('marks trump cards on the table and shows the marriage ring with the led queen in gold', () => {
+    const lead = tricks.round!.trick.cards[0];
+    const trump = lead.card.suit;
+    const view: PlayerView = { ...tricks, round: { ...tricks.round!, trump, trick: { ...tricks.round!.trick, cards: [{ ...lead, card: { suit: trump, rank: 'Q' } }, ...tricks.round!.trick.cards.slice(1)] } } };
+    const { container } = render(<Table view={view} pending={null} sweepTo={null} marriage={{ p: lead.p, suit: trump, id: 1 }} held={null} />);
     expect(container.querySelector('.fx--marriage')).not.toBeNull();
+    expect(container.querySelectorAll('.tcard.card--gold')).toHaveLength(1);
+    expect(screen.getByRole('img', { name: cardLabel({ suit: trump, rank: 'Q' }) })).toHaveClass('card--gold');
+  });
+
+  it('a held trick marks the winning card; a trump win glows blue', () => {
+    const win = tricks.round!.trick.cards[1];
+    const { container, rerender } = render(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={{ p: win.p, card: win.card, byTrump: false }} />);
+    expect(screen.getByRole('img', { name: cardLabel(win.card) })).toHaveClass('tcard--win');
+    expect(container.querySelectorAll('.tcard--lost')).toHaveLength(1);
+    expect(container.querySelector('.fx--trumpwin')).toBeNull();
+    rerender(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={{ p: win.p, card: win.card, byTrump: true }} />);
+    expect(screen.getByRole('img', { name: cardLabel(win.card) })).toHaveClass('tcard--win-trump');
+    expect(container.querySelector('.fx--trumpwin')).not.toBeNull();
   });
 });

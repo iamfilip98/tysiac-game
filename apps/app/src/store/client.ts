@@ -11,13 +11,16 @@ export type SoundName =
   | 'bid' | 'pass' | 'bidWon' | 'talon' | 'seen' | 'give' | 'receive' | 'trickWon' | 'trumpWin' | 'throw' | 'wykladana';
 
 export const FLIGHT_MS = 280;
-export const HOLD_MS = 1000;
+/** A completed trick stays on the table this long (OG: 1.5 s on the table + 1.5 s trump flourish). Tap skips. */
+export const HOLD_MS = 2600;
 export const SWEEP_MS = 380;
 export const DEAL_MS = 400;
 export const NOTE_MS = 700;
-export const RECEIVED_MS = 4000;
 
-export type TableFx = { kind: 'marriage'; suit: Suit; id: number } | { kind: 'trumpWin'; id: number };
+/** A marriage declared in the current trick: gold ring on the table, the led Q drawn gold. */
+export interface MarriageFx { p: PlayerId; suit: Suit; id: number }
+/** The completed trick being held on the table, and the card that took it. */
+export interface HeldTrick { p: PlayerId; card: Card; byTrump: boolean }
 let fxId = 0;
 let annId = 0;
 
@@ -41,10 +44,13 @@ export interface ClientState {
   sweepTo: PlayerId | null;
   /** The latest table event, as a line of text. */
   announce: { a: Announcement; id: number } | null;
-  /** A card just handed to me, and by whom (overlay + highlight in hand). */
-  received: { card: Card; from: PlayerId } | null;
-  /** Transient table effect (marriage ring, trump burst). */
-  fx: TableFx | null;
+  /** A card just handed to me, and by whom. `open`: the banner shows (until dismissed or my first card);
+   * the card stays marked in the hand until it is played or the first trick ends. */
+  received: { card: Card; from: PlayerId; open: boolean } | null;
+  /** Marriage declared in this trick (until the trick is swept). */
+  marriage: MarriageFx | null;
+  /** The completed trick on hold (winner marked). */
+  held: HeldTrick | null;
   /** Card played optimistically, awaiting the server. */
   pending: { id: string; card: Card } | null;
   /** Non-card action awaiting ack/reject. */
@@ -58,7 +64,7 @@ export interface ClientState {
 }
 
 export const initialClient: ClientState = {
-  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, fx: null, announce: null, received: null,
+  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, marriage: null, held: null, announce: null, received: null,
   pending: null, inflight: null, shake: null, toast: null, roundResult: null, note: null, error: null,
 };
 
@@ -71,7 +77,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.room?.status === 'finished' && msg.room.status === 'playing') {
         return {
           ...s, room: msg.room, seq: -1, needsResync: true, queue: [], holding: false, roundResult: null,
-          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null, received: null,
+          pending: null, inflight: null, note: null, sweepTo: null, marriage: null, held: null, announce: null, received: null,
         };
       }
       return { ...s, room: msg.room };
@@ -88,7 +94,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.needsResync || s.shown === null) {
         return {
           ...s, seq: msg.seq, needsResync: false, view: msg.view, shown: msg.view, queue: [], holding: false,
-          pending: null, inflight: null, note: null, sweepTo: null, fx: null, announce: null, received: null, roundResult: null,
+          pending: null, inflight: null, note: null, sweepTo: null, marriage: null, held: null, announce: null, received: null, roundResult: null,
         };
       }
       // Newer state: queue its events (possibly none, e.g. choosing to play); `advance` syncs `shown`.
@@ -109,7 +115,16 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
 }
 
 export function beginPlay(s: ClientState, id: string, card: Card): ClientState {
-  return { ...s, pending: { id, card }, shake: null, toast: null };
+  return { ...s, pending: { id, card }, shake: null, toast: null, received: closeReceived(s.received) };
+}
+
+function closeReceived(r: ClientState['received']): ClientState['received'] {
+  return r && r.open ? { ...r, open: false } : r;
+}
+
+/** Closes the received-card banner; the card stays marked in the hand. */
+export function dismissReceived(s: ClientState): ClientState {
+  return { ...s, received: closeReceived(s.received) };
 }
 
 export function beginAct(s: ClientState, id: string): ClientState {
@@ -200,21 +215,40 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
   switch (e.type) {
     case 'cardPlayed': {
       const mine = e.p === s.me && s.pending !== null && cardEquals(s.pending.card, e.card);
+      const rec = e.p !== s.me || !s.received ? s.received : cardEquals(s.received.card, e.card) ? null : closeReceived(s.received);
       return {
-        state: { ...s, queue: rest, shown: withCardPlayed(shown, e.p, e.card), pending: mine ? null : s.pending, received: null },
+        state: { ...s, queue: rest, shown: withCardPlayed(shown, e.p, e.card), pending: mine ? null : s.pending, received: rec },
         wait: mine ? 0 : FLIGHT_MS,
         kind: 'flight',
         sound: mine ? undefined : 'card',
       };
     }
-    case 'trickWon':
-      if (!s.holding) return { state: { ...s, holding: true, note: note(), fx: e.byTrump ? { kind: 'trumpWin', id: ++fxId } : s.fx }, wait: HOLD_MS, kind: 'hold', sound: e.byTrump ? 'trumpWin' : 'trickWon' };
+    case 'trickWon': {
+      if (!s.holding) {
+        return {
+          state: { ...s, holding: true, note: note(), held: { p: e.p, card: e.card, byTrump: e.byTrump } },
+          wait: HOLD_MS,
+          kind: 'hold',
+          sound: e.byTrump ? 'trumpWin' : 'trickWon',
+        };
+      }
+      // The last trick of a round stays on the table under the round result; it is swept once the player continues.
+      const next = rest[0];
+      if (next?.type === 'roundScored') {
+        return {
+          state: { ...s, queue: [e, ...rest.slice(1)], roundResult: next.summary, note: eventNote(next, s.view ?? shown, coach) ?? s.note },
+          wait: 0,
+          kind: 'pause',
+          sound: rest.some(x => x.type === 'gameWon') ? 'gameWin' : 'roundEnd',
+        };
+      }
       return {
-        state: { ...s, queue: rest, holding: false, sweepTo: e.p, fx: null, shown: withTrickWon(shown, e) },
+        state: { ...s, queue: rest, holding: false, sweepTo: e.p, marriage: null, held: null, received: null, shown: withTrickWon(shown, e) },
         wait: SWEEP_MS,
         kind: 'sweep',
         sound: 'sweep',
       };
+    }
     case 'roundScored':
     case 'threw':
       return {
@@ -224,9 +258,14 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
         sound: rest.some(x => x.type === 'gameWon') ? 'gameWin' : e.type === 'threw' ? 'throw' : 'roundEnd',
       };
     case 'dealt':
-      return { state: { ...s, queue: rest, note: null, sweepTo: null, fx: null, received: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
+      return { state: { ...s, queue: rest, note: null, sweepTo: null, marriage: null, held: null, received: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
     case 'marriage':
-      return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), fx: { kind: 'marriage', suit: e.suit, id: ++fxId } }, wait: NOTE_MS, kind: 'beat', sound: 'marriage' };
+      return {
+        state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), marriage: { p: e.p, suit: e.suit, id: ++fxId } },
+        wait: NOTE_MS,
+        kind: 'beat',
+        sound: 'marriage',
+      };
     case 'biddingWon':
       return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat', sound: 'bidWon' };
     case 'wykladana':
@@ -237,7 +276,12 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
       return { state: { ...s, queue: rest }, wait: 0, kind: 'beat', sound: 'seen' };
     case 'handedOut': {
       const card = s.me && e.p !== s.me ? e.cards[s.me] : undefined;
-      return { state: { ...s, queue: rest, received: card ? { card, from: e.p } : s.received }, wait: card ? NOTE_MS : 0, kind: 'beat', sound: card ? 'receive' : 'give' };
+      return {
+        state: { ...s, queue: rest, received: card ? { card, from: e.p, open: true } : s.received },
+        wait: card ? NOTE_MS : 0,
+        kind: 'beat',
+        sound: card ? 'receive' : 'give',
+      };
     }
     case 'bid':
       return { state: { ...s, queue: rest }, wait: NOTE_MS / 2, kind: 'beat', sound: 'bid' };
