@@ -1,7 +1,7 @@
 import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useShallow } from 'zustand/react/shallow';
-import { advise, cardEquals, cardKey, explainIllegal, type Advice, type Card, type PlayerId } from '@tysiac/engine';
+import { advise, cardEquals, cardKey, explainIllegal, type Card, type PlayerId, type PlayerView } from '@tysiac/engine';
 import { coachOn, useRoom } from '../store/room';
 import { isIdle } from '../store/client';
 import { nextRecipient, useSelection } from '../game/selection';
@@ -22,17 +22,26 @@ import { MenuSheet } from './MenuSheet';
 import { SettingsSheet } from './SettingsSheet';
 import { RulesSheet } from './RulesSheet';
 import { LessonContext } from '../learn/context';
+import { engineText, type CoachAdvice } from '../i18n/engineText';
+import { textSuits } from '../game/cards';
+import { useT } from '../i18n/useT';
 import './game.css';
 
 type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
 
 /** Cards the coach suggests that are still in the hand: the card to play, or the hand-out cards not yet given. */
-function recommendedKeys(advice: Advice | null, given: Card[]): string[] {
+function recommendedKeys(advice: CoachAdvice | null, given: Card[]): string[] {
   if (advice?.action.type === 'card') return [cardKey(advice.action.card)];
   if (advice?.action.type !== 'handout') return [];
   return Object.values(advice.action.to)
     .filter(c => !given.some(g => cardEquals(g, c)))
     .map(cardKey);
+}
+
+/** Why `card` can't be played now, in the active language, or null. */
+function illegalText(view: PlayerView, card: Card): string | null {
+  const m = explainIllegal(view, card);
+  return m && textSuits(engineText(m, view));
 }
 
 export default function Game() {
@@ -44,6 +53,7 @@ export default function Game() {
     })),
   );
   const sel = useSelection();
+  const t = useT();
   const [sheet, setSheet] = useState<SheetName | null>(null);
   // Coach default comes from the seat once per mount (the selector); the settings toggle overrides it locally.
   const [coachOverride, setCoachOverride] = useState<boolean | null>(null);
@@ -58,7 +68,7 @@ export default function Game() {
   // Hints are private: only ever computed for the viewer's own turn. During the hand-out the coach
   // takes the cards already given into account and advises only on the rest.
   const handoutGiven = sel.given;
-  const advice = useMemo(() => {
+  const advice = useMemo((): CoachAdvice | null => {
     if (!(coach && idle && shown && shown.turn === shown.me && !shown.paused)) return null;
     return lesson ? lesson.advice(shown, { handoutGiven }) : advise(shown, { handoutGiven });
   }, [lesson, coach, idle, shown, handoutGiven]);
@@ -78,14 +88,14 @@ export default function Game() {
   }, [turnLive]);
   useEffect(() => {
     if (!s.shake) return;
-    const t = setTimeout(() => useRoom.getState().clearShake(), 600);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => useRoom.getState().clearShake(), 600);
+    return () => clearTimeout(timer);
   }, [s.shake]);
 
   if (!shown) {
     return (
       <main className="game game--loading">
-        <p>Dealing…</p>
+        <p>{t('game.dealing')}</p>
       </main>
     );
   }
@@ -110,13 +120,13 @@ export default function Game() {
     const key = cardKey(card);
     if (shown.phase === 'tricks') {
       if (!myTurn) {
-        sel.setHint(explainIllegal(shown, card) ?? 'One moment…');
+        sel.setHint(illegalText(shown, card) ?? t('game.hint.wait'));
         return;
       }
       if (!isLegal(card)) {
         // A dimmed card shakes and explains itself; it never raises.
         sel.select(null);
-        sel.setHint(explainIllegal(shown, card) ?? "You can't play that card now");
+        sel.setHint(illegalText(shown, card) ?? t('game.hint.cantPlay'));
         useRoom.setState({ shake: key });
         return;
       }
@@ -244,7 +254,7 @@ export default function Game() {
         />
       )}
       {sheet === 'rules' && <RulesSheet onClose={close} />}
-      {sheet === 'why' && advice && <WhySheet advice={advice} onClose={close} />}
+      {sheet === 'why' && advice && <WhySheet view={shown} advice={advice} onClose={close} />}
     </>
   );
 }

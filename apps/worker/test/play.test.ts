@@ -87,7 +87,7 @@ describe('playing', () => {
     const other = clients.find((c) => c !== mover)!;
 
     const badId = other.act({ type: 'pass' });
-    expect(await other.next('reject')).toMatchObject({ id: badId, code: 'notYourTurn' });
+    expect(await other.next('reject')).toMatchObject({ id: badId, code: 'notYourTurn', message: 'reject.notYourTurn', msg: { key: 'reject.notYourTurn' } });
 
     const id = mover.act(firstMove(mover.view!));
     await mover.next('ack', (m) => m.id === id);

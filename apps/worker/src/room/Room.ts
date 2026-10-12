@@ -247,7 +247,7 @@ export class Room extends DurableObject<Env> {
   private async onAct(ws: WebSocket, me: PlayerId, id: string, action: Action, now: number): Promise<void> {
     if (!this.state) return this.send(ws, { t: 'reject', id, code: 'notPlaying', message: 'The game has not started yet' });
     const result = reduce(this.state, me, action, now);
-    if (!result.ok) return this.send(ws, { t: 'reject', id, code: result.error.code, message: result.error.message });
+    if (!result.ok) return this.send(ws, { t: 'reject', id, code: result.error.code, message: result.error.msg.key, msg: result.error.msg });
     await this.commit(me, action, result.state, result.events, now);
     this.send(ws, { t: 'ack', id });
   }

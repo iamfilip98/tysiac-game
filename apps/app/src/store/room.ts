@@ -27,7 +27,6 @@ export interface RoomStore extends ClientState {
   clearShake(): void;
 }
 
-const OFFLINE = "You're offline — reconnecting…";
 let timer: ReturnType<typeof setTimeout> | null = null;
 let offs: (() => void)[] = [];
 let sink: (s: SoundName) => void = () => {};
@@ -92,7 +91,7 @@ export const useRoom = create<RoomStore>()((set, get) => ({
     if (get().inflight) return false;
     const id = newId();
     set(s => beginAct(s, id));
-    if (!get().send({ t: 'act', id, action })) receive({ t: 'reject', id, code: 'offline', message: OFFLINE });
+    if (!get().send({ t: 'act', id, action })) receive({ t: 'reject', id, code: 'offline', message: 'offline' });
     return true;
   },
   playCard(card) {
@@ -101,7 +100,7 @@ export const useRoom = create<RoomStore>()((set, get) => ({
     const id = newId();
     set(st => beginPlay(st, id, card));
     sink('card');
-    if (!get().send({ t: 'act', id, action: { type: 'card', card } })) receive({ t: 'reject', id, code: 'offline', message: OFFLINE });
+    if (!get().send({ t: 'act', id, action: { type: 'card', card } })) receive({ t: 'reject', id, code: 'offline', message: 'offline' });
   },
   clearReceived() {
     set(s => dismissReceived(s));

@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import History from './History';
 import { getIdentity } from '../net/identity';
 import type { HistoryResponse } from '../net/protocol';
+import { loadLang } from '../i18n';
 
 const me = () => getIdentity().playerId;
 function data(): HistoryResponse {
@@ -41,6 +42,15 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe('History screen', () => {
+  it('History in Polish', async () => {
+    await loadLang('pl');
+    vi.stubGlobal('fetch', vi.fn(async () => respond(data())));
+    render(<History />);
+    expect(screen.getByRole('heading', { name: 'Historia' })).toBeInTheDocument();
+    expect(await screen.findByText('Twoja wygrana')).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Ranking' })).toBeInTheDocument();
+  });
+
   it('lists recent games with the winner and marks your result', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => respond(data())));
     render(<History />);
@@ -72,7 +82,7 @@ describe('History screen', () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', vi.fn(async () => respond({ games: [], headToHead: [], leaderboard: [] })));
     render(<History />);
-    expect(await screen.findByText('No finished games yet — play one with friends!')).toBeInTheDocument();
+    expect(await screen.findByText('No finished games yet. Play one with friends!')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'Head-to-head' }));
     expect(screen.getByText('No games against friends yet.')).toBeInTheDocument();
   });

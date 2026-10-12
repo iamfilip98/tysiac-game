@@ -6,6 +6,7 @@ import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
 import { textSuits } from '../game/cards';
+import { engineText } from '../i18n/engineText';
 import { useSelection } from '../game/selection';
 import { FakeConnection } from '../test/fakes';
 import { findState, roomInfo, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
@@ -110,7 +111,7 @@ describe('Game screen: tricks', () => {
     const button = within(hand()).getByRole('button', { name: cardLabel(illegal) });
     expect(button).toHaveAttribute('aria-disabled', 'true');
     await user.click(button);
-    expect(screen.getByText(explainIllegal(viewOf(s0), illegal)!)).toBeInTheDocument();
+    expect(screen.getByText(textSuits(engineText(explainIllegal(viewOf(s0), illegal)!, viewOf(s0))))).toBeInTheDocument();
     expect(button).toHaveAttribute('aria-pressed', 'false');
     expect(conn.acts()).toHaveLength(0);
   });
@@ -229,7 +230,7 @@ describe('Game screen: coach hand-out hints (D12)', () => {
     expect(recommendedKeys().sort()).toEqual([cardKey(c1), cardKey(c2)].sort());
     expect(within(hand()).queryAllByRole('button', { pressed: true })).toEqual([]);
     expect(useSelection.getState().selected).toBeNull();
-    expect(screen.getByText(textSuits(advice.headline))).toBeInTheDocument();
+    expect(screen.getByText(textSuits(engineText(advice.headline, viewOf(s0))))).toBeInTheDocument();
 
     await user.click(screen.getByRole('button', { name: `Give to ${name(p1)}` }));
     await user.click(within(hand()).getByRole('button', { name: cardLabel(c1) }));

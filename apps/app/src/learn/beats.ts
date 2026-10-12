@@ -1,9 +1,11 @@
 import {
-  RULES, actionsEqual, advise, cardEquals, cardLabel, marriagesInHand,
-  type Action, type Advice, type Card, type PlayerId, type PlayerView, type Rank, type Suit,
+  RULES, actionsEqual, advise, cardEquals, cardLabel, marriagesInHand, msg,
+  type Action, type Card, type PlayerId, type PlayerView, type Rank, type Suit,
 } from '@tysiac/engine';
 import { SUIT_TEXT } from '../game/cards';
-import { throwCost } from '../game/panels';
+import { throwCost, throwCostLine } from '../game/panels';
+import { appLine, lineText, type CoachAdvice, type Line } from '../i18n/engineText';
+import { currentLang, t } from '../i18n';
 import { cannotFollowNow, marriageLead, mustBeatNow } from './lesson';
 
 export interface Beat {
@@ -17,129 +19,113 @@ export interface Beat {
 
 const nameOf = (v: PlayerView, id: PlayerId): string => v.seats.find(s => s.id === id)?.name ?? id;
 const sym = (s: Suit): string => SUIT_TEXT[s];
+const rank = (r: Rank): string => t(`card.rank.${r}`);
 const myTurn = (v: PlayerView): boolean => v.turn === v.me && !v.paused;
 const HIGH_FIRST = [...RULES.ranks].sort((a, b) => RULES.rankStrength[b] - RULES.rankStrength[a]) as Rank[];
 const firstMarriage = (v: PlayerView): Suit | undefined => (v.round ? marriagesInHand(v.round.hand)[0] : undefined);
-const bots = (v: PlayerView): string => v.seats.filter(s => s.id !== v.me).map(s => s.name).join(' and ');
+const bots = (v: PlayerView): string =>
+  new Intl.ListFormat(currentLang(), { type: 'conjunction' }).format(v.seats.filter(s => s.id !== v.me).map(s => s.name));
 
+/** Beat titles and bodies are rendered in the active language each time they are shown. */
 export const BEATS: Beat[] = [
   {
     id: 'welcome',
     ready: v => v.phase === 'bidding',
-    title: () => 'Welcome to Tysiąc',
-    body: v => [
-      `You'll play one round against ${bots(v)}, step by step.`,
-      `When it's your move, the Coach line above your cards says what to do. Tap a card to raise it, then press Play.`,
-    ],
+    title: () => t('learn.welcome.title'),
+    body: v => [t('learn.welcome.body.0', { bots: bots(v) }), t('learn.welcome.body.1')],
   },
   {
     id: 'cards',
     ready: v => v.phase === 'bidding',
-    title: () => 'Card values',
+    title: () => t('learn.cards.title'),
     body: () => [
-      HIGH_FIRST.map(r => `${r} = ${RULES.cardPoints[r]}`).join(' · '),
-      `Strongest to weakest: ${HIGH_FIRST.join(' > ')}.`,
-      `All the cards together are worth ${RULES.pointsPerRound} points each round.`,
+      HIGH_FIRST.map(r => `${rank(r)} = ${RULES.cardPoints[r]}`).join(' · '),
+      t('learn.cards.body.1', { order: HIGH_FIRST.map(rank).join(' > ') }),
+      t('learn.cards.body.2', { total: RULES.pointsPerRound }),
     ],
   },
   {
     id: 'marriage',
     ready: v => v.phase === 'bidding' && firstMarriage(v) !== undefined,
-    title: () => 'Marriages',
+    title: () => t('learn.marriage.title'),
     body: v => {
       const s = firstMarriage(v)!;
       return [
-        `A King and Queen of one suit are a marriage: ${RULES.marriageOrder.map(x => `${sym(x)} ${RULES.marriageValues[x]}`).join(' · ')}.`,
-        `You hold K${sym(s)} and Q${sym(s)} — the ${sym(s)} marriage, worth ${RULES.marriageValues[s]}. You'll declare it during play.`,
+        t('learn.marriage.body.0', { values: RULES.marriageOrder.map(x => `${sym(x)} ${RULES.marriageValues[x]}`).join(' · ') }),
+        t('learn.marriage.body.1', { king: `${rank('K')}${sym(s)}`, queen: `${rank('Q')}${sym(s)}`, suit: sym(s), points: RULES.marriageValues[s] }),
       ];
     },
   },
   {
     id: 'bidding',
     ready: v => v.phase === 'bidding',
-    title: () => 'Bidding',
+    title: () => t('learn.bidding.title'),
     body: v => [
-      `${nameOf(v, v.round!.bid.high)} has to open at ${RULES.autoBid}. After that, each player bids ${RULES.bidStep} more or passes.`,
-      `The highest bidder must score at least that many points this round. You can bid up to ${v.round!.maxBid}: ${RULES.maxBidBase} plus your marriages.`,
+      t('learn.bidding.body.0', { player: nameOf(v, v.round!.bid.high), auto: RULES.autoBid, step: RULES.bidStep }),
+      t('learn.bidding.body.1', { max: v.round!.maxBid, base: RULES.maxBidBase }),
     ],
   },
   {
     id: 'talon',
     ready: v => v.phase === 'decision' && myTurn(v),
-    title: () => 'You won the bidding',
+    title: () => t('learn.talon.title'),
     body: v => [
-      `You won at ${v.round!.bid.amount}. The ${RULES.talonSize} talon cards are now in your hand.`,
-      v.round!.talonPublic
-        ? `Because the bid is over ${RULES.autoBid}, everyone saw the talon.`
-        : `At ${RULES.autoBid} only you see the talon.`,
-      `Now decide: play the hand, or throw in. ${throwCost(v)}`,
+      t('learn.talon.body.0', { amount: v.round!.bid.amount, count: RULES.talonSize }),
+      v.round!.talonPublic ? t('learn.talon.body.public', { auto: RULES.autoBid }) : t('learn.talon.body.private', { auto: RULES.autoBid }),
+      t('learn.talon.body.2', { cost: throwCost(v) }),
     ],
   },
   {
     id: 'handout',
     ready: v => v.phase === 'handout' && myTurn(v),
-    title: () => 'Hand-out',
-    body: () => [
-      'Give one card to each opponent so everyone holds 8.',
-      'Tap a card, then tap the player it goes to. Give away cards you need least — never half of your marriage.',
-      'Then press Confirm hand-out.',
-    ],
+    title: () => t('learn.handout.title'),
+    body: () => [t('learn.handout.body.0'), t('learn.handout.body.1'), t('learn.handout.body.2')],
   },
   {
     id: 'marriageLead',
     ready: v => marriageLead(v) !== null,
-    title: () => 'Declare your marriage',
+    title: () => t('learn.marriageLead.title'),
     body: v => {
       const card = (marriageLead(v) as Extract<Action, { type: 'card' }>).card;
       return [
-        'You lead the first trick. Leading the Queen while you hold the King declares the marriage.',
-        `You score +${RULES.marriageValues[card.suit]} and ${sym(card.suit)} becomes trump at once.`,
+        t('learn.marriageLead.body.0'),
+        t('learn.marriageLead.body.1', { points: RULES.marriageValues[card.suit], suit: sym(card.suit) }),
       ];
     },
   },
   {
     id: 'trump',
     ready: v => v.phase === 'tricks' && v.round !== null && v.round.trump !== null && v.round.played.length >= 3,
-    title: v => `${sym(v.round!.trump!)} is trump`,
-    body: () => [
-      'A trump beats every card of the other suits.',
-      'A trick goes to the highest trump, or if there is none, to the highest card of the suit that was led.',
-      'Marriage points only count if you win at least one trick.',
-    ],
+    title: v => t('learn.trump.title', { suit: sym(v.round!.trump!) }),
+    body: () => [t('learn.trump.body.0'), t('learn.trump.body.1'), t('learn.trump.body.2')],
   },
   {
     id: 'mustBeat',
     ready: v => mustBeatNow(v),
-    title: () => 'Follow suit — and beat it',
-    body: () => [
-      'You must play the suit that was led if you have it.',
-      "As the first to answer, you must also beat the card if you can. Dimmed cards aren't allowed — tap one to see why.",
-      'The last player only has to follow suit.',
-    ],
+    title: () => t('learn.mustBeat.title'),
+    body: () => [t('learn.mustBeat.body.0'), t('learn.mustBeat.body.1'), t('learn.mustBeat.body.2')],
   },
   {
     id: 'noSuit',
     ready: v => cannotFollowNow(v),
-    title: () => 'No card of that suit',
-    body: v => [
-      `You have no ${sym(v.round!.trick.cards[0].card.suit)}, so you may play any card. You don't have to play trump.`,
-    ],
+    title: () => t('learn.noSuit.title'),
+    body: v => [t('learn.noSuit.body.0', { suit: sym(v.round!.trick.cards[0].card.suit) })],
   },
   {
     id: 'scoring',
     ready: v => v.rounds.length >= 1,
-    title: () => 'Scoring',
+    title: () => t('learn.scoring.title'),
     body: v => {
       const s = v.rounds[0];
       const me = s.players.find(p => p.playerId === v.me)!;
       const raw = me.trickPoints + me.marriagePoints;
       return [
-        `You bid ${s.bid}. You took ${me.trickPoints} in tricks plus ${me.marriagePoints} for the marriage: ${raw}.`,
+        t('learn.scoring.body.0', { bid: s.bid, tricks: me.trickPoints, marriage: me.marriagePoints, raw }),
         s.outcome === 'made'
-          ? `That reaches ${s.bid}, so you score +${me.scoreChange} (rounded to tens; ${RULES.roundUpFrom} and up rounds up). Falling short would have cost you ${s.bid}.`
-          : `That is short of ${s.bid}, so you lose ${s.bid}.`,
-        'Your opponents score the points from the tricks they took, plus any marriages they declared.',
-        `From ${RULES.barrelAt} you are "on the barrel" and only score as the bidder. The first to ${RULES.winAt} wins the game.`,
+          ? t('learn.scoring.body.made', { bid: s.bid, change: me.scoreChange, up: RULES.roundUpFrom })
+          : t('learn.scoring.body.failed', { bid: s.bid }),
+        t('learn.scoring.body.2'),
+        t('learn.scoring.body.3', { barrel: RULES.barrelAt, win: RULES.winAt }),
       ];
     },
   },
@@ -147,8 +133,8 @@ export const BEATS: Beat[] = [
     id: 'done',
     final: true,
     ready: v => v.rounds.length >= 1,
-    title: () => 'You know the basics',
-    body: () => ['Next: a real practice game against two bots, with the coach switched on.'],
+    title: () => t('learn.done.title'),
+    body: () => [t('learn.done.body.0')],
   },
 ];
 
@@ -156,55 +142,67 @@ export function nextBeat(v: PlayerView, seen: readonly string[]): Beat | null {
   return BEATS.find(b => !seen.includes(b.id) && b.ready(v)) ?? null;
 }
 
-const PLAN = "That's the plan for this hand — later the coach will help you choose.";
 
 /** The coach line during the lesson: the scripted move, explained (reasons from advise() when it agrees). */
 export function lessonAdvice(
   v: PlayerView,
   expected: Action | null,
   opts: { handoutGiven?: Partial<Record<string, Card>> } = {},
-): Advice | null {
+): CoachAdvice | null {
   if (!expected || v.turn !== v.me || !v.round) return null;
   const coach = advise(v, opts);
   const theirs = coach && actionsEqual(coach.action, expected) ? coach.reasons : [];
-  const why = (fallback: string): string[] => (theirs.length > 0 ? theirs : [fallback]);
+  const why = (fallback: Line): Line[] => (theirs.length > 0 ? theirs : [fallback]);
+  const plan = appLine('learn.advice.plan');
   switch (expected.type) {
     case 'bid':
-      return { action: expected, headline: `Bid ${expected.amount}`, reasons: why(`Your marriage lets you bid up to ${v.round.maxBid}.`) };
+      return {
+        action: expected,
+        headline: appLine('learn.advice.bid', { amount: expected.amount }),
+        reasons: why(appLine('learn.advice.bidWhy', { max: v.round.maxBid })),
+      };
     case 'pass':
-      return { action: expected, headline: 'Pass', reasons: why(PLAN) };
+      return { action: expected, headline: appLine('learn.advice.pass'), reasons: why(plan) };
     case 'play':
-      return { action: expected, headline: 'Play the hand', reasons: why(throwCost(v)) };
+      return { action: expected, headline: appLine('learn.advice.play'), reasons: why(throwCostLine(v)) };
     case 'throw':
-      return { action: expected, headline: 'Throw in', reasons: why(throwCost(v)) };
+      return { action: expected, headline: appLine('learn.advice.throw'), reasons: why(throwCostLine(v)) };
     case 'handout': {
       // Cards the learner has already assigned as scripted are not named again.
       const entries = Object.entries(expected.to);
       const open = entries.filter(([p, c]) => !(opts.handoutGiven?.[p] && cardEquals(opts.handoutGiven[p]!, c)));
-      const parts = (open.length > 0 ? open : entries).map(([p, c]) => `${cardLabel(c)} to ${nameOf(v, p)}`);
-      return { action: expected, headline: `${open.length > 0 ? 'Give' : 'Confirm:'} ${parts.join(' and ')}`, reasons: why(PLAN) };
+      const [a, b] = (open.length > 0 ? open : entries).map(([p, c]) => ({ card: { card: c }, player: { player: p } }));
+      const headline =
+        open.length === 0
+          ? msg('coach.handout.confirmNeutral', { card1: a.card, player1: a.player, card2: b.card, player2: b.player })
+          : b
+            ? msg('coach.handout.two', { card1: a.card, player1: a.player, card2: b.card, player2: b.player })
+            : msg('coach.handout.one', a);
+      return { action: expected, headline, reasons: why(plan) };
     }
     case 'card': {
       const lead = marriageLead(v);
+      const card = { card: expected.card };
       if (lead && actionsEqual(lead, expected)) {
         return {
           action: expected,
-          headline: `Lead ${cardLabel(expected.card)} to declare your marriage`,
-          reasons: [`+${RULES.marriageValues[expected.card.suit]} for you, and ${sym(expected.card.suit)} becomes trump.`],
+          headline: appLine('learn.advice.declare', { card }),
+          reasons: [appLine('learn.advice.declareWhy', { points: RULES.marriageValues[expected.card.suit], suit: { suit: expected.card.suit } })],
         };
       }
-      return { action: expected, headline: `Play ${cardLabel(expected.card)}`, reasons: why(PLAN) };
+      return { action: expected, headline: msg('coach.play', { card }), reasons: why(plan) };
     }
     default:
       return null;
   }
 }
 
+/** The toast when the learner tries something off-script: the scripted move, in the active language. */
 export function lessonHint(v: PlayerView | null, expected: Action | null, tried: Action): string {
-  if (tried.type === 'pause' || tried.type === 'resume') return 'The lesson waits for you — no need to pause.';
-  if (!v || !expected) return 'Not yet — wait for your turn.';
+  if (tried.type === 'pause' || tried.type === 'resume') return t('learn.hint.noPause');
+  if (!v || !expected) return t('learn.hint.wait');
   const a = lessonAdvice(v, expected);
-  return a ? `Lesson: ${a.headline}.` : 'Not yet — wait for your turn.';
+  return a ? t('learn.hint.lesson', { text: lineText(a.headline, v) }) : t('learn.hint.wait');
 }
 
 export interface ExpectedHint {

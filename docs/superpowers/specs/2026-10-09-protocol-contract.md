@@ -67,7 +67,7 @@ export type ServerMessage =
   | { t: 'room'; room: RoomInfo }
   | { t: 'state'; seq: number; view: PlayerView; events: GameEvent[] }   // events already filtered for this player
   | { t: 'ack'; id: string }
-  | { t: 'reject'; id: string; code: string; message: string }
+  | { t: 'reject'; id: string; code: string; message: string; msg?: EngineMsg }   // msg: structured engine reason { key, params }
   | { t: 'error'; code: ErrorCode; message: string }
   | { t: 'pong' };
 
@@ -76,7 +76,7 @@ export type ErrorCode = 'badMessage' | 'roomFull' | 'badSecret' | 'notHost' | 'n
 
 Behaviour notes:
 - First message on a socket must be `hello`; anything else → `error badMessage` and close. On success the server replies `welcome`, and if a game exists, `state` with `events: []`.
-- After every accepted engine action the server sends each connected human `state` (personalised view + filtered events), and `ack` to the sender. Illegal → `reject` to the sender only.
+- After every accepted engine action the server sends each connected human `state` (personalised view + filtered events), and `ack` to the sender. Illegal → `reject` to the sender only. For engine rejections `message` is the stable message key (for logs) and `msg` is the structured `EngineMsg` the app renders in the player's language; other rejections (`notPlaying`, …) have no `msg` and the app maps the `code`.
 - `room` is broadcast on any lobby/seat/connection change.
 - **Talon confirmation (v2).** When a bid above 100 wins, the phase becomes `talon`: `view.turn` is `null`, `view.round.talonWaiting` lists the seats that still have to send `{ type: 'ackTalon' }` (everyone but the bidder, including a 4-player sitting-out dealer), and each confirmation emits `{ type: 'talonSeen', p }` to all. The last one moves the game to `decision`. Bots and bot-for seats confirm through the normal bot alarm. Engine phases are now `bidding | talon | decision | handout | tricks | gameEnd`; `Action` gained `{ type: 'ackTalon' }`.
 - Bots in the engine `Seat` have `isBot: true`; a human seat with an active bot-for has engine `Seat.botFor` = `'bot'`.

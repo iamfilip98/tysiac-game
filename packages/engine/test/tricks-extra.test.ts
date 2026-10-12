@@ -1,10 +1,17 @@
+import { english } from './english';
 import { describe, it, expect } from 'vitest';
 import type { Card, Suit, TrickCard } from '../src/types';
 import { createDeck, cardEquals, parseCard, parseCards } from '../src/cards';
-import { cardRuleMessage, getValidCards, getTrickWinnerWithReason } from '../src/tricks';
+import { cardRuleMessage as ruleMsg, getValidCards, getTrickWinnerWithReason } from '../src/tricks';
 import { maxBidFor, nextBidder } from '../src/bidding';
 
 const t = (...pairs: [string, string][]): TrickCard[] => pairs.map(([p, c]) => ({ p, card: parseCard(c) }));
+
+/** cardRuleMessage rendered in English. */
+const cardRuleMessage = (...a: Parameters<typeof ruleMsg>) => {
+  const m = ruleMsg(...a);
+  return m && english(m);
+};
 
 describe('cardRuleMessage', () => {
   it('explains follow-suit', () => {

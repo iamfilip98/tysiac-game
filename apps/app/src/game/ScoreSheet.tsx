@@ -1,5 +1,6 @@
 import { RULES, type PlayerId, type PlayerView, type RoundOutcome } from '@tysiac/engine';
 import { Sheet } from '../ui/Sheet';
+import { useT } from '../i18n/useT';
 
 export interface ZapisCell {
   id: PlayerId;
@@ -38,9 +39,10 @@ export function zapisRows(view: PlayerView): ZapisRow[] {
 }
 
 export function ScoreSheet({ view, onClose }: { view: PlayerView; onClose(): void }) {
+  const t = useT();
   const rows = zapisRows(view);
   return (
-    <Sheet title="Score sheet" onClose={onClose}>
+    <Sheet title={t('game.score.title')} onClose={onClose}>
       <table className="zapis">
         <thead>
           <tr>
@@ -59,15 +61,15 @@ export function ScoreSheet({ view, onClose }: { view: PlayerView; onClose(): voi
               {row.cells.map(c => (
                 <td key={c.id} className={`${c.failed ? 'zapis__failed' : ''} ${c.barrel ? 'zapis__barrel' : ''}`}>
                   {c.total}
-                  {c.bid && <small>bid {c.bid}</small>}
-                  {c.sittingOut && <small>dealt</small>}
+                  {c.bid && <small>{t('game.score.bid', { bid: c.bid })}</small>}
+                  {c.sittingOut && <small>{t('game.score.dealt')}</small>}
                 </td>
               ))}
             </tr>
           ))}
         </tbody>
       </table>
-      {rows.length === 0 && <p>No rounds yet.</p>}
+      {rows.length === 0 && <p>{t('game.score.none')}</p>}
     </Sheet>
   );
 }

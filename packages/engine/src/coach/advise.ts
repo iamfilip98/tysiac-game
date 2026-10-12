@@ -1,6 +1,6 @@
 import type { Action, Advice, Card, PlayerId, PlayerView, Suit } from '../types';
-import { RULES, SUITS, SUIT_SYMBOL } from '../rules';
-import { cardEquals, cardLabel, handPoints, hasMarriage, marriagesInHand } from '../cards';
+import { RULES, SUITS } from '../rules';
+import { cardEquals, handPoints, hasMarriage, marriagesInHand } from '../cards';
 import { canBeat, getHighestCardInTrick } from '../tricks';
 import { botAction, botChoice } from '../bot';
 import { decideHandout } from '../bot/eval';
@@ -8,12 +8,24 @@ import { actionsEqual } from '../actions';
 import { isOnBarrel } from '../scoring';
 import { isMarriageCard } from '../bot/play';
 import type { BidReason, CardReason, DecisionReason, HandoutReason } from '../bot/reasons';
-import { nameOf } from './names';
-import { say } from './messages';
+import { msg, type EngineMsg } from '../messages';
 
 const MV = RULES.marriageValues;
 const PTS = RULES.cardPoints;
-const sym = (suit: Suit): string => SUIT_SYMBOL[suit];
+const sym = (suit: Suit) => ({ suit });
+const cd = (card: Card) => ({ card });
+const pl = (player: PlayerId) => ({ player });
+
+/** Drops repeated messages (same key and params), keeping the first. */
+function uniq(list: EngineMsg[]): EngineMsg[] {
+  const seen = new Set<string>();
+  return list.filter(m => {
+    const k = JSON.stringify(m);
+    if (seen.has(k)) return false;
+    seen.add(k);
+    return true;
+  });
+}
 
 export interface AdviseOptions {
   /** Hand-out cards the player has already assigned in the UI; the advice then covers the rest. */
@@ -35,7 +47,7 @@ export function advise(view: PlayerView, opts: AdviseOptions = {}): Advice | nul
   if (!view.legal.some(a => actionsEqual(a, action))) {
     // Never advise an illegal move: fall back to the bot's own legal pick, without an explanation we can't vouch for.
     const fallback = botAction(view, () => 0);
-    return fallback.type === 'card' ? { action: fallback, headline: say('play', { card: cardLabel(fallback.card) }), reasons: [] } : null;
+    return fallback.type === 'card' ? { action: fallback, headline: msg('coach.play', { card: cd(fallback.card) }), reasons: [] } : null;
   }
   switch (reason.code) {
     case 'bid.worth':
@@ -60,17 +72,17 @@ function adviseBid(view: PlayerView, action: Action, reason: BidReason): Advice 
   const max = view.round!.maxBid;
   const headline =
     reason.code === 'pass.overMax'
-      ? say(reason.code, { max: reason.max })
-      : say(reason.code, { next: reason.next, worth: reason.worth });
-  const reasons = [say('why.maxBid', { max })];
+      ? msg('coach.pass.overMax', { max: reason.max })
+      : msg(`coach.${reason.code}` as const, { next: reason.next, worth: reason.worth });
+  const reasons = [msg('coach.why.maxBid', { max })];
   if (reason.code === 'pass.overMax') return { action, headline, reasons };
-  for (const suit of marriagesInHand(hand)) reasons.push(say('why.marriageBid', { suit: sym(suit), points: MV[suit] }));
+  for (const suit of marriagesInHand(hand)) reasons.push(msg('coach.why.marriageBid', { suit: sym(suit), points: MV[suit] }));
   const aces = hand.filter(c => c.rank === 'A').length;
-  if (aces === 1) reasons.push(say('why.ace'));
-  if (aces > 1) reasons.push(say('why.aces', { count: aces }));
-  reasons.push(say('why.talon'));
-  if (reason.boosted) reasons.push(say('why.boosted'));
-  if (reason.code === 'bid.close') reasons.push(say('why.closeBid'));
+  if (aces === 1) reasons.push(msg('coach.why.ace'));
+  if (aces > 1) reasons.push(msg('coach.why.aces', { n: aces }));
+  reasons.push(msg('coach.why.talon'));
+  if (reason.boosted) reasons.push(msg('coach.why.boosted'));
+  if (reason.code === 'bid.close') reasons.push(msg('coach.why.closeBid'));
   return { action, headline, reasons: reasons.slice(0, 6) };
 }
 
@@ -81,21 +93,22 @@ function adviseDecision(view: PlayerView, action: Action, reason: DecisionReason
   const share = Math.floor(RULES.throwPool / 2);
   const opponents = r.active.filter(p => p !== view.me);
   const onBarrel = opponents.filter(p => isOnBarrel(view.scores[p]?.total ?? 0));
-  let headline: string;
-  if (reason.code === 'throw.free') headline = say(est < 10 ? 'throw.freeNothing' : 'throw.free', { est });
-  else if (reason.code === 'play.noThrow' && onBarrel.length === opponents.length) headline = say('play.noThrowBarrel', { bid });
+  let headline: EngineMsg;
+  if (reason.code === 'throw.free') headline = est < 10 ? msg('coach.throw.freeNothing') : msg('coach.throw.free', { est });
+  else if (reason.code === 'play.noThrow' && onBarrel.length === opponents.length) headline = msg('coach.play.noThrowBarrel', { bid });
   else if (reason.code === 'play.noThrow' && onBarrel.length > 0) {
     const other = opponents.find(p => !onBarrel.includes(p))!;
-    headline = say('play.noThrowOne', { bid, name: nameOf(view, other), share, barrel: nameOf(view, onBarrel[0]) });
-  } else headline = say(reason.code, { est, bid, share });
-  const reasons: string[] = [];
-  if (reason.code === 'play.noThrow') reasons.push(say('why.estimate', { est }));
-  if (bid <= RULES.autoBid) reasons.push(say('why.throwFree'));
-  else if (reason.code !== 'play.noThrow') reasons.push(say('why.throwCost', { bid, share }));
-  reasons.push(say('why.failCost', { bid }));
-  for (const suit of marriagesInHand(hand)) reasons.push(say('why.marriageWorth', { suit: sym(suit), points: MV[suit] }));
+    headline = msg('coach.play.noThrowOne', { bid, player: pl(other), share, barrel: pl(onBarrel[0]) });
+  } else if (reason.code === 'play.noThrow') headline = msg('coach.play.noThrow', { bid, share });
+  else headline = msg(`coach.${reason.code}` as const, { est, bid });
+  const reasons: EngineMsg[] = [];
+  if (reason.code === 'play.noThrow') reasons.push(msg('coach.why.estimate', { est }));
+  if (bid <= RULES.autoBid) reasons.push(msg('coach.why.throwFree'));
+  else if (reason.code !== 'play.noThrow') reasons.push(msg('coach.why.throwCost', { bid, share }));
+  reasons.push(msg('coach.why.failCost', { bid }));
+  for (const suit of marriagesInHand(hand)) reasons.push(msg('coach.why.marriageWorth', { suit: sym(suit), points: MV[suit] }));
   const voids = SUITS.filter(s => !hand.some(c => c.suit === s));
-  if (voids.length > 0) reasons.push(say(r.trump ? 'why.voidTrump' : 'why.voidNoTrump', { suits: voids.map(sym).join(' ') }));
+  if (voids.length > 0) reasons.push(msg(r.trump ? 'coach.why.voidTrump' : 'coach.why.voidNoTrump', { suits: { and: voids.map(sym) } }));
   return { action, headline, reasons };
 }
 
@@ -107,135 +120,135 @@ function adviseHandout(
   const r = view.round!;
   const to = action.type === 'handout' ? action.to : {};
   const gives = reason.gives;
-  const named = (p: PlayerId, card: Card) => ({ card: cardLabel(card), name: nameOf(view, p) });
-  const warnings: string[] = [];
-  let headline: string;
+  const named = (p: PlayerId, card: Card) => ({ card: cd(card), player: pl(p) });
+  const warnings: EngineMsg[] = [];
+  let headline: EngineMsg;
   if (gives.length === 2) {
     const [a, b] = gives.map(g => named(g.to, g.card));
-    headline = say('handout.two', { card1: a.card, name1: a.name, card2: b.card, name2: b.name });
+    headline = msg('coach.handout.two', { card1: a.card, player1: a.player, card2: b.card, player2: b.player });
   } else if (gives.length === 1) {
-    headline = say('handout.one', named(gives[0].to, gives[0].card));
+    headline = msg('coach.handout.one', named(gives[0].to, gives[0].card));
   } else {
     // Every card is assigned already: the player's own choice. Praise it only if it is what the bot would give.
     const [a, b] = Object.entries(to).map(([p, card]) => named(p, card));
     const best = decideHandout(r.hand, Object.keys(to), Object.fromEntries(Object.keys(to).map(p => [p, view.scores[p]?.total ?? 0]))).action;
     const bestTo = best.type === 'handout' ? best.to : {};
     const same = Object.entries(to).every(([p, card]) => bestTo[p] && cardEquals(bestTo[p], card));
-    headline = say(same ? 'handout.confirm' : 'handout.confirmNeutral', { card1: a.card, name1: a.name, card2: b.card, name2: b.name });
+    headline = msg(same ? 'coach.handout.confirm' : 'coach.handout.confirmNeutral', { card1: a.card, player1: a.player, card2: b.card, player2: b.player });
     if (!same) {
-      const better = Object.values(bestTo).map(cardLabel).join(' and ');
+      const better = { and: Object.values(bestTo).map(cd) };
       for (const card of Object.values(to)) {
         if ((card.rank === 'K' || card.rank === 'Q') && hasMarriage(r.hand, card.suit)) {
-          warnings.push(say('warn.marriage', { card: cardLabel(card), suit: sym(card.suit), better }));
+          warnings.push(msg('coach.warn.marriage', { card: cd(card), suit: sym(card.suit), better }));
         } else if (card.rank === 'A' || card.rank === '10') {
-          warnings.push(say('warn.points', { card: cardLabel(card), points: PTS[card.rank], better }));
+          warnings.push(msg('coach.warn.points', { card: cd(card), points: PTS[card.rank], better }));
         }
       }
     }
   }
   const all = Object.values(to);
   const after = r.hand.filter(h => !all.some(g => cardEquals(g, h)));
-  const reasons: string[] = [...warnings];
+  const reasons: EngineMsg[] = [...warnings];
   for (const { card, why } of gives) {
-    const label = cardLabel(card);
-    if (why === 'void') reasons.push(say(r.trump ? 'give.voidTrump' : 'give.voidNoTrump', { card: label, suit: sym(card.suit) }));
-    else if (why === 'zero') reasons.push(say('give.zero', { card: label }));
-    else if (why === 'low') reasons.push(say('give.low', { card: label, points: PTS[card.rank] }));
-    else reasons.push(say('give.forced', { card: label }));
+    const label = cd(card);
+    if (why === 'void') reasons.push(msg(r.trump ? 'coach.give.voidTrump' : 'coach.give.voidNoTrump', { card: label, suit: sym(card.suit) }));
+    else if (why === 'zero') reasons.push(msg('coach.give.zero', { card: label }));
+    else if (why === 'low') reasons.push(msg('coach.give.low', { card: label, points: PTS[card.rank] }));
+    else reasons.push(msg('coach.give.forced', { card: label }));
   }
-  if (marriagesInHand(after).length > 0) reasons.push(say('why.keepMarriages'));
-  if (after.some(h => h.rank === 'A')) reasons.push(say('why.keepAces'));
-  if (after.some(h => (h.rank === 'K' || h.rank === 'Q') && !hasMarriage(r.hand, h.suit))) reasons.push(say('why.keepLoneKQ'));
-  if (reason.betterTo) reasons.push(say('why.betterTo', { name: nameOf(view, reason.betterTo) }));
-  return { action, headline, reasons: [...new Set(reasons)].slice(0, 6) };
+  if (marriagesInHand(after).length > 0) reasons.push(msg('coach.why.keepMarriages'));
+  if (after.some(h => h.rank === 'A')) reasons.push(msg('coach.why.keepAces'));
+  if (after.some(h => (h.rank === 'K' || h.rank === 'Q') && !hasMarriage(r.hand, h.suit))) reasons.push(msg('coach.why.keepLoneKQ'));
+  if (reason.betterTo) reasons.push(msg('coach.why.betterTo', { player: pl(reason.betterTo) }));
+  return { action, headline, reasons: uniq(reasons).slice(0, 6) };
 }
 
 function adviseCard(view: PlayerView, action: Action, reason: CardReason): Advice {
   const r = view.round!;
   const card = reason.card;
-  const label = cardLabel(card);
+  const label = cd(card);
   const legalCards = view.legal.flatMap(a => (a.type === 'card' ? [a.card] : []));
   const declared = r.marriages[view.me] ?? [];
   const isBidder = view.me === r.bid.high;
-  const reasons: string[] = [];
-  if (legalCards.length === 1) reasons.push(say('why.only'));
+  const reasons: EngineMsg[] = [];
+  if (legalCards.length === 1) reasons.push(msg('coach.why.only'));
 
   if (r.trick.cards.length === 0) {
-    let headline: string;
+    let headline: EngineMsg;
     switch (reason.code) {
       case 'lead.declare':
         return {
           action,
-          headline: say('lead.declare', { card: label, suit: sym(reason.suit) }),
+          headline: msg('coach.lead.declare', { card: label, suit: sym(reason.suit) }),
           reasons: [
-            say('why.declare', { points: reason.points }),
-            say('why.declareTrump', { suit: sym(reason.suit) }),
-            say('why.declareTrick'),
+            msg('coach.why.declare', { points: reason.points }),
+            msg('coach.why.declareTrump', { suit: sym(reason.suit) }),
+            msg('coach.why.declareTrick'),
           ],
         };
       case 'lead.cashAce':
-        headline = say('lead.cashAce', { card: label });
-        reasons.push(say('why.cashAce', { card: label }), say('why.cashAceThen', { suit: sym(reason.marriage), points: MV[reason.marriage] }));
+        headline = msg('coach.lead.cashAce', { card: label });
+        reasons.push(msg('coach.why.cashAce', { card: label }), msg('coach.why.cashAceThen', { suit: sym(reason.marriage), points: MV[reason.marriage] }));
         break;
       case 'lead.top':
-        headline = say('lead.top', { card: label, suit: sym(card.suit) });
-        reasons.push(say(r.trump && card.suit !== r.trump ? 'why.top' : 'why.topSafe', { suit: sym(card.suit) }));
+        headline = msg('coach.lead.top', { card: label, suit: sym(card.suit) });
+        reasons.push(msg(r.trump && card.suit !== r.trump ? 'coach.why.top' : 'coach.why.topSafe', { suit: sym(card.suit) }));
         break;
       case 'lead.drawTrump':
-        headline = say('lead.drawTrump', { card: label });
-        reasons.push(say('why.drawTrump'));
+        headline = msg('coach.lead.drawTrump', { card: label });
+        reasons.push(msg('coach.why.drawTrump'));
         break;
       case 'lead.lowTrump':
-        headline = say('lead.lowTrump', { card: label });
-        reasons.push(say('why.lowTrump'));
+        headline = msg('coach.lead.lowTrump', { card: label });
+        reasons.push(msg('coach.why.lowTrump'));
         break;
       case 'lead.probe':
-        headline = say('lead.probe', { card: label });
-        reasons.push(say('why.probe'));
+        headline = msg('coach.lead.probe', { card: label });
+        reasons.push(msg('coach.why.probe'));
         break;
       case 'lead.cheap':
-        headline = say('lead.cheap', { card: label });
-        reasons.push(PTS[card.rank] < 10 ? say('why.cheap', { card: label, points: PTS[card.rank] }) : say('why.cheapest'));
+        headline = msg('coach.lead.cheap', { card: label });
+        reasons.push(PTS[card.rank] < 10 ? msg('coach.why.cheap', { card: label, points: PTS[card.rank] }) : msg('coach.why.cheapest'));
         break;
       default:
-        headline = say(reason.code === 'only' ? 'lead.only' : 'play', { card: label });
+        headline = msg(reason.code === 'only' ? 'coach.lead.only' : 'coach.play', { card: label });
     }
-    if (!isBidder && r.trump && card.suit !== r.trump && r.hand.some(h => h.suit === r.trump)) reasons.push(say('why.noTrumpLead'));
+    if (!isBidder && r.trump && card.suit !== r.trump && r.hand.some(h => h.suit === r.trump)) reasons.push(msg('coach.why.noTrumpLead'));
     return { action, headline, reasons };
   }
 
   // Following: first the rule that limits the choice, then why this card.
   const lead = r.trick.cards[0].card;
   if (!r.hand.some(h => h.suit === lead.suit)) {
-    reasons.push(say('why.noSuit', { suit: sym(lead.suit) }));
+    reasons.push(msg('coach.why.noSuit', { suit: sym(lead.suit) }));
   } else if (r.trick.cards.length === 1 && r.hand.some(h => h.suit === lead.suit && canBeat(h, lead, lead.suit, r.trump))) {
-    reasons.push(say('why.mustBeat', { card: cardLabel(lead) }));
+    reasons.push(msg('coach.why.mustBeat', { card: cd(lead) }));
   } else if (r.trick.cards.length >= 2) {
-    reasons.push(say('why.followOnly'));
+    reasons.push(msg('coach.why.followOnly'));
   }
   switch (reason.code) {
     case 'follow.beat':
     case 'follow.trump':
-      reasons.push(reason.last ? say('follow.takes', { card: label, points: reason.points }) : say('follow.beats', { card: label }));
-      if (reason.code === 'follow.trump') reasons.push(say('why.trumps', { suit: sym(r.trump!) }));
+      reasons.push(reason.last ? msg('coach.follow.takes', { card: label, points: reason.points }) : msg('coach.follow.beats', { card: label }));
+      if (reason.code === 'follow.trump') reasons.push(msg('coach.why.trumps', { suit: sym(r.trump!) }));
       break;
     case 'follow.cantWin':
-      reasons.push(say('follow.cantWin'));
+      reasons.push(msg('coach.follow.cantWin'));
       break;
     case 'follow.keepPoints':
-      reasons.push(say('follow.keepPoints', { name: nameOf(view, reason.winner) }));
+      reasons.push(msg('coach.follow.keepPoints', { player: pl(reason.winner) }));
       break;
     case 'follow.keepMarriage':
-      reasons.push(say('follow.keepMarriage', { card: label, suit: sym(reason.suit) }));
+      reasons.push(msg('coach.follow.keepMarriage', { card: label, suit: sym(reason.suit) }));
       break;
     case 'follow.discard':
-      reasons.push(say('follow.discard'));
+      reasons.push(msg('coach.follow.discard'));
       break;
     case 'only': {
       const onTable = r.trick.cards.map(t => t.card);
       if (cardEquals(getHighestCardInTrick([...onTable, card], lead.suit, r.trump), card)) {
         const last = r.trick.cards.length === r.active.length - 1;
-        reasons.push(last ? say('follow.takes', { card: label, points: handPoints([...onTable, card]) }) : say('follow.beats', { card: label }));
+        reasons.push(last ? msg('coach.follow.takes', { card: label, points: handPoints([...onTable, card]) }) : msg('coach.follow.beats', { card: label }));
       }
       break;
     }
@@ -244,7 +257,7 @@ function adviseCard(view: PlayerView, action: Action, reason: CardReason): Advic
   }
   if (isMarriageCard(card, r.hand, declared)) {
     const forced = legalCards.every(lc => isMarriageCard(lc, r.hand, declared));
-    reasons.push(say(forced ? 'why.breaksMarriageForced' : 'why.breaksMarriage', { suit: sym(card.suit) }));
+    reasons.push(msg(forced ? 'coach.why.breaksMarriageForced' : 'coach.why.breaksMarriage', { suit: sym(card.suit) }));
   }
-  return { action, headline: say('play', { card: label }), reasons: [...new Set(reasons)] };
+  return { action, headline: msg('coach.play', { card: label }), reasons: uniq(reasons) };
 }

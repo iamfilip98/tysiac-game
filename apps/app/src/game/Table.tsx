@@ -1,10 +1,12 @@
 import { AnimatePresence, m } from 'motion/react';
 import type { CSSProperties } from 'react';
-import { cardEquals, cardKey, cardLabel, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
+import { cardEquals, cardKey, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
 import { CardBack, CardFace } from './Card';
 import { isRed } from './cards';
 import { spotsFor, type Spot } from './seating';
 import type { HeldTrick, MarriageFx } from '../store/client';
+import { cardText } from '../i18n/engineText';
+import { useT } from '../i18n/useT';
 import './table.css';
 import './fx.css';
 
@@ -61,41 +63,42 @@ function TrumpBurst() {
 }
 
 export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
+  const t = useT();
   const r = view.round;
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
   const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending && !r.trick.cards.some(t => cardKey(t.card) === cardKey(pending)) ? [{ p: view.me, card: pending }] : [])] : [];
   const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'talon' || view.phase === 'decision');
   return (
-    <section className="table" aria-label="Table">
+    <section className="table" aria-label={t('game.table')}>
       {marriage && <MarriageRing key={marriage.id} />}
       {held?.byTrump && <TrumpBurst />}
       {showTalon && <Talon cards={view.phase === 'bidding' ? null : (r?.talon ?? null)} />}
       <AnimatePresence custom={(sweepTo && spots[sweepTo]) || 'top'}>
-        {trick.map(t => {
-          const spot = spots[t.p] ?? 'top';
-          const mine = t.p === view.me;
-          const gold = !!marriage && t.p === marriage.p && t.card.suit === marriage.suit && (t.card.rank === 'Q' || t.card.rank === 'K');
-          const win = !!held && cardEquals(held.card, t.card);
+        {trick.map(tc => {
+          const spot = spots[tc.p] ?? 'top';
+          const mine = tc.p === view.me;
+          const gold = !!marriage && tc.p === marriage.p && tc.card.suit === marriage.suit && (tc.card.rank === 'Q' || tc.card.rank === 'K');
+          const win = !!held && cardEquals(held.card, tc.card);
           const look = [
-            gold ? 'card--gold' : r?.trump && t.card.suit === r.trump ? 'card--glow-trump' : '',
+            gold ? 'card--gold' : r?.trump && tc.card.suit === r.trump ? 'card--glow-trump' : '',
             win ? (held!.byTrump ? 'tcard--win tcard--win-trump' : 'tcard--win') : held ? 'tcard--lost' : '',
           ].join(' ');
           return (
             <m.div
-              key={cardKey(t.card)}
-              layoutId={mine ? cardKey(t.card) : undefined}
+              key={cardKey(tc.card)}
+              layoutId={mine ? cardKey(tc.card) : undefined}
               custom={spot}
               variants={variants}
               initial={mine ? false : 'enter'}
               animate="rest"
               exit="gone"
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-              className={`card tcard tcard--${spot} ${isRed(t.card) ? 'card--red' : ''} ${look}`}
+              className={`card tcard tcard--${spot} ${isRed(tc.card) ? 'card--red' : ''} ${look}`}
               role="img"
-              aria-label={cardLabel(t.card)}
+              aria-label={cardText(tc.card)}
               data-win={win || undefined}
             >
-              <CardFace card={t.card} />
+              <CardFace card={tc.card} />
             </m.div>
           );
         })}
@@ -105,16 +108,17 @@ export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
 }
 
 function Talon({ cards }: { cards: Card[] | null }) {
+  const t = useT();
   return (
-    <div className="talon" aria-label="Talon">
+    <div className="talon" aria-label={t('game.talon')}>
       {cards
         ? cards.map(c => (
-            <span key={cardKey(c)} className={`card ${isRed(c) ? 'card--red' : ''}`} role="img" aria-label={cardLabel(c)}>
+            <span key={cardKey(c)} className={`card ${isRed(c) ? 'card--red' : ''}`} role="img" aria-label={cardText(c)}>
               <CardFace card={c} />
             </span>
           ))
         : [0, 1, 2].map(i => <CardBack key={i} />)}
-      <span className="talon__lbl">talon</span>
+      <span className="talon__lbl">{t('game.talon.lbl')}</span>
     </div>
   );
 }

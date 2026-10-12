@@ -43,6 +43,19 @@ describe('SettingsSheet', () => {
     expect(usePrefs.getState().name).toBe('Ola');
   });
 
+  it('switches language instantly and stays open (review focus 5)', async () => {
+    render(<SettingsSheet allowProfile={false} coachOn={false} onRules={vi.fn()} onClose={vi.fn()} />);
+    await userEvent.click(screen.getByRole('radio', { name: 'Polski' }));
+    expect(await screen.findByRole('dialog', { name: 'Ustawienia' })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: 'Polski' })).toHaveAttribute('aria-checked', 'true');
+    expect(screen.getByRole('switch', { name: 'Dźwięk' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: 'Dansk' }));
+    expect(await screen.findByRole('dialog', { name: 'Indstillinger' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('radio', { name: 'English' }));
+    expect(await screen.findByRole('dialog', { name: 'Settings' })).toBeInTheDocument();
+    expect(usePrefs.getState().lang).toBe('en');
+  });
+
   it('opens the rules', async () => {
     const onRules = vi.fn();
     render(<SettingsSheet allowProfile={false} coachOn={false} onRules={onRules} onClose={() => {}} />);
@@ -58,7 +71,7 @@ describe('RulesSheet', () => {
     expect(text).toContain(`${RULES.maxBidBase} + your marriages`);
     expect(text).toContain(`${RULES.barrelAt}–${RULES.winAt - 1}`);
     expect(text).toContain(`First to ${RULES.winAt} wins`);
-    expect(text).toContain('♥ 100');
+    expect(text).toContain('♥\uFE0E 100');
     expect(text).toContain('Only the first player after the leader must also beat the lead card');
   });
 

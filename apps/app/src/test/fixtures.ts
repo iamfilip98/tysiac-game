@@ -18,7 +18,7 @@ export interface Stepped {
 
 export function step(state: GameState, p: PlayerId, action: Action): Stepped {
   const r = reduce(state, p, action, 0);
-  if (!r.ok) throw new Error(`fixture: ${p} ${JSON.stringify(action)} rejected: ${r.error.message}`);
+  if (!r.ok) throw new Error(`fixture: ${p} ${JSON.stringify(action)} rejected: ${r.error.msg.key}`);
   return { state: r.state, events: r.events };
 }
 

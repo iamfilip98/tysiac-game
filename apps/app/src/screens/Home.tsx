@@ -7,6 +7,7 @@ import { coachEnabled, usePrefs } from '../store/prefs';
 import { ProfileForm } from '../ui/ProfileForm';
 import { SettingsSheet } from './SettingsSheet';
 import { RulesSheet } from './RulesSheet';
+import { useT } from '../i18n/useT';
 import './home.css';
 
 const RESUME_WINDOW_MS = 24 * 60 * 60 * 1000;
@@ -34,9 +35,11 @@ function useResume(): string | null {
 
 export default function Home() {
   const p = usePrefs();
+  const t = useT();
   const [, navigate] = useLocation();
   const [code, setCode] = useState('');
-  const [error, setError] = useState<{ text: string; retry?: () => void } | null>(null);
+  // The error text is computed at render time so it follows a language switch.
+  const [error, setError] = useState<{ text: () => string; retry?: () => void } | null>(null);
   const [busy, setBusy] = useState(false);
   const [sheet, setSheet] = useState<'settings' | 'rules' | null>(null);
   const resume = useResume();
@@ -45,8 +48,8 @@ export default function Home() {
     return (
       <main className="screen home">
         <h1 className="display home__brand">Tysiąc</h1>
-        <p>Welcome! Pick a name and an avatar — friends will see them at the table.</p>
-        <ProfileForm initialName="" initialAvatar={p.avatar} submitLabel="Continue" onSubmit={(n, a) => p.setProfile(n, a)} />
+        <p>{t('screens.home.welcome')}</p>
+        <ProfileForm initialName="" initialAvatar={p.avatar} submitLabel={t('screens.home.continue')} onSubmit={(n, a) => p.setProfile(n, a)} />
       </main>
     );
   }
@@ -60,8 +63,8 @@ export default function Home() {
     } catch (e) {
       setError(
         isNetworkError(e)
-          ? { text: "Can't reach the server", retry: () => void create(maxPlayers, practice) }
-          : { text: "Couldn't create a room. Try again." },
+          ? { text: () => t('errors.unreachable'), retry: () => void create(maxPlayers, practice) }
+          : { text: () => t('errors.createFailed') },
       );
     } finally {
       setBusy(false);
@@ -72,7 +75,7 @@ export default function Home() {
     e?.preventDefault();
     const c = normalizeCode(code);
     if (!c) {
-      setError({ text: 'A room code has 6 letters or digits.' });
+      setError({ text: () => t('errors.badCode') });
       return;
     }
     setBusy(true);
@@ -80,9 +83,9 @@ export default function Home() {
     try {
       const r = await (await getService()).roomExists(c);
       if (r.exists) navigate(`/r/${c}`);
-      else setError({ text: `No room with code ${c}.` });
+      else setError({ text: () => t('errors.noRoom', { code: c }) });
     } catch {
-      setError({ text: "Can't reach the server", retry: () => void join() });
+      setError({ text: () => t('errors.unreachable'), retry: () => void join() });
     } finally {
       setBusy(false);
     }
@@ -91,31 +94,29 @@ export default function Home() {
   return (
     <main className="screen home">
       <h1 className="display home__brand">Tysiąc</h1>
-      <p className="home__hello">
-        Hi {p.avatar} {p.name}
-      </p>
+      <p className="home__hello">{t('screens.home.hello', { avatar: p.avatar, name: p.name })}</p>
       {resume && (
         <div className="panel home__resume">
-          <span>Game {resume} is still on.</span>
+          <span>{t('screens.home.resumeText', { code: resume })}</span>
           <button type="button" className="btn btn--pri" onClick={() => navigate(`/r/${resume}`)}>
-            Resume
+            {t('screens.home.resume')}
           </button>
         </div>
       )}
       <section>
-        <div className="lbl">New game</div>
+        <div className="lbl">{t('screens.home.newGame')}</div>
         <div className="row">
           <button type="button" className="btn btn--pri" disabled={busy} onClick={() => void create(3, false)}>
-            3 players
+            {t('screens.home.players3')}
           </button>
           <button type="button" className="btn btn--pri" disabled={busy} onClick={() => void create(4, false)}>
-            4 players
+            {t('screens.home.players4')}
           </button>
         </div>
       </section>
       <form className="home__join" onSubmit={e => void join(e)}>
         <label className="field">
-          <span className="lbl">Join with code</span>
+          <span className="lbl">{t('screens.home.joinLabel')}</span>
           <input
             value={code}
             onChange={e => setCode(e.target.value.toUpperCase())}
@@ -128,29 +129,29 @@ export default function Home() {
           />
         </label>
         <button type="submit" className="btn btn--sec" disabled={busy}>
-          Join
+          {t('screens.home.join')}
         </button>
       </form>
       <button type="button" className="btn btn--sec" disabled={busy} onClick={() => void create(3, true)}>
-        Practice vs bots
+        {t('screens.home.practice')}
       </button>
       <div className="row">
         <Link href="/learn" className="btn btn--sec">
-          Learn to play
+          {t('screens.home.learn')}
         </Link>
         <Link href="/history" className="btn btn--sec">
-          History
+          {t('screens.home.history')}
         </Link>
       </div>
       <button type="button" className="btn btn--sec" onClick={() => setSheet('settings')}>
-        Settings
+        {t('common.settings')}
       </button>
       {error && (
         <p className="home__error" role="alert">
-          {error.text}{' '}
+          {error.text()}{' '}
           {error.retry && (
             <button type="button" className="btn btn--sec" onClick={error.retry}>
-              Retry
+              {t('common.retry')}
             </button>
           )}
         </p>

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { GameEvent } from '../src/types';
-import { explainEvent } from '../src/coach';
+import { explainEvent as explainRaw } from '../src/coach';
+import type { PlayerView } from '../src/types';
+import { english } from './english';
 import { viewFor } from '../src/view';
 import { scoreRound, scoreThrow, summarizeRound } from '../src/scoring';
 import { c, scenario, SEATS4 } from './helpers';
@@ -19,6 +21,23 @@ function summary(raws: { a: number; b: number; c: number }, bid: number, marriag
   return summarizeRound({ number: 1, dealer: 'c', bidder: 'a', bid, outcome: result.bidderMadeBid ? 'made' : 'failed', wykladana: false }, result);
 }
 
+/** explainEvent() rendered in English (as the app shows it). */
+function explainEvent(e: GameEvent, view: PlayerView): string | null {
+  const m = explainRaw(e, view);
+  return m && english(m, view);
+}
+
+describe('explainEvent structure', () => {
+  it('uses .you keys for the viewer and passes players as params', () => {
+    expect(explainRaw(ev({ type: 'biddingWon', p: 'a', amount: 120, talonPublic: true }), viewAs('b')))
+      .toEqual({ key: 'event.bidWon.public', params: { player: { player: 'a' }, amount: 120 } });
+    expect(explainRaw(ev({ type: 'biddingWon', p: 'a', amount: 100, talonPublic: false }), viewAs('a')))
+      .toEqual({ key: 'event.bidWon.private.you', params: { amount: 100 } });
+    expect(explainRaw(ev({ type: 'biddingWon', p: 'a', amount: 100, talonPublic: false }), viewAs('b')))
+      .toEqual({ key: 'event.bidWon.private', params: { player: { player: 'a' }, amount: 100 } });
+  });
+});
+
 describe('explainEvent', () => {
   it('marriage', () => {
     expect(explainEvent(ev({ type: 'marriage', p: 'b', suit: 'hearts', points: 100 }), viewAs('a')))
@@ -26,7 +45,7 @@ describe('explainEvent', () => {
   });
   it('trick won by a trump; ordinary tricks are silent', () => {
     const base = { type: 'trickWon', p: 'c', cards: [], card: c('9S'), points: 11 } as const;
-    expect(explainEvent(ev({ ...base, byTrump: true }), viewAs('a'))).toBe('Celina won with 9♠ — trumps beat every other suit.');
+    expect(explainEvent(ev({ ...base, byTrump: true }), viewAs('a'))).toBe('Celina won with 9♠. Trumps beat every other suit.');
     expect(explainEvent(ev({ ...base, byTrump: false }), viewAs('a'))).toBeNull();
   });
   it('bidding won', () => {
@@ -44,16 +63,16 @@ describe('explainEvent', () => {
         sittingOut: four ? 'd' : null, totals }));
     const free = throwSummary(100, { a: 0, b: 0, c: 0 });
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 100, summary: free }), viewAs('b')))
-      .toBe('Ala threw in at 100 — nobody scores, new deal.');
+      .toBe('Ala threw in at 100. Nobody scores, new deal.');
     const paid = throwSummary(130, { a: 0, b: 0, c: 0 });
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: paid }), viewAs('b')))
-      .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
+      .toBe('Ala threw in at 130: Ala −130, you +60, Celina +60.');
     const four = throwSummary(130, { a: 0, b: 850, c: 0, d: 0 }, true);
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: four }), viewFor(s4, 'c')))
-      .toBe('Ala threw in at 130: Ala −130, Bartek 0, You +60, Darek 0.');
+      .toBe('Ala threw in at 130: Ala −130, Bartek 0, you +60, Darek 0.');
     // a thrown round scored through roundScored is not misprinted as a failed bid
     expect(explainEvent(ev({ type: 'roundScored', summary: paid }), viewAs('b')))
-      .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
+      .toBe('Ala threw in at 130: Ala −130, you +60, Celina +60.');
   });
   it('round scored: made with rounding, failed, and the viewer line', () => {
     const made = summary({ a: 96, b: 14, c: 10 }, 120, 40);
@@ -66,7 +85,7 @@ describe('explainEvent', () => {
   it('round scored: a near miss says rounding does not help', () => {
     const near = summary({ a: 117, b: 3, c: 0 }, 120);
     expect(explainEvent(ev({ type: 'roundScored', summary: near }), viewAs('b')))
-      .toBe("Ala bid 120 but scored only 117 → −120 — rounding doesn't help a bidder who falls short. You: +0.");
+      .toBe("Ala bid 120 but scored only 117 → −120. Rounding doesn't help a bidder who falls short. You: +0.");
   });
   it('round scored: a defender on the barrel scores 0', () => {
     const result = scoreRound({
@@ -76,13 +95,13 @@ describe('explainEvent', () => {
     });
     const sum = summarizeRound({ number: 1, dealer: 'c', bidder: 'a', bid: 100, outcome: 'made', wykladana: false }, result);
     expect(explainEvent(ev({ type: 'roundScored', summary: sum }), viewAs('b')))
-      .toBe("Ala bid 100 and scored 100 → +100. You're on the barrel — only winning a bid scores there.");
+      .toBe("Ala bid 100 and scored 100 → +100. You're on the barrel. Only winning a bid scores there.");
   });
   it('wykładana and game won', () => {
     expect(explainEvent(ev({ type: 'wykladana', p: 'a', hand: [], trump: null, marriages: [] }), viewAs('a')))
-      .toBe('You have every trick guaranteed — round won outright (wykładana)!');
+      .toBe('You have every trick guaranteed. Round won outright (wykładana)!');
     expect(explainEvent(ev({ type: 'wykladana', p: 'a', hand: [], trump: null, marriages: [] }), viewAs('b')))
-      .toBe('Ala has every trick guaranteed — round won outright (wykładana)!');
+      .toBe('Ala has every trick guaranteed. Round won outright (wykładana)!');
     expect(explainEvent(ev({ type: 'gameWon', p: 'a', totals: { a: 1010, b: 400, c: 300 } }), viewAs('c')))
       .toBe('Ala won the game with 1010!');
   });

@@ -22,6 +22,11 @@ if (eagerLazy.length > 0) {
   console.error(`Learn/History must be lazy chunks, but index.html loads: ${eagerLazy.join(', ')}`);
   process.exit(1);
 }
+const eagerLocale = [...files].filter(f => /(^|\/)(pl|da)-[\w-]+\.js$/.test(f));
+if (eagerLocale.length > 0) {
+  console.error(`Locale chunks must be lazy, found initial: ${eagerLocale.join(', ')}`);
+  process.exit(1);
+}
 console.log(`initial JS: ${(total / 1024).toFixed(1)} KB gzip (limit ${LIMIT / 1024} KB)`);
 if (files.size === 0) {
   console.error('No entry script found in dist/index.html');

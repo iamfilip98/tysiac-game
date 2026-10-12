@@ -4,7 +4,7 @@ import { SocketConnection } from './socket';
 
 /** Thrown for any failed room API call; `message` is safe to show to the player. */
 export class RoomApiError extends Error {
-  constructor(message: string, readonly kind: 'network' | 'server' | 'badResponse') {
+  constructor(message: string, readonly kind: 'network' | 'server' | 'badResponse', readonly status?: number) {
     super(message);
     this.name = 'RoomApiError';
   }
@@ -45,7 +45,7 @@ export function httpService(base = ''): RoomService {
     async roomExists(code) {
       const res = await call(`${base}/api/rooms/${encodeURIComponent(code)}`);
       if (res.status === 404) return { exists: false };
-      if (!res.ok) throw new RoomApiError(`Server error (HTTP ${res.status})`, 'server');
+      if (!res.ok) throw new RoomApiError(`Server error (HTTP ${res.status})`, 'server', res.status);
       const body = (await readJson(res)) as RoomExistsResponse | undefined;
       if (!body || typeof body !== 'object' || typeof body.exists !== 'boolean') {
         throw new RoomApiError('Unexpected response from the server.', 'badResponse');

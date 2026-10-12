@@ -1,13 +1,19 @@
-import { RULES, type PlayerView, type RoundSummary } from '@tysiac/engine';
+import { RULES, type EngineMsg, type PlayerView, type RoundSummary } from '@tysiac/engine';
+import { textSuits } from './cards';
+import { engineText } from '../i18n/engineText';
 import { Sheet } from '../ui/Sheet';
 import { who } from '../store/notes';
 import { BARREL, bidChip } from './format';
+import { t } from '../i18n';
+import { useT } from '../i18n/useT';
 
 export function roundHeadline(summary: RoundSummary, view: PlayerView): string {
-  const name = who(view, summary.bidder);
-  if (summary.outcome === 'thrown') return `${name} threw in at ${summary.bid}`;
-  if (summary.wykladana) return `${name} won every trick — wykładana!`;
-  return summary.outcome === 'made' ? `${name} made ${summary.bid}` : `${name} failed ${summary.bid}`;
+  const p = { player: who(view, summary.bidder), bid: summary.bid };
+  const you = summary.bidder === view.me;
+  if (summary.outcome === 'thrown') return t(you ? 'game.result.threw.you' : 'game.result.threw', p);
+  if (summary.wykladana) return t(you ? 'game.result.wykladana.you' : 'game.result.wykladana', p);
+  if (summary.outcome === 'made') return t(you ? 'game.result.made.you' : 'game.result.made', p);
+  return t(you ? 'game.result.failed.you' : 'game.result.failed', p);
 }
 
 /** Signed with a real minus sign. */
@@ -16,7 +22,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0');
 export interface RoundResultSheetProps {
   summary: RoundSummary;
   view: PlayerView;
-  note: string | null;
+  note: EngineMsg | null;
   onContinue(): void;
 }
 
@@ -25,12 +31,13 @@ export interface RoundResultSheetProps {
  * tricks and marriages, the running total), the bidder highlighted with a made or failed badge.
  */
 export function RoundResultSheet({ summary, view, note, onContinue }: RoundResultSheetProps) {
+  useT();
   return (
     <Sheet
-      title={`Round ${summary.number}`}
+      title={t('game.result.title', { n: summary.number })}
       footer={
         <button type="button" className="btn btn--pri" onClick={onContinue}>
-          Continue
+          {t('game.result.continue')}
         </button>
       }
     >
@@ -52,25 +59,28 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
                 <span className="rrow__name">{who(view, p.playerId)}</span>
                 {bidder && (
                   <span className={`chip rrow__bid rrow__bid--${summary.outcome}`}>
-                    {bidChip(summary.bid)}
-                    {summary.outcome === 'made' ? ' ✓ made' : summary.outcome === 'failed' ? ' ✗ failed' : ''}
+                    {summary.outcome === 'made'
+                      ? t('game.result.badgeMade', { bid: bidChip(summary.bid) })
+                      : summary.outcome === 'failed'
+                        ? t('game.result.badgeFailed', { bid: bidChip(summary.bid) })
+                        : bidChip(summary.bid)}
                   </span>
                 )}
               </span>
               <span className={`rrow__delta display ${p.scoreChange < 0 ? 'neg' : p.scoreChange > 0 ? 'pos' : ''}`}>{signed(p.scoreChange)}</span>
               <span className="rrow__detail">
                 {p.sittingOut ? (
-                  'sits out'
+                  t('game.opp.sitsOut')
                 ) : (
                   <>
-                    Tricks {p.trickPoints}
-                    {p.marriagePoints > 0 && <> · Marriages +{p.marriagePoints}</>}
+                    {t('game.col.tricks')} {p.trickPoints}
+                    {p.marriagePoints > 0 && <> · {t('game.col.marriages')} +{p.marriagePoints}</>}
                   </>
                 )}
-                {p.fellOffBarrel && <span className="rrow__fell"> · fell off the barrel</span>}
+                {p.fellOffBarrel && <span className="rrow__fell"> · {t('game.result.fellOff')}</span>}
               </span>
               <span className="rrow__total">
-                Total <b>{p.newTotalScore}</b>
+                {t('game.col.total')} <b>{p.newTotalScore}</b>
                 {barrel && ` ${BARREL}`}
               </span>
             </li>
@@ -79,7 +89,7 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
       </ul>
       {note && (
         <p className="coachnote">
-          <b>Coach:</b> {note}
+          <b>{t('game.coach.label')}</b> {textSuits(engineText(note, view))}
         </p>
       )}
     </Sheet>

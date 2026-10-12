@@ -6,6 +6,7 @@ import { useRoom } from '../store/room';
 import { FakeConnection } from '../test/fakes';
 import { roomInfo } from '../test/fixtures';
 import type { ClientMessage, RoomInfo } from '../net/protocol';
+import { loadLang } from '../i18n';
 
 function show(room: RoomInfo, me = 'me'): FakeConnection {
   const conn = new FakeConnection();
@@ -27,6 +28,13 @@ afterEach(() => {
 });
 
 describe('Lobby', () => {
+  it('Lobby in Danish', async () => {
+    await loadLang('da');
+    show(partial());
+    expect(screen.getByRole('button', { name: 'Tilføj bot' })).toBeInTheDocument();
+    expect(screen.getByText('Rumkode')).toBeInTheDocument();
+  });
+
   it('shows the code and every seat, empty ones too', () => {
     show(partial());
     expect(screen.getByText('ABCDEF')).toBeInTheDocument();

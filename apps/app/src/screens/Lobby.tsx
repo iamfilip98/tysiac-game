@@ -4,6 +4,7 @@ import { m } from 'motion/react';
 import type { LobbyOp, RoomSeat } from '../net/protocol';
 import { usePrefs } from '../store/prefs';
 import { useRoom } from '../store/room';
+import { useT } from '../i18n/useT';
 import './lobby.css';
 
 /** Seat k steps clockwise from the viewer (viewer at the bottom), as % of the table box. */
@@ -14,10 +15,11 @@ export function seatPosition(k: number, n: number): { left: string; top: string 
 }
 
 export default function Lobby() {
+  const t = useT();
   const room = useRoom(s => s.room);
   const me = useRoom(s => s.me);
   const [picked, setPicked] = useState<number | null>(null);
-  const [note, setNote] = useState<string | null>(null);
+  const [note, setNote] = useState<'copied' | string | null>(null);
   const [, navigate] = useLocation();
   if (!room) return null;
 
@@ -47,11 +49,11 @@ export default function Lobby() {
     const url = `${window.location.origin}/r/${room.code}`;
     try {
       if (typeof navigator.share === 'function') {
-        await navigator.share({ title: 'Tysiąc', text: `Join my Tysiąc game (${room.code})`, url });
+        await navigator.share({ title: 'Tysiąc', text: t('screens.lobby.shareText', { code: room.code }), url });
         return;
       }
       await navigator.clipboard.writeText(url);
-      setNote('Link copied');
+      setNote('copied');
     } catch (e) {
       if ((e as { name?: string } | null)?.name !== 'AbortError') setNote(url);
     }
@@ -66,18 +68,19 @@ export default function Lobby() {
   return (
     <main className="screen lobby">
       <header className="lobby__head">
-        <button type="button" className="iconbtn" aria-label="Leave" onClick={leave}>
+        <button type="button" className="iconbtn" aria-label={t('screens.lobby.leave')} onClick={leave}>
           ←
         </button>
         <div className="lobby__code">
-          <small>Room code</small>
+          <small>{t('screens.lobby.code')}</small>
           <b className="display">{room.code}</b>
         </div>
       </header>
       <div className="lobby__table">
         <div className="lobby__felt">
           <span className="lobby__arrow">
-            <b>↻</b>clockwise
+            <b>↻</b>
+            {t('screens.lobby.clockwise')}
           </span>
         </div>
         {room.seats.map((seat, i) => (
@@ -95,9 +98,7 @@ export default function Lobby() {
         ))}
       </div>
       <p className="lobby__hint">
-        {picked === null
-          ? 'Tap two seats to swap them (or drag) so the order matches where you sit. Play goes clockwise.'
-          : 'Now tap another seat to swap.'}
+        {picked === null ? t('screens.lobby.hint') : t('screens.lobby.hintPicked')}
       </p>
       {picked !== null && isHost && (
         <div className="row lobby__picked">
@@ -109,7 +110,7 @@ export default function Lobby() {
               setPicked(null);
             }}
           >
-            Make first dealer
+            {t('screens.lobby.firstDealer')}
           </button>
           {pickedSeat?.isBot && (
             <button
@@ -120,7 +121,7 @@ export default function Lobby() {
                 setPicked(null);
               }}
             >
-              Remove bot
+              {t('screens.lobby.removeBot')}
             </button>
           )}
         </div>
@@ -128,25 +129,25 @@ export default function Lobby() {
       <div className="lobby__actions">
         <div className="row">
           <button type="button" className="btn btn--sec" onClick={() => void share()}>
-            Share link
+            {t('screens.lobby.share')}
           </button>
           {isHost && (
             <button type="button" className="btn btn--sec" disabled={full} onClick={() => op({ op: 'addBot' })}>
-              Add bot
+              {t('screens.lobby.addBot')}
             </button>
           )}
         </div>
         {note && (
           <p className="lobby__note" role="status">
-            {note}
+            {note === 'copied' ? t('screens.lobby.copied') : note}
           </p>
         )}
         {isHost ? (
           <button type="button" className="btn btn--pri" disabled={!full} onClick={() => op({ op: 'start' })}>
-            Start game
+            {t('screens.lobby.start')}
           </button>
         ) : (
-          <p className="lobby__note">Waiting for the host to start…</p>
+          <p className="lobby__note">{t('screens.lobby.waitHost')}</p>
         )}
       </div>
     </main>
@@ -166,6 +167,7 @@ interface SeatButtonProps {
 
 function SeatButton({ index, seat, pos, isMe, dealer, picked, onTap, onDrop }: SeatButtonProps) {
   // A drag must not also register as a tap (which would pick the seat afterwards).
+  const t = useT();
   const draggedAt = useRef(0);
   return (
     <m.button
@@ -173,7 +175,7 @@ function SeatButton({ index, seat, pos, isMe, dealer, picked, onTap, onDrop }: S
       className={`seat ${picked ? 'seat--picked' : ''} ${seat ? '' : 'seat--empty'}`}
       style={pos}
       data-seat-index={index}
-      aria-label={`Seat ${index + 1}: ${seat ? seat.name : 'empty'}`}
+      aria-label={seat ? t('screens.lobby.seat', { n: index + 1, name: seat.name }) : t('screens.lobby.seatEmpty', { n: index + 1 })}
       aria-pressed={picked}
       drag={!!seat}
       dragSnapToOrigin
@@ -189,10 +191,10 @@ function SeatButton({ index, seat, pos, isMe, dealer, picked, onTap, onDrop }: S
     >
       <span className="avatar">
         {seat?.avatar ?? '+'}
-        {dealer && <span className="avatar__dealer">D</span>}
+        {dealer && <span className="avatar__dealer">{t('game.opp.dealerMark')}</span>}
       </span>
-      <span>{seat ? (isMe ? 'You' : seat.name) : 'Empty'}</span>
-      {seat && !seat.isBot && !seat.connected && <span className="badge">away</span>}
+      <span>{seat ? (isMe ? t('common.you') : seat.name) : t('screens.lobby.empty')}</span>
+      {seat && !seat.isBot && !seat.connected && <span className="badge">{t('game.opp.away')}</span>}
     </m.button>
   );
 }

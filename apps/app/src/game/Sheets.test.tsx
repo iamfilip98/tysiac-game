@@ -1,12 +1,13 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { RoundSummary } from '@tysiac/engine';
+import { msg, type RoundSummary } from '@tysiac/engine';
 import { ScoreSheet, zapisRows } from './ScoreSheet';
 import { RoundResultSheet, roundHeadline } from './RoundResultSheet';
 import { GameOverSheet } from './GameOverSheet';
 import { gameStats } from './stats';
 import { SEATS, findState, viewOf } from '../test/fixtures';
+import { loadLang } from '../i18n';
 
 const mid = viewOf(findState(s => s.rounds.filter(r => r.outcome !== 'thrown').length >= 2, SEATS, 600));
 const over = viewOf(findState(s => s.phase === 'gameEnd', SEATS, 5000));
@@ -45,12 +46,19 @@ describe('RoundResultSheet', () => {
     expect(roundHeadline({ ...base, outcome: 'made', wykladana: false }, mid)).toBe(`${name} made ${base.bid}`);
     expect(roundHeadline({ ...base, outcome: 'failed', wykladana: false }, mid)).toBe(`${name} failed ${base.bid}`);
     expect(roundHeadline({ ...base, outcome: 'thrown', wykladana: false }, mid)).toBe(`${name} threw in at ${base.bid}`);
-    expect(roundHeadline({ ...base, outcome: 'made', wykladana: true }, mid)).toBe(`${name} won every trick — wykładana!`);
+    expect(roundHeadline({ ...base, outcome: 'made', wykladana: true }, mid)).toBe(`${name} won every trick. Wykładana!`);
+  });
+
+  it('headlines in Polish use the viewer form for the viewer', async () => {
+    await loadLang('pl');
+    const mine = { ...base, bidder: 'me', outcome: 'made' as const, wykladana: false };
+    expect(roundHeadline(mine, mid)).toBe(`Ugrywasz ${base.bid}`);
+    expect(roundHeadline({ ...mine, bidder: 'b', outcome: 'failed' }, mid)).toBe(`Bot Basia nie ugrywa ${base.bid}`);
   });
 
   it('one row per player: round points big, total, the bidder highlighted with a made or failed badge', async () => {
     const onContinue = vi.fn();
-    render(<RoundResultSheet summary={base} view={mid} note="Coach says hi" onContinue={onContinue} />);
+    render(<RoundResultSheet summary={base} view={mid} note={msg('round.you', { n: 20 })} onContinue={onContinue} />);
     const dialog = screen.getByRole('dialog', { name: `Round ${base.number}` });
     const rows = within(dialog).getAllByRole('listitem');
     expect(rows).toHaveLength(base.players.length);
@@ -62,7 +70,7 @@ describe('RoundResultSheet', () => {
     }
     const bidder = rows[base.players.findIndex(p => p.playerId === base.bidder)];
     expect(within(bidder).getByText(new RegExp(`bid ${base.bid}`))).toHaveTextContent(base.outcome === 'made' ? 'made' : 'failed');
-    expect(within(dialog).getByText('Coach says hi')).toBeInTheDocument();
+    expect(within(dialog).getByText('You: +20.')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue' }));
     expect(onContinue).toHaveBeenCalledOnce();
   });

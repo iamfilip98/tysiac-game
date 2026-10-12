@@ -67,7 +67,7 @@ describe('useRoom', () => {
     conn.accept = false;
     useRoom.getState().playCard(legalCard(s0));
     expect(useRoom.getState().pending).toBeNull();
-    expect(useRoom.getState().toast).toBe("You're offline — reconnecting…");
+    expect(useRoom.getState().toast).toBe("You're offline. Reconnecting…");
   });
 
   it('act marks the action in flight until ack', () => {

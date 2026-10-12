@@ -69,7 +69,7 @@ test('two people and a bot play through a trick on the real Worker', async ({ br
   const hist = await host.request.get('/api/history?player=00000000-0000-4000-8000-0000000000aa');
   expect(hist.status()).toBe(200);
   await host.goto('/history');
-  await expect(host.getByText('No finished games yet — play one with friends!')).toBeVisible();
+  await expect(host.getByText('No finished games yet. Play one with friends!')).toBeVisible();
 
   await hostCtx.close();
   await guestCtx.close();

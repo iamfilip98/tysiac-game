@@ -307,10 +307,10 @@ export class LocalRoom {
 
   private act(sock: Sock, id: string, action: Action): void {
     if (!this.state || this.info.status !== 'playing') {
-      return sock.deliver({ t: 'reject', id, code: 'notStarted', message: 'The game has not started' });
+      return sock.deliver({ t: 'reject', id, code: 'notPlaying', message: 'The game has not started yet' });
     }
     const r = reduce(this.state, sock.pid!, action, this.clock.now());
-    if (!r.ok) return sock.deliver({ t: 'reject', id, code: r.error.code, message: r.error.message });
+    if (!r.ok) return sock.deliver({ t: 'reject', id, code: r.error.code, message: r.error.msg.key, msg: r.error.msg });
     this.commit(r.state, r.events);
     sock.deliver({ t: 'ack', id });
   }
@@ -351,7 +351,7 @@ export class LocalRoom {
       if (!action) return;
       const r = reduce(s, pid, action, this.clock.now());
       if (!r.ok) {
-        console.error(`LocalRoom: bot ${pid} chose an illegal move: ${r.error.message}`);
+        console.error(`LocalRoom: bot ${pid} chose an illegal move: ${r.error.msg.key}`);
         return;
       }
       this.commit(r.state, r.events);

@@ -1,18 +1,24 @@
 import type { CSSProperties } from 'react';
 import { m } from 'motion/react';
-import { cardKey, cardLabel, type Card } from '@tysiac/engine';
+import { cardKey, type Card } from '@tysiac/engine';
 import { SUIT_TEXT, isRed, type CardGlow } from './cards';
+import { cardText } from '../i18n/engineText';
+import { t } from '../i18n';
+import { useT } from '../i18n/useT';
 import './card.css';
 
 export type CardLook = 'normal' | 'dim' | 'raised';
 
 export { SUIT_TEXT };
 
+/** Rank letters follow the language (Polish D/W, Danish E/D/B); suit glyphs never change. */
 export function CardFace({ card }: { card: Card }) {
+  useT();
   const s = SUIT_TEXT[card.suit];
+  const rank = t(`card.rank.${card.rank}`);
   const idx = (br: boolean) => (
     <span className={`card__idx ${br ? 'card__idx--br' : ''}`} aria-hidden="true">
-      <span className="card__rank">{card.rank}</span>
+      <span className="card__rank">{rank}</span>
       <span className="card__suit">{s}</span>
     </span>
   );
@@ -41,13 +47,14 @@ export interface CardButtonProps {
 }
 
 export function CardButton({ card, look, tag, shake, glow, coach, className = '', style, onTap }: CardButtonProps) {
+  useT();
   return (
     <m.button
       type="button"
       layout
       layoutId={cardKey(card)}
       className={`card ${isRed(card) ? 'card--red' : ''} card--${look} ${glow ? `card--glow-${glow}` : ''} ${className}`}
-      aria-label={cardLabel(card)}
+      aria-label={cardText(card)}
       aria-pressed={look === 'raised'}
       aria-disabled={look === 'dim' ? true : undefined}
       data-card={cardKey(card)}
@@ -64,8 +71,9 @@ export function CardButton({ card, look, tag, shake, glow, coach, className = ''
 }
 
 export function MiniCard({ card }: { card: Card }) {
+  useT();
   return (
-    <span className={`card card--mini ${isRed(card) ? 'card--red' : ''}`} role="img" aria-label={cardLabel(card)}>
+    <span className={`card card--mini ${isRed(card) ? 'card--red' : ''}`} role="img" aria-label={cardText(card)}>
       <CardFace card={card} />
     </span>
   );
