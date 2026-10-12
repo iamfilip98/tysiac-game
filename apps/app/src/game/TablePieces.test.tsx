@@ -22,7 +22,7 @@ describe('TopBar', () => {
   it('shows contract and trump after bidding', () => {
     const v: PlayerView = { ...tricks, round: { ...tricks.round!, bid: { ...tricks.round!.bid, high: 'b', amount: 120 }, trump: 'hearts' } };
     render(<TopBar view={v} onMenu={() => {}} onScores={() => {}} />);
-    expect(screen.getByText('Bot Basia bid 120 · trump ♥')).toBeInTheDocument();
+    expect(screen.getByText('Bot Basia bid 120 · trump ♥\uFE0E')).toBeInTheDocument();
   });
 
   it('menu and score buttons call back', async () => {

@@ -198,7 +198,7 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
     case 'cardPlayed': {
       const mine = e.p === s.me && s.pending !== null && cardEquals(s.pending.card, e.card);
       return {
-        state: { ...s, queue: rest, shown: withCardPlayed(shown, e.p, e.card), pending: mine ? null : s.pending },
+        state: { ...s, queue: rest, shown: withCardPlayed(shown, e.p, e.card), pending: mine ? null : s.pending, received: null },
         wait: mine ? 0 : FLIGHT_MS,
         kind: 'flight',
         sound: mine ? undefined : 'card',

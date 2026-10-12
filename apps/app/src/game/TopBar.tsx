@@ -1,6 +1,7 @@
-import { SUIT_SYMBOL, type PlayerView } from '@tysiac/engine';
+import type { PlayerView } from '@tysiac/engine';
 import { who } from '../store/notes';
 import { pts } from './format';
+import { SUIT_TEXT } from './cards';
 
 export function TopBar({ view, onMenu, onScores }: { view: PlayerView; onMenu(): void; onScores(): void }) {
   const r = view.round;
@@ -9,7 +10,7 @@ export function TopBar({ view, onMenu, onScores }: { view: PlayerView; onMenu():
   if (r && view.phase === 'bidding') {
     sub = `${who(view, r.dealer)} ${r.dealer === view.me ? 'deal' : 'deals'} · bidding`;
   } else if (r) {
-    sub = `${who(view, r.bid.high)} bid ${r.bid.amount}${r.trump ? ` · trump ${SUIT_SYMBOL[r.trump]}` : ''}`;
+    sub = `${who(view, r.bid.high)} bid ${r.bid.amount}${r.trump ? ` · trump ${SUIT_TEXT[r.trump]}` : ''}`;
   }
   return (
     <header className="topbar">

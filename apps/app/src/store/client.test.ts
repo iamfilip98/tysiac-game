@@ -265,6 +265,11 @@ describe('received card', () => {
     expect(step.state.received).toEqual({ card: { suit: 'hearts', rank: 'Q' }, from: 'b' });
     expect(step.wait).toBe(NOTE_MS);
   });
+  it('the first card played clears the received overlay', () => {
+    const e = { type: 'cardPlayed', p: 'b', card: { suit: 'clubs', rank: '9' }, audience: 'all' } as GameEvent;
+    const step = advance({ ...base, received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' }, queue: [e] }, false)!;
+    expect(step.state.received).toBeNull();
+  });
   it('the bidder does not get a received overlay', () => {
     const e = { type: 'handedOut', p: 'me', recipients: ['b', 'z'], cards: {}, audience: ['me'] } as GameEvent;
     expect(advance({ ...base, queue: [e] }, false)!.state.received).toBeNull();

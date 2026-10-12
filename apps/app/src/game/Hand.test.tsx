@@ -31,9 +31,24 @@ describe('Hand', () => {
 
   it('tags the king of an undeclared marriage only', () => {
     renderHand();
-    expect(screen.getByText('♥ 100')).toBeInTheDocument();
+    const tag = screen.getByText('♥\uFE0E 100');
+    expect(tag).toHaveAttribute('data-marriage', 'hearts');
+    expect(tag).toHaveStyle({ '--i': '2', '--span': '2' });
+    expect(tag.closest('.hand__card')).toBeNull();
+    expect(tag).not.toHaveClass('hand__mtag--up');
     expect(marriageTag(cards[1], cards, ['hearts'])).toBeNull();
     expect(marriageTag(cards[3], cards, [])).toBeNull();
+  });
+
+  it('the marriage pill rides up with a raised K or Q and never takes taps', () => {
+    renderHand({ selected: cardKey(cards[3]) });
+    expect(screen.getByText('♥\uFE0E 100')).toHaveClass('hand__mtag--up');
+    expect(screen.getByText('♥\uFE0E 100')).toHaveAttribute('aria-hidden', 'true');
+  });
+
+  it('declared marriages get no pill', () => {
+    renderHand({ declared: ['hearts'] });
+    expect(screen.queryByText('♥\uFE0E 100')).toBeNull();
   });
 
   it('only reports taps', async () => {

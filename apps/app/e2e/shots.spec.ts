@@ -12,7 +12,10 @@ for (const theme of ['Brass', 'Wycinanki', 'Midnight']) {
     await page.getByRole('button', { name: 'Practice vs bots' }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await setSafeInsets(page, { top: 59, bottom: 34, left: 0, right: 0 });
-    const shot = (name: string) => page.screenshot({ path: `e2e-shots/${theme.toLowerCase()}-${name}.png` });
+    const shot = async (name: string) => {
+      await page.waitForTimeout(1000); // let hands, ticker and animations settle
+      await page.screenshot({ path: `e2e-shots/${theme.toLowerCase()}-${name}.png` });
+    };
     await drive(page, {
       bidAlways: true,
       check: async key => { await shot(key.replace(/\s+/g, '-')); },

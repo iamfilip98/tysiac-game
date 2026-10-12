@@ -1,7 +1,9 @@
 import type { Advice } from '@tysiac/engine';
+import { textSuits } from './cards';
 
 export function CoachLine({ advice, note, onWhy }: { advice: Advice | null; note: string | null; onWhy(): void }) {
-  const text = advice?.headline ?? note;
+  const raw = advice?.headline ?? note;
+  const text = raw ? textSuits(raw) : raw;
   return (
     <div className="coachline" aria-live="polite">
       {text && (

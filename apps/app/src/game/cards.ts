@@ -1,4 +1,15 @@
-import { RULES, SUIT_SYMBOL, hasMarriage, type Card, type Suit } from '@tysiac/engine';
+import { RULES, hasMarriage, type Card, type Suit } from '@tysiac/engine';
+
+/** Suit glyphs with U+FE0E: iOS otherwise may draw ♥/♦ as colour emoji. Use in every text that shows a suit. */
+export const SUIT_TEXT: Record<Suit, string> = {
+  hearts: '♥\uFE0E',
+  diamonds: '♦\uFE0E',
+  clubs: '♣\uFE0E',
+  spades: '♠\uFE0E',
+};
+
+/** Forces text presentation on suit glyphs inside engine-made strings (cardLabel etc.). */
+export const textSuits = (s: string): string => s.replace(/([♥♦♣♠])\uFE0E?/g, '$1\uFE0E');
 
 /** Alternating colours: ♠ ♥ ♣ ♦. */
 const SUIT_ORDER: readonly Suit[] = ['spades', 'hearts', 'clubs', 'diamonds'];
@@ -16,7 +27,7 @@ export function isRed(card: Card): boolean {
 /** "♥ 100" on the king of a K+Q pair that has not been declared yet. */
 export function marriageTag(card: Card, hand: readonly Card[], declared: readonly Suit[]): string | null {
   if (card.rank !== 'K' || declared.includes(card.suit) || !hasMarriage(hand, card.suit)) return null;
-  return `${SUIT_SYMBOL[card.suit]} ${RULES.marriageValues[card.suit]}`;
+  return `${SUIT_TEXT[card.suit]} ${RULES.marriageValues[card.suit]}`;
 }
 
 export type CardGlow = 'marriage' | 'trump' | null;

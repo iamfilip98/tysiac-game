@@ -6,6 +6,7 @@ import Game from './Game';
 import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
 import { RECEIVED_MS } from '../store/client';
+import { textSuits } from '../game/cards';
 import { useSelection } from '../game/selection';
 import { FakeConnection } from '../test/fakes';
 import { findState, roomInfo, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
@@ -28,15 +29,27 @@ beforeEach(() => {
 describe('Game screen: tricks', () => {
   it('shows who gave me which card, then hides it after RECEIVED_MS', () => {
     vi.useFakeTimers();
+    try {
+      join(findState(s => s.phase === 'tricks'));
+      render(<Game />);
+      act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
+      const pill = screen.getByRole('button', { name: /Card received/ });
+      expect(pill).toHaveTextContent('Bot Basia');
+      expect(pill.getAttribute('aria-label')).toContain('\uFE0E');
+      act(() => { vi.advanceTimersByTime(RECEIVED_MS + 10); });
+      expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('the received pill is dismissed by a click', () => {
     join(findState(s => s.phase === 'tricks'));
     render(<Game />);
     act(() => useRoom.setState({ received: { card: { suit: 'hearts', rank: 'Q' }, from: 'b' } }));
-    expect(screen.getByRole('status', { name: 'Card received' })).toHaveTextContent('Bot Basia');
-    act(() => { vi.advanceTimersByTime(RECEIVED_MS + 10); });
-    expect(screen.queryByRole('status', { name: 'Card received' })).toBeNull();
-    vi.useRealTimers();
+    act(() => { screen.getByRole('button', { name: /Card received/ }).click(); });
+    expect(screen.queryByRole('button', { name: /Card received/ })).toBeNull();
   });
-
 
   it('shows Your turn on my strip when I must act', () => {
     join(findState(s => s.phase === 'tricks' && turnOf(s) === 'me'));
@@ -54,7 +67,7 @@ describe('Game screen: tricks', () => {
     await user.click(within(hand()).getByRole('button', { name: label }));
     expect(within(hand()).getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true');
     expect(conn.acts()).toHaveLength(0);
-    await user.click(screen.getByRole('button', { name: `Play ${label}` }));
+    await user.click(screen.getByRole('button', { name: `Play ${textSuits(label)}` }));
     expect(conn.acts()).toHaveLength(1);
     expect(within(hand()).queryByRole('button', { name: label })).toBeNull();
     expect(within(screen.getByRole('region', { name: 'Table' })).getByRole('img', { name: label })).toBeInTheDocument();
@@ -67,7 +80,7 @@ describe('Game screen: tricks', () => {
     render(<Game />);
     const label = cardLabel(legalCards(s0)[0]);
     await user.click(within(hand()).getByRole('button', { name: label }));
-    await user.dblClick(screen.getByRole('button', { name: `Play ${label}` }));
+    await user.dblClick(screen.getByRole('button', { name: `Play ${textSuits(label)}` }));
     expect(conn.acts()).toHaveLength(1);
   });
 
@@ -92,7 +105,7 @@ describe('Game screen: tricks', () => {
     render(<Game />);
     const label = cardLabel(legalCards(s0)[0]);
     await user.click(within(hand()).getByRole('button', { name: label }));
-    await user.click(screen.getByRole('button', { name: `Play ${label}` }));
+    await user.click(screen.getByRole('button', { name: `Play ${textSuits(label)}` }));
     conn.push({ t: 'reject', id: conn.acts()[0].id, code: 'illegalCard', message: 'Nope' });
     expect(await within(hand()).findByRole('button', { name: label })).toBeInTheDocument();
     expect(screen.getByText('Nope')).toBeInTheDocument();

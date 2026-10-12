@@ -1,5 +1,6 @@
-import { SUIT_SYMBOL, cardLabel, type Card, type GameEvent, type PlayerId, type PlayerView, type Suit } from '@tysiac/engine';
+import { cardLabel, type Card, type GameEvent, type PlayerId, type PlayerView, type Suit } from '@tysiac/engine';
 import { who } from '../store/notes';
+import { SUIT_TEXT, textSuits } from './cards';
 
 export type Announcement =
   | { kind: 'deal'; round: number; dealer: PlayerId }
@@ -43,6 +44,10 @@ const isMe = (v: PlayerView, p: PlayerId) => p === v.me;
 
 /** English text. Stream P replaces every literal here with t(...). */
 export function announceText(a: Announcement, v: PlayerView): string {
+  return textSuits(announceRaw(a, v));
+}
+
+function announceRaw(a: Announcement, v: PlayerView): string {
   switch (a.kind) {
     case 'deal': return `Round ${a.round} — ${isMe(v, a.dealer) ? 'you deal' : `${who(v, a.dealer)} deals`}`;
     case 'bid': return `${who(v, a.p)} bid ${a.amount}`;
@@ -54,7 +59,7 @@ export function announceText(a: Announcement, v: PlayerView): string {
     case 'wykladana': return `${who(v, a.p)} won every trick — wykładana!`;
     case 'played': return `${who(v, a.p)} played ${cardLabel(a.card)}`;
     case 'marriage': {
-      const s = SUIT_SYMBOL[a.suit];
+      const s = SUIT_TEXT[a.suit];
       return `${who(v, a.p)}: marriage ${s} +${a.points} — trump is ${s}`;
     }
     case 'trick': return `${who(v, a.p)} ${isMe(v, a.p) ? 'take' : 'takes'} the trick (+${a.points})`;

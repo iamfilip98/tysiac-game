@@ -51,3 +51,12 @@ describe('theme contrast (WCAG AA 4.5:1)', () => {
     }
   }
 });
+
+describe('coach outline (gold, 3:1 non-text contrast against the table)', () => {
+  for (const [name, v] of themes) {
+    it(`${name}: --coach on --bg-solid`, () => {
+      const b = parse(v['--bg-solid']);
+      expect(ratio(parse(v['--coach']), b)).toBeGreaterThanOrEqual(3);
+    });
+  }
+});

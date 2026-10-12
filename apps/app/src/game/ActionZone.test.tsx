@@ -1,3 +1,4 @@
+import { textSuits } from './cards';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
@@ -127,7 +128,7 @@ describe('ActionZone: tricks', () => {
     const p = props(tricks, { selected: card, hint: 'You must follow ♦' });
     render(<ActionZone {...p} />);
     expect(screen.getByText('You must follow ♦')).toBeInTheDocument();
-    await userEvent.click(screen.getByRole('button', { name: `Play ${cardLabel(card)}` }));
+    await userEvent.click(screen.getByRole('button', { name: `Play ${textSuits(cardLabel(card))}` }));
     expect(p.onPlay).toHaveBeenCalledWith(card);
   });
 });
@@ -163,7 +164,7 @@ describe('ActionZone: illegal raised card', () => {
     const illegal = v.round!.hand.find(c => explainIllegal(v, c));
     expect(illegal).toBeDefined();
     render(<ActionZone {...props(v, { selected: illegal! })} />);
-    expect(screen.getByRole('button', { name: `Play ${cardLabel(illegal!)}` })).toBeDisabled();
+    expect(screen.getByRole('button', { name: `Play ${textSuits(cardLabel(illegal!))}` })).toBeDisabled();
     expect(screen.getByText(explainIllegal(v, illegal!)!)).toBeInTheDocument();
   });
 });

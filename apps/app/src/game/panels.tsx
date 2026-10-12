@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { RULES, SUIT_SYMBOL, cardLabel, explainIllegal, marriagesInHand, type Action, type Card, type PlayerId, type PlayerView } from '@tysiac/engine';
+import { RULES, cardLabel, explainIllegal, marriagesInHand, type Action, type Card, type PlayerId, type PlayerView } from '@tysiac/engine';
 import type { RoomInfo, RoomSeat } from '../net/protocol';
 import { AWAY_BOT_AFTER_MS } from '../net/connection';
 import { who } from '../store/notes';
+import { SUIT_TEXT, textSuits } from './cards';
 
 const VERB: Partial<Record<PlayerView['phase'], string>> = {
   bidding: 'is bidding',
@@ -50,7 +51,7 @@ export function BidPanel({ view, myTurn, busy, wait, onAct }: PanelProps & { onA
   const bid = view.legal.find((a): a is Extract<Action, { type: 'bid' }> => a.type === 'bid');
   const marr = marriagesInHand(r.hand);
   const why = marr.length
-    ? `(${RULES.maxBidBase} + ${marr.map(s => SUIT_SYMBOL[s]).join(' ')} marriage${marr.length > 1 ? 's' : ''})`
+    ? `(${RULES.maxBidBase} + ${marr.map(s => SUIT_TEXT[s]).join(' ')} marriage${marr.length > 1 ? 's' : ''})`
     : '(no marriage)';
   return (
     <>
@@ -144,7 +145,7 @@ export function HandoutPanel(props: PanelProps & { given: Partial<Record<PlayerI
     done === recipients.length
       ? 'Both cards chosen. Confirm, or tap ✕ to change.'
       : selected
-        ? `Now tap who gets ${cardLabel(selected)}.`
+        ? `Now tap who gets ${textSuits(cardLabel(selected))}.`
         : 'Tap a card, then tap who gets it.';
   return (
     <>
@@ -163,16 +164,16 @@ export function HandoutPanel(props: PanelProps & { given: Partial<Record<PlayerI
 
 export function TrickPanel({ view, myTurn, busy, wait, selected, onPlay }: PanelProps & { selected: Card | null; onPlay(card: Card): void }) {
   const r = view.round!;
-  const trump = r.trump ? ` · trump ${SUIT_SYMBOL[r.trump]}` : '';
+  const trump = r.trump ? ` · trump ${SUIT_TEXT[r.trump]}` : '';
   const trickNo = Object.values(r.tricksTaken).reduce((a, b) => a + b, 0) + 1;
   const illegal = selected ? explainIllegal(view, selected) : null;
   return (
     <>
-      <div className="lbl">{myTurn ? `Your turn${trump}` : `Trick ${trickNo}${trump}`}</div>
+      <div className="lbl">{`Trick ${trickNo}${trump}`}</div>
       <div className="zone__buttons">
         {myTurn ? (
           <button type="button" className="btn btn--pri" disabled={busy || !selected || !!illegal} onClick={() => selected && onPlay(selected)}>
-            {selected ? `Play ${cardLabel(selected)}` : 'Play'}
+            {selected ? `Play ${textSuits(cardLabel(selected))}` : 'Play'}
           </button>
         ) : (
           wait
