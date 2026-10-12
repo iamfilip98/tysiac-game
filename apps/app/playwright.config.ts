@@ -8,8 +8,6 @@ const VIEWPORTS = [
   { name: 'desktop', width: 1280, height: 800, mobile: false },
 ];
 
-const PORT = Number(process.env.E2E_PORT ?? 4173);
-
 // WebKit-first (the owner plays on iPhone). E2E_BROWSER=chromium is a fallback when WebKit is unavailable.
 const BROWSER = process.env.E2E_BROWSER === 'chromium' ? 'chromium' : 'webkit';
 
