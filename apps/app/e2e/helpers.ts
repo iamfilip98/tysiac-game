@@ -1,6 +1,25 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, type Page } from '@playwright/test';
+
+/** Records the targets of recent pointer/click events so a failed move can say where a tap actually landed. */
+async function recordTaps(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __taps: string[] };
+    w.__taps = [];
+    const name = (e: EventTarget | null) => {
+      if (!(e instanceof Element)) return String(e);
+      return `${e.tagName.toLowerCase()}.${String(e.className).replace(/\s+/g, '.')}[${e.getAttribute('aria-label') ?? (e.textContent ?? '').slice(0, 24)}]`;
+    };
+    for (const type of ['pointerdown', 'pointerup', 'click']) {
+      window.addEventListener(type, ev => {
+        w.__taps.push(`${type} → ${name(ev.target)}`);
+        if (w.__taps.length > 12) w.__taps.shift();
+      }, true);
+    }
+  });
+}
 
 export async function firstLaunch(page: Page): Promise<void> {
+  await recordTaps(page);
   await page.goto('/?local=1&fast=1');
   const name = page.getByLabel('Your name');
   await name.focus();
@@ -14,30 +33,37 @@ export async function firstLaunch(page: Page): Promise<void> {
 }
 
 /**
- * Runs a move and waits until the server's next state arrives (data-seq changes). A tap that produces no
- * new state within 4 s is retried once (and annotated on the test) — a rare, unexplained dropped tap in
- * WebKit that a human would simply repeat; a second miss fails the test with a DOM summary.
+ * Runs a move and waits until the server's next state arrives (data-seq changes). There is no retry: a tap
+ * that does nothing is a bug (see dropped-tap-report.md), so it fails with the DOM state and the targets
+ * the last taps actually landed on.
  */
 export async function move(page: Page, run: () => Promise<void>): Promise<void> {
   const game = page.locator('.game');
   const before = (await game.getAttribute('data-seq')) ?? '';
   await run();
   try {
-    await expect(game).not.toHaveAttribute('data-seq', before, { timeout: 4000 });
-    return;
-  } catch {
-    test.info().annotations.push({ type: 'dropped-tap', description: `no new state after seq ${before}; retried` });
-  }
-  await run();
-  try {
     await expect(game).not.toHaveAttribute('data-seq', before);
   } catch (err) {
     const state = await page.evaluate(() => {
       const g = document.querySelector('.game');
-      return `alerts: ${Array.from(document.querySelectorAll('[role=status],[role=alert]')).map(e => e.textContent).join('|')} | zone: ${g?.querySelector('.zone')?.textContent}`;
+      const taps = (window as unknown as { __taps?: string[] }).__taps ?? [];
+      return `alerts: ${Array.from(document.querySelectorAll('[role=status],[role=alert]')).map(e => e.textContent).join('|')} | zone: ${g?.querySelector('.zone')?.textContent}\nlast taps:\n  ${taps.join('\n  ')}`;
     });
     throw new Error(`no new game state after a move (seq ${before}). ${state}\n${String(err)}`);
   }
+}
+
+/**
+ * Nothing on the table may take a tap: trick cards fly over the action zone and hand (a sweep to the
+ * viewer passes right over the Play button while it is already the viewer's turn) and used to swallow it.
+ */
+export async function expectTableIgnoresTaps(page: Page): Promise<void> {
+  const problems = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('.table, .table *'))
+      .filter(e => getComputedStyle(e).pointerEvents !== 'none')
+      .map(e => `${String(e.className)} [${e.getAttribute('aria-label') ?? ''}]`),
+  );
+  expect(problems, 'table elements that can intercept a tap').toEqual([]);
 }
 
 export async function handOut(page: Page): Promise<void> {
@@ -109,6 +135,7 @@ export async function drive(page: Page, opts: DriveOptions): Promise<void> {
         const label = await selectLegalCard(page, !tapChecked);
         tapChecked = true;
         await check('tricks'); // a card is selected: the Play button is on screen
+        await expectTableIgnoresTaps(page);
         await page.getByRole('button', { name: `Play ${label}` }).click();
       });
     } else {

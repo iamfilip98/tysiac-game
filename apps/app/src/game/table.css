@@ -42,7 +42,10 @@
 .backs { display: flex; height: 19px; }
 .backs .back + .back { margin-left: -7px; }
 
-.table { grid-area: table; position: relative; min-height: 0; min-width: 0; }
+/* The table is display-only. Its cards fly over the action zone and the hand (a trick swept to the
+   viewer slides down across the Play button while it is already their turn), so it must never take a
+   tap: pointer-events is inherited by everything inside. */
+.table { grid-area: table; position: relative; min-height: 0; min-width: 0; pointer-events: none; }
 .tcard {
   position: absolute;
   left: 50%;
