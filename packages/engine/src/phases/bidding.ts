@@ -34,8 +34,9 @@ function endBidding(ctx: Ctx): void {
   const high = r.bid.high;
   r.bid.turn = null;
   r.talonPublic = r.bid.amount > RULES.autoBid;
+  r.talonSeen = [];
   r.hands[high] = [...r.hands[high], ...clone(r.talon)];
-  ctx.s.phase = 'decision';
+  ctx.s.phase = r.talonPublic ? 'talon' : 'decision';
   emit(ctx, { type: 'biddingWon', p: high, amount: r.bid.amount, talonPublic: r.talonPublic });
   emit(ctx, { type: 'talonRevealed', p: high, cards: clone(r.talon) }, r.talonPublic ? 'all' : [high]);
 }

@@ -5,6 +5,7 @@ import { validateBid } from './bidding';
 import { cardRuleMessage } from './tricks';
 import { clone, emit, type Ctx } from './ctx';
 import { applyBid, applyPass } from './phases/bidding';
+import { applyAckTalon } from './phases/talon';
 import { applyHandout } from './phases/handout';
 import { applyCard } from './phases/tricks';
 import { applyPlay, applyThrow } from './phases/decision';
@@ -40,6 +41,9 @@ export function reduce(state: GameState, playerId: PlayerId, action: Action, now
     case 'play':
       applyPlay(ctx);
       break;
+    case 'ackTalon':
+      applyAckTalon(ctx, playerId);
+      break;
     case 'throw':
       applyThrow(ctx, playerId);
       break;
@@ -69,6 +73,8 @@ export function reduce(state: GameState, playerId: PlayerId, action: Action, now
 function rejectFor(s: GameState, p: PlayerId, action: Action): RuleError {
   if (action.type === 'resume') return err('illegalAction', "The game isn't paused");
   if (action.type === 'pause') return err('illegalAction', "You can't pause right now");
+  if (action.type === 'ackTalon') return err('illegalAction', "There's nothing to confirm");
+  if (s.phase === 'talon') return err('notYourTurn', 'Wait until everyone has seen the talon');
   const r = s.round;
   if (!r || turnOf(s) !== p) return err('notYourTurn', "It's not your turn");
   if (action.type === 'card' && s.phase === 'tricks') {

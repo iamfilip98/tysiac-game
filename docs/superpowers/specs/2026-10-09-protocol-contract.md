@@ -9,7 +9,7 @@ Engine types (`Action`, `PlayerView`, `GameEvent`, `PlayerId`, `Card`) come from
 ```ts
 import type { Action, GameEvent, PlayerId, PlayerView } from '@tysiac/engine';
 
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 
 // ---------- HTTP ----------
 // POST /api/rooms            body CreateRoomRequest → CreateRoomResponse | { error: string }
@@ -78,6 +78,7 @@ Behaviour notes:
 - First message on a socket must be `hello`; anything else → `error badMessage` and close. On success the server replies `welcome`, and if a game exists, `state` with `events: []`.
 - After every accepted engine action the server sends each connected human `state` (personalised view + filtered events), and `ack` to the sender. Illegal → `reject` to the sender only.
 - `room` is broadcast on any lobby/seat/connection change.
+- **Talon confirmation (v2).** When a bid above 100 wins, the phase becomes `talon`: `view.turn` is `null`, `view.round.talonWaiting` lists the seats that still have to send `{ type: 'ackTalon' }` (everyone but the bidder, including a 4-player sitting-out dealer), and each confirmation emits `{ type: 'talonSeen', p }` to all. The last one moves the game to `decision`. Bots and bot-for seats confirm through the normal bot alarm. Engine phases are now `bidding | talon | decision | handout | tricks | gameEnd`; `Action` gained `{ type: 'ackTalon' }`.
 - Bots in the engine `Seat` have `isBot: true`; a human seat with an active bot-for has engine `Seat.botFor` = `'bot'`.
 - Close codes (exported from `@tysiac/protocol`): `CLOSE_REPLACED = 4000` = replaced by another connection of the same player; `CLOSE_PROTOCOL = 1008` = protocol violation or refused hello (preceded by an `error`). The client MUST NOT reconnect after either. An `error` with `versionMismatch` or `badSecret` is also terminal. (1000 = left, 1001 = room expired.)
 - Client keeps `playerId`/`secret` in localStorage (`tysiac.identity`), reconnects with backoff 0.5 s → 5 s and re-sends `hello`.

@@ -52,13 +52,29 @@ function drive(clock: FakeClock, clients: TestClient[], until: () => boolean, ma
   for (let i = 0; i < maxSteps && !until(); i++) {
     const c = clients.find(x => {
       const v = x.view();
-      return !x.closed && v && v.turn === x.id && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume');
+      return !x.closed && v && (v.turn === x.id || v.legal.some(a => a.type === 'ackTalon')) && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume');
     });
     if (c) c.send({ t: 'act', id: `a${i}`, action: botAction(c.view()!, () => 0.5) });
     else clock.advance(1000);
   }
   if (!until()) throw new Error('drive: condition not reached');
 }
+
+describe('LocalRoom talon', () => {
+  it('bots confirm a public talon and the bidder then decides', () => {
+    const { room, clock } = setup();
+    const h = client(room, 'h');
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'addBot' });
+    lobby(h, { op: 'start' });
+    let sawTalon = false;
+    drive(clock, [h], () => {
+      sawTalon ||= h.view()?.phase === 'talon';
+      return sawTalon && h.view()?.phase !== 'talon';
+    });
+    expect(sawTalon).toBe(true);
+  });
+});
 
 describe('LocalRoom lobby', () => {
   it('welcomes the host into seat 0 and broadcasts the room', () => {
@@ -275,7 +291,7 @@ describe('LocalRoom bot scheduling', () => {
     const seen = { plain: 0, trick: 0, round: 0 };
     for (let i = 0; i < 30_000 && h.room()!.status !== 'finished'; i++) {
       const v = h.view()!;
-      if (v.turn === 'h' && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) {
+      if ((v.turn === 'h' || v.legal.some(a => a.type === 'ackTalon')) && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) {
         h.send({ t: 'act', id: `a${i}`, action: botAction(v, () => 0.5) });
         continue;
       }
@@ -299,7 +315,7 @@ describe('LocalRoom bot scheduling', () => {
     const { clock, h } = started(0);
     for (let i = 0; i < 30_000 && h.room()!.status !== 'finished'; i++) {
       const v = h.view()!;
-      if (v.turn === 'h' && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) {
+      if ((v.turn === 'h' || v.legal.some(a => a.type === 'ackTalon')) && !v.paused && v.legal.some(a => a.type !== 'pause' && a.type !== 'resume')) {
         h.send({ t: 'act', id: `a${i}`, action: botAction(v, () => 0.5) });
       } else {
         expect(clock.nextDelay()).toBe(0);

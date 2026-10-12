@@ -11,11 +11,16 @@ const VERB: Partial<Record<PlayerView['phase'], string>> = {
   tricks: 'is playing',
 };
 
-export function WaitLine({ view, room, now, busy = false, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; busy?: boolean; onBotFor(p: PlayerId): void }) {
-  const p = view.turn;
+/** A human seat that is disconnected with no bot covering for it. */
+export function isAway(seat: RoomSeat | null | undefined): seat is RoomSeat {
+  return !!seat && !seat.isBot && !seat.connected && !seat.botFor;
+}
+
+export function WaitLine({ view, room, now, busy = false, who: whoId, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; busy?: boolean; who?: PlayerId; onBotFor(p: PlayerId): void }) {
+  const p = whoId ?? view.turn;
   if (!p || p === view.me) return <p className="zone__wait">…</p>;
   const seat = room?.seats.find((s): s is RoomSeat => s?.id === p) ?? null;
-  if (seat && !seat.isBot && !seat.connected && !seat.botFor) {
+  if (isAway(seat)) {
     const awayFor = now - (seat.awaySince ?? now);
     const left = Math.max(0, Math.ceil((AWAY_BOT_AFTER_MS - awayFor) / 1000));
     return (

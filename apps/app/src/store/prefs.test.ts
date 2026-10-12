@@ -20,7 +20,7 @@ describe('prefs', () => {
     for (const raw of ['🦊'.repeat(16), '🦊'.repeat(40), 'x'.repeat(40), 'Ania 🦊 Kowalska']) {
       const name = cleanName(raw);
       expect(name.length).toBeLessThanOrEqual(24);
-      const r = ClientMessageSchema.safeParse({ t: 'hello', v: 1, playerId: 'p1', secret: 'secret123', name, avatar: '🦊', coach: false });
+      const r = ClientMessageSchema.safeParse({ t: 'hello', v: 2, playerId: 'p1', secret: 'secret123', name, avatar: '🦊', coach: false });
       expect(r.success || JSON.stringify(r.error.issues)).toBe(true);
     }
   });

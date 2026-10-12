@@ -26,6 +26,7 @@ export interface Scenario {
   hands: Record<PlayerId, string>;
   talon?: string;
   talonPublic?: boolean;
+  talonSeen?: PlayerId[];
   bid?: Partial<BidState>;
   trump?: Suit | null;
   marriages?: Record<PlayerId, Suit[]>;
@@ -68,6 +69,7 @@ export function scenario(sc: Scenario): GameState {
       hands: Object.fromEntries(active.map(p => [p, parseCards(sc.hands[p] ?? '')])),
       talon: parseCards(sc.talon ?? ''),
       talonPublic: sc.talonPublic ?? false,
+      talonSeen: sc.talonSeen ?? [],
       bid,
       trump: sc.trump ?? null,
       marriages: Object.fromEntries(active.map(p => [p, [...(sc.marriages?.[p] ?? [])]])),

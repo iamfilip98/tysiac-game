@@ -41,7 +41,7 @@ describe('RoomRoute', () => {
     await user.type(screen.getByLabelText('Your name'), 'Kuba');
     await user.click(screen.getByRole('button', { name: 'Join' }));
     await waitFor(() => expect(svc.conns).toHaveLength(1));
-    expect(svc.hellos[0]()).toMatchObject({ t: 'hello', v: 1, name: 'Kuba', avatar: '🦊', coach: true });
+    expect(svc.hellos[0]()).toMatchObject({ t: 'hello', v: 2, name: 'Kuba', avatar: '🦊', coach: true });
   });
 
   it('keeps the coach flag stable across reconnects even when the game count passes the default', async () => {

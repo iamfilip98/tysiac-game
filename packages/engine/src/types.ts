@@ -19,7 +19,7 @@ export interface Seat {
 
 /** Lobby and round-end screens are room/UI concerns: the engine deals round 1 in createGame and
  *  deals the next round in the same reduce call that scores the previous one. */
-export type Phase = 'bidding' | 'decision' | 'handout' | 'tricks' | 'gameEnd';
+export type Phase = 'bidding' | 'talon' | 'decision' | 'handout' | 'tricks' | 'gameEnd';
 
 export interface TrickCard {
   p: PlayerId;
@@ -52,6 +52,8 @@ export interface Round {
   talon: Card[];
   /** true when the winning bid is > 100 (everyone saw the talon). */
   talonPublic: boolean;
+  /** Seats that confirmed the public talon; the talon phase ends when every seat but the bidder is here. */
+  talonSeen: PlayerId[];
   bid: BidState;
   trump: Suit | null;
   marriages: Record<PlayerId, Suit[]>;
@@ -123,6 +125,7 @@ export type Action =
   | { type: 'pass' }
   | { type: 'play' }
   | { type: 'throw' }
+  | { type: 'ackTalon' }
   | { type: 'handout'; to: Record<PlayerId, Card> }
   | { type: 'card'; card: Card }
   | { type: 'pause' }
@@ -156,6 +159,7 @@ export type GameEventBody =
   | { type: 'passed'; p: PlayerId }
   | { type: 'biddingWon'; p: PlayerId; amount: number; talonPublic: boolean }
   | { type: 'talonRevealed'; p: PlayerId; cards: Card[] }
+  | { type: 'talonSeen'; p: PlayerId }
   | { type: 'threw'; p: PlayerId; amount: number; summary: RoundSummary }
   | { type: 'handedOut'; p: PlayerId; recipients: PlayerId[]; cards: Partial<Record<PlayerId, Card>> }
   | { type: 'wykladana'; p: PlayerId; hand: Card[]; trump: Suit | null; marriages: Suit[] }
@@ -184,6 +188,8 @@ export interface RoundView {
   /** Talon cards when this viewer may see them, else null. */
   talon: Card[] | null;
   talonPublic: boolean;
+  /** Seats that still have to confirm the public talon; [] outside the talon phase. */
+  talonWaiting: PlayerId[];
   bid: BidState;
   /** Viewer's max bid (120 + marriages in hand); 0 when not active. */
   maxBid: number;

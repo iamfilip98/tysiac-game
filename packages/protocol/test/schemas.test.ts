@@ -3,7 +3,7 @@ import { CreateRoomRequestSchema, MAX_MESSAGE_BYTES, PROTOCOL_VERSION, parseClie
 import type { ClientMessage, ParseResult } from '../src/index';
 
 const hello: ClientMessage = {
-  t: 'hello', v: 1, playerId: 'p-1', secret: '0123456789abcdef', name: 'Ala', avatar: '🦊', coach: true,
+  t: 'hello', v: 2, playerId: 'p-1', secret: '0123456789abcdef', name: 'Ala', avatar: '🦊', coach: true,
 };
 
 function accepted(msg: unknown): ClientMessage {
@@ -102,9 +102,18 @@ describe('parseClientMessage', () => {
     expect(rejected(wide).message).toMatch(/too large/i);
   });
 
+  it('accepts ackTalon', () => {
+    const r = parseClientMessage(JSON.stringify({ t: 'act', id: 'x1', action: { type: 'ackTalon' } }));
+    expect(r.ok).toBe(true);
+  });
+
+  it('rejects ackTalon with extra fields', () => {
+    expect(parseClientMessage(JSON.stringify({ t: 'act', id: 'x1', action: { type: 'ackTalon', who: 'b' } })).ok).toBe(false);
+  });
+
   it('reports a protocol version mismatch separately', () => {
-    expect(PROTOCOL_VERSION).toBe(1);
-    expect(rejected(JSON.stringify({ ...hello, v: 2 })).code).toBe('versionMismatch');
+    expect(PROTOCOL_VERSION).toBe(2);
+    expect(rejected(JSON.stringify({ ...hello, v: 1 })).code).toBe('versionMismatch');
     const noVersion: Record<string, unknown> = { ...hello };
     delete noVersion.v;
     expect(rejected(JSON.stringify(noVersion)).code).toBe('versionMismatch');

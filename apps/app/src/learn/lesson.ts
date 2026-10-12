@@ -1,5 +1,5 @@
 import {
-  RULES, advise, botAction, cardEquals, createGame, makeRandom, marriagesInHand, reduce, turnOf, viewFor,
+  RULES, advise, botAction, cardEquals, createGame, makeRandom, marriagesInHand, reduce, actorsOf, viewFor,
   type Action, type Card, type PlayerId, type PlayerView, type RoundSummary, type Seat, type Suit,
 } from '@tysiac/engine';
 import { BOT_AVATAR, BOT_NAMES } from '../net/localRoom';
@@ -89,7 +89,7 @@ export function buildLesson(seed: string): Lesson {
   let summary: RoundSummary | null = null;
   for (let guard = 0; guard < 300; guard++) {
     if (summary !== null) break;
-    const pid = turnOf(state);
+    const pid = actorsOf(state)[0] ?? null;
     if (!pid) break;
     const view = viewFor(state, pid);
     let action: Action;

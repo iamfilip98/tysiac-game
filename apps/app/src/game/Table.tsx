@@ -30,10 +30,10 @@ export function Table({ view, pending, sweepTo }: TableProps) {
   const r = view.round;
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
   const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending && !r.trick.cards.some(t => cardKey(t.card) === cardKey(pending)) ? [{ p: view.me, card: pending }] : [])] : [];
-  const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'decision');
+  const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'talon' || view.phase === 'decision');
   return (
     <section className="table" aria-label="Table">
-      {showTalon && <Talon cards={view.phase === 'decision' ? (r?.talon ?? null) : null} />}
+      {showTalon && <Talon cards={view.phase === 'bidding' ? null : (r?.talon ?? null)} />}
       <AnimatePresence custom={(sweepTo && spots[sweepTo]) || 'top'}>
         {trick.map(t => {
           const spot = spots[t.p] ?? 'top';
