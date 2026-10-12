@@ -108,6 +108,23 @@ describe('card glows', () => {
   });
 });
 
+describe('coach pick', () => {
+  it('draws a gold arrow above each recommended card and never raises or presses it', () => {
+    renderHand({ recommended: [cardKey(cards[1])] });
+    const k = screen.getByRole('button', { name: 'K♥' });
+    expect(k).toHaveAttribute('aria-pressed', 'false');
+    expect(k).not.toHaveClass('card--raised');
+    expect(k).toHaveAttribute('data-coach', 'true');
+    const arrows = document.querySelectorAll('.hand__coach');
+    expect(arrows).toHaveLength(1);
+    expect(arrows[0].getAttribute('data-coach-arrow')).toBe(cardKey(cards[1]));
+  });
+  it('the arrow rides up with the card only when the player raises it', () => {
+    renderHand({ recommended: [cardKey(cards[1])], selected: cardKey(cards[1]) });
+    expect(document.querySelector('.hand__coach')).toHaveClass('hand__coach--up');
+  });
+});
+
 describe('received card', () => {
   it('highlights the freshly received card', () => {
     renderHand({ fresh: cardKey(cards[1]) });

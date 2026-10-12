@@ -46,9 +46,6 @@
 }
 .card--glow-marriage::before { background: linear-gradient(135deg, rgba(245, 231, 163, 0.28), transparent 55%); }
 .card--glow-trump::before { background: linear-gradient(135deg, rgba(147, 197, 253, 0.25), transparent 55%); }
-/* Coach pick: a crisp solid gold ring and a small lift. Marriage is a soft glow instead, so the two read apart in every theme. */
-.card--recommended { outline: 2.5px solid var(--coach); outline-offset: 1px; }
-.hand__card.card--recommended { bottom: 4px; }
 .back {
   --w: var(--card-w, 56px);
   display: block;
@@ -94,3 +91,20 @@
   transition: bottom 0.16s ease;
 }
 .hand__mtag--up { bottom: calc(var(--card-w) * 1.66 + 3px); }
+
+/* Coach pick: a gold arrow above the card's visible strip. The card itself never moves or gets selected. */
+.hand__coach {
+  position: absolute; z-index: 21; pointer-events: none; width: 24px; height: 20px;
+  left: calc(50% - (var(--step) * (var(--n) - 1) + var(--card-w)) / 2 + var(--step) * var(--i)
+    + (var(--step) + (var(--card-w) - var(--step)) * var(--last)) / 2 - 12px);
+  bottom: calc(var(--card-w) * 1.42 + 2px);
+  transition: bottom 0.16s ease;
+  animation: coach-bob 1.2s ease-in-out infinite;
+}
+.hand__coach svg { display: block; overflow: visible; }
+.hand__coach path { fill: var(--coach); stroke: var(--coach-edge, rgba(0, 0, 0, 0.55)); stroke-width: 1.6; stroke-linejoin: round; filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.45)); }
+.hand__coach--pill { bottom: calc(var(--card-w) * 1.42 + 21px); }
+.hand__coach--up { bottom: calc(var(--card-w) * 1.66 + 2px); }
+.hand__coach--up.hand__coach--pill { bottom: calc(var(--card-w) * 1.66 + 21px); }
+@keyframes coach-bob { 50% { translate: 0 -3px; } }
+@media (prefers-reduced-motion: reduce) { .hand__coach { animation: none; } }
