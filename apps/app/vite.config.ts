@@ -41,5 +41,6 @@ export default defineConfig({
     setupFiles: ['src/test/setup.ts'],
     include: ['src/**/*.test.{ts,tsx}'],
     css: false,
+    retry: process.env.CI ? 2 : 0,
   },
 });

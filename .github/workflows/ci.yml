@@ -29,7 +29,7 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
       - name: Unit tests (one package at a time; the app suite times out under parallel load)
-        run: pnpm -r --workspace-concurrency=1 --if-present test -- --retry=2
+        run: pnpm -r --workspace-concurrency=1 --if-present test
       - name: Build app (initial-JS budget + PWA checks)
         run: pnpm --filter @tysiac/app build
 
