@@ -75,15 +75,18 @@ describe('Opponents', () => {
     expect(within(container.querySelector('[data-seat="z"]') as HTMLElement).getByText('away')).toBeInTheDocument();
   });
 
-  it('hand-out: targets are buttons and given cards can be taken back', async () => {
+  it('hand-out: tapping a seat picks it (a touch shortcut for the slots); a given card shows as a real card', async () => {
     const onTarget = vi.fn();
-    const onUngive = vi.fn();
-    render(<Opponents view={bidding} room={roomInfo()} targetable given={{ z: { suit: 'clubs', rank: '9' } }} onTarget={onTarget} onUngive={onUngive} />);
-    await userEvent.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
+    const { container } = render(<Opponents view={bidding} room={roomInfo()} targetable next="b" given={{ z: { suit: 'clubs', rank: '9' } }} onTarget={onTarget} />);
+    const b = container.querySelector('[data-seat="b"]') as HTMLElement;
+    expect(b).toHaveClass('opp--target');
+    expect(b).toHaveAttribute('aria-hidden', 'true');
+    await userEvent.click(b);
     expect(onTarget).toHaveBeenCalledWith('b');
-    expect(screen.queryByRole('button', { name: 'Give to Bot Zenek' })).toBeNull();
-    await userEvent.click(screen.getByRole('button', { name: 'Take back 9♣' }));
-    expect(onUngive).toHaveBeenCalledWith('z');
+    const z = container.querySelector('[data-seat="z"]') as HTMLElement;
+    expect(z.querySelector('.opp__given .card .card__rank')).toHaveTextContent('9');
+    await userEvent.click(z);
+    expect(onTarget).toHaveBeenCalledWith('z');
   });
 });
 

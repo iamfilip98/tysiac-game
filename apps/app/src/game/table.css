@@ -90,4 +90,11 @@
 .badge--looking { background: transparent; box-shadow: inset 0 0 0 1px var(--chip-muted-bg); opacity: 0.85; animation: looking 1.6s ease-in-out infinite; }
 @keyframes looking { 50% { opacity: 0.45; } }
 @media (prefers-reduced-motion: reduce) { .badge--looking { animation: none; } }
+
+/* The card given to an opponent during the hand-out: a real card, small but legible (rank over suit). */
+.opp__given { display: flex; justify-content: center; margin-top: 2px; }
+.opp__given .card--mini { --w: 30px; box-shadow: 0 0 0 2px var(--accent), 0 2px 5px rgba(0, 0, 0, 0.35); }
+.opp__given .card--mini .card__idx { left: 0; right: 0; width: auto; top: 8%; }
+.opp__given .card--mini .card__rank { font-size: calc(var(--w) * 0.5); }
+.opp__given .card--mini .card__suit { font-size: calc(var(--w) * 0.44); }
 .opp .chip--coach { font-size: 10px; padding: 1px 7px; }

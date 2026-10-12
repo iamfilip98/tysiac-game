@@ -20,8 +20,9 @@ async function perform(page: Page, e: ExpectedHint): Promise<void> {
       return page.getByRole('button', { name: `Play ${e.card}` }).click();
     case 'handout':
       for (const g of e.give!) {
-        await hand.getByRole('button', { name: g.card }).click({ position: CARD_STRIP });
+        // Pick the recipient's slot, then tap the card (one tap per card).
         await page.getByRole('button', { name: `Give to ${g.to}` }).click();
+        await hand.getByRole('button', { name: g.card }).click({ position: CARD_STRIP });
       }
       return page.getByRole('button', { name: 'Confirm hand-out' }).click();
   }

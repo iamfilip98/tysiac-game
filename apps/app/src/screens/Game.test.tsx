@@ -138,26 +138,26 @@ describe('Game screen: other phases', () => {
     expect(conn.acts()[0].action).toEqual({ type: 'pass' });
   });
 
-  it('hand-out: tap a card, tap an opponent, take back, then confirm both', async () => {
+  it('hand-out: one tap per card fills the next slot; a slot can be picked first; a filled slot gives it back', async () => {
     const user = userEvent.setup();
     const conn = join(findState(s => s.phase === 'handout' && turnOf(s) === 'me'));
     render(<Game />);
     const first = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: first }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
     expect(within(hand()).queryByRole('button', { name: first })).toBeNull();
+    expect(useSelection.getState().selected).toBeNull();
     await user.click(screen.getByRole('button', { name: `Take back ${first}` }));
     expect(within(hand()).getByRole('button', { name: first })).toBeInTheDocument();
 
+    // Pick Bot Zenek's slot first: the next card goes there.
+    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
     await user.click(within(hand()).getByRole('button', { name: first }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
     const second = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: second }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
     await user.click(screen.getByRole('button', { name: 'Confirm hand-out' }));
     const action = conn.acts()[0].action as Extract<Action, { type: 'handout' }>;
-    expect(cardLabel(action.to.b)).toBe(first);
-    expect(cardLabel(action.to.z)).toBe(second);
+    expect(cardLabel(action.to.z)).toBe(first);
+    expect(cardLabel(action.to.b)).toBe(second);
   });
 
   it('menu opens the score sheet and settings without a name field', async () => {
@@ -183,10 +183,8 @@ describe('Game screen: fix round 1', () => {
     render(<Game />);
     const first = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: first }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
     const second = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
     await user.click(within(hand()).getByRole('button', { name: second }));
-    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
     await user.click(screen.getByRole('button', { name: 'Confirm hand-out' }));
     expect(conn.acts()).toHaveLength(1);
     expect(within(hand()).queryByRole('button', { name: first })).toBeNull();
@@ -215,9 +213,9 @@ describe('Game screen: fix round 1', () => {
 
 describe('Game screen: coach hand-out hints (D12)', () => {
   const recommendedKeys = () =>
-    within(hand()).getAllByRole('button').filter(b => b.classList.contains('card--recommended')).map(b => b.getAttribute('data-card'));
+    Array.from(hand().querySelectorAll('[data-coach-arrow]')).map(b => b.getAttribute('data-coach-arrow'));
 
-  it('outlines both suggested cards, then only the remaining one with a headline that names it', async () => {
+  it('points an arrow at both suggested cards (never raising them), then only the remaining one', async () => {
     const user = userEvent.setup();
     const s0 = findState(s => s.phase === 'handout' && turnOf(s) === 'me');
     const conn = join(s0);
@@ -229,10 +227,12 @@ describe('Game screen: coach hand-out hints (D12)', () => {
     const [[p1, c1], [p2, c2]] = Object.entries(to);
     const name = (p: string) => (p === 'b' ? 'Bot Basia' : 'Bot Zenek');
     expect(recommendedKeys().sort()).toEqual([cardKey(c1), cardKey(c2)].sort());
+    expect(within(hand()).queryAllByRole('button', { pressed: true })).toEqual([]);
+    expect(useSelection.getState().selected).toBeNull();
     expect(screen.getByText(textSuits(advice.headline))).toBeInTheDocument();
 
-    await user.click(within(hand()).getByRole('button', { name: cardLabel(c1) }));
     await user.click(screen.getByRole('button', { name: `Give to ${name(p1)}` }));
+    await user.click(within(hand()).getByRole('button', { name: cardLabel(c1) }));
     expect(recommendedKeys()).toEqual([cardKey(c2)]);
     expect(screen.getByText(textSuits(`Give ${cardLabel(c2)} to ${name(p2)}`))).toBeInTheDocument();
   });

@@ -15,6 +15,8 @@ export interface ActionZoneProps {
   busy: boolean;
   selected: Card | null;
   given: Partial<Record<PlayerId, Card>>;
+  /** Hand-out: the slot the next tapped card goes to. */
+  next: PlayerId | null;
   hint: string | null;
   coach: boolean;
   advice: Advice | null;
@@ -23,6 +25,7 @@ export interface ActionZoneProps {
   onAct(a: Action): void;
   onPlay(card: Card): void;
   onConfirmHandout(): void;
+  onSlot(p: PlayerId): void;
   onBotFor(p: PlayerId): void;
   onWhy(): void;
 }
@@ -60,7 +63,7 @@ export function ActionZone(p: ActionZoneProps) {
         body = <DecisionPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} onAct={p.onAct} />;
         break;
       case 'handout':
-        body = <HandoutPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} given={p.given} selected={p.selected} onConfirm={p.onConfirmHandout} />;
+        body = <HandoutPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} given={p.given} next={p.next} onSlot={p.onSlot} onConfirm={p.onConfirmHandout} />;
         break;
       case 'tricks':
         body = <TrickPanel view={view} myTurn={myTurn} busy={p.busy} wait={wait} selected={p.selected} onPlay={p.onPlay} />;

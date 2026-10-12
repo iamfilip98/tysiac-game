@@ -4,7 +4,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { advise, cardEquals, cardKey, explainIllegal, type Advice, type Card, type PlayerId } from '@tysiac/engine';
 import { coachOn, useRoom } from '../store/room';
 import { isIdle } from '../store/client';
-import { useSelection } from '../game/selection';
+import { nextRecipient, useSelection } from '../game/selection';
 import { useNow } from '../game/useNow';
 import { TopBar } from '../game/TopBar';
 import { Opponents } from '../game/Opponents';
@@ -101,6 +101,9 @@ export default function Game() {
   const selectedCard = hand.find(c => cardKey(c) === sel.selected) ?? null;
   const recommended = recommendedKeys(advice, givenCards);
   const isHost = s.room?.hostId === s.me;
+  const handingOut = myTurn && shown.phase === 'handout';
+  const recipients = r ? r.active.filter(p => p !== shown.me) : [];
+  const next = handingOut ? nextRecipient(recipients, sel.given, sel.target) : null;
 
   const onCardTap = (card: Card) => {
     room.clearToast();
@@ -121,9 +124,10 @@ export default function Game() {
       sel.select(sel.selected === key ? null : key);
       return;
     }
-    if (shown.phase === 'handout' && myTurn) {
+    if (handingOut) {
+      // One tap per card: it goes straight to the next empty slot (or the slot tapped first).
       sel.setHint(null);
-      sel.select(sel.selected === key ? null : key);
+      if (next) sel.give(next, card);
     }
   };
   const onPlay = (card: Card) => {
@@ -134,8 +138,9 @@ export default function Game() {
     // Keep `given` (cards stay out of the hand, chips stay) until the phase changes; a reject leaves it restorable.
     room.act({ type: 'handout', to: { ...sel.given } });
   };
-  const onTarget = (p: PlayerId) => {
-    if (selectedCard) sel.give(p, selectedCard);
+  const onSlot = (p: PlayerId) => {
+    if (sel.given[p]) sel.ungive(p);
+    else sel.setTarget(p);
   };
   const leave = () => {
     room.detach();
@@ -160,9 +165,9 @@ export default function Game() {
           view={shown}
           room={s.room}
           given={sel.given}
-          targetable={myTurn && shown.phase === 'handout' && selectedCard !== null}
-          onTarget={onTarget}
-          onUngive={sel.ungive}
+          targetable={handingOut}
+          next={next}
+          onTarget={onSlot}
         />
         <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} marriage={s.marriage} held={s.holding ? s.held : null} />
         <Ticker view={shown} announce={s.announce} />
@@ -174,6 +179,7 @@ export default function Game() {
           busy={s.inflight !== null || s.pending !== null}
           selected={selectedCard}
           given={sel.given}
+          next={next}
           hint={sel.hint ?? s.toast}
           coach={coach}
           advice={advice}
@@ -182,6 +188,7 @@ export default function Game() {
           onAct={a => room.act(a)}
           onPlay={onPlay}
           onConfirmHandout={onConfirmHandout}
+          onSlot={onSlot}
           onBotFor={p => room.send({ t: 'botFor', playerId: p })}
           onWhy={() => setSheet('why')}
         />

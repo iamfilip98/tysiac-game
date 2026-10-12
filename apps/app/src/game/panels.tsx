@@ -3,7 +3,8 @@ import { RULES, cardLabel, explainIllegal, marriagesInHand, type Action, type Ca
 import type { RoomInfo, RoomSeat } from '../net/protocol';
 import { AWAY_BOT_AFTER_MS } from '../net/connection';
 import { who } from '../store/notes';
-import { SUIT_TEXT, textSuits } from './cards';
+import { SUIT_TEXT, isRed, textSuits } from './cards';
+import { CardFace } from './Card';
 
 const VERB: Partial<Record<PlayerView['phase'], string>> = {
   bidding: 'is bidding',
@@ -134,8 +135,20 @@ export function DecisionPanel({ view, myTurn, busy, wait, onAct }: PanelProps & 
   );
 }
 
-export function HandoutPanel(props: PanelProps & { given: Partial<Record<PlayerId, Card>>; selected: Card | null; onConfirm(): void }) {
-  const { view, myTurn, busy, wait, given, selected, onConfirm } = props;
+export interface HandoutPanelProps extends PanelProps {
+  given: Partial<Record<PlayerId, Card>>;
+  /** The slot the next tapped card goes to. */
+  next: PlayerId | null;
+  onSlot(p: PlayerId): void;
+  onConfirm(): void;
+}
+
+/**
+ * OG DistributionModal, inline: one labelled slot per recipient (avatar, name, the card or an empty
+ * frame). Tapping a hand card fills the next empty slot (or the slot tapped first); tapping a filled
+ * slot takes its card back. Then Confirm.
+ */
+export function HandoutPanel({ view, myTurn, busy, wait, given, next, onSlot, onConfirm }: HandoutPanelProps) {
   const recipients = view.round!.active.filter(p => p !== view.me);
   const done = recipients.filter(p => given[p]).length;
   if (!myTurn) {
@@ -146,18 +159,44 @@ export function HandoutPanel(props: PanelProps & { given: Partial<Record<PlayerI
       </>
     );
   }
-  const text =
-    done === recipients.length
-      ? 'Both cards chosen. Confirm, or tap ✕ to change.'
-      : selected
-        ? `Now tap who gets ${textSuits(cardLabel(selected))}.`
-        : 'Tap a card, then tap who gets it.';
   return (
     <>
-      <div className="lbl">
-        Handing out · {done} of {recipients.length}
+      <div className="row">
+        <div className="lbl">
+          Handing out · {done} of {recipients.length}
+        </div>
+        <div className="zone__muted handout__tip">{next ? `Tap a card for ${who(view, next)}.` : 'Tap a slot to take a card back.'}</div>
       </div>
-      <p className="zone__text">{text}</p>
+      <div className="slots">
+        {recipients.map(p => {
+          const seat = view.seats.find(x => x.id === p);
+          const card = given[p];
+          return (
+            <button
+              key={p}
+              type="button"
+              className={`slot ${card ? 'slot--filled' : ''} ${p === next ? 'slot--next' : ''}`}
+              data-slot={p}
+              aria-label={card ? `Take back ${cardLabel(card)}` : `Give to ${seat?.name ?? who(view, p)}`}
+              aria-pressed={p === next}
+              disabled={busy}
+              onClick={() => onSlot(p)}
+            >
+              <span className="avatar slot__avatar" aria-hidden="true">
+                {seat?.avatar}
+              </span>
+              <span className="slot__name">{seat?.name ?? who(view, p)}</span>
+              {card ? (
+                <span className={`card slot__card ${isRed(card) ? 'card--red' : ''}`} aria-hidden="true">
+                  <CardFace card={card} />
+                </span>
+              ) : (
+                <span className="slot__empty" aria-hidden="true" />
+              )}
+            </button>
+          );
+        })}
+      </div>
       <div className="zone__buttons">
         <button type="button" className="btn btn--pri" disabled={busy || done < recipients.length} onClick={onConfirm}>
           Confirm hand-out

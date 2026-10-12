@@ -68,9 +68,9 @@ export async function expectTableIgnoresTaps(page: Page): Promise<void> {
 
 export async function handOut(page: Page): Promise<void> {
   const hand = page.getByRole('group', { name: 'Your hand' });
+  // One tap per card: each goes to the next empty slot.
   for (let k = 0; k < 2; k++) {
     await hand.getByRole('button').first().click({ position: CARD_STRIP }); // the visible index strip: later cards overlap the centre
-    await page.getByRole('button', { name: /^Give to / }).first().click();
   }
   await page.getByRole('button', { name: 'Confirm hand-out' }).click();
 }

@@ -31,3 +31,24 @@
 .coachline__text { flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .coachline b { color: var(--accent-soft); }
 .why { padding-left: 18px; line-height: 1.5; }
+
+/* Hand-out slots (OG DistributionModal, inline): one per recipient, the next empty one ringed. */
+.handout__tip { text-align: right; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.slots { display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 8px; }
+.slot {
+  display: flex; align-items: center; gap: 6px; min-width: 0; min-height: 60px; padding: 6px 8px;
+  border-radius: 12px; background: var(--btn-sec-bg); border: var(--btn-sec-border); color: var(--ink); text-align: left;
+  --avatar: 26px;
+}
+.slot--next { box-shadow: 0 0 0 2.5px var(--accent), 0 0 12px color-mix(in srgb, var(--accent) 45%, transparent); }
+.slot:disabled { opacity: 0.6; }
+.slot__avatar { flex: none; }
+.slot__name { flex: 1; min-width: 0; font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot__card, .slot__empty { --w: 34px; flex: none; }
+.slot__card { box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3); }
+.slot__card .card__pip, .slot__card .card__idx--br { display: none; }
+.slot__card .card__idx { left: 0; right: 0; width: auto; top: 8%; }
+.slot__card .card__rank { font-size: calc(var(--w) * 0.5); }
+.slot__card .card__suit { font-size: calc(var(--w) * 0.44); }
+.slot__empty { width: var(--w); height: calc(var(--w) * 1.42); border-radius: calc(var(--w) * 0.11); border: 2px dashed currentColor; opacity: 0.35; }
+.slot--next .slot__empty { opacity: 0.8; border-color: var(--accent); }
