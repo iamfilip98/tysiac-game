@@ -6,6 +6,10 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const requireApp = process.argv.includes('--require-app');
+// Read the protocol version from source so the smoke test never drifts from the server.
+const PROTOCOL_VERSION = Number(
+  readFileSync(new URL('../../../packages/protocol/src/index.ts', import.meta.url), 'utf8').match(/PROTOCOL_VERSION = (\d+)/)[1],
+);
 const base = process.argv[2]?.replace(/\/$/, '');
 if (!base) {
   console.error('usage: node scripts/smoke.mjs <base-url>');
@@ -51,7 +55,7 @@ console.log('✓ GET /api/rooms/:code');
 const welcome = await new Promise((resolve, reject) => {
   const ws = new WebSocket(`${base.replace(/^http/, 'ws')}/ws/${code}`);
   const timer = setTimeout(() => reject(new Error('no welcome within 10 s')), 10_000);
-  ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', v: 1, playerId, secret, name: 'Smoke', avatar: '🧪', coach: false }));
+  ws.onopen = () => ws.send(JSON.stringify({ t: 'hello', v: PROTOCOL_VERSION, playerId, secret, name: 'Smoke', avatar: '🧪', coach: false }));
   ws.onmessage = (event) => {
     const msg = JSON.parse(event.data);
     if (msg.t === 'welcome') {
