@@ -61,6 +61,9 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
   const chip = chipFor(view, id);
   const total = view.scores[id]?.total ?? 0;
   const away = seat !== null && !seat.isBot && !seat.connected;
+  const inTalon = view.phase === 'talon' && r !== null && id !== r.bid.high;
+  const looking = inTalon && r.talonWaiting.includes(id);
+  const seen = inTalon && !looking;
   const cls = `opp ${view.turn === id && !view.paused ? 'opp--turn' : ''} ${targetable && !given && !sittingOut ? 'opp--target' : ''}`;
   const body = (
     <>
@@ -93,6 +96,8 @@ function Opponent({ id, view, seat, given, targetable, onTarget, onUngive }: Opp
           ))}
         </span>
       )}
+      {seen && <span className="badge badge--ok">✓ seen</span>}
+      {looking && <span className="badge badge--looking">looking…</span>}
       {away && <span className="badge">{seat.botFor ? '🤖 bot playing' : 'away'}</span>}
     </>
   );

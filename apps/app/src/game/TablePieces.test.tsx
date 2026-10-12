@@ -1,11 +1,11 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { cardLabel, type PlayerView } from '@tysiac/engine';
+import { cardLabel, talonWaiting, type PlayerView } from '@tysiac/engine';
 import { TopBar } from './TopBar';
 import { Opponents, chipFor } from './Opponents';
 import { Table } from './Table';
-import { findState, roomInfo, viewOf } from '../test/fixtures';
+import { findState, roomInfo, step, viewOf } from '../test/fixtures';
 
 const bidding = viewOf(findState(s => s.phase === 'bidding' && s.round!.bid.passed.length === 1 && s.round!.bid.passed[0] !== 'me'));
 const tricks = viewOf(findState(s => s.phase === 'tricks' && s.round!.trick.cards.length === 2 && s.round!.lastTrick !== null));
@@ -33,6 +33,17 @@ describe('TopBar', () => {
     await userEvent.click(screen.getByRole('button', { name: /^Score sheet/ }));
     expect(onMenu).toHaveBeenCalledOnce();
     expect(onScores).toHaveBeenCalledOnce();
+  });
+});
+
+describe('Opponents talon step', () => {
+  it('marks seats still looking and seats that have seen the talon', () => {
+    let s = findState(x => x.phase === 'talon' && x.round!.bid.high === 'me' && talonWaiting(x).length >= 2);
+    const [first, other] = talonWaiting(s);
+    s = step(s, first, { type: 'ackTalon' }).state;
+    render(<Opponents view={viewOf(s)} room={roomInfo()} />);
+    expect(within(document.querySelector(`[data-seat="${first}"]`)! as HTMLElement).getByText('✓ seen')).toBeInTheDocument();
+    expect(within(document.querySelector(`[data-seat="${other}"]`)! as HTMLElement).getByText('looking…')).toBeInTheDocument();
   });
 });
 

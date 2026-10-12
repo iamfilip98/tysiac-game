@@ -186,7 +186,8 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
   const e = s.queue[0];
   if (!e) {
     if (s.view && s.shown !== s.view) {
-      const sound: SoundName | undefined = s.view.turn === s.me && s.view.phase !== 'gameEnd' ? 'turn' : undefined;
+      const mine = s.view.turn === s.me || (s.me !== null && (s.view.round?.talonWaiting.includes(s.me) ?? false));
+      const sound: SoundName | undefined = mine && s.view.phase !== 'gameEnd' ? 'turn' : undefined;
       return { state: { ...s, shown: s.view, holding: false }, wait: 0, kind: 'sync', sound };
     }
     return null;

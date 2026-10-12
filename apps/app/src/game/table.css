@@ -80,3 +80,8 @@
 .received__from { font-size: 13px; }
 @keyframes received-in { from { opacity: 0; scale: .8; } }
 @media (prefers-reduced-motion: reduce) { .received { animation: none; } }
+
+.badge--ok { background: color-mix(in srgb, var(--accent) 30%, transparent); }
+.badge--looking { background: transparent; box-shadow: inset 0 0 0 1px var(--chip-muted-bg); opacity: 0.85; animation: looking 1.6s ease-in-out infinite; }
+@keyframes looking { 50% { opacity: 0.45; } }
+@media (prefers-reduced-motion: reduce) { .badge--looking { animation: none; } }

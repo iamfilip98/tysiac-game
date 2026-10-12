@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { cardEquals, cardKey, turnOf, type Action, type Card, type GameEvent, type GameState } from '@tysiac/engine';
+import { cardEquals, cardKey, turnOf, talonWaiting, type Action, type Card, type GameEvent, type GameState } from '@tysiac/engine';
 import {
   FLIGHT_MS, HOLD_MS, NOTE_MS, advance, applyServer, beginAct, beginPlay, dismissResult, initialClient, isIdle,
   type ClientState, type Step,
@@ -214,6 +214,22 @@ describe('advance', () => {
     const { steps } = drain(applyServer(ready(s0), stateMsg(s1, events), 0));
     expect(steps.at(-1)!.kind).toBe('sync');
     expect(steps.at(-1)!.sound).toBe('turn');
+  });
+});
+
+describe('talon step', () => {
+  it('plays the turn sound when I must confirm the talon', () => {
+    const s = findState(x => x.phase === 'talon' && x.round!.bid.high !== 'me' && talonWaiting(x).includes('me'));
+    const v2 = viewOf(s);
+    const step = advance({ ...initialClient, me: 'me', room: roomInfo(), view: v2, shown: viewOf(findState(x => x.phase === 'bidding')), queue: [] }, false)!;
+    expect(step.sound).toBe('turn');
+  });
+  it('stays silent once I have confirmed', () => {
+    let s = findState(x => x.phase === 'talon' && x.round!.bid.high !== 'me' && talonWaiting(x).includes('me'));
+    s = step(s, 'me', { type: 'ackTalon' }).state;
+    const v2 = viewOf(s);
+    const st = advance({ ...initialClient, me: 'me', room: roomInfo(), view: v2, shown: viewOf(findState(x => x.phase === 'bidding')), queue: [] }, false)!;
+    expect(st.sound).toBeUndefined();
   });
 });
 

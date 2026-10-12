@@ -28,4 +28,8 @@ describe('announcements', () => {
     expect(text({ type: 'handedOut', p: 'b', recipients: ['me', 'z'], cards: { me: { suit: 'hearts', rank: 'Q' } } })).toBe('You got Q♥\uFE0E from Bot Basia');
     expect(text({ type: 'handedOut', p: 'me', recipients: ['b', 'z'], cards: {} })).toBe('You handed out 2 cards');
   });
+  it('announces talon confirmations', () => {
+    expect(text({ type: 'talonSeen', p: 'b' })).toBe('Bot Basia has seen the talon');
+    expect(text({ type: 'talonSeen', p: 'me' })).toBe('You have seen the talon');
+  });
 });

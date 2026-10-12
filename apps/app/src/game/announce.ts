@@ -8,6 +8,7 @@ export type Announcement =
   | { kind: 'pass'; p: PlayerId }
   | { kind: 'bidWon'; p: PlayerId; amount: number }
   | { kind: 'threw'; p: PlayerId; amount: number }
+  | { kind: 'talonSeen'; p: PlayerId }
   | { kind: 'handout'; p: PlayerId }
   | { kind: 'received'; from: PlayerId; card: Card }
   | { kind: 'wykladana'; p: PlayerId }
@@ -25,6 +26,7 @@ export function announcementFor(e: GameEvent, me: PlayerId | null): Announcement
     case 'passed': return { kind: 'pass', p: e.p };
     case 'biddingWon': return { kind: 'bidWon', p: e.p, amount: e.amount };
     case 'threw': return { kind: 'threw', p: e.p, amount: e.amount };
+    case 'talonSeen': return { kind: 'talonSeen', p: e.p };
     case 'handedOut': {
       const mine = me !== null && e.p !== me ? e.cards[me] : undefined;
       return mine ? { kind: 'received', from: e.p, card: mine } : { kind: 'handout', p: e.p };
@@ -54,6 +56,7 @@ function announceRaw(a: Announcement, v: PlayerView): string {
     case 'pass': return `${who(v, a.p)} passed`;
     case 'bidWon': return `${who(v, a.p)} won the bid at ${a.amount}`;
     case 'threw': return `${who(v, a.p)} threw in at ${a.amount}`;
+    case 'talonSeen': return isMe(v, a.p) ? 'You have seen the talon' : `${who(v, a.p)} has seen the talon`;
     case 'handout': return isMe(v, a.p) ? 'You handed out 2 cards' : `${who(v, a.p)} handed out cards`;
     case 'received': return `You got ${cardLabel(a.card)} from ${who(v, a.from)}`;
     case 'wykladana': return `${who(v, a.p)} won every trick — wykładana!`;
