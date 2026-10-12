@@ -1,6 +1,7 @@
 import type { Card, PlayerId, Suit, TrickCard } from './types';
-import { RULES, SUIT_SYMBOL } from './rules';
-import { cardEquals, cardLabel, hasMarriage } from './cards';
+import { RULES } from './rules';
+import { cardEquals, hasMarriage } from './cards';
+import { msg, type EngineMsg } from './messages';
 
 /**
  * Card play rules for Polish Tysiąc:
@@ -12,7 +13,7 @@ import { cardEquals, cardLabel, hasMarriage } from './cards';
 
 export interface ValidationResult {
   isValid: boolean;
-  reason?: string;
+  reason?: EngineMsg;
 }
 
 const STRENGTH = RULES.rankStrength;
@@ -54,7 +55,7 @@ export function getHighestCardInTrick(cards: Card[], leadSuit: Suit, trumpSuit: 
 export interface TrickWinnerResult {
   winnerId: PlayerId;
   winningCard: Card;
-  reason: string;
+  reason: EngineMsg;
   /** A trump won a trick whose lead suit was not trump. */
   byTrump: boolean;
 }
@@ -65,10 +66,9 @@ export function getTrickWinnerWithReason(trick: TrickCard[], trumpSuit: Suit | n
   const winner = trick.find(t => cardEquals(t.card, highestCard))!;
   const isTrump = trumpSuit !== null && highestCard.suit === trumpSuit;
   const isLeadSuit = highestCard.suit === leadSuit;
-  let reason: string;
-  if (isTrump && !isLeadSuit) reason = `${cardLabel(highestCard)} won by trumping`;
-  else if (isTrump && isLeadSuit) reason = `${cardLabel(highestCard)} won as highest trump (trump is lead suit)`;
-  else reason = `${cardLabel(highestCard)} won as highest card in lead suit`;
+  const card = { card: highestCard };
+  const reason =
+    isTrump && !isLeadSuit ? msg('trick.byTrump', { card }) : isTrump ? msg('trick.highestTrump', { card }) : msg('trick.highestLead', { card });
   return { winnerId: winner.p, winningCard: highestCard, reason, byTrump: isTrump && !isLeadSuit };
 }
 
@@ -95,9 +95,9 @@ export function canDeclareMarriage(
   declaredMarriages: Suit[],
   isLeading: boolean,
 ): ValidationResult {
-  if (!isLeading) return { isValid: false, reason: 'Can only declare marriage when leading a trick' };
-  if (declaredMarriages.includes(suit)) return { isValid: false, reason: 'Marriage already declared' };
-  if (!hasMarriage(hand, suit)) return { isValid: false, reason: 'No marriage in this suit' };
+  if (!isLeading) return { isValid: false, reason: msg('valid.marriageNotLeading') };
+  if (declaredMarriages.includes(suit)) return { isValid: false, reason: msg('valid.marriageAlready') };
+  if (!hasMarriage(hand, suit)) return { isValid: false, reason: msg('valid.marriageNone') };
   return { isValid: true };
 }
 
@@ -107,9 +107,9 @@ export function validateCardPlay(
   trick: TrickCard[],
   trumpSuit: Suit | null,
 ): ValidationResult {
-  if (!hand.some(c => cardEquals(c, card))) return { isValid: false, reason: 'Card not in hand' };
+  if (!hand.some(c => cardEquals(c, card))) return { isValid: false, reason: msg('valid.notInHand') };
   const valid = getValidCards(hand, trick, trumpSuit);
-  if (!valid.some(c => cardEquals(c, card))) return { isValid: false, reason: 'Invalid card for current rules' };
+  if (!valid.some(c => cardEquals(c, card))) return { isValid: false, reason: msg('valid.invalidCard') };
   return { isValid: true };
 }
 
@@ -119,16 +119,16 @@ export function cardRuleMessage(
   trick: TrickCard[],
   trumpSuit: Suit | null,
   card: Card,
-): string | null {
-  if (!hand.some(c => cardEquals(c, card))) return "That card isn't in your hand";
+): EngineMsg | null {
+  if (!hand.some(c => cardEquals(c, card))) return msg('illegal.notInHand');
   if (trick.length === 0) return null;
   const lead = trick[0].card;
   const inSuit = hand.filter(c => c.suit === lead.suit);
-  if (inSuit.length > 0 && card.suit !== lead.suit) return `You must follow ${SUIT_SYMBOL[lead.suit]}`;
+  if (inSuit.length > 0 && card.suit !== lead.suit) return msg('illegal.mustFollow', { suit: { suit: lead.suit } });
   if (trick.length === 1 && inSuit.length > 0) {
     const beating = inSuit.filter(c => canBeat(c, lead, lead.suit, trumpSuit));
     if (beating.length > 0 && !beating.some(c => cardEquals(c, card))) {
-      return `First to respond must beat ${cardLabel(lead)} if you can`;
+      return msg('illegal.mustBeat', { card: { card: lead } });
     }
   }
   return null;

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RULES, createGame, reduce, viewFor, type GameState, type PlayerView } from '@tysiac/engine';
 import { BEATS, describeExpected, lessonAdvice, lessonHint, nextBeat } from './beats';
+import { lineText } from '../i18n/engineText';
 import { LEARNER_ID, LESSON_FIRST_DEALER, LESSON_SEED, buildLesson, expectedAt, lessonSeats } from './lesson';
 
 const lesson = buildLesson(LESSON_SEED);
@@ -11,7 +12,7 @@ function views(): PlayerView[] {
   const out = [viewFor(s, LEARNER_ID)];
   for (const e of lesson.entries) {
     const r = reduce(s, e.pid, e.action, 0);
-    if (!r.ok) throw new Error(r.error.message);
+    if (!r.ok) throw new Error(r.error.msg.key);
     s = r.state;
     out.push(viewFor(s, LEARNER_ID));
   }
@@ -54,7 +55,7 @@ describe('beats', () => {
       const v = vs[e.seq - base];
       const a = lessonAdvice(v, expectedAt(lesson, v.seq))!;
       expect(a.action).toEqual(e.action);
-      expect(a.headline.length).toBeGreaterThan(0);
+      expect(lineText(a.headline, v).length).toBeGreaterThan(0);
       expect(a.reasons.length).toBeGreaterThan(0);
     }
   });
@@ -66,15 +67,15 @@ describe('beats', () => {
     const v = vs[e.seq - base];
     const [[p1, c1]] = Object.entries(e.action.to);
     const one = lessonAdvice(v, e.action, { handoutGiven: { [p1]: c1 } })!;
-    expect(one.headline).not.toContain(' and ');
+    expect(lineText(one.headline, v)).not.toContain(' and ');
     const all = lessonAdvice(v, e.action, { handoutGiven: e.action.to })!;
-    expect(all.headline).toMatch(/^Confirm: /);
+    expect(lineText(all.headline, v)).toMatch(/^Confirm: /);
   });
 
   it('the trick-1 lead is announced as a marriage declaration', () => {
     const vs = views();
     const lead = lesson.entries.find(e => e.pid === LEARNER_ID && e.action.type === 'card')!;
-    expect(lessonAdvice(vs[lead.seq - base], lead.action)!.headline).toMatch(/^Lead Q. to declare your marriage$/);
+    expect(lineText(lessonAdvice(vs[lead.seq - base], lead.action)!.headline, vs[lead.seq - base])).toMatch(/^Lead Q. to declare your marriage$/);
   });
 
   it('lessonHint names the scripted move, and pausing is explained', () => {

@@ -1,4 +1,4 @@
-import type { Action, GameEvent, PlayerId, PlayerView } from '@tysiac/engine';
+import type { Action, EngineMsg, GameEvent, PlayerId, PlayerView } from '@tysiac/engine';
 
 export const PROTOCOL_VERSION = 2;
 
@@ -63,7 +63,8 @@ export type ServerMessage =
   | { t: 'room'; room: RoomInfo }
   | { t: 'state'; seq: number; view: PlayerView; events: GameEvent[] }   // events already filtered for this player
   | { t: 'ack'; id: string }
-  | { t: 'reject'; id: string; code: string; message: string }
+  /** `message` is a stable key for logs; `msg` (engine rejections) is what the app translates and shows. */
+  | { t: 'reject'; id: string; code: string; message: string; msg?: EngineMsg }
   | { t: 'error'; code: ErrorCode; message: string }
   | { t: 'pong' };
 

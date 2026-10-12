@@ -5,6 +5,7 @@ import {
   type ClientState, type Step,
 } from './client';
 import { eventNote } from './notes';
+import { engineText } from '../i18n/engineText';
 import { botStep, findState, roomInfo, stateMsg, step, viewOf, welcomeMsg } from '../test/fixtures';
 
 const ready = (s: GameState): ClientState => {
@@ -244,7 +245,7 @@ describe('eventNote', () => {
   });
   it('uses the engine explanation with the coach', () => {
     const e: GameEvent = { type: 'trickWon', p: 'me', cards: [], card: { suit: 'hearts', rank: 'A' }, points: 0, byTrump: true, audience: 'all' };
-    expect(eventNote(e, v, true)).toContain('You won with A♥');
+    expect(engineText(eventNote(e, v, true)!, v)).toContain('You won with A♥');
   });
 });
 

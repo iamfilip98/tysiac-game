@@ -1,5 +1,6 @@
 import { en, type Dict, type MsgKey } from './en';
 import type { Lang, Msg, Params } from './types';
+import type { PlaceholdersOf } from './placeholders';
 
 export type { Lang, Msg, Params } from './types';
 export type { MsgKey } from './en';
@@ -38,8 +39,20 @@ function pick(m: Msg, params?: Params): string {
   return (cat === 'few' ? m.few : cat === 'many' ? m.many : cat === 'one' ? m.one : undefined) ?? m.other;
 }
 
-/** The text for `key` in the active language, with `{name}` placeholders filled from `params` (`n` picks the plural form). */
-export function t(key: MsgKey, params?: Params): string {
+/** The params a key needs: one per placeholder of its English text (none → no argument). */
+export type ParamsOf<K extends MsgKey> = { [P in PlaceholdersOf<(typeof en)[K]>]: string | number };
+type TArgs<K extends MsgKey> = [PlaceholdersOf<(typeof en)[K]>] extends [never] ? [] : [params: ParamsOf<K>];
+
+/**
+ * The text for `key` in the active language, with `{name}` placeholders filled from `params` (`n` picks the
+ * plural form). A missing param is a type error.
+ */
+export function t<K extends MsgKey>(key: K, ...args: TArgs<K>): string {
+  return tAny(key, args[0] as Params | undefined);
+}
+
+/** Untyped variant for keys built at runtime (engine messages). A missing param keeps its `{name}`. */
+export function tAny(key: MsgKey, params?: Params): string {
   const text = pick(dict[key] ?? en[key], params);
   return params ? text.replace(/\{(\w+)\}/g, (all, k: string) => (k in params ? String(params[k]) : all)) : text;
 }

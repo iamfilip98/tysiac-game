@@ -1,9 +1,11 @@
 import {
-  RULES, actionsEqual, advise, cardEquals, cardLabel, marriagesInHand,
-  type Action, type Advice, type Card, type PlayerId, type PlayerView, type Rank, type Suit,
+  RULES, actionsEqual, advise, cardEquals, cardLabel, marriagesInHand, msg,
+  type Action, type Card, type PlayerId, type PlayerView, type Rank, type Suit,
 } from '@tysiac/engine';
 import { SUIT_TEXT } from '../game/cards';
-import { throwCost } from '../game/panels';
+import { throwCost, throwCostLine } from '../game/panels';
+import { appLine, lineText, type CoachAdvice, type Line } from '../i18n/engineText';
+import { t } from '../i18n';
 import { cannotFollowNow, marriageLead, mustBeatNow } from './lesson';
 
 export interface Beat {
@@ -156,55 +158,67 @@ export function nextBeat(v: PlayerView, seen: readonly string[]): Beat | null {
   return BEATS.find(b => !seen.includes(b.id) && b.ready(v)) ?? null;
 }
 
-const PLAN = "That's the plan for this hand — later the coach will help you choose.";
 
 /** The coach line during the lesson: the scripted move, explained (reasons from advise() when it agrees). */
 export function lessonAdvice(
   v: PlayerView,
   expected: Action | null,
   opts: { handoutGiven?: Partial<Record<string, Card>> } = {},
-): Advice | null {
+): CoachAdvice | null {
   if (!expected || v.turn !== v.me || !v.round) return null;
   const coach = advise(v, opts);
   const theirs = coach && actionsEqual(coach.action, expected) ? coach.reasons : [];
-  const why = (fallback: string): string[] => (theirs.length > 0 ? theirs : [fallback]);
+  const why = (fallback: Line): Line[] => (theirs.length > 0 ? theirs : [fallback]);
+  const plan = appLine('learn.advice.plan');
   switch (expected.type) {
     case 'bid':
-      return { action: expected, headline: `Bid ${expected.amount}`, reasons: why(`Your marriage lets you bid up to ${v.round.maxBid}.`) };
+      return {
+        action: expected,
+        headline: appLine('learn.advice.bid', { amount: expected.amount }),
+        reasons: why(appLine('learn.advice.bidWhy', { max: v.round.maxBid })),
+      };
     case 'pass':
-      return { action: expected, headline: 'Pass', reasons: why(PLAN) };
+      return { action: expected, headline: appLine('learn.advice.pass'), reasons: why(plan) };
     case 'play':
-      return { action: expected, headline: 'Play the hand', reasons: why(throwCost(v)) };
+      return { action: expected, headline: appLine('learn.advice.play'), reasons: why(throwCostLine(v)) };
     case 'throw':
-      return { action: expected, headline: 'Throw in', reasons: why(throwCost(v)) };
+      return { action: expected, headline: appLine('learn.advice.throw'), reasons: why(throwCostLine(v)) };
     case 'handout': {
       // Cards the learner has already assigned as scripted are not named again.
       const entries = Object.entries(expected.to);
       const open = entries.filter(([p, c]) => !(opts.handoutGiven?.[p] && cardEquals(opts.handoutGiven[p]!, c)));
-      const parts = (open.length > 0 ? open : entries).map(([p, c]) => `${cardLabel(c)} to ${nameOf(v, p)}`);
-      return { action: expected, headline: `${open.length > 0 ? 'Give' : 'Confirm:'} ${parts.join(' and ')}`, reasons: why(PLAN) };
+      const [a, b] = (open.length > 0 ? open : entries).map(([p, c]) => ({ card: { card: c }, player: { player: p } }));
+      const headline =
+        open.length === 0
+          ? msg('coach.handout.confirmNeutral', { card1: a.card, player1: a.player, card2: b.card, player2: b.player })
+          : b
+            ? msg('coach.handout.two', { card1: a.card, player1: a.player, card2: b.card, player2: b.player })
+            : msg('coach.handout.one', a);
+      return { action: expected, headline, reasons: why(plan) };
     }
     case 'card': {
       const lead = marriageLead(v);
+      const card = { card: expected.card };
       if (lead && actionsEqual(lead, expected)) {
         return {
           action: expected,
-          headline: `Lead ${cardLabel(expected.card)} to declare your marriage`,
-          reasons: [`+${RULES.marriageValues[expected.card.suit]} for you, and ${sym(expected.card.suit)} becomes trump.`],
+          headline: appLine('learn.advice.declare', { card }),
+          reasons: [appLine('learn.advice.declareWhy', { points: RULES.marriageValues[expected.card.suit], suit: { suit: expected.card.suit } })],
         };
       }
-      return { action: expected, headline: `Play ${cardLabel(expected.card)}`, reasons: why(PLAN) };
+      return { action: expected, headline: msg('coach.play', { card }), reasons: why(plan) };
     }
     default:
       return null;
   }
 }
 
+/** The toast when the learner tries something off-script: the scripted move, in the active language. */
 export function lessonHint(v: PlayerView | null, expected: Action | null, tried: Action): string {
-  if (tried.type === 'pause' || tried.type === 'resume') return 'The lesson waits for you — no need to pause.';
-  if (!v || !expected) return 'Not yet — wait for your turn.';
+  if (tried.type === 'pause' || tried.type === 'resume') return t('learn.hint.noPause');
+  if (!v || !expected) return t('learn.hint.wait');
   const a = lessonAdvice(v, expected);
-  return a ? `Lesson: ${a.headline}.` : 'Not yet — wait for your turn.';
+  return a ? t('learn.hint.lesson', { text: lineText(a.headline, v) }) : t('learn.hint.wait');
 }
 
 export interface ExpectedHint {

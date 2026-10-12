@@ -13,5 +13,13 @@ export const common = {
   'common.profile': 'Profile',
   'common.save': 'Save',
   'common.rules': 'Rules',
+  'common.you': 'You',
+  'common.someone': 'Someone',
+  'card.rank.A': 'A',
+  'card.rank.K': 'K',
+  'card.rank.Q': 'Q',
+  'card.rank.J': 'J',
+  'card.rank.10': '10',
+  'card.rank.9': '9',
   'common.points': { one: '{n} pt', other: '{n} pts' },
 } as const satisfies Record<string, Msg>;

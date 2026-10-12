@@ -2,6 +2,7 @@ import type { Card, PlayerId } from './types';
 import { RULES } from './rules';
 import { totalMarriageValue } from './cards';
 import type { ValidationResult } from './tricks';
+import { msg } from './messages';
 
 /** Max bid = 120 + total value of marriages in hand. */
 export function maxBidFor(hand: Card[]): number {
@@ -12,12 +13,12 @@ export function maxBidFor(hand: Card[]): number {
 export function validateBid(amount: number, currentBid: number, hand: Card[]): ValidationResult {
   const requiredBid = currentBid + RULES.bidStep;
   if (amount !== requiredBid) {
-    return { isValid: false, reason: `Bid must be exactly ${requiredBid} (current bid + 10)` };
+    return { isValid: false, reason: msg('bid.exact', { amount: requiredBid }) };
   }
   const marriageValue = totalMarriageValue(hand);
   const maxBid = RULES.maxBidBase + marriageValue;
   if (amount > maxBid) {
-    return { isValid: false, reason: `Maximum bid is ${maxBid} (120 + ${marriageValue} from marriages)` };
+    return { isValid: false, reason: msg('bid.max', { max: maxBid, marriages: marriageValue }) };
   }
   return { isValid: true };
 }

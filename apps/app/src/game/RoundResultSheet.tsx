@@ -1,4 +1,6 @@
-import { RULES, type PlayerView, type RoundSummary } from '@tysiac/engine';
+import { RULES, type EngineMsg, type PlayerView, type RoundSummary } from '@tysiac/engine';
+import { textSuits } from './cards';
+import { engineText } from '../i18n/engineText';
 import { Sheet } from '../ui/Sheet';
 import { who } from '../store/notes';
 
@@ -14,7 +16,7 @@ const signed = (n: number) => (n > 0 ? `+${n}` : String(n));
 export interface RoundResultSheetProps {
   summary: RoundSummary;
   view: PlayerView;
-  note: string | null;
+  note: EngineMsg | null;
   onContinue(): void;
 }
 
@@ -56,7 +58,7 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
       </table>
       {note && (
         <p className="coachnote">
-          <b>Coach:</b> {note}
+          <b>Coach:</b> {textSuits(engineText(note, view))}
         </p>
       )}
     </Sheet>

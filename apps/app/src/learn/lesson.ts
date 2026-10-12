@@ -105,7 +105,7 @@ export function buildLesson(seed: string): Lesson {
       action = botAction(view, rng);
     }
     const r = reduce(state, pid, action, 0);
-    if (!r.ok) throw new Error(`lesson ${seed}: ${pid} ${JSON.stringify(action)} rejected: ${r.error.message}`);
+    if (!r.ok) throw new Error(`lesson ${seed}: ${pid} ${JSON.stringify(action)} rejected: ${r.error.msg.key}`);
     entries.push({ seq: state.seq, pid, action });
     for (const e of r.events) {
       if (e.type === 'wykladana') moments.wykladana = true;

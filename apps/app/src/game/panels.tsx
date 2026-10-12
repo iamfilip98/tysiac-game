@@ -4,6 +4,7 @@ import type { RoomInfo, RoomSeat } from '../net/protocol';
 import { AWAY_BOT_AFTER_MS } from '../net/connection';
 import { who } from '../store/notes';
 import { SUIT_TEXT, textSuits } from './cards';
+import { appLine, lineText, type AppLine } from '../i18n/engineText';
 
 const VERB: Partial<Record<PlayerView['phase'], string>> = {
   bidding: 'is bidding',
@@ -98,12 +99,16 @@ export function BidPanel({ view, myTurn, busy, wait, onAct }: PanelProps & { onA
 /* Mirrors the engine's scoreThrow (no helper exposes it without full totals): at the auto-bid
  * nothing changes, otherwise the bidder loses the bid and each other active player gets
  * floor(RULES.throwPool / others). Keep in sync with packages/engine/src/scoring.ts. */
-export function throwCost(view: PlayerView): string {
+export function throwCostLine(view: PlayerView): AppLine {
   const r = view.round!;
   const amount = r.bid.amount;
-  if (amount <= RULES.autoBid) return 'Throw in: nobody scores, new deal.';
+  if (amount <= RULES.autoBid) return appLine('game.throwCost.free');
   const share = Math.floor(RULES.throwPool / Math.max(1, r.active.length - 1));
-  return `Throw in: you −${amount}, others +${share} each (0 on the barrel).`;
+  return appLine('game.throwCost.paid', { amount, share });
+}
+
+export function throwCost(view: PlayerView): string {
+  return lineText(throwCostLine(view), view);
 }
 
 export function DecisionPanel({ view, myTurn, busy, wait, onAct }: PanelProps & { onAct(a: Action): void }) {

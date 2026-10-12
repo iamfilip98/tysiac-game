@@ -1,7 +1,7 @@
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import type { RoundSummary } from '@tysiac/engine';
+import { msg, type RoundSummary } from '@tysiac/engine';
 import { ScoreSheet, zapisRows } from './ScoreSheet';
 import { RoundResultSheet, roundHeadline } from './RoundResultSheet';
 import { GameOverSheet } from './GameOverSheet';
@@ -50,10 +50,10 @@ describe('RoundResultSheet', () => {
 
   it('lists every player and continues', async () => {
     const onContinue = vi.fn();
-    render(<RoundResultSheet summary={base} view={mid} note="Coach says hi" onContinue={onContinue} />);
+    render(<RoundResultSheet summary={base} view={mid} note={msg('round.you', { n: 20 })} onContinue={onContinue} />);
     const dialog = screen.getByRole('dialog', { name: `Round ${base.number}` });
     expect(within(dialog).getAllByRole('row')).toHaveLength(base.players.length + 1);
-    expect(within(dialog).getByText('Coach says hi')).toBeInTheDocument();
+    expect(within(dialog).getByText('You: +20.')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue' }));
     expect(onContinue).toHaveBeenCalledOnce();
   });

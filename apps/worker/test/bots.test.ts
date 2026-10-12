@@ -79,7 +79,7 @@ function talonState(): GameState {
       if (s.phase === 'talon') return s;
       const p = actorsOf(s)[0]!;
       const r = reduce(s, p, chooseBotAction(s, p, () => 0.5), n);
-      if (!r.ok) throw new Error(r.error.message);
+      if (!r.ok) throw new Error(r.error.msg.key);
       s = r.state;
     }
   }

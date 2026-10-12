@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
-import type { Advice } from '../src/types';
-import { advise } from '../src/coach';
+import type { Action, PlayerView } from '../src/types';
+import { advise as adviseRaw, type AdviseOptions } from '../src/coach';
+import { english } from './english';
 import { viewFor } from '../src/view';
 import { createGame } from '../src/game';
 import { reduce } from '../src/reduce';
@@ -8,6 +9,17 @@ import { actionsEqual, actorsOf } from '../src/actions';
 import { botAction } from '../src/bot';
 import { makeRandom } from '../src/rng';
 import { SEATS3, SEATS4, c, ok, scenario } from './helpers';
+
+interface Advice {
+  action: Action;
+  headline: string;
+  reasons: string[];
+}
+/** advise() with the structured messages rendered in English (as the app shows them). */
+function advise(view: PlayerView, opts?: AdviseOptions): Advice | null {
+  const a = adviseRaw(view, opts);
+  return a && { action: a.action, headline: english(a.headline, view), reasons: a.reasons.map(r => english(r, view)) };
+}
 
 const SUIT_WORDS = /\b(hearts|diamonds|clubs|spades)\b/i;
 

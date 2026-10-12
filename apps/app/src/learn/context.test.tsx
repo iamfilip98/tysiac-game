@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { turnOf, type Advice } from '@tysiac/engine';
+import { turnOf } from '@tysiac/engine';
+import { appLine, type CoachAdvice } from '../i18n/engineText';
 import Game from '../screens/Game';
 import { useRoom } from '../store/room';
 import { useSelection } from '../game/selection';
@@ -17,7 +18,7 @@ describe('Game with a LessonContext', () => {
   it('shows the lesson advice on the coach line even when the seat has coach off', () => {
     const s0 = findState(s => s.phase === 'tricks' && turnOf(s) === 'me');
     const card = viewOf(s0).legal.find(a => a.type === 'card')!;
-    const advice: Advice = { action: card, headline: 'Lead it now', reasons: ['Because the lesson says so.'] };
+    const advice: CoachAdvice = { action: card, headline: appLine('learn.advice.declare', { card: { card: card.type === 'card' ? card.card : { suit: 'hearts', rank: 'Q' } } }), reasons: [appLine('learn.advice.plan')] };
     const conn = new FakeConnection();
     useRoom.getState().attach(conn);
     conn.push(welcomeMsg(roomInfo()));
@@ -27,7 +28,7 @@ describe('Game with a LessonContext', () => {
         <Game />
       </LessonContext.Provider>,
     );
-    expect(screen.getByText('Lead it now')).toBeInTheDocument();
+    expect(screen.getByText(/to declare your marriage$/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Why?' })).toBeInTheDocument();
   });
 

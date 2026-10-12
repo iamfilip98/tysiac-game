@@ -1,7 +1,7 @@
 import type { AreaOf } from '../types';
 import type { common as en } from '../en/common';
 
-export const common: AreaOf<typeof en> = {
+export const common = {
   'common.settings': 'Ustawienia',
   'common.close': 'Zamknij',
   'common.language': 'Język',
@@ -14,5 +14,13 @@ export const common: AreaOf<typeof en> = {
   'common.profile': 'Profil',
   'common.save': 'Zapisz',
   'common.rules': 'Zasady',
+  'common.you': 'Ty',
+  'common.someone': 'Ktoś',
+  'card.rank.A': 'A',
+  'card.rank.K': 'K',
+  'card.rank.Q': 'D',
+  'card.rank.J': 'W',
+  'card.rank.10': '10',
+  'card.rank.9': '9',
   'common.points': { one: '{n} punkt', few: '{n} punkty', many: '{n} punktów', other: '{n} punktu' },
-};
+} as const satisfies AreaOf<typeof en>;

@@ -25,4 +25,6 @@ export { reduce } from './reduce';
 export { viewFor, eventsFor, explainIllegal } from './view';
 export { botAction, botShouldAct } from './bot';
 export { advise, explainEvent } from './coach';
+export { ENGINE_MSG_KEYS, ENGINE_MSG_PARAMS, msg } from './messages';
+export type { EngineMsg, EngineMsgKey, EngineMsgParamName, MsgParam } from './messages';
 export type { AdviseOptions } from './coach';

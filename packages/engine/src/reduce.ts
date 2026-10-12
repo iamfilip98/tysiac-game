@@ -9,8 +9,9 @@ import { applyAckTalon } from './phases/talon';
 import { applyHandout } from './phases/handout';
 import { applyCard } from './phases/tricks';
 import { applyPlay, applyThrow } from './phases/decision';
+import { msg, type EngineMsg } from './messages';
 
-const err = (code: RuleErrorCode, message: string): RuleError => ({ code, message });
+const err = (code: RuleErrorCode, m: EngineMsg): RuleError => ({ code, msg: m });
 const fail = (error: RuleError): ReduceResult => ({ ok: false, error });
 
 /**
@@ -21,11 +22,11 @@ const fail = (error: RuleError): ReduceResult => ({ ok: false, error });
  */
 export function reduce(state: GameState, playerId: PlayerId, action: Action, now: number): ReduceResult {
   if (!action || typeof action !== 'object' || typeof (action as { type?: unknown }).type !== 'string') {
-    return fail(err('illegalAction', 'Unknown action'));
+    return fail(err('illegalAction', msg('reject.unknownAction')));
   }
-  if (!state.seats.some(x => x.id === playerId)) return fail(err('notSeated', "You're not seated in this game"));
-  if (state.phase === 'gameEnd') return fail(err('gameOver', 'The game is over'));
-  if (state.paused && action.type !== 'resume') return fail(err('paused', 'The game is paused'));
+  if (!state.seats.some(x => x.id === playerId)) return fail(err('notSeated', msg('reject.notSeated')));
+  if (state.phase === 'gameEnd') return fail(err('gameOver', msg('reject.gameOver')));
+  if (state.paused && action.type !== 'resume') return fail(err('paused', msg('reject.paused')));
 
   const legal = legalActions(state, playerId).find(a => actionsEqual(a, action));
   if (!legal) return fail(rejectFor(state, playerId, action));
@@ -63,7 +64,8 @@ export function reduce(state: GameState, playerId: PlayerId, action: Action, now
       break;
     default: {
       const _exhaustive: never = legal;
-      return fail(err('illegalAction', `Unhandled action: ${JSON.stringify(_exhaustive)}`));
+      void _exhaustive;
+      return fail(err('illegalAction', msg('reject.unhandled')));
     }
   }
   ctx.s.seq += 1;
@@ -71,22 +73,22 @@ export function reduce(state: GameState, playerId: PlayerId, action: Action, now
 }
 
 function rejectFor(s: GameState, p: PlayerId, action: Action): RuleError {
-  if (action.type === 'resume') return err('illegalAction', "The game isn't paused");
-  if (action.type === 'pause') return err('illegalAction', "You can't pause right now");
-  if (action.type === 'ackTalon') return err('illegalAction', "There's nothing to confirm");
-  if (s.phase === 'talon') return err('notYourTurn', 'Wait until everyone has seen the talon');
+  if (action.type === 'resume') return err('illegalAction', msg('reject.notPaused'));
+  if (action.type === 'pause') return err('illegalAction', msg('reject.cantPause'));
+  if (action.type === 'ackTalon') return err('illegalAction', msg('reject.nothingToConfirm'));
+  if (s.phase === 'talon') return err('notYourTurn', msg('reject.waitTalon'));
   const r = s.round;
-  if (!r || turnOf(s) !== p) return err('notYourTurn', "It's not your turn");
+  if (!r || turnOf(s) !== p) return err('notYourTurn', msg('reject.notYourTurn'));
   if (action.type === 'card' && s.phase === 'tricks') {
-    const msg = isCard(action.card) ? cardRuleMessage(r.hands[p], r.trick.cards, r.trump, action.card) : null;
-    return err('illegalCard', msg ?? "You can't play that card");
+    const why = isCard(action.card) ? cardRuleMessage(r.hands[p], r.trick.cards, r.trump, action.card) : null;
+    return err('illegalCard', why ?? msg('reject.cantPlayCard'));
   }
   if (action.type === 'bid' && s.phase === 'bidding') {
     const amount = typeof action.amount === 'number' ? action.amount : NaN;
-    return err('badBid', validateBid(amount, r.bid.amount, r.hands[p]).reason ?? 'Invalid bid');
+    return err('badBid', validateBid(amount, r.bid.amount, r.hands[p]).reason ?? msg('reject.invalidBid'));
   }
   if (action.type === 'handout' && s.phase === 'handout') {
-    return err('badHandout', 'Give exactly one of your cards to each opponent');
+    return err('badHandout', msg('reject.badHandout'));
   }
-  return err('illegalAction', "That move isn't allowed right now");
+  return err('illegalAction', msg('reject.notAllowed'));
 }

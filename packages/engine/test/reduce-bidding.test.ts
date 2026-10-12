@@ -1,3 +1,4 @@
+import { english } from './english';
 import { describe, it, expect } from 'vitest';
 import type { Action, GameState } from '../src/types';
 import { createGame } from '../src/game';
@@ -72,7 +73,8 @@ describe('bidding', () => {
   it('rejects wrong amounts, over-max bids and out-of-turn moves', () => {
     const s = biddingScenario();
     const wrong = reduce(s, 'b', { type: 'bid', amount: 120 }, 1);
-    expect(!wrong.ok && wrong.error).toEqual({ code: 'badBid', message: 'Bid must be exactly 110 (current bid + 10)' });
+    expect(!wrong.ok && wrong.error).toEqual({ code: 'badBid', msg: { key: 'bid.exact', params: { amount: 110 } } });
+    expect(!wrong.ok && english(wrong.error.msg)).toBe('Bid must be exactly 110 (current bid + 10)');
     const early = reduce(s, 'c', { type: 'pass' }, 1);
     expect(!early.ok && early.error.code).toBe('notYourTurn');
     const poor = scenario({ phase: 'bidding', hands: { b: '9S JS 9H JH 9D JD 9C' }, bid: { high: 'a', amount: 120, turn: 'b' } });

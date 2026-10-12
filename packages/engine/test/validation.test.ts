@@ -1,3 +1,4 @@
+import { english } from './english';
 import { describe, it, expect } from 'vitest';
 import type { Card, Suit, TrickCard } from '../src/types';
 import {
@@ -295,7 +296,7 @@ describe('getTrickWinnerWithReason', () => {
     const result = getTrickWinnerWithReason(trick, 'spades');
     expect(result.winnerId).toBe('p2');
     expect(result.winningCard).toEqual(card('9', 'spades'));
-    expect(result.reason).toContain('trumping');
+    expect(english(result.reason!)).toContain('trumping');
   });
 
   it('indicates highest trump reason when trump is lead suit', () => {
@@ -308,7 +309,7 @@ describe('getTrickWinnerWithReason', () => {
     );
     const result = getTrickWinnerWithReason(trick, 'hearts');
     expect(result.winnerId).toBe('p2');
-    expect(result.reason).toContain('highest trump');
+    expect(english(result.reason!)).toContain('highest trump');
   });
 
   it('indicates highest card in lead suit reason when no trumping', () => {
@@ -321,7 +322,7 @@ describe('getTrickWinnerWithReason', () => {
     );
     const result = getTrickWinnerWithReason(trick, 'diamonds');
     expect(result.winnerId).toBe('p2');
-    expect(result.reason).toContain('highest card in lead suit');
+    expect(english(result.reason!)).toContain('highest card in lead suit');
   });
 
   it('returns correct winningCard in result', () => {
@@ -354,7 +355,7 @@ describe('validateBid', () => {
     const hand = [card('Q', 'hearts'), card('K', 'hearts'), card('A', 'hearts')];
     const result = validateBid(120, 100, hand);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('110');
+    expect(english(result.reason!)).toContain('110');
   });
 
   it('rejects a bid lower than currentBid + 10', () => {
@@ -368,7 +369,7 @@ describe('validateBid', () => {
     const hand = [card('9', 'hearts'), card('A', 'spades')];
     const result = validateBid(130, 120, hand);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('120');
+    expect(english(result.reason!)).toContain('120');
   });
 
   it('allows a bid up to 120 + marriage value', () => {
@@ -383,7 +384,7 @@ describe('validateBid', () => {
     // max = 120 + 100 = 220, so 230 is too high
     const result = validateBid(230, 220, hand);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('220');
+    expect(english(result.reason!)).toContain('220');
   });
 
   it('accounts for multiple marriages in max bid calculation', () => {
@@ -422,21 +423,21 @@ describe('canDeclareMarriage', () => {
     const hand = [card('Q', 'hearts'), card('K', 'hearts')];
     const result = canDeclareMarriage(hand, 'hearts', [], false);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('leading');
+    expect(english(result.reason!)).toContain('leading');
   });
 
   it('rejects marriage declaration when suit already declared', () => {
     const hand = [card('Q', 'hearts'), card('K', 'hearts')];
     const result = canDeclareMarriage(hand, 'hearts', ['hearts'], true);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('already declared');
+    expect(english(result.reason!)).toContain('already declared');
   });
 
   it('rejects marriage declaration when missing King', () => {
     const hand = [card('Q', 'hearts'), card('A', 'hearts')];
     const result = canDeclareMarriage(hand, 'hearts', [], true);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('No marriage');
+    expect(english(result.reason!)).toContain('No marriage');
   });
 
   it('rejects marriage declaration when missing Queen', () => {
@@ -444,7 +445,7 @@ describe('canDeclareMarriage', () => {
     const result = canDeclareMarriage(hand, 'hearts', [], true);
     expect(result.isValid).toBe(false);
     // hasMarriage returns false when Q is missing, so "No marriage" reason
-    expect(result.reason).toContain('No marriage');
+    expect(english(result.reason!)).toContain('No marriage');
   });
 
   it('allows declaring a second marriage in a different suit', () => {
@@ -460,7 +461,7 @@ describe('canDeclareMarriage', () => {
     const hand = [card('Q', 'hearts'), card('K', 'hearts')];
     const result = canDeclareMarriage(hand, 'spades', [], true);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('No marriage');
+    expect(english(result.reason!)).toContain('No marriage');
   });
 });
 
@@ -481,7 +482,7 @@ describe('validateCardPlay', () => {
     const trick = emptyTrick();
     const result = validateCardPlay(card('A', 'hearts'), hand, trick, null);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('not in hand');
+    expect(english(result.reason!)).toContain('not in hand');
   });
 
   it('rejects a card that is in hand but not in the valid set', () => {
@@ -494,7 +495,7 @@ describe('validateCardPlay', () => {
     );
     const result = validateCardPlay(card('K', 'clubs'), hand, trick, null);
     expect(result.isValid).toBe(false);
-    expect(result.reason).toContain('Invalid card');
+    expect(english(result.reason!)).toContain('Invalid card');
   });
 
   it('accepts trump card when player cannot follow suit', () => {

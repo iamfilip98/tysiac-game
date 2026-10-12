@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import type { GameEvent } from '../src/types';
-import { explainEvent } from '../src/coach';
+import { explainEvent as explainRaw } from '../src/coach';
+import type { PlayerView } from '../src/types';
+import { english } from './english';
 import { viewFor } from '../src/view';
 import { scoreRound, scoreThrow, summarizeRound } from '../src/scoring';
 import { c, scenario, SEATS4 } from './helpers';
@@ -18,6 +20,23 @@ function summary(raws: { a: number; b: number; c: number }, bid: number, marriag
   });
   return summarizeRound({ number: 1, dealer: 'c', bidder: 'a', bid, outcome: result.bidderMadeBid ? 'made' : 'failed', wykladana: false }, result);
 }
+
+/** explainEvent() rendered in English (as the app shows it). */
+function explainEvent(e: GameEvent, view: PlayerView): string | null {
+  const m = explainRaw(e, view);
+  return m && english(m, view);
+}
+
+describe('explainEvent structure', () => {
+  it('uses .you keys for the viewer and passes players as params', () => {
+    expect(explainRaw(ev({ type: 'biddingWon', p: 'a', amount: 120, talonPublic: true }), viewAs('b')))
+      .toEqual({ key: 'event.bidWon.public', params: { player: { player: 'a' }, amount: 120 } });
+    expect(explainRaw(ev({ type: 'biddingWon', p: 'a', amount: 100, talonPublic: false }), viewAs('a')))
+      .toEqual({ key: 'event.bidWon.private.you', params: { amount: 100 } });
+    expect(explainRaw(ev({ type: 'biddingWon', p: 'a', amount: 100, talonPublic: false }), viewAs('b')))
+      .toEqual({ key: 'event.bidWon.private', params: { player: { player: 'a' }, amount: 100 } });
+  });
+});
 
 describe('explainEvent', () => {
   it('marriage', () => {
