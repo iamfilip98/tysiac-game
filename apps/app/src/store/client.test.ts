@@ -266,7 +266,7 @@ describe('table fx', () => {
     const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: true, audience: 'all' };
     const hold = advance({ ...base, queue: [won] }, false)!;
     expect(hold.wait).toBe(HOLD_MS);
-    expect(hold.state.held).toEqual({ p: 'b', card: { suit: 'hearts', rank: '9' }, byTrump: true });
+    expect(hold.state.held).toEqual({ p: 'b', card: { suit: 'hearts', rank: '9' }, byTrump: true, points: 0 });
     expect(hold.sound).toBe('trumpWin');
     const sweep = advance(hold.state, false)!;
     expect(sweep.state.held).toBeNull();

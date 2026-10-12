@@ -135,11 +135,11 @@ describe('Table effects', () => {
 
   it('a held trick marks the winning card; a trump win glows blue', () => {
     const win = tricks.round!.trick.cards[1];
-    const { container, rerender } = render(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={{ p: win.p, card: win.card, byTrump: false }} />);
+    const { container, rerender } = render(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={{ p: win.p, card: win.card, byTrump: false, points: 0 }} />);
     expect(screen.getByRole('img', { name: cardLabel(win.card) })).toHaveClass('tcard--win');
     expect(container.querySelectorAll('.tcard--lost')).toHaveLength(1);
     expect(container.querySelector('.fx--trumpwin')).toBeNull();
-    rerender(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={{ p: win.p, card: win.card, byTrump: true }} />);
+    rerender(<Table view={tricks} pending={null} sweepTo={null} marriage={null} held={{ p: win.p, card: win.card, byTrump: true, points: 0 }} />);
     expect(screen.getByRole('img', { name: cardLabel(win.card) })).toHaveClass('tcard--win-trump');
     expect(container.querySelector('.fx--trumpwin')).not.toBeNull();
   });

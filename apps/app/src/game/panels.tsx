@@ -3,6 +3,8 @@ import { RULES, cardLabel, explainIllegal, marriagesInHand, type Action, type Ca
 import type { RoomInfo, RoomSeat } from '../net/protocol';
 import { AWAY_BOT_AFTER_MS } from '../net/connection';
 import { who } from '../store/notes';
+import type { HeldTrick } from '../store/client';
+import { announceText } from './announce';
 import { SUIT_TEXT, isRed, textSuits } from './cards';
 import { CardFace } from './Card';
 
@@ -18,9 +20,24 @@ export function isAway(seat: RoomSeat | null | undefined): seat is RoomSeat {
   return !!seat && !seat.isBot && !seat.connected && !seat.botFor;
 }
 
-export function WaitLine({ view, room, now, busy = false, who: whoId, onBotFor }: { view: PlayerView; room: RoomInfo | null; now: number; busy?: boolean; who?: PlayerId; onBotFor(p: PlayerId): void }) {
-  const p = whoId ?? view.turn;
-  if (!p || p === view.me) return <p className="zone__wait">…</p>;
+export interface WaitLineProps {
+  view: PlayerView;
+  room: RoomInfo | null;
+  now: number;
+  busy?: boolean;
+  who?: PlayerId;
+  /** Whose turn it is in the latest server view (the table may still be catching up, with no turn shown). */
+  waitFor?: PlayerId | null;
+  /** A completed trick held on the table: say who takes it. */
+  held?: HeldTrick | null;
+  onBotFor(p: PlayerId): void;
+}
+
+export function WaitLine({ view, room, now, busy = false, who: whoId, waitFor = null, held = null, onBotFor }: WaitLineProps) {
+  if (held && !whoId) return <p className="zone__wait">{announceText({ kind: 'trick', p: held.p, points: held.points }, view)}</p>;
+  const p = whoId ?? view.turn ?? waitFor;
+  // Playback is still catching up to my turn (cards flying, a sweep): never a bare ellipsis.
+  if (!p || p === view.me) return <p className="zone__wait">One moment…</p>;
   const seat = room?.seats.find((s): s is RoomSeat => s?.id === p) ?? null;
   if (isAway(seat)) {
     const awayFor = now - (seat.awaySince ?? now);

@@ -180,6 +180,8 @@ export default function Game() {
           selected={selectedCard}
           given={sel.given}
           next={next}
+          waitFor={s.view?.turn ?? null}
+          held={s.holding ? s.held : null}
           hint={sel.hint ?? s.toast}
           coach={coach}
           advice={advice}

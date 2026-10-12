@@ -135,6 +135,23 @@ describe('ActionZone: hand-out', () => {
   });
 });
 
+describe('ActionZone: waiting while the table catches up', () => {
+  const caught: PlayerView = { ...tricks, turn: null };
+  it('a held trick says who takes it', () => {
+    render(<ActionZone {...props(caught, { idle: false, held: { p: 'b', card: { suit: 'hearts', rank: 'A' }, byTrump: false, points: 15 } })} />);
+    expect(screen.getByText('Bot Basia takes the trick (+15)')).toBeInTheDocument();
+    expect(screen.queryByText('…')).toBeNull();
+  });
+  it('with no turn on the table it names whose turn the server says it is', () => {
+    render(<ActionZone {...props(caught, { idle: false, waitFor: 'z' })} />);
+    expect(screen.getByText('Bot Zenek is playing…')).toBeInTheDocument();
+  });
+  it('catching up to my own turn says One moment, never a bare ellipsis', () => {
+    render(<ActionZone {...props(caught, { idle: false, waitFor: 'me' })} />);
+    expect(screen.getByText('One moment…')).toBeInTheDocument();
+  });
+});
+
 describe('ActionZone: tricks', () => {
   it('Play is disabled until a card is raised, then names it', async () => {
     const { unmount } = render(<ActionZone {...props(tricks)} />);

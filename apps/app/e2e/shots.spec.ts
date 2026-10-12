@@ -4,7 +4,11 @@ import { setSafeInsets } from './layout';
 
 const SHOT_PROJECTS = new Set(['iphone15', 'se']);
 
-/** Stages a table state through the store (exposed only with ?local=1&fast=1). */
+/**
+ * Stages a table state through the store (exposed only with ?local=1&fast=1). Realistic: after a marriage
+ * lead and a follow (and when a card was just received) it is my turn, so view and shown agree and the
+ * zone is live; a held trick has no turn and says who takes it.
+ */
 async function stage(page: Page, kind: 'marriage' | 'held' | 'trumpwin' | 'received' | 'summary'): Promise<void> {
   await page.evaluate(k => {
     type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -20,17 +24,18 @@ async function stage(page: Page, kind: 'marriage' | 'held' | 'trumpwin' | 'recei
     const withTrick = (cards: Any[], trump: string | null) => ({ ...v, round: { ...v.round, trump, trick: { leader: cards[0]?.p ?? me, cards } } });
     if (k === 'marriage') {
       const shown = withTrick([{ p: a, card: { suit: 'hearts', rank: 'Q' } }, { p: b, card: { suit: 'hearts', rank: '9' } }], 'hearts');
-      store.setState({ shown, received: null, marriage: { p: a, suit: 'hearts', id: 1 }, held: null, holding: false, announce: { a: { kind: 'marriage', p: a, suit: 'hearts', points: 100 }, id: 99 } });
+      store.setState({ shown, view: shown, received: null, marriage: { p: a, suit: 'hearts', id: 1 }, held: null, holding: false, announce: { a: { kind: 'marriage', p: a, suit: 'hearts', points: 100 }, id: 99 } });
     } else if (k === 'held' || k === 'trumpwin') {
       const trump = k === 'trumpwin' ? other(lead.suit) : null;
       const win = k === 'trumpwin' ? { suit: trump, rank: '9' } : { suit: lead.suit, rank: lead.rank === 'A' ? '10' : 'A' };
       const cards = [{ p: me, card: lead }, { p: a, card: win }, { p: b, card: { suit: lead.suit, rank: lead.rank === 'J' ? '9' : 'J' } }];
       store.setState({
-        shown: withTrick(cards, trump), received: null, marriage: null, holding: true, held: { p: a, card: win, byTrump: k === 'trumpwin' },
+        shown: { ...withTrick(cards, trump), turn: null }, note: null, received: null, marriage: null, holding: true, held: { p: a, card: win, byTrump: k === 'trumpwin', points: 15 },
         announce: { a: { kind: 'trick', p: a, points: 15 }, id: 100 },
       });
     } else if (k === 'received') {
-      store.setState({ shown: withTrick([], v.round.trump), held: null, holding: false, marriage: null, received: { card: hand[1], from: a, open: true }, announce: { a: { kind: 'received', from: a, card: hand[1] }, id: 101 } });
+      const shown = withTrick([], v.round.trump);
+      store.setState({ shown, view: shown, held: null, holding: false, marriage: null, received: { card: hand[1], from: a, open: true }, announce: { a: { kind: 'received', from: a, card: hand[1] }, id: 101 } });
     } else {
       const seats = v.seats.map((x: Any) => x.id);
       const players = seats.map((id: string, i: number) => ({

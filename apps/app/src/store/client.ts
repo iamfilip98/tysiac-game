@@ -20,7 +20,7 @@ export const NOTE_MS = 700;
 /** A marriage declared in the current trick: gold ring on the table, the led Q drawn gold. */
 export interface MarriageFx { p: PlayerId; suit: Suit; id: number }
 /** The completed trick being held on the table, and the card that took it. */
-export interface HeldTrick { p: PlayerId; card: Card; byTrump: boolean }
+export interface HeldTrick { p: PlayerId; card: Card; byTrump: boolean; points: number }
 let fxId = 0;
 let annId = 0;
 
@@ -226,7 +226,7 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
     case 'trickWon': {
       if (!s.holding) {
         return {
-          state: { ...s, holding: true, note: note(), held: { p: e.p, card: e.card, byTrump: e.byTrump } },
+          state: { ...s, holding: true, note: note(), held: { p: e.p, card: e.card, byTrump: e.byTrump, points: e.points } },
           wait: HOLD_MS,
           kind: 'hold',
           sound: e.byTrump ? 'trumpWin' : 'trickWon',

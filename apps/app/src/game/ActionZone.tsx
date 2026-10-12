@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { explainIllegal, type Action, type Advice, type Card, type PlayerId, type PlayerView } from '@tysiac/engine';
 import type { RoomInfo } from '../net/protocol';
+import type { HeldTrick } from '../store/client';
 import { BidPanel, DecisionPanel, HandoutPanel, PausedPanel, TrickPanel, WaitLine } from './panels';
 import { TalonPanel } from './TalonPanel';
 import { CoachLine } from './CoachLine';
@@ -17,6 +18,10 @@ export interface ActionZoneProps {
   given: Partial<Record<PlayerId, Card>>;
   /** Hand-out: the slot the next tapped card goes to. */
   next: PlayerId | null;
+  /** Whose turn it is in the latest server view (while the table catches up). */
+  waitFor?: PlayerId | null;
+  /** The completed trick held on the table. */
+  held?: HeldTrick | null;
   hint: string | null;
   coach: boolean;
   advice: Advice | null;
@@ -42,7 +47,7 @@ export function ActionZone(p: ActionZoneProps) {
   const { view } = p;
   const phase = zonePhase(view, p.idle);
   const myTurn = phase === view.phase;
-  const wait = <WaitLine view={view} room={p.room} now={p.now} busy={p.busy} onBotFor={p.onBotFor} />;
+  const wait = <WaitLine view={view} room={p.room} now={p.now} busy={p.busy} waitFor={p.waitFor} held={p.held} onBotFor={p.onBotFor} />;
   let body: ReactNode;
   if (view.paused) body = <PausedPanel view={view} busy={p.busy} onAct={p.onAct} />;
   else if (view.phase === 'gameEnd') body = <p className="zone__text">Game over</p>;
