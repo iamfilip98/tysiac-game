@@ -47,11 +47,11 @@ describe('bidding', () => {
     expect(s.round!.bid.turn).toBe('c');
     const res = ok(reduce(s, 'c', { type: 'pass' }, 5));
     s = res.state;
-    expect(s.phase).toBe('decision');
+    expect(s.phase).toBe('talon');
     expect(s.round!.bid).toEqual({ high: 'b', amount: 130, turn: null, passed: ['a', 'c'] });
     expect(s.round!.talonPublic).toBe(true);
     expect(s.round!.hands.b).toHaveLength(10);
-    expect(turnOf(s)).toBe('b');
+    expect(turnOf(s)).toBeNull();
     expect(res.events.map(e => e.type)).toEqual(['passed', 'biddingWon', 'talonRevealed']);
     const talon = res.events.find(e => e.type === 'talonRevealed')!;
     expect(talon.audience).toBe('all');

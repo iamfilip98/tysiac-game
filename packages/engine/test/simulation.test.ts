@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { Action, Card, GameState, PlayerId, RoundSummary, Seat } from '../src/types';
 import { createGame } from '../src/game';
 import { reduce } from '../src/reduce';
-import { actionsEqual, legalActions, turnOf } from '../src/actions';
+import { actionsEqual, actorsOf, legalActions } from '../src/actions';
 import { viewFor } from '../src/view';
 import { botAction } from '../src/bot';
 import { makeRandom } from '../src/rng';
@@ -42,7 +42,7 @@ function checkNoLeak(s: GameState, me: PlayerId, tag: string): void {
 }
 
 const tally = {
-  thrown100: 0, thrownOver100: 0, failed: 0, made: 0, barrel: 0, sittingOutScored: 0, marriage: 0, wykladana: 0,
+  thrown100: 0, thrownOver100: 0, failed: 0, made: 0, barrel: 0, sittingOutScored: 0, marriage: 0, wykladana: 0, talon: 0,
 };
 
 function checkSummary(sum: RoundSummary, prev: Record<PlayerId, number>, tag: string): void {
@@ -105,7 +105,7 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
   while (s.phase !== 'gameEnd') {
     const tag = `${seed}#${steps}`;
     assert(++steps < MAX_STEPS, `${seed}: did not terminate`);
-    const p = turnOf(s);
+    const p = actorsOf(s)[0];
     assert(p, `${tag}: nobody to act`);
     if (fullViews) for (const seat of seats) checkNoLeak(s, seat.id, tag);
     else checkNoLeak(s, p, tag);
@@ -119,6 +119,7 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
     assert(res.ok, `${tag}: reduce rejected ${JSON.stringify(action)}: ${!res.ok && res.error.message}`);
     for (const e of res.events) {
       if (e.type === 'marriage') tally.marriage++;
+      if (e.type === 'talonSeen') tally.talon++;
       if (e.type === 'roundScored' || e.type === 'threw') {
         checkSummary(e.summary, prevTotals, tag);
         roundEnds.push(e.summary.number);
@@ -177,7 +178,7 @@ describe('simulation', () => {
     const perRound = new Map<number, number>();
     let checked = 0;
     for (let i = 0; s.phase !== 'gameEnd' && i < MAX_STEPS; i++) {
-      const p = turnOf(s)!;
+      const p = actorsOf(s)[0]!;
       const res = reduce(s, p, botAction(viewFor(s, p), rand), i);
       if (!res.ok) throw new Error(res.error.message);
       for (const e of res.events) {
@@ -209,6 +210,7 @@ describe('simulation', () => {
     expect(tally.barrel).toBeGreaterThan(0);
     expect(tally.sittingOutScored).toBeGreaterThan(0);
     expect(tally.marriage).toBeGreaterThan(0);
+    expect(tally.talon).toBeGreaterThan(0);
     expect(tally.wykladana).toBeGreaterThan(0);
   });
 });

@@ -19,6 +19,8 @@ export function turnOf(s: GameState): PlayerId | null {
     case 'decision':
     case 'handout':
       return r.bid.high;
+    case 'talon':
+      return null; // everyone but the bidder acts at once; see actorsOf
     case 'tricks': {
       const cards = r.trick.cards;
       return cards.length === 0 ? r.trick.leader : nextActive(r.active, cards[cards.length - 1].p);
@@ -28,11 +30,27 @@ export function turnOf(s: GameState): PlayerId | null {
   }
 }
 
+/** Seats (in seat order) that still have to confirm a public talon; [] outside the talon phase. */
+export function talonWaiting(s: GameState): PlayerId[] {
+  const r = s.round;
+  if (!r || s.phase !== 'talon') return [];
+  const seen = r.talonSeen ?? []; // states saved before M5 have no talonSeen; they are never in 'talon'
+  return s.seats.map(x => x.id).filter(id => id !== r.bid.high && !seen.includes(id));
+}
+
+/** Everyone who has a move to make now (ignores pause). One player except during the talon phase. */
+export function actorsOf(s: GameState): PlayerId[] {
+  if (s.phase === 'talon') return talonWaiting(s);
+  const t = turnOf(s);
+  return t ? [t] : [];
+}
+
 export function legalActions(s: GameState, p: PlayerId): Action[] {
   const r = s.round;
   if (!r || s.phase === 'gameEnd' || !s.seats.some(x => x.id === p)) return [];
   if (s.paused) return [{ type: 'resume' }];
-  const out: Action[] = turnOf(s) === p ? phaseActions(s, r, p) : [];
+  const out: Action[] =
+    s.phase === 'talon' ? (talonWaiting(s).includes(p) ? [{ type: 'ackTalon' }] : []) : turnOf(s) === p ? phaseActions(s, r, p) : [];
   out.push({ type: 'pause' });
   return out;
 }

@@ -1,5 +1,5 @@
 import type { Card, GameEvent, GameState, PlayerId, PlayerView, Round, RoundView } from './types';
-import { legalActions, turnOf } from './actions';
+import { legalActions, talonWaiting, turnOf } from './actions';
 import { clone } from './ctx';
 import { handPoints } from './cards';
 import { maxBidFor } from './bidding';
@@ -47,6 +47,7 @@ function roundView(s: GameState, r: Round, me: PlayerId): RoundView {
     handCounts: per(p => r.hands[p].length),
     talon: talonVisible ? clone(r.talon) : null,
     talonPublic: r.talonPublic,
+    talonWaiting: talonWaiting(s),
     bid: clone(r.bid),
     maxBid: myHand ? maxBidFor(myHand) : 0,
     trump: r.trump,

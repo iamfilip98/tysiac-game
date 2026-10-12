@@ -4,7 +4,7 @@ import { botAction, botShouldAct } from '../src/bot';
 import { lowestExpendable, marriageToDeclare, remainingCards } from '../src/bot/play';
 import { createGame } from '../src/game';
 import { reduce } from '../src/reduce';
-import { actionsEqual, legalActions, turnOf } from '../src/actions';
+import { actionsEqual, actorsOf, legalActions, turnOf } from '../src/actions';
 import { viewFor } from '../src/view';
 import { makeRandom } from '../src/rng';
 import { parseCards } from '../src/cards';
@@ -63,7 +63,7 @@ describe('botAction', () => {
       let s = createGame({ seed: `bot-${g}`, seats, maxPlayers: seats.length as 3 | 4, firstDealer: g % seats.length });
       const rand = makeRandom(`bot-rng-${g}`);
       for (let step = 0; step < 400 && s.phase !== 'gameEnd'; step++) {
-        const p = turnOf(s)!;
+        const p = actorsOf(s)[0]!;
         const action = botAction(viewFor(s, p), rand);
         expect(action.type).not.toBe('pause');
         expect(legalActions(s, p).some(a => actionsEqual(a, action))).toBe(true);

@@ -4,7 +4,7 @@ import { advise } from '../src/coach';
 import { viewFor } from '../src/view';
 import { createGame } from '../src/game';
 import { reduce } from '../src/reduce';
-import { actionsEqual, turnOf } from '../src/actions';
+import { actionsEqual, actorsOf } from '../src/actions';
 import { botAction } from '../src/bot';
 import { makeRandom } from '../src/rng';
 import { SEATS3, SEATS4, c, ok, scenario } from './helpers';
@@ -160,9 +160,15 @@ describe('advise: whole games', () => {
       let s = createGame({ seed: `coach-${g}`, seats, maxPlayers: seats.length as 3 | 4, firstDealer: 0 });
       const rand = makeRandom(`coach-rng-${g}`);
       for (let step = 0; step < 500 && s.phase !== 'gameEnd'; step++) {
-        const p = turnOf(s)!;
+        const p = actorsOf(s)[0]!;
         const view = viewFor(s, p);
         const a: Advice | null = advise(view);
+        if (s.phase === 'talon') {
+          // Confirming the talon needs no advice.
+          expect(a).toBeNull();
+          s = ok(reduce(s, p, botAction(view, rand), step)).state;
+          continue;
+        }
         expect(a).not.toBeNull();
         expect(view.legal.some(x => actionsEqual(x, a!.action))).toBe(true);
         expect(a!.headline.length).toBeLessThanOrEqual(90);

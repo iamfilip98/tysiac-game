@@ -20,7 +20,7 @@ export { dealerIndexFor, activeFor, isHandValid, dealCards } from './deal';
 export type { Deal } from './deal';
 export { createGame } from './game';
 export type { CreateGameOptions } from './game';
-export { legalActions, turnOf, actionsEqual, handoutOptions, nextActive } from './actions';
+export { legalActions, turnOf, actorsOf, talonWaiting, actionsEqual, handoutOptions, nextActive } from './actions';
 export { reduce } from './reduce';
 export { viewFor, eventsFor, explainIllegal } from './view';
 export { botAction, botShouldAct } from './bot';

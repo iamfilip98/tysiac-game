@@ -35,6 +35,8 @@ function decide(view: PlayerView, options: Action[]): Action | null {
       const d = decideBid(hand, r.bid.amount, r.bid.passed.length);
       return d.shouldBid ? { type: 'bid', amount: d.amount } : { type: 'pass' };
     }
+    case 'talon':
+      return { type: 'ackTalon' };
     case 'decision': {
       const onBarrel = isOnBarrel(view.scores[view.me]?.total ?? 0);
       return decidePlayOrThrow(hand, r.bid.amount, onBarrel) === 'play' ? { type: 'play' } : { type: 'throw' };

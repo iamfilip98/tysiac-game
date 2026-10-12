@@ -22,6 +22,7 @@ export function startRound(ctx: Ctx, number: number): void {
     hands: deal.hands,
     talon: deal.talon,
     talonPublic: false,
+    talonSeen: [],
     bid: { high: active[0], amount: RULES.autoBid, turn: active[1], passed: [] },
     trump: null,
     marriages: perActive<Suit[]>(() => []),
