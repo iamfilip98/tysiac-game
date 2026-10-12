@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { useRoom } from '../store/room';
 import { useSelection } from '../game/selection';
 import { FakeConnection } from '../test/fakes';
-import { findState, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
+import { findState, roomInfo, stateMsg, viewOf, welcomeMsg } from '../test/fixtures';
 
 function join(s: GameState): FakeConnection {
   const conn = new FakeConnection();
@@ -125,6 +125,43 @@ describe('Game screen: other phases', () => {
 });
 
 const css = readFileSync('src/screens/game.css', 'utf8');
+
+describe('Game screen: fix round 1', () => {
+  it('confirming hand-out keeps the cards out of the hand and the chips shown', async () => {
+    const user = userEvent.setup();
+    const conn = join(findState(s => s.phase === 'handout' && turnOf(s) === 'me'));
+    render(<Game />);
+    const first = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
+    await user.click(within(hand()).getByRole('button', { name: first }));
+    await user.click(screen.getByRole('button', { name: 'Give to Bot Basia' }));
+    const second = within(hand()).getAllByRole('button')[0].getAttribute('aria-label')!;
+    await user.click(within(hand()).getByRole('button', { name: second }));
+    await user.click(screen.getByRole('button', { name: 'Give to Bot Zenek' }));
+    await user.click(screen.getByRole('button', { name: 'Confirm hand-out' }));
+    expect(conn.acts()).toHaveLength(1);
+    expect(within(hand()).queryByRole('button', { name: first })).toBeNull();
+    expect(within(hand()).queryByRole('button', { name: second })).toBeNull();
+    expect(screen.getByRole('button', { name: `Take back ${first}` })).toBeInTheDocument();
+    conn.push({ t: 'reject', id: conn.acts()[0].id, code: 'illegal', message: 'Nope' });
+    expect(await screen.findByText('Nope')).toBeInTheDocument();
+    expect(within(hand()).queryByRole('button', { name: first })).toBeNull();
+    expect(screen.getByRole('button', { name: `Take back ${first}` })).toBeInTheDocument();
+  });
+
+  it('toggling coach sends setCoach and the room echo takes over', async () => {
+    const user = userEvent.setup();
+    const conn = join(findState(s => s.phase === 'bidding'));
+    render(<Game />);
+    await user.click(screen.getByRole('button', { name: 'Menu' }));
+    await user.click(screen.getByRole('button', { name: 'Settings' }));
+    await user.click(screen.getByRole('switch', { name: 'Coach hints' }));
+    expect(conn.sent).toContainEqual({ t: 'setCoach', coach: true });
+    expect(screen.getByRole('switch', { name: 'Coach hints' })).toHaveAttribute('aria-checked', 'true');
+    const room = roomInfo();
+    conn.push({ t: 'room', room: { ...room, seats: room.seats.map(x => (x?.id === 'me' ? { ...x, coach: true } : x)) } });
+    expect(screen.getByRole('switch', { name: 'Coach hints' })).toHaveAttribute('aria-checked', 'true');
+  });
+});
 
 describe('Game screen: layout and private info', () => {
   it('shows the viewer\'s own dealer marker, score and coach badge in the self strip', () => {

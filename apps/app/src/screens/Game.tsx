@@ -48,6 +48,16 @@ export default function Game() {
   useEffect(() => {
     useSelection.getState().reset();
   }, [phaseKey]);
+  // Once the room echoes the seat's coach flag the seat is the source of truth again.
+  const seatCoach = coachOn(s);
+  useEffect(() => {
+    if (coachOverride !== null && seatCoach === coachOverride) setCoachOverride(null);
+  }, [coachOverride, seatCoach]);
+  // A raised card never outlives my turn (pause, bot takeover, turn change).
+  const turnLive = idle && !!shown && shown.turn === shown.me && !shown.paused;
+  useEffect(() => {
+    if (!turnLive) useSelection.getState().select(null);
+  }, [turnLive]);
   useEffect(() => {
     if (!s.shake) return;
     const t = setTimeout(() => useRoom.getState().clearShake(), 600);
@@ -103,8 +113,8 @@ export default function Game() {
     sel.reset();
   };
   const onConfirmHandout = () => {
+    // Keep `given` (cards stay out of the hand, chips stay) until the phase changes; a reject leaves it restorable.
     room.act({ type: 'handout', to: { ...sel.given } });
-    sel.reset();
   };
   const onTarget = (p: PlayerId) => {
     if (selectedCard) sel.give(p, selectedCard);

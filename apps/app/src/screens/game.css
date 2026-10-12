@@ -69,4 +69,5 @@ html:has(.game), body:has(.game) {
     column-gap: 14px;
   }
   .opps { --avatar: clamp(28px, 8dvh, 38px); }
+  .zone { min-height: 172px; }
 }
