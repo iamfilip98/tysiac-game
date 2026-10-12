@@ -52,3 +52,7 @@ storybook-static
 # Worker local secrets
 .dev.vars
 .secrets.json
+
+# Playwright output
+apps/app/test-results/
+apps/app/playwright-report/

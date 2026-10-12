@@ -1,0 +1,44 @@
+.lobby__head { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; }
+.lobby__code { text-align: center; }
+.lobby__code small { display: block; font-size: 11px; opacity: 0.7; }
+.lobby__code b { font-size: 28px; letter-spacing: 0.18em; color: var(--accent); }
+.lobby__table { position: relative; width: 100%; max-width: 360px; aspect-ratio: 1.25; margin: 0 auto; }
+.lobby__felt {
+  position: absolute;
+  inset: 16%;
+  border-radius: 50%;
+  background: var(--table-felt);
+  box-shadow: 0 0 0 8px var(--table-rim), 0 14px 28px rgba(0, 0, 0, 0.45);
+  display: grid;
+  place-items: center;
+}
+.lobby__arrow { font-size: 11px; text-align: center; opacity: 0.8; }
+.lobby__arrow b { display: block; font-size: 30px; line-height: 1; color: var(--accent); }
+.seat {
+  position: absolute;
+  translate: -50% -50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  background: none;
+  border: 0;
+  padding: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  --avatar: 48px;
+  touch-action: none;
+}
+.seat--picked .avatar { outline: 2px dashed var(--accent); outline-offset: 3px; }
+.seat--empty .avatar { background: transparent; box-shadow: inset 0 0 0 2px var(--accent); color: var(--accent); }
+.lobby__hint, .lobby__note { text-align: center; font-size: 13px; opacity: 0.85; margin: 0; line-height: 1.4; }
+.lobby__picked { justify-content: center; }
+.lobby__actions { display: flex; flex-direction: column; gap: 8px; margin-top: auto; }
+.lobby__actions .row .btn { flex: 1; }
+.lobby { height: 100dvh; min-height: 0; overflow-y: auto; overscroll-behavior: contain; gap: 10px; }
+.lobby .avatar { position: relative; }
+.lobby .avatar__dealer {
+  position: absolute; right: -6px; top: -6px; min-width: 18px; height: 18px; border-radius: 9px;
+  display: grid; place-items: center; font-size: 11px; font-weight: 700;
+  background: var(--accent); color: var(--accent-ink);
+}

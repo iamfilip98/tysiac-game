@@ -1,0 +1,4 @@
+.profile { display: flex; flex-direction: column; gap: 14px; }
+.avatars { border: 0; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; --avatar: 44px; justify-items: center; }
+.avatars legend { margin-bottom: 6px; }
+.avatar--pick[aria-pressed='true'] { outline: 2px solid var(--accent); outline-offset: 2px; }

@@ -1,0 +1,35 @@
+.zone {
+  grid-area: zone;
+  min-height: 0;
+  height: 100%;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+}
+.zone__main { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: center; gap: 6px; }
+.zone__big { font-size: 20px; font-weight: 700; line-height: 1.1; }
+.zone__big small { font: 500 12px 'Inter', system-ui, sans-serif; opacity: 0.7; }
+.zone__max { text-align: right; font-size: 11px; opacity: 0.85; line-height: 1.35; }
+.zone__max b { color: var(--accent); }
+.zone__buttons { display: flex; gap: 8px; min-height: 44px; align-items: center; }
+.zone__buttons .btn { flex: 1; }
+.zone__buttons .btn--pri { flex: 1.4; }
+.zone__text { margin: 0; font-size: 13px; line-height: 1.35; }
+.zone__muted { opacity: 0.7; font-size: 12px; }
+.zone__wait { margin: 0; font-size: 13px; opacity: 0.9; min-height: 44px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.zone__hint, .zone__note { margin: 0; font-size: 12px; line-height: 1.3; color: var(--accent-soft); }
+.coachline {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding-top: 6px;
+  border-top: 1px solid var(--chip-muted-bg);
+  font-size: 12px;
+  line-height: 1.35;
+  min-height: calc(12px * 1.35 + 6px);
+}
+.coachline__text { flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.coachline b { color: var(--accent-soft); }
+.why { padding-left: 18px; line-height: 1.5; }

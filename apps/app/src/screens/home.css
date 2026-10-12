@@ -1,0 +1,21 @@
+.home__brand { font-size: 44px; margin: 8px 0 0; text-align: center; color: var(--accent); }
+.home__hello { text-align: center; margin: 0; opacity: 0.85; }
+.home__resume { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px; }
+.home .row > * { flex: 1; }
+.home__join { display: flex; gap: 8px; align-items: flex-end; }
+.home__join .field { flex: 1; }
+.home__join input { text-transform: uppercase; letter-spacing: 0.15em; }
+.home__error { color: var(--danger); margin: 0; text-align: center; }
+a.btn { text-decoration: none; display: inline-grid; place-items: center; color: var(--ink); }
+.netbanner {
+  position: fixed;
+  top: max(var(--sa-top), 6px);
+  left: 50%;
+  translate: -50% 0;
+  z-index: 60;
+  padding: 4px 12px;
+  border-radius: 12px;
+  background: var(--panel);
+  border: var(--panel-border);
+  font-size: 12px;
+}

@@ -1,0 +1,150 @@
+import { expect, type Page } from '@playwright/test';
+
+/** Records the targets of recent pointer/click events so a failed move can say where a tap actually landed. */
+async function recordTaps(page: Page): Promise<void> {
+  await page.addInitScript(() => {
+    const w = window as unknown as { __taps: string[] };
+    w.__taps = [];
+    const name = (e: EventTarget | null) => {
+      if (!(e instanceof Element)) return String(e);
+      return `${e.tagName.toLowerCase()}.${String(e.className).replace(/\s+/g, '.')}[${e.getAttribute('aria-label') ?? (e.textContent ?? '').slice(0, 24)}]`;
+    };
+    for (const type of ['pointerdown', 'pointerup', 'click']) {
+      window.addEventListener(type, ev => {
+        w.__taps.push(`${type} → ${name(ev.target)}`);
+        if (w.__taps.length > 12) w.__taps.shift();
+      }, true);
+    }
+  });
+}
+
+export async function firstLaunch(page: Page): Promise<void> {
+  await recordTaps(page);
+  await page.goto('/?local=1&fast=1');
+  const name = page.getByLabel('Your name');
+  await name.focus();
+  await name.fill('Tester');
+  await name.blur();
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(() => window.scrollY)).toBe(0);
+  await page.getByRole('button', { name: 'Avatar 🐻' }).click();
+  await page.getByRole('button', { name: 'Continue' }).click();
+  await expect(page.getByRole('button', { name: 'Practice vs bots' })).toBeVisible();
+}
+
+/**
+ * Runs a move and waits until the server's next state arrives (data-seq changes). There is no retry: a tap
+ * that does nothing is a bug (see dropped-tap-report.md), so it fails with the DOM state and the targets
+ * the last taps actually landed on.
+ */
+export async function move(page: Page, run: () => Promise<void>): Promise<void> {
+  const game = page.locator('.game');
+  const before = (await game.getAttribute('data-seq')) ?? '';
+  await run();
+  try {
+    await expect(game).not.toHaveAttribute('data-seq', before);
+  } catch (err) {
+    const state = await page.evaluate(() => {
+      const g = document.querySelector('.game');
+      const taps = (window as unknown as { __taps?: string[] }).__taps ?? [];
+      return `alerts: ${Array.from(document.querySelectorAll('[role=status],[role=alert]')).map(e => e.textContent).join('|')} | zone: ${g?.querySelector('.zone')?.textContent}\nlast taps:\n  ${taps.join('\n  ')}`;
+    });
+    throw new Error(`no new game state after a move (seq ${before}). ${state}\n${String(err)}`);
+  }
+}
+
+/**
+ * Nothing on the table may take a tap: trick cards fly over the action zone and hand (a sweep to the
+ * viewer passes right over the Play button while it is already the viewer's turn) and used to swallow it.
+ */
+export async function expectTableIgnoresTaps(page: Page): Promise<void> {
+  const problems = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('.table, .table *'))
+      .filter(e => getComputedStyle(e).pointerEvents !== 'none')
+      .map(e => `${String(e.className)} [${e.getAttribute('aria-label') ?? ''}]`),
+  );
+  expect(problems, 'table elements that can intercept a tap').toEqual([]);
+}
+
+export async function handOut(page: Page): Promise<void> {
+  const hand = page.getByRole('group', { name: 'Your hand' });
+  for (let k = 0; k < 2; k++) {
+    await hand.getByRole('button').first().click();
+    await page.getByRole('button', { name: /^Give to / }).first().click();
+  }
+  await page.getByRole('button', { name: 'Confirm hand-out' }).click();
+}
+
+/** Taps the first legal card (selecting it) and returns its label; the caller taps Play. */
+export async function selectLegalCard(page: Page, checkTapDoesNotPlay: boolean): Promise<string> {
+  const hand = page.getByRole('group', { name: 'Your hand' });
+  const selected = hand.locator('button[aria-pressed="true"]');
+  const card = (await selected.count()) > 0 ? selected.first() : hand.locator('button:not([aria-disabled="true"])').first();
+  const label = (await card.getAttribute('aria-label'))!;
+  if ((await card.getAttribute('aria-pressed')) !== 'true') await card.click(); // tapping a selected card again would deselect it
+  if (checkTapDoesNotPlay) {
+    await page.waitForTimeout(300);
+    await expect(hand.getByRole('button', { name: label })).toHaveAttribute('aria-pressed', 'true');
+  }
+  return label;
+}
+
+export interface DriveOptions {
+  /** Called once per distinct screen key, at the moment it is on screen. */
+  check: (key: string) => Promise<void>;
+  /** Stop when this returns true (checked each step). Default: the Game over dialog. */
+  stop?: () => Promise<boolean>;
+  /** Bid whenever any Bid button is offered, so the human wins the auction (reaches decision and hand-out). */
+  bidAlways?: boolean;
+}
+
+/** Plays the game through the UI: bids, plays, hands out, continues past round results. */
+export async function drive(page: Page, opts: DriveOptions): Promise<void> {
+  const zone = page.locator('.zone');
+  const seen = new Set<string>();
+  const check = async (key: string) => {
+    if (seen.has(key)) return;
+    seen.add(key);
+    await opts.check(key);
+  };
+  const stop = opts.stop ?? (() => page.getByRole('dialog', { name: 'Game over' }).isVisible());
+  let tapChecked = false;
+  for (let i = 0; i < 6000; i++) {
+    if (await stop()) break;
+    const cont = page.getByRole('button', { name: 'Continue' });
+    if (await cont.isVisible()) {
+      await check('round result');
+      if (await stop()) break;
+      await cont.click();
+      continue;
+    }
+    const phase = await zone.getAttribute('data-phase');
+    if (phase === 'bidding') {
+      await check('bidding');
+      const bid = page.getByRole('button', { name: opts.bidAlways ? /^Bid \d+$/ : /^Bid (110|120)$/ }).first();
+      await move(page, async () => {
+        if (await bid.isVisible()) await bid.click();
+        else await page.getByRole('button', { name: 'Pass' }).click();
+      });
+    } else if (phase === 'decision') {
+      await check('decision');
+      await move(page, () => page.getByRole('button', { name: 'Play', exact: true }).click());
+    } else if (phase === 'handout') {
+      await check('handout');
+      await move(page, () => handOut(page));
+    } else if (phase === 'tricks') {
+      await move(page, async () => {
+        const label = await selectLegalCard(page, !tapChecked);
+        tapChecked = true;
+        await check('tricks'); // a card is selected: the Play button is on screen
+        await expectTableIgnoresTaps(page);
+        await page.getByRole('button', { name: `Play ${label}` }).click();
+      });
+    } else {
+      if (phase === 'wait') await check('waiting');
+      await page.waitForTimeout(40);
+    }
+  }
+  if (!(await stop())) throw new Error('drive ended without reaching the stop condition');
+  await check(opts.stop ? 'stopped' : 'game over');
+}
