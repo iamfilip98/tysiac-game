@@ -18,19 +18,21 @@
 .card--mini { --w: calc(var(--card-w, 56px) * 0.5); box-shadow: none; }
 .card__face { position: absolute; inset: 0; overflow: hidden; border-radius: inherit; pointer-events: none; }
 .card__idx {
-  position: absolute; top: 4%; left: 5%;
+  position: absolute; top: 4%; left: 3%;
   width: calc(var(--w) * 0.3);
   display: flex; flex-direction: column; align-items: center;
   line-height: 0.92;
 }
-.card__idx--br { top: auto; left: auto; right: 5%; bottom: 4%; transform: rotate(180deg); }
+.card__idx--br { top: auto; left: auto; right: 3%; bottom: 4%; transform: rotate(180deg); }
 .card__rank { font-size: calc(var(--w) * 0.34); font-weight: 800; letter-spacing: -0.05em; }
-.card__suit { font-size: calc(var(--w) * 0.3); margin-top: calc(var(--w) * 0.01); }
+.card__suit { font-size: calc(var(--w) * 0.27); margin-top: calc(var(--w) * 0.01); }
 .card__rank, .card__suit, .card__pip { font-family: var(--font-card); font-variant-emoji: text; }
+/* The centre pip sits in the column between the two corner indexes. Suit glyphs ink about 1em wide,
+   so at 0.27w (the corner suit size) it keeps >= 0.04w clear of both index suits on every rank (e2e cards.spec). */
 .card__pip {
-  position: absolute; left: 50%; top: 52%;
+  position: absolute; left: 50%; top: 50%;
   transform: translate(-50%, -50%);
-  font-size: calc(var(--w) * 0.62); line-height: 1;
+  font-size: calc(var(--w) * 0.27); line-height: 1;
 }
 .card--mini .card__pip, .card--mini .card__idx--br { display: none; }
 .card--mini .card__rank { font-size: calc(var(--w) * 0.44); }
