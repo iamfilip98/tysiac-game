@@ -48,14 +48,31 @@ describe('RoundResultSheet', () => {
     expect(roundHeadline({ ...base, outcome: 'made', wykladana: true }, mid)).toBe(`${name} won every trick — wykładana!`);
   });
 
-  it('lists every player and continues', async () => {
+  it('one row per player: round points big, total, the bidder highlighted with a made or failed badge', async () => {
     const onContinue = vi.fn();
     render(<RoundResultSheet summary={base} view={mid} note="Coach says hi" onContinue={onContinue} />);
     const dialog = screen.getByRole('dialog', { name: `Round ${base.number}` });
-    expect(within(dialog).getAllByRole('row')).toHaveLength(base.players.length + 1);
+    const rows = within(dialog).getAllByRole('listitem');
+    expect(rows).toHaveLength(base.players.length);
+    for (const [i, p] of base.players.entries()) {
+      const delta = rows[i].querySelector('.rrow__delta')!;
+      expect(delta.textContent).toBe(p.scoreChange > 0 ? `+${p.scoreChange}` : p.scoreChange < 0 ? `\u2212${-p.scoreChange}` : '0');
+      expect(rows[i]).toHaveTextContent(`Total ${p.newTotalScore}`);
+      expect(rows[i].classList.contains('rrow--bidder')).toBe(p.playerId === base.bidder);
+    }
+    const bidder = rows[base.players.findIndex(p => p.playerId === base.bidder)];
+    expect(within(bidder).getByText(new RegExp(`bid ${base.bid}`))).toHaveTextContent(base.outcome === 'made' ? 'made' : 'failed');
     expect(within(dialog).getByText('Coach says hi')).toBeInTheDocument();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Continue' }));
     expect(onContinue).toHaveBeenCalledOnce();
+  });
+
+  it('shows marriages only when there are some, and a sitting-out dealer', () => {
+    const players = base.players.map((p, i) => (i === 0 ? { ...p, marriagePoints: 60 } : i === 1 ? { ...p, marriagePoints: 0 } : p));
+    render(<RoundResultSheet summary={{ ...base, players }} view={mid} note={null} onContinue={vi.fn()} />);
+    const rows = screen.getAllByRole('listitem');
+    expect(rows[0]).toHaveTextContent('Marriages +60');
+    expect(rows[1]).not.toHaveTextContent('Marriages');
   });
 });
 
