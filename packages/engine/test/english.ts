@@ -1,4 +1,7 @@
 /**
+ * NOTE: this deliberately imports the app's English dictionary, so rewording an app string can break
+ * engine tests that assert on rendered sentences. Update the expectations along with the wording.
+ *
  * Test-only English renderer for engine messages. The engine returns { key, params }; its English wording
  * lives in the app's dictionary (apps/app/src/i18n/en/engine.ts), which this reads so engine tests can
  * keep asserting readable sentences. Mirrors the app's engineText() for English.

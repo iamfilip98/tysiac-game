@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Sheet } from '../ui/Sheet';
 import { ProfileForm } from '../ui/ProfileForm';
 import { usePrefs } from '../store/prefs';
@@ -24,17 +25,19 @@ const LANG_NAMES = [
 export function SettingsSheet({ allowProfile, coachOn, onCoachChange, onRules, onClose }: SettingsSheetProps) {
   const p = usePrefs();
   const t = useT();
+  const [langError, setLangError] = useState(false);
   return (
     <Sheet title={t('common.settings')} onClose={onClose}>
       <div className="settings">
         <div className="lbl">{t('common.language')}</div>
         <div className="seg" role="radiogroup" aria-label={t('common.language')}>
           {LANG_NAMES.map(([id, name]) => (
-            <button key={id} type="button" role="radio" lang={id} aria-checked={p.lang === id} onClick={() => void p.setLang(id).catch(() => {})}>
+            <button key={id} type="button" role="radio" lang={id} aria-checked={p.lang === id} onClick={() => void p.setLang(id).then(() => setLangError(false), () => setLangError(true))}>
               {name}
             </button>
           ))}
         </div>
+        {langError && <div role="alert" className="lbl">{t('errors.langLoadFailed')}</div>}
         <div className="lbl">{t('common.theme')}</div>
         <div className="themes" role="radiogroup" aria-label={t('common.theme')}>
           {THEMES.map(th => (

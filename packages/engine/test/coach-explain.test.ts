@@ -66,13 +66,13 @@ describe('explainEvent', () => {
       .toBe('Ala threw in at 100. Nobody scores, new deal.');
     const paid = throwSummary(130, { a: 0, b: 0, c: 0 });
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: paid }), viewAs('b')))
-      .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
+      .toBe('Ala threw in at 130: Ala −130, you +60, Celina +60.');
     const four = throwSummary(130, { a: 0, b: 850, c: 0, d: 0 }, true);
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: four }), viewFor(s4, 'c')))
-      .toBe('Ala threw in at 130: Ala −130, Bartek 0, You +60, Darek 0.');
+      .toBe('Ala threw in at 130: Ala −130, Bartek 0, you +60, Darek 0.');
     // a thrown round scored through roundScored is not misprinted as a failed bid
     expect(explainEvent(ev({ type: 'roundScored', summary: paid }), viewAs('b')))
-      .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
+      .toBe('Ala threw in at 130: Ala −130, you +60, Celina +60.');
   });
   it('round scored: made with rounding, failed, and the viewer line', () => {
     const made = summary({ a: 96, b: 14, c: 10 }, 120, 40);

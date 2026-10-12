@@ -1,5 +1,5 @@
 import { SUIT_SYMBOL, type Action, type Card, type EngineMsg, type MsgParam, type PlayerId, type PlayerView } from '@tysiac/engine';
-import type { en, MsgKey } from './en';
+import { en, type MsgKey } from './en';
 import type { PlaceholdersOf } from './placeholders';
 import { currentLang, t, tAny } from './index';
 
@@ -15,6 +15,7 @@ export function playerName(view: PlayerView | null, p: PlayerId): string {
 }
 
 function param(v: MsgParam, view: PlayerView | null): string | number {
+  if (v === null || typeof v !== 'object') return typeof v === 'string' || typeof v === 'number' ? v : '';
   if (typeof v === 'string' || typeof v === 'number') return v;
   if ('card' in v) return cardText(v.card);
   if ('suit' in v) return SUIT_SYMBOL[v.suit];
@@ -22,7 +23,8 @@ function param(v: MsgParam, view: PlayerView | null): string | number {
   if ('signed' in v) return v.signed > 0 ? `+${v.signed}` : v.signed < 0 ? `−${-v.signed}` : '0';
   if ('and' in v) return new Intl.ListFormat(currentLang(), { type: 'conjunction' }).format(v.and.map(x => String(param(x, view))));
   if ('list' in v) return v.list.map(x => param(x, view)).join(', ');
-  return v.msgs.map(m => engineText(m, view)).join(' ');
+  if ('msgs' in v) return v.msgs.map(m => engineText(m, view)).join(' ');
+  return '';
 }
 
 /** Renders an engine message in the active language. Suit glyphs are plain: wrap in textSuits() for display. */
@@ -71,7 +73,7 @@ const REJECT_CODES: Partial<Record<string, MsgKey>> = {
 
 /** The toast for a `reject`: the engine's message translated, a known worker code translated, else its text. */
 export function rejectText(m: { code: string; message: string; msg?: EngineMsg }, view: PlayerView | null): string {
-  if (m.msg) return engineText(m.msg, view);
+  if (m.msg && `engine.${m.msg.key}` in en) return engineText(m.msg, view);
   const key = REJECT_CODES[m.code];
   return key ? tAny(key) : m.message;
 }

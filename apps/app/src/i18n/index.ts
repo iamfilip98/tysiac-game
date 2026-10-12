@@ -55,6 +55,8 @@ export function t<K extends MsgKey>(key: K, ...args: TArgs<K>): string {
 
 /** Untyped variant for keys built at runtime (engine messages). A missing param keeps its `{name}`. */
 export function tAny(key: MsgKey, params?: Params): string {
-  const text = pick(dict[key] ?? en[key], params);
+  const msg = dict[key] ?? en[key];
+  if (msg === undefined) return key;
+  const text = pick(msg, params);
   return params ? text.replace(/\{(\w+)\}/g, (all, k: string) => (k in params ? String(params[k]) : all)) : text;
 }

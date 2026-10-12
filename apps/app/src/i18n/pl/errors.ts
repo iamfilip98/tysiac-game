@@ -11,6 +11,7 @@ export const errors = {
   'errors.noRoom': 'Nie ma pokoju o kodzie {code}.',
   'errors.serverStatus': 'Błąd serwera (HTTP {status})',
   'errors.badResponse': 'Nieoczekiwana odpowiedź serwera.',
+  'errors.langLoadFailed': 'Nie udało się wczytać tego języka. Sprawdź połączenie.',
   'errors.generic': 'Coś poszło nie tak.',
   'errors.roomFull': 'Ten pokój jest pełny.',
   'errors.gameInProgress': 'Ta gra zaczęła się już bez ciebie.',

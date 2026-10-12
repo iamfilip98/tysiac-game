@@ -138,7 +138,7 @@ export async function initLang(): Promise<void> {
     await loadLang(lang);
     if (lang !== saved) usePrefs.setState({ lang });
   } catch {
+    // Offline: English for this session only. The saved choice stays, so the next load tries again.
     await loadLang('en');
-    usePrefs.setState({ lang: 'en' });
   }
 }

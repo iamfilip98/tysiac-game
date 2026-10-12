@@ -12,7 +12,7 @@ export default defineConfig({
       manifest: {
         name: 'Tysiąc',
         short_name: 'Tysiąc',
-        description: 'The Polish card game 1000 — play with friends.',
+        description: 'The Polish card game 1000. Play with friends.',
         start_url: '/',
         scope: '/',
         display: 'standalone',

@@ -27,7 +27,7 @@ export const learn = {
   'learn.bidding.body.1': 'Den, der byder højest, skal have mindst så mange point i denne runde. Du kan byde op til {max}: {base} plus dine mariager.',
   'learn.talon.title': 'Du vandt budrunden',
   'learn.talon.body.0': 'Du vandt på {amount}. De {count} kort fra talonen er nu på din hånd.',
-  'learn.talon.body.public': 'Fordi buddet er over {auto}, så alle talonen.',
+  'learn.talon.body.public': 'Buddet er over {auto}, så alle har set talonen.',
   'learn.talon.body.private': 'Ved {auto} er det kun dig, der ser talonen.',
   'learn.talon.body.2': 'Beslut nu: spil hånden, eller giv op. {cost}',
   'learn.handout.title': 'Afgiv kort',
@@ -52,7 +52,7 @@ export const learn = {
   'learn.scoring.body.made': 'Det når {bid}, så du får +{change} (afrundet til tiere; {up} og derover rundes op). Var du kommet til kort, havde det kostet {bid}.',
   'learn.scoring.body.failed': 'Det er under {bid}, så du mister {bid}.',
   'learn.scoring.body.2': 'Dine modstandere får point for de stik, de tog, plus de mariager, de meldte.',
-  'learn.scoring.body.3': 'Fra {barrel} er du "på tønden" og scorer kun som budvinder. Den første til {win} vinder spillet.',
+  'learn.scoring.body.3': 'Fra {barrel} er du "på tønden" og får kun point som budvinder. Den første til {win} vinder spillet.',
   'learn.done.title': 'Du kender det grundlæggende',
   'learn.done.body.0': 'Næste: et rigtigt træningsspil mod to bots med træneren slået til.',
 } as const satisfies AreaOf<typeof en>;

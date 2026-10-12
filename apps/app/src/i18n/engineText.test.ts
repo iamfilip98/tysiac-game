@@ -27,14 +27,22 @@ describe('engineText', () => {
       amount: 130,
       changes: { list: [{ msgs: [msg('event.change', { player: { player: 'b' }, delta: { signed: -130 } })] }, { msgs: [msg('event.change.you', { delta: { signed: 60 } })] }] },
     });
-    expect(engineText(throwIn, view)).toBe('Bot Basia threw in at 130: Bot Basia −130, You +60.');
+    expect(engineText(throwIn, view)).toBe('Bot Basia threw in at 130: Bot Basia −130, you +60.');
     const voids = msg('coach.why.voidTrump', { suits: { and: [{ suit: 'hearts' }, { suit: 'spades' }] } });
-    expect(engineText(voids, view)).toBe("You're void in ♥ and ♠. You can discard or trump when it is led");
+    expect(engineText(voids, view)).toBe("You're void in ♥ and ♠. You can discard or trump when that suit is led");
     await loadLang('pl');
-    expect(engineText(throwIn, view)).toBe('Bot Basia rzuca bombę przy 130: Bot Basia −130, Ty +60.');
+    expect(engineText(throwIn, view)).toBe('Bot Basia rzuca bombę przy 130: Bot Basia −130, ty +60.');
     expect(engineText(voids, view)).toMatch(/♥ i ♠/);
     expect(engineText(msg('coach.why.aces', { n: 2 }), view)).toMatch(/^2 asy/);
     expect(engineText(msg('coach.why.aces', { n: 5 }), view)).toMatch(/^5 asów/);
+  });
+  it('never throws on an unknown key or a malformed param', () => {
+    const unknown = { key: 'nope.never' } as unknown as Parameters<typeof engineText>[0];
+    expect(engineText(unknown, view)).toBe('engine.nope.never');
+    expect(rejectText({ code: 'x', message: 'Server text', msg: unknown }, view)).toBe('Server text');
+    const bad = { key: 'illegal.mustBeat', params: { card: {} } } as unknown as Parameters<typeof engineText>[0];
+    expect(() => engineText(bad, view)).not.toThrow();
+    expect(engineText(bad, view)).toBe('First to respond must beat  if you can');
   });
   it('app lines and reject toasts', async () => {
     expect(lineText(appLine('learn.advice.bid', { amount: 120 }), view)).toBe('Bid 120');

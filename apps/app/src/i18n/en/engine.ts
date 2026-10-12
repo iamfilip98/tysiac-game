@@ -53,7 +53,7 @@ export const engine = {
   'engine.event.threw.changes': '{player} threw in at {amount}: {changes}.',
   'engine.event.threw.changes.you': 'You threw in at {amount}: {changes}.',
   'engine.event.change': '{player} {delta}',
-  'engine.event.change.you': 'You {delta}',
+  'engine.event.change.you': 'you {delta}',
   'engine.event.wykladana': '{player} has every trick guaranteed. Round won outright (wykładana)!',
   'engine.event.wykladana.you': 'You have every trick guaranteed. Round won outright (wykładana)!',
   'engine.event.gameWon': '{player} won the game with {total}!',
@@ -98,7 +98,7 @@ export const engine = {
   'engine.coach.why.throwCost': 'Throwing costs you {bid} and gives each opponent {share} (0 if on the barrel)',
   'engine.coach.why.failCost': 'Playing and falling short costs {bid}',
   'engine.coach.why.marriageWorth': 'Your K+Q {suit} marriage is worth {points}',
-  'engine.coach.why.voidTrump': "You're void in {suits}. You can discard or trump when it is led",
+  'engine.coach.why.voidTrump': "You're void in {suits}. You can discard or trump when that suit is led",
   'engine.coach.why.voidNoTrump': "You're void in {suits}. You can throw away low cards or trump once a marriage sets a trump suit",
   // hand-out
   'engine.coach.handout.two': 'Give {card1} to {player1} and {card2} to {player2}',

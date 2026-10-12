@@ -15,5 +15,5 @@ export const rules = {
   'rules.tricks.title': 'Stik',
   'rules.tricks': 'Budvinderen spiller først ud. Alle skal bekende kulør, hvis de kan. Kun den første spiller efter udspilleren skal også stikke udspillet over, hvis muligt. Kan du ikke bekende, må du spille hvad som helst: der er ingen pligt til at trumfe. En trumf slår alle andre kulører.',
   'rules.scoring.title': 'Pointtælling',
-  'rules.scoring': 'Point afrundes til nærmeste 10 (en rest på {up} eller mere rundes op: {downEx} bliver 100, {upEx} bliver 110). Budvinderen skal have mindst buddet i rå point og får så sine point afrundet; ellers trækkes buddet fra. Modspillerne får deres egne point afrundet. På tønden ({barrel}–{last}) får modspillere 0: du scorer kun som budvinder. Der er ingen grænse for forsøg på tønden. Den første til {win} vinder.',
+  'rules.scoring': 'Point afrundes til nærmeste 10 (en rest på {up} eller mere rundes op: {downEx} bliver 100, {upEx} bliver 110). Budvinderen skal have mindst buddet i rå point og får så sine point afrundet; ellers trækkes buddet fra. Modspillerne får deres egne point afrundet. På tønden ({barrel}–{last}) får modspillere 0: du får kun point som budvinder. Der er ingen grænse for forsøg på tønden. Den første til {win} vinder.',
 } as const satisfies AreaOf<typeof en>;

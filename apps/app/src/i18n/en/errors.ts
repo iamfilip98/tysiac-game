@@ -11,6 +11,7 @@ export const errors = {
   'errors.noRoom': 'No room with code {code}.',
   'errors.serverStatus': 'Server error (HTTP {status})',
   'errors.badResponse': 'Unexpected response from the server.',
+  'errors.langLoadFailed': "Couldn't load that language. Check your connection.",
   'errors.generic': 'Something went wrong.',
   'errors.roomFull': 'This room is full.',
   'errors.gameInProgress': 'This game has already started without you.',

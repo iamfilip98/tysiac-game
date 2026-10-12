@@ -75,6 +75,19 @@ describe('applyServer', () => {
     expect(r.toast).toBe('Too high');
   });
 
+  it('a reject with an unknown message key still clears pending and in-flight', () => {
+    const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'me');
+    const card = firstCard(s0);
+    const unknown = { key: 'nope.never' } as never;
+    const c = applyServer(beginPlay(ready(s0), 'p1', card), { t: 'reject', id: 'p1', code: 'x', message: 'Fallback text', msg: unknown }, 0);
+    expect(c.pending).toBeNull();
+    expect(c.toast).toBe('Fallback text');
+    const s1 = findState(x => x.phase === 'bidding' && turnOf(x) === 'me');
+    const r = applyServer(beginAct(ready(s1), 'a1'), { t: 'reject', id: 'a1', code: 'x', message: 'Fallback text', msg: unknown }, 0);
+    expect(r.inflight).toBeNull();
+    expect(r.toast).toBe('Fallback text');
+  });
+
   it('ignores a stale state (seq below the last)', () => {
     const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'b' && x.round!.trick.cards.length === 1);
     const { state: s1, events } = botStep(s0);
