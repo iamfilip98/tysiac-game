@@ -56,3 +56,4 @@ storybook-static
 # Playwright output
 apps/app/test-results/
 apps/app/playwright-report/
+apps/app/e2e-shots/
