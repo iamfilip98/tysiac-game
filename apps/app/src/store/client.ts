@@ -6,7 +6,9 @@ import type { RoomInfo, ServerMessage } from '../net/protocol';
 import { eventNote } from './notes';
 import { announcementFor, type Announcement } from '../game/announce';
 
-export type SoundName = 'card' | 'shuffle' | 'sweep' | 'turn' | 'marriage' | 'roundEnd' | 'gameWin';
+export type SoundName =
+  | 'card' | 'shuffle' | 'sweep' | 'turn' | 'marriage' | 'roundEnd' | 'gameWin'
+  | 'bid' | 'pass' | 'bidWon' | 'talon' | 'seen' | 'give' | 'receive' | 'trickWon' | 'trumpWin' | 'throw' | 'wykladana';
 
 export const FLIGHT_MS = 280;
 export const HOLD_MS = 1000;
@@ -206,7 +208,7 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
       };
     }
     case 'trickWon':
-      if (!s.holding) return { state: { ...s, holding: true, note: note(), fx: e.byTrump ? { kind: 'trumpWin', id: ++fxId } : s.fx }, wait: HOLD_MS, kind: 'hold' };
+      if (!s.holding) return { state: { ...s, holding: true, note: note(), fx: e.byTrump ? { kind: 'trumpWin', id: ++fxId } : s.fx }, wait: HOLD_MS, kind: 'hold', sound: e.byTrump ? 'trumpWin' : 'trickWon' };
       return {
         state: { ...s, queue: rest, holding: false, sweepTo: e.p, fx: null, shown: withTrickWon(shown, e) },
         wait: SWEEP_MS,
@@ -219,22 +221,28 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
         state: { ...s, queue: rest, roundResult: e.summary, note: note() },
         wait: 0,
         kind: 'pause',
-        sound: rest.some(x => x.type === 'gameWon') ? 'gameWin' : 'roundEnd',
+        sound: rest.some(x => x.type === 'gameWon') ? 'gameWin' : e.type === 'threw' ? 'throw' : 'roundEnd',
       };
     case 'dealt':
       return { state: { ...s, queue: rest, note: null, sweepTo: null, fx: null, received: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
     case 'marriage':
       return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), fx: { kind: 'marriage', suit: e.suit, id: ++fxId } }, wait: NOTE_MS, kind: 'beat', sound: 'marriage' };
     case 'biddingWon':
+      return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat', sound: 'bidWon' };
     case 'wykladana':
-      return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat' };
+      return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat', sound: 'wykladana' };
+    case 'talonRevealed':
+      return { state: { ...s, queue: rest }, wait: 0, kind: 'beat', sound: 'talon' };
+    case 'talonSeen':
+      return { state: { ...s, queue: rest }, wait: 0, kind: 'beat', sound: 'seen' };
     case 'handedOut': {
       const card = s.me && e.p !== s.me ? e.cards[s.me] : undefined;
-      return { state: { ...s, queue: rest, received: card ? { card, from: e.p } : s.received }, wait: card ? NOTE_MS : 0, kind: 'beat' };
+      return { state: { ...s, queue: rest, received: card ? { card, from: e.p } : s.received }, wait: card ? NOTE_MS : 0, kind: 'beat', sound: card ? 'receive' : 'give' };
     }
     case 'bid':
+      return { state: { ...s, queue: rest }, wait: NOTE_MS / 2, kind: 'beat', sound: 'bid' };
     case 'passed':
-      return { state: { ...s, queue: rest }, wait: NOTE_MS / 2, kind: 'beat' };
+      return { state: { ...s, queue: rest }, wait: NOTE_MS / 2, kind: 'beat', sound: 'pass' };
     default:
       return { state: { ...s, queue: rest }, wait: 0, kind: 'beat' };
   }

@@ -1,7 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { SOUND_FILES, SoundPlayer, installSounds, type AudioContextLike } from './sounds';
+import { REPEAT_MIN_MS, REPEAT_SOFT_MS, SOUND_FILES, SYNTH, SoundPlayer, installSounds, synthSeconds, type AudioContextLike } from './sounds';
+import type { SoundName } from '../store/client';
 
 function fakeCtx() {
   const started: string[] = [];
@@ -83,7 +84,8 @@ describe('SoundPlayer', () => {
     const { ctx, started } = fakeCtx();
     let ok = false;
     const fetcher = vi.fn(async () => (ok ? new Response(new ArrayBuffer(8)) : new Response('', { status: 503 })));
-    const p = new SoundPlayer(() => true, () => ctx, fetcher);
+    let t = 0;
+    const p = new SoundPlayer(() => true, () => ctx, fetcher, () => (t += 1000));
     await p.preload();
     p.play('card');
     expect(started).toEqual(['synth']);
@@ -144,5 +146,47 @@ describe('sound assets', () => {
       new SoundPlayer(() => true, () => ctx, () => Promise.reject(new Error('offline'))).play(name);
       expect(started.length).toBeGreaterThanOrEqual(3);
     }
+  });
+});
+
+describe('every game sound', () => {
+  const names = Object.keys(SYNTH) as SoundName[];
+  it('is short (<= 0.4 s; the game win may be longer)', () => {
+    for (const n of names) if (n !== 'gameWin') expect(synthSeconds(SYNTH[n]), n).toBeLessThanOrEqual(0.4);
+    expect(synthSeconds(SYNTH.gameWin)).toBeLessThanOrEqual(1.5);
+  });
+  it('is distinct from every other', () => {
+    const recipes = names.map(n => JSON.stringify(SYNTH[n]));
+    expect(new Set(recipes).size).toBe(names.length);
+  });
+  it('keeps a consistent volume', () => {
+    for (const n of names) expect(SYNTH[n].vol, n).toBeGreaterThanOrEqual(0.05);
+    for (const n of names) expect(SYNTH[n].vol, n).toBeLessThanOrEqual(0.18);
+  });
+  it('is silent when sound is off', () => {
+    const { ctx, started } = fakeCtx();
+    const p = new SoundPlayer(() => false, () => ctx, () => Promise.reject(new Error('offline')));
+    for (const n of names) p.play(n);
+    expect(started).toEqual([]);
+  });
+  it('a quick repeat (fast bots) plays softer, a near-duplicate is dropped', () => {
+    const { ctx, raw } = fakeCtx();
+    let now = 0;
+    const gains: number[] = [];
+    raw.createGain.mockImplementation(() => ({ gain: { value: 1, setValueAtTime: vi.fn((v: number) => { gains.push(v); }), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn() }));
+    const p = new SoundPlayer(() => true, () => ctx, () => Promise.reject(new Error('offline')), () => now);
+    p.play('bid');
+    const first = gains[0];
+    gains.length = 0;
+    now += REPEAT_MIN_MS / 2;
+    p.play('bid');
+    expect(gains).toEqual([]);
+    now += REPEAT_SOFT_MS / 2;
+    p.play('bid');
+    expect(gains[0]).toBeLessThan(first);
+    gains.length = 0;
+    now += REPEAT_SOFT_MS * 2;
+    p.play('bid');
+    expect(gains[0]).toBeCloseTo(first);
   });
 });

@@ -292,6 +292,29 @@ describe('received card', () => {
   });
 });
 
+describe('a sound for every game event', () => {
+  const v = viewOf(findState(x => x.phase === 'tricks'));
+  const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+  const summary = viewOf(findState(x => x.rounds.length > 0)).rounds[0];
+  const cases: [GameEvent, string][] = [
+    [{ type: 'bid', p: 'b', amount: 110, audience: 'all' } as GameEvent, 'bid'],
+    [{ type: 'passed', p: 'b', audience: 'all' } as GameEvent, 'pass'],
+    [{ type: 'biddingWon', p: 'b', amount: 110, talonPublic: false, audience: 'all' } as GameEvent, 'bidWon'],
+    [{ type: 'talonRevealed', p: 'b', cards: [], audience: 'all' } as GameEvent, 'talon'],
+    [{ type: 'talonSeen', p: 'b', audience: 'all' } as GameEvent, 'seen'],
+    [{ type: 'cardPlayed', p: 'b', card: { suit: 'clubs', rank: '9' }, audience: 'all' } as GameEvent, 'card'],
+    [{ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' } as GameEvent, 'marriage'],
+    [{ type: 'threw', p: 'b', amount: 110, summary, audience: 'all' } as GameEvent, 'throw'],
+    [{ type: 'roundScored', summary, audience: 'all' } as GameEvent, 'roundEnd'],
+    [{ type: 'wykladana', p: 'b', hand: [], trump: null, marriages: [], audience: 'all' } as GameEvent, 'wykladana'],
+  ];
+  for (const [e, name] of cases) {
+    it(`${e.type} plays ${name}`, () => {
+      expect(advance({ ...base, queue: [e] }, false)!.sound).toBe(name);
+    });
+  }
+});
+
 describe('sounds for round end and game win', () => {
   it('round end and game win have their own sounds', () => {
     const v = viewOf(findState(x => x.phase === 'tricks'));
