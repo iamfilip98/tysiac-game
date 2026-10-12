@@ -1,0 +1,72 @@
+:root {
+  --card-w: clamp(44px, min(13.5vw, 8.4dvh), 92px);
+  --hand-h: calc(var(--card-w) * 1.72);
+  /* Tallest action panel (decision: play vs throw-in) is ~170px, so never go below 172px. */
+  --zone-h: clamp(172px, 26dvh, 200px);
+}
+@supports not (height: 1dvh) {
+  :root {
+    --card-w: clamp(44px, min(13.5vw, calc(var(--vvh, 100vh) * 0.084)), 92px);
+    --zone-h: clamp(172px, calc(var(--vvh, 100vh) * 0.26), 200px);
+  }
+}
+
+/* The page itself never scrolls on the game screen; only sheets scroll, internally. */
+html:has(.game), body:has(.game) {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.game {
+  height: 100vh;
+  height: var(--vvh, 100vh);
+  height: 100dvh;
+  max-width: 720px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) var(--zone-h) auto var(--hand-h);
+  grid-template-areas: 'top' 'opps' 'table' 'zone' 'self' 'hand';
+  gap: 6px;
+  padding: max(env(safe-area-inset-top), 8px) max(env(safe-area-inset-right), 12px) max(env(safe-area-inset-bottom), 8px)
+    max(env(safe-area-inset-left), 12px);
+  overflow: hidden;
+  overscroll-behavior: none;
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+@supports not (height: 1dvh) {
+  .game { height: var(--vvh, 100vh); }
+}
+.game--loading { display: grid; place-items: center; }
+
+.selfstrip {
+  grid-area: self;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 22px;
+  font-size: 12px;
+  line-height: 1;
+}
+.selfstrip__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.selfstrip__dealer {
+  font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
+  background: var(--ink); color: var(--bg-solid);
+}
+.selfstrip__score { margin-left: auto; font-weight: 700; font-family: var(--font-display); }
+
+@media (orientation: landscape) and (max-height: 520px) {
+  :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); }
+  .game {
+    max-width: none;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr) auto var(--hand-h);
+    grid-template-areas: 'top top' 'opps zone' 'table zone' 'table self' 'table hand';
+    column-gap: 14px;
+  }
+  .opps { --avatar: clamp(28px, 8dvh, 38px); }
+}
