@@ -7,10 +7,10 @@ export const learn = {
   'learn.advice.pass': 'Pass',
   'learn.advice.play': 'Play the hand',
   'learn.advice.throw': 'Throw in',
-  'learn.advice.plan': "That's the plan for this hand — later the coach will help you choose.",
+  'learn.advice.plan': "That's the plan for this hand. Later the coach will help you choose.",
   'learn.advice.declare': 'Lead {card} to declare your marriage',
   'learn.advice.declareWhy': '+{points} for you, and {suit} becomes trump.',
   'learn.hint.lesson': 'Lesson: {text}.',
-  'learn.hint.noPause': 'The lesson waits for you — no need to pause.',
-  'learn.hint.wait': 'Not yet — wait for your turn.',
+  'learn.hint.noPause': 'The lesson waits for you. No need to pause.',
+  'learn.hint.wait': 'Not yet. Wait for your turn.',
 } as const satisfies Record<string, Msg>;

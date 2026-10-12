@@ -29,7 +29,7 @@ describe('engineText', () => {
     });
     expect(engineText(throwIn, view)).toBe('Bot Basia threw in at 130: Bot Basia −130, You +60.');
     const voids = msg('coach.why.voidTrump', { suits: { and: [{ suit: 'hearts' }, { suit: 'spades' }] } });
-    expect(engineText(voids, view)).toBe("You're void in ♥ and ♠ — you can discard or trump when it is led");
+    expect(engineText(voids, view)).toBe("You're void in ♥ and ♠. You can discard or trump when it is led");
     await loadLang('pl');
     expect(engineText(throwIn, view)).toBe('Bot Basia rzuca bombę przy 130: Bot Basia −130, Ty +60.');
     expect(engineText(voids, view)).toMatch(/♥ i ♠/);
@@ -39,7 +39,7 @@ describe('engineText', () => {
   it('app lines and reject toasts', async () => {
     expect(lineText(appLine('learn.advice.bid', { amount: 120 }), view)).toBe('Bid 120');
     expect(rejectText({ code: 'notYourTurn', message: 'reject.notYourTurn', msg: msg('reject.notYourTurn') }, view)).toBe("It's not your turn");
-    expect(rejectText({ code: 'offline', message: 'offline' }, view)).toBe("You're offline — reconnecting…");
+    expect(rejectText({ code: 'offline', message: 'offline' }, view)).toBe("You're offline. Reconnecting…");
     expect(rejectText({ code: 'lesson', message: 'Lesson: Pass.' }, view)).toBe('Lesson: Pass.');
     await loadLang('da');
     expect(rejectText({ code: 'notYourTurn', message: 'reject.notYourTurn', msg: msg('reject.notYourTurn') }, view)).toBe('Det er ikke din tur');

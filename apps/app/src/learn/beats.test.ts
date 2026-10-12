@@ -82,8 +82,8 @@ describe('beats', () => {
     const vs = views();
     const bid = lesson.entries.find(e => e.pid === LEARNER_ID && e.action.type === 'bid')!;
     expect(lessonHint(vs[bid.seq - base], bid.action, { type: 'pass' })).toBe(`Lesson: Bid ${(bid.action as { amount: number }).amount}.`);
-    expect(lessonHint(vs[bid.seq - base], bid.action, { type: 'pause' })).toBe('The lesson waits for you — no need to pause.');
-    expect(lessonHint(null, null, { type: 'pass' })).toBe('Not yet — wait for your turn.');
+    expect(lessonHint(vs[bid.seq - base], bid.action, { type: 'pause' })).toBe('The lesson waits for you. No need to pause.');
+    expect(lessonHint(null, null, { type: 'pass' })).toBe('Not yet. Wait for your turn.');
   });
 
   it('describeExpected gives labels and names for the e2e hook', () => {

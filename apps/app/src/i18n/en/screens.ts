@@ -2,7 +2,7 @@ import type { Msg } from '../types';
 
 /** Home, Lobby, room states, History, profile, Learn chrome and the update toast. */
 export const screens = {
-  'screens.home.welcome': 'Welcome! Pick a name and an avatar — friends will see them at the table.',
+  'screens.home.welcome': 'Welcome! Pick a name and an avatar. Friends will see them at the table.',
   'screens.home.continue': 'Continue',
   'screens.home.hello': 'Hi {avatar} {name}',
   'screens.home.resumeText': 'Game {code} is still on.',
@@ -40,7 +40,7 @@ export const screens = {
   'screens.room.useHere': 'Use here',
   'screens.room.cantJoin': "Can't join",
   'screens.room.closed': 'Connection closed',
-  'screens.room.outOfSync': 'The app and the server are out of sync — please reload the page.',
+  'screens.room.outOfSync': 'The app and the server are out of sync. Please reload the page.',
   'screens.room.refused': 'The server refused this connection.',
   'screens.room.reconnecting': 'Reconnecting…',
   'screens.room.connecting': 'Connecting…',
@@ -54,8 +54,8 @@ export const screens = {
   'screens.history.youWon': 'You won',
   'screens.history.won': '{name} won',
   'screens.history.you': '(you)',
-  'screens.history.local': 'History is kept for online games only — practice in this tab is not recorded.',
-  'screens.history.noGames': 'No finished games yet — play one with friends!',
+  'screens.history.local': 'History is kept for online games only. Practice in this tab is not recorded.',
+  'screens.history.noGames': 'No finished games yet. Play one with friends!',
   'screens.history.h2h': '{wins} W · {losses} L · {games} games',
   'screens.history.noRivals': 'No games against friends yet.',
   'screens.history.botsNote': "Games with bots don't count here.",
@@ -66,7 +66,7 @@ export const screens = {
   'screens.profile.name': 'Your name',
   'screens.profile.avatar': 'Avatar',
   'screens.profile.avatarAria': 'Avatar {avatar}',
-  'screens.update.ready': 'Update ready — reload',
+  'screens.update.ready': 'Update ready: reload',
   'screens.learn.start': 'Start',
   'screens.learn.shuffling': 'Shuffling…',
   'screens.learn.practice': 'Practice with coach',

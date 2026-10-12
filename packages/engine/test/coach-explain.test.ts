@@ -45,7 +45,7 @@ describe('explainEvent', () => {
   });
   it('trick won by a trump; ordinary tricks are silent', () => {
     const base = { type: 'trickWon', p: 'c', cards: [], card: c('9S'), points: 11 } as const;
-    expect(explainEvent(ev({ ...base, byTrump: true }), viewAs('a'))).toBe('Celina won with 9♠ — trumps beat every other suit.');
+    expect(explainEvent(ev({ ...base, byTrump: true }), viewAs('a'))).toBe('Celina won with 9♠. Trumps beat every other suit.');
     expect(explainEvent(ev({ ...base, byTrump: false }), viewAs('a'))).toBeNull();
   });
   it('bidding won', () => {
@@ -63,7 +63,7 @@ describe('explainEvent', () => {
         sittingOut: four ? 'd' : null, totals }));
     const free = throwSummary(100, { a: 0, b: 0, c: 0 });
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 100, summary: free }), viewAs('b')))
-      .toBe('Ala threw in at 100 — nobody scores, new deal.');
+      .toBe('Ala threw in at 100. Nobody scores, new deal.');
     const paid = throwSummary(130, { a: 0, b: 0, c: 0 });
     expect(explainEvent(ev({ type: 'threw', p: 'a', amount: 130, summary: paid }), viewAs('b')))
       .toBe('Ala threw in at 130: Ala −130, You +60, Celina +60.');
@@ -85,7 +85,7 @@ describe('explainEvent', () => {
   it('round scored: a near miss says rounding does not help', () => {
     const near = summary({ a: 117, b: 3, c: 0 }, 120);
     expect(explainEvent(ev({ type: 'roundScored', summary: near }), viewAs('b')))
-      .toBe("Ala bid 120 but scored only 117 → −120 — rounding doesn't help a bidder who falls short. You: +0.");
+      .toBe("Ala bid 120 but scored only 117 → −120. Rounding doesn't help a bidder who falls short. You: +0.");
   });
   it('round scored: a defender on the barrel scores 0', () => {
     const result = scoreRound({
@@ -95,13 +95,13 @@ describe('explainEvent', () => {
     });
     const sum = summarizeRound({ number: 1, dealer: 'c', bidder: 'a', bid: 100, outcome: 'made', wykladana: false }, result);
     expect(explainEvent(ev({ type: 'roundScored', summary: sum }), viewAs('b')))
-      .toBe("Ala bid 100 and scored 100 → +100. You're on the barrel — only winning a bid scores there.");
+      .toBe("Ala bid 100 and scored 100 → +100. You're on the barrel. Only winning a bid scores there.");
   });
   it('wykładana and game won', () => {
     expect(explainEvent(ev({ type: 'wykladana', p: 'a', hand: [], trump: null, marriages: [] }), viewAs('a')))
-      .toBe('You have every trick guaranteed — round won outright (wykładana)!');
+      .toBe('You have every trick guaranteed. Round won outright (wykładana)!');
     expect(explainEvent(ev({ type: 'wykladana', p: 'a', hand: [], trump: null, marriages: [] }), viewAs('b')))
-      .toBe('Ala has every trick guaranteed — round won outright (wykładana)!');
+      .toBe('Ala has every trick guaranteed. Round won outright (wykładana)!');
     expect(explainEvent(ev({ type: 'gameWon', p: 'a', totals: { a: 1010, b: 400, c: 300 } }), viewAs('c')))
       .toBe('Ala won the game with 1010!');
   });

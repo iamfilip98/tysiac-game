@@ -7,10 +7,10 @@ export const learn = {
   'learn.advice.pass': 'Pas',
   'learn.advice.play': 'Spil hånden',
   'learn.advice.throw': 'Giv op',
-  'learn.advice.plan': 'Det er planen for denne hånd — senere hjælper træneren dig med at vælge.',
+  'learn.advice.plan': 'Det er planen for denne hånd. Senere hjælper træneren dig med at vælge.',
   'learn.advice.declare': 'Spil {card} ud for at melde din mariage',
   'learn.advice.declareWhy': '+{points} til dig, og {suit} bliver trumf.',
   'learn.hint.lesson': 'Lektion: {text}.',
-  'learn.hint.noPause': 'Lektionen venter på dig — du behøver ikke at holde pause.',
-  'learn.hint.wait': 'Ikke endnu — vent på din tur.',
+  'learn.hint.noPause': 'Lektionen venter på dig. Du behøver ikke at holde pause.',
+  'learn.hint.wait': 'Ikke endnu. Vent på din tur.',
 } as const satisfies AreaOf<typeof en>;

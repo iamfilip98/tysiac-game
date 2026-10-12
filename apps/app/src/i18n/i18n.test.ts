@@ -46,3 +46,19 @@ describe('dictionaries', () => {
     }
   });
 });
+
+describe('punctuation (owner ruling: no em dashes, no en dashes as punctuation)', () => {
+  const texts = (m: unknown): string[] => (typeof m === 'string' ? [m] : Object.values(m as Record<string, string>));
+  it('no dictionary text in any language uses an em dash or a spaced en dash', async () => {
+    const { pl } = await import('./pl');
+    const { da } = await import('./da');
+    const bad: string[] = [];
+    for (const [lang, dict] of [['en', en], ['pl', pl], ['da', da]] as const) {
+      for (const [key, m] of Object.entries(dict)) {
+        for (const text of texts(m)) if (/—| – /.test(text)) bad.push(`${lang} ${key}: ${text}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+});

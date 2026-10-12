@@ -2,7 +2,7 @@ import type { AreaOf } from '../types';
 import type { errors as en } from '../en/errors';
 
 export const errors = {
-  'errors.offline': 'Brak połączenia — łączę ponownie…',
+  'errors.offline': 'Brak połączenia. Łączę ponownie…',
   'errors.notPlaying': 'Gra jeszcze się nie zaczęła',
   'errors.unreachable': 'Brak połączenia z serwerem',
   'errors.unreachableRetry': 'Brak połączenia z serwerem. Spróbuj ponownie.',
@@ -15,10 +15,10 @@ export const errors = {
   'errors.roomFull': 'Ten pokój jest pełny.',
   'errors.gameInProgress': 'Ta gra zaczęła się już bez ciebie.',
   'errors.badSecret': 'To miejsce należy do innego urządzenia.',
-  'errors.versionMismatch': 'Aplikacja została zaktualizowana — odśwież stronę.',
-  'errors.notInRoom': 'Nie ma takiego pokoju — mógł wygasnąć.',
+  'errors.versionMismatch': 'Aplikacja została zaktualizowana. Odśwież stronę.',
+  'errors.notInRoom': 'Nie ma takiego pokoju. Mógł wygasnąć.',
   'errors.badMessage': 'Połączenie przesłało coś nieoczekiwanego.',
   'errors.notHost': 'Tylko gospodarz może to zrobić.',
-  'errors.rateLimited': 'Za dużo ruchów naraz — trochę wolniej.',
-  'errors.lesson': 'Trzymaj się lekcji — podpowiedź trenera mówi, co zrobić.',
+  'errors.rateLimited': 'Za dużo ruchów naraz. Trochę wolniej.',
+  'errors.lesson': 'Trzymaj się lekcji. Podpowiedź trenera mówi, co zrobić.',
 } as const satisfies AreaOf<typeof en>;

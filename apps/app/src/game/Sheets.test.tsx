@@ -46,7 +46,7 @@ describe('RoundResultSheet', () => {
     expect(roundHeadline({ ...base, outcome: 'made', wykladana: false }, mid)).toBe(`${name} made ${base.bid}`);
     expect(roundHeadline({ ...base, outcome: 'failed', wykladana: false }, mid)).toBe(`${name} failed ${base.bid}`);
     expect(roundHeadline({ ...base, outcome: 'thrown', wykladana: false }, mid)).toBe(`${name} threw in at ${base.bid}`);
-    expect(roundHeadline({ ...base, outcome: 'made', wykladana: true }, mid)).toBe(`${name} won every trick — wykładana!`);
+    expect(roundHeadline({ ...base, outcome: 'made', wykladana: true }, mid)).toBe(`${name} won every trick. Wykładana!`);
   });
 
   it('headlines in Polish use the viewer form for the viewer', async () => {

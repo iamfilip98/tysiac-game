@@ -156,13 +156,13 @@ describe('ActionZone: coach', () => {
     const advice = { action: { type: 'pass' } as Action, headline: msg('coach.pass.worth', { worth: 20, next: 110 }), reasons: [msg('coach.why.ace')] };
     const p = props(bidMine, { coach: true, advice });
     const { unmount } = render(<ActionZone {...p} />);
-    expect(screen.getByText('Pass — this hand looks worth about 20, short of 110')).toBeInTheDocument();
+    expect(screen.getByText('Pass. This hand looks worth about 20, short of 110')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Why?' }));
     expect(p.onWhy).toHaveBeenCalledOnce();
     unmount();
     const note = msg('event.bidWon.public', { player: { player: 'z' }, amount: 110 });
     render(<ActionZone {...props(bidOther, { coach: true, advice, note })} />);
-    expect(screen.queryByText('Pass — this hand looks worth about 20, short of 110')).toBeNull();
+    expect(screen.queryByText('Pass. This hand looks worth about 20, short of 110')).toBeNull();
     expect(screen.getByText('Bot Zenek won the bid at 110. Over 100, so everyone sees the talon.')).toBeInTheDocument();
   });
 

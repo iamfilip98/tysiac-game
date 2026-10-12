@@ -50,7 +50,7 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
           {summary.players.map(p => (
             <tr key={p.playerId}>
               <td>{who(view, p.playerId)}</td>
-              <td>{p.sittingOut ? '—' : p.trickPoints}</td>
+              <td>{p.sittingOut ? '·' : p.trickPoints}</td>
               <td>{p.marriagePoints || ''}</td>
               <td className={p.scoreChange < 0 ? 'neg' : ''}>{signed(p.scoreChange)}</td>
               <td>

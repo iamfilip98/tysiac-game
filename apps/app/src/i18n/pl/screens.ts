@@ -2,7 +2,7 @@ import type { AreaOf } from '../types';
 import type { screens as en } from '../en/screens';
 
 export const screens = {
-  'screens.home.welcome': 'Witaj! Wybierz imię i awatar — znajomi zobaczą je przy stole.',
+  'screens.home.welcome': 'Witaj! Wybierz imię i awatar. Znajomi zobaczą je przy stole.',
   'screens.home.continue': 'Dalej',
   'screens.home.hello': 'Cześć, {avatar} {name}',
   'screens.home.resumeText': 'Gra {code} wciąż trwa.',
@@ -40,7 +40,7 @@ export const screens = {
   'screens.room.useHere': 'Graj tutaj',
   'screens.room.cantJoin': 'Nie można dołączyć',
   'screens.room.closed': 'Połączenie zamknięte',
-  'screens.room.outOfSync': 'Aplikacja i serwer się rozjechały — odśwież stronę.',
+  'screens.room.outOfSync': 'Aplikacja i serwer się rozjechały. Odśwież stronę.',
   'screens.room.refused': 'Serwer odrzucił to połączenie.',
   'screens.room.reconnecting': 'Łączę ponownie…',
   'screens.room.connecting': 'Łączę…',
@@ -54,8 +54,8 @@ export const screens = {
   'screens.history.youWon': 'Twoja wygrana',
   'screens.history.won': 'Wygrana: {name}',
   'screens.history.you': '(ty)',
-  'screens.history.local': 'Historia obejmuje tylko gry online — trening w tej karcie nie jest zapisywany.',
-  'screens.history.noGames': 'Jeszcze żadnej skończonej gry — zagraj ze znajomymi!',
+  'screens.history.local': 'Historia obejmuje tylko gry online. Trening w tej karcie nie jest zapisywany.',
+  'screens.history.noGames': 'Jeszcze żadnej skończonej gry. Zagraj ze znajomymi!',
   'screens.history.h2h': '{wins} W · {losses} P · gier: {games}',
   'screens.history.noRivals': 'Jeszcze żadnej gry ze znajomymi.',
   'screens.history.botsNote': 'Gry z botami się tu nie liczą.',
@@ -66,7 +66,7 @@ export const screens = {
   'screens.profile.name': 'Twoje imię',
   'screens.profile.avatar': 'Awatar',
   'screens.profile.avatarAria': 'Awatar {avatar}',
-  'screens.update.ready': 'Nowa wersja — odśwież',
+  'screens.update.ready': 'Nowa wersja: odśwież',
   'screens.learn.start': 'Zaczynamy',
   'screens.learn.shuffling': 'Tasowanie…',
   'screens.learn.practice': 'Trening z trenerem',

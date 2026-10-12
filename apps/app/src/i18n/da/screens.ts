@@ -2,7 +2,7 @@ import type { AreaOf } from '../types';
 import type { screens as en } from '../en/screens';
 
 export const screens = {
-  'screens.home.welcome': 'Velkommen! Vælg et navn og en avatar — dine venner ser dem ved bordet.',
+  'screens.home.welcome': 'Velkommen! Vælg et navn og en avatar. Dine venner ser dem ved bordet.',
   'screens.home.continue': 'Fortsæt',
   'screens.home.hello': 'Hej {avatar} {name}',
   'screens.home.resumeText': 'Spil {code} er stadig i gang.',
@@ -40,7 +40,7 @@ export const screens = {
   'screens.room.useHere': 'Spil her',
   'screens.room.cantJoin': 'Kan ikke deltage',
   'screens.room.closed': 'Forbindelsen er lukket',
-  'screens.room.outOfSync': 'Appen og serveren er ude af trit — genindlæs siden.',
+  'screens.room.outOfSync': 'Appen og serveren er ude af trit. Genindlæs siden.',
   'screens.room.refused': 'Serveren afviste forbindelsen.',
   'screens.room.reconnecting': 'Forbinder igen…',
   'screens.room.connecting': 'Forbinder…',
@@ -54,8 +54,8 @@ export const screens = {
   'screens.history.youWon': 'Du vandt',
   'screens.history.won': '{name} vandt',
   'screens.history.you': '(dig)',
-  'screens.history.local': 'Historikken gemmes kun for onlinespil — træning i denne fane bliver ikke gemt.',
-  'screens.history.noGames': 'Ingen færdige spil endnu — spil et med dine venner!',
+  'screens.history.local': 'Historikken gemmes kun for onlinespil. Træning i denne fane bliver ikke gemt.',
+  'screens.history.noGames': 'Ingen færdige spil endnu. Spil et med dine venner!',
   'screens.history.h2h': '{wins} V · {losses} T · {games} spil',
   'screens.history.noRivals': 'Ingen spil mod venner endnu.',
   'screens.history.botsNote': 'Spil med bots tæller ikke her.',
@@ -66,7 +66,7 @@ export const screens = {
   'screens.profile.name': 'Dit navn',
   'screens.profile.avatar': 'Avatar',
   'screens.profile.avatarAria': 'Avatar {avatar}',
-  'screens.update.ready': 'Opdatering klar — genindlæs',
+  'screens.update.ready': 'Opdatering klar: genindlæs',
   'screens.learn.start': 'Start',
   'screens.learn.shuffling': 'Blander…',
   'screens.learn.practice': 'Øv med træner',

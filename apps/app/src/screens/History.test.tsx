@@ -82,7 +82,7 @@ describe('History screen', () => {
     const user = userEvent.setup();
     vi.stubGlobal('fetch', vi.fn(async () => respond({ games: [], headToHead: [], leaderboard: [] })));
     render(<History />);
-    expect(await screen.findByText('No finished games yet — play one with friends!')).toBeInTheDocument();
+    expect(await screen.findByText('No finished games yet. Play one with friends!')).toBeInTheDocument();
     await user.click(screen.getByRole('radio', { name: 'Head-to-head' }));
     expect(screen.getByText('No games against friends yet.')).toBeInTheDocument();
   });
