@@ -1,3 +1,5 @@
+import { english } from './english';
+import type { EngineMsg } from '../src/messages';
 import { describe, it, expect } from 'vitest';
 import type { GameState, PlayerView } from '../src/types';
 import { createGame } from '../src/game';
@@ -197,19 +199,20 @@ describe('eventsFor', () => {
 });
 
 describe('explainIllegal', () => {
+  const en = (m: EngineMsg | null, v?: PlayerView) => m && english(m, v);
   const s = scenario({ phase: 'tricks', hands: { a: '9C', b: 'AH 9H 9S', c: 'QC' }, trick: { leader: 'a', cards: [['a', '10H']] } });
   it('explains rule violations and returns null for legal cards', () => {
     const v = viewFor(s, 'b');
-    expect(explainIllegal(v, c('9S'))).toBe('You must follow ♥');
-    expect(explainIllegal(v, c('9H'))).toBe('First to respond must beat 10♥ if you can');
-    expect(explainIllegal(v, c('KD'))).toBe("That card isn't in your hand");
+    expect(en(explainIllegal(v, c('9S')), v)).toBe('You must follow ♥');
+    expect(en(explainIllegal(v, c('9H')), v)).toBe('First to respond must beat 10♥ if you can');
+    expect(en(explainIllegal(v, c('KD')), v)).toBe("That card isn't in your hand");
     expect(explainIllegal(v, c('AH'))).toBeNull();
   });
   it('explains turn, phase and pause', () => {
-    expect(explainIllegal(viewFor(s, 'c'), c('QC'))).toBe('Wait for Bartek to play');
+    expect(en(explainIllegal(viewFor(s, 'c'), c('QC')), viewFor(s, 'c'))).toBe('Wait for Bartek to play');
     const bidding = createGame({ seed: 'x', seats: SEATS3, maxPlayers: 3, firstDealer: 0 });
-    expect(explainIllegal(viewFor(bidding, 'b'), c('AH'))).toBe("You can't play a card right now");
+    expect(en(explainIllegal(viewFor(bidding, 'b'), c('AH')), viewFor(bidding, 'b'))).toBe("You can't play a card right now");
     const paused = { ...s, paused: { by: 'a', at: 1 } };
-    expect(explainIllegal(viewFor(paused, 'b'), c('AH'))).toBe('The game is paused');
+    expect(en(explainIllegal(viewFor(paused, 'b'), c('AH')), viewFor(paused, 'b'))).toBe('The game is paused');
   });
 });

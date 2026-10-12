@@ -125,7 +125,7 @@ function playGame(seed: string, seats: Seat[], firstDealer: number, fullViews: b
     deepFreeze(s);
     const res = reduce(s, p, action, steps);
     assert(JSON.stringify(s) === before, `${tag}: reduce mutated its input state`);
-    assert(res.ok, `${tag}: reduce rejected ${JSON.stringify(action)}: ${!res.ok && res.error.message}`);
+    assert(res.ok, `${tag}: reduce rejected ${JSON.stringify(action)}: ${!res.ok && res.error.msg.key}`);
     for (const e of res.events) {
       if (e.type === 'marriage') tally.marriage++;
       if (e.type === 'talonSeen') tally.talon++;
@@ -173,7 +173,7 @@ describe('simulation', () => {
       let s = createGame({ seed, seats, maxPlayers: seats.length as 3 | 4, firstDealer: 1 });
       a.log.forEach(({ p, action }, i) => {
         const res = reduce(s, p, action, i + 1);
-        if (!res.ok) throw new Error(res.error.message);
+        if (!res.ok) throw new Error(res.error.msg.key);
         s = res.state;
       });
       expect(s).toStrictEqual(a.state);
@@ -189,7 +189,7 @@ describe('simulation', () => {
     for (let i = 0; s.phase !== 'gameEnd' && i < MAX_STEPS; i++) {
       const p = actorsOf(s)[0]!;
       const res = reduce(s, p, botAction(viewFor(s, p), rand), i);
-      if (!res.ok) throw new Error(res.error.message);
+      if (!res.ok) throw new Error(res.error.msg.key);
       for (const e of res.events) {
         if (e.type !== 'threw' && e.type !== 'roundScored') continue;
         perRound.set(e.summary.number, (perRound.get(e.summary.number) ?? 0) + 1);

@@ -5,6 +5,7 @@ import { cardKey, parseCards, type Card } from '@tysiac/engine';
 import { Hand } from './Hand';
 import { CardFace, SUIT_TEXT } from './Card';
 import { glowFor, marriageTag, sortHand } from './cards';
+import { loadLang } from '../i18n';
 
 const cards = parseCards('9S KH 10D QH AS');
 const labels = () => within(screen.getByRole('group', { name: 'Your hand' })).getAllByRole('button').map(b => b.getAttribute('aria-label'));
@@ -16,6 +17,14 @@ function renderHand(over: Partial<Parameters<typeof Hand>[0]> = {}) {
 }
 
 describe('Hand', () => {
+  it('card faces use Polish rank letters', async () => {
+    await loadLang('pl');
+    renderHand();
+    expect(screen.getByRole('button', { name: 'D♥' })).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: 'Twoje karty' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'D♥' }).querySelector('.card__rank')!.textContent).toBe('D');
+  });
+
   it('sorts ♠ ♥ ♣ ♦ and by strength, one labelled button per card', () => {
     renderHand();
     expect(labels()).toEqual(['A♠', '9♠', 'K♥', 'Q♥', '10♦']);

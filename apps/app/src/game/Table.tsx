@@ -1,9 +1,11 @@
 import { AnimatePresence, m } from 'motion/react';
-import { cardKey, cardLabel, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
+import { cardKey, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
 import { CardBack, CardFace } from './Card';
 import { isRed } from './cards';
 import { spotsFor, type Spot } from './seating';
 import type { TableFx } from '../store/client';
+import { cardText } from '../i18n/engineText';
+import { useT } from '../i18n/useT';
 import './table.css';
 import './fx.css';
 
@@ -30,33 +32,34 @@ export interface TableProps {
 }
 
 export function Table({ view, pending, sweepTo, fx }: TableProps) {
+  const t = useT();
   const r = view.round;
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
   const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending && !r.trick.cards.some(t => cardKey(t.card) === cardKey(pending)) ? [{ p: view.me, card: pending }] : [])] : [];
   const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'talon' || view.phase === 'decision');
   return (
-    <section className="table" aria-label="Table">
+    <section className="table" aria-label={t('game.table')}>
       {fx && <div key={fx.id} className={`fx fx--${fx.kind === 'marriage' ? 'marriage' : 'trumpwin'}`} aria-hidden="true" />}
       {showTalon && <Talon cards={view.phase === 'bidding' ? null : (r?.talon ?? null)} />}
       <AnimatePresence custom={(sweepTo && spots[sweepTo]) || 'top'}>
-        {trick.map(t => {
-          const spot = spots[t.p] ?? 'top';
-          const mine = t.p === view.me;
+        {trick.map(tc => {
+          const spot = spots[tc.p] ?? 'top';
+          const mine = tc.p === view.me;
           return (
             <m.div
-              key={cardKey(t.card)}
-              layoutId={mine ? cardKey(t.card) : undefined}
+              key={cardKey(tc.card)}
+              layoutId={mine ? cardKey(tc.card) : undefined}
               custom={spot}
               variants={variants}
               initial={mine ? false : 'enter'}
               animate="rest"
               exit="gone"
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-              className={`card tcard tcard--${spot} ${isRed(t.card) ? 'card--red' : ''} ${r?.trump && t.card.suit === r.trump ? 'card--glow-trump' : ''}`}
+              className={`card tcard tcard--${spot} ${isRed(tc.card) ? 'card--red' : ''} ${r?.trump && tc.card.suit === r.trump ? 'card--glow-trump' : ''}`}
               role="img"
-              aria-label={cardLabel(t.card)}
+              aria-label={cardText(tc.card)}
             >
-              <CardFace card={t.card} />
+              <CardFace card={tc.card} />
             </m.div>
           );
         })}
@@ -66,16 +69,17 @@ export function Table({ view, pending, sweepTo, fx }: TableProps) {
 }
 
 function Talon({ cards }: { cards: Card[] | null }) {
+  const t = useT();
   return (
-    <div className="talon" aria-label="Talon">
+    <div className="talon" aria-label={t('game.talon')}>
       {cards
         ? cards.map(c => (
-            <span key={cardKey(c)} className={`card ${isRed(c) ? 'card--red' : ''}`} role="img" aria-label={cardLabel(c)}>
+            <span key={cardKey(c)} className={`card ${isRed(c) ? 'card--red' : ''}`} role="img" aria-label={cardText(c)}>
               <CardFace card={c} />
             </span>
           ))
         : [0, 1, 2].map(i => <CardBack key={i} />)}
-      <span className="talon__lbl">talon</span>
+      <span className="talon__lbl">{t('game.talon.lbl')}</span>
     </div>
   );
 }

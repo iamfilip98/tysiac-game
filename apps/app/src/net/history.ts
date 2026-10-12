@@ -20,7 +20,7 @@ export async function fetchHistory(playerId: string, base = ''): Promise<History
   } finally {
     clearTimeout(timer);
   }
-  if (!res.ok) throw new RoomApiError(`Server error (HTTP ${res.status})`, 'server');
+  if (!res.ok) throw new RoomApiError(`Server error (HTTP ${res.status})`, 'server', res.status);
   let body: unknown;
   try {
     body = await res.json();

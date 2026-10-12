@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ClientMessageSchema } from '@tysiac/protocol';
 import { AVATARS, cleanName, coachEnabled, usePrefs } from './prefs';
 
@@ -47,6 +47,25 @@ describe('prefs', () => {
     p.noteGameStarted('ABCDEF');
     p.noteGameStarted('GHJKMN');
     expect(usePrefs.getState().gamesStarted).toBe(2);
+  });
+
+  it('defaults to English whatever the phone language is', () => {
+    const spy = vi.spyOn(navigator, 'language', 'get').mockReturnValue('pl-PL');
+    const spy2 = vi.spyOn(navigator, 'languages', 'get').mockReturnValue(['da-DK', 'pl-PL']);
+    localStorage.clear();
+    usePrefs.setState({ lang: 'en' });
+    void usePrefs.persist.rehydrate();
+    expect(usePrefs.getState().lang).toBe('en');
+    expect(usePrefs.getInitialState().lang).toBe('en');
+    spy.mockRestore();
+    spy2.mockRestore();
+  });
+
+  it('remembers the chosen language', async () => {
+    await usePrefs.getState().setLang('da');
+    expect(JSON.parse(localStorage.getItem('tysiac.prefs')!).state.lang).toBe('da');
+    expect(document.documentElement.lang).toBe('da');
+    await usePrefs.getState().setLang('en');
   });
 
   it('setProfile cleans the name', () => {

@@ -1,3 +1,4 @@
+import { english } from './english';
 import { describe, it, expect } from 'vitest';
 import type { Action, GameState } from '../src/types';
 import { reduce } from '../src/reduce';
@@ -58,14 +59,15 @@ describe('tricks', () => {
   it('must follow suit', () => {
     const s = scenario({ phase: 'tricks', hands: { a: '9C', b: 'KH 9S', c: 'QC' }, trick: { leader: 'a', cards: [['a', '10H']] } });
     const res = reduce(s, 'b', card('9S'), 1);
-    expect(!res.ok && res.error).toEqual({ code: 'illegalCard', message: 'You must follow ♥' });
+    expect(!res.ok && res.error.code).toBe('illegalCard');
+    expect(!res.ok && english(res.error.msg)).toBe('You must follow ♥');
     ok(reduce(s, 'b', card('KH'), 1));
   });
 
   it('only the first responder must beat the lead', () => {
     const s = scenario({ phase: 'tricks', hands: { a: '9C', b: 'AH 9H 9S', c: 'QC' }, trick: { leader: 'a', cards: [['a', '10H']] } });
     const res = reduce(s, 'b', card('9H'), 1);
-    expect(!res.ok && res.error.message).toBe('First to respond must beat 10♥ if you can');
+    expect(!res.ok && english(res.error.msg)).toBe('First to respond must beat 10♥ if you can');
     const third = scenario({ phase: 'tricks', hands: { a: '9C', b: '9S', c: 'KH 9H' }, trick: { leader: 'a', cards: [['a', '10H'], ['b', 'AH']] } });
     ok(reduce(third, 'c', card('9H'), 1));
   });

@@ -4,6 +4,7 @@ import { clone } from './ctx';
 import { handPoints } from './cards';
 import { maxBidFor } from './bidding';
 import { cardRuleMessage } from './tricks';
+import { msg, type EngineMsg } from './messages';
 
 /** Everything `me` is allowed to know. This is the only state that may leave the server. */
 export function viewFor(s: GameState, me: PlayerId): PlayerView {
@@ -67,13 +68,10 @@ export function eventsFor(events: GameEvent[], p: PlayerId): GameEvent[] {
 }
 
 /** Why `card` can't be played by the viewer right now, or null if it can. */
-export function explainIllegal(view: PlayerView, card: Card): string | null {
+export function explainIllegal(view: PlayerView, card: Card): EngineMsg | null {
   const r = view.round;
-  if (view.paused) return 'The game is paused';
-  if (!r || view.phase !== 'tricks') return "You can't play a card right now";
-  if (view.turn !== view.me) {
-    const name = view.seats.find(x => x.id === view.turn)?.name ?? 'the next player';
-    return `Wait for ${name} to play`;
-  }
+  if (view.paused) return msg('illegal.paused');
+  if (!r || view.phase !== 'tricks' || view.turn === null) return msg('illegal.notNow');
+  if (view.turn !== view.me) return msg('illegal.waitFor', { player: { player: view.turn } });
   return cardRuleMessage(r.hand, r.trick.cards, r.trump, card);
 }

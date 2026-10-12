@@ -2,9 +2,11 @@ import { textSuits } from './cards';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, expect, it, vi } from 'vitest';
-import { cardLabel, createGame, explainIllegal, turnOf, type Action, type PlayerView } from '@tysiac/engine';
+import { cardLabel, createGame, explainIllegal, msg, turnOf, type Action, type PlayerView } from '@tysiac/engine';
+import { engineText } from '../i18n/engineText';
 import { ActionZone, throwCost, type ActionZoneProps } from './ActionZone';
 import { SEATS4, findState, roomInfo, viewOf } from '../test/fixtures';
+import { loadLang } from '../i18n';
 
 function props(view: PlayerView, over: Partial<ActionZoneProps> = {}): ActionZoneProps {
   return {
@@ -133,23 +135,40 @@ describe('ActionZone: tricks', () => {
   });
 });
 
+describe('ActionZone: Polish and Danish', () => {
+  it('renders the bidding panel in Polish', async () => {
+    await loadLang('pl');
+    render(<ActionZone {...props(bidMine)} />);
+    expect(screen.getByRole('button', { name: 'Pas' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: `Licytuj ${bidMine.round!.bid.amount + 10}` })).toBeInTheDocument();
+    expect(screen.getByText('Obecna licytacja')).toBeInTheDocument();
+  });
+  it('renders the decision panel in Danish', async () => {
+    await loadLang('da');
+    render(<ActionZone {...props(decision)} />);
+    expect(screen.getByRole('button', { name: 'Giv op' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Spil' })).toBeInTheDocument();
+  });
+});
+
 describe('ActionZone: coach', () => {
   it('shows the advice headline with Why?, or the event note', async () => {
-    const advice = { action: { type: 'pass' } as Action, headline: 'Pass — your hand is weak.', reasons: ['Only 21 points', 'No marriage'] };
+    const advice = { action: { type: 'pass' } as Action, headline: msg('coach.pass.worth', { worth: 20, next: 110 }), reasons: [msg('coach.why.ace')] };
     const p = props(bidMine, { coach: true, advice });
     const { unmount } = render(<ActionZone {...p} />);
-    expect(screen.getByText('Pass — your hand is weak.')).toBeInTheDocument();
+    expect(screen.getByText('Pass. This hand looks worth about 20, short of 110')).toBeInTheDocument();
     await userEvent.click(screen.getByRole('button', { name: 'Why?' }));
     expect(p.onWhy).toHaveBeenCalledOnce();
     unmount();
-    render(<ActionZone {...props(bidOther, { coach: true, advice, note: 'Bot Zenek won the bid at 110.' })} />);
-    expect(screen.queryByText('Pass — your hand is weak.')).toBeNull();
-    expect(screen.getByText('Bot Zenek won the bid at 110.')).toBeInTheDocument();
+    const note = msg('event.bidWon.public', { player: { player: 'z' }, amount: 110 });
+    render(<ActionZone {...props(bidOther, { coach: true, advice, note })} />);
+    expect(screen.queryByText('Pass. This hand looks worth about 20, short of 110')).toBeNull();
+    expect(screen.getByText('Bot Zenek won the bid at 110. Over 100, so everyone sees the talon.')).toBeInTheDocument();
   });
 
   it('without the coach a public note still shows, without "Coach:"', () => {
-    render(<ActionZone {...props(bidOther, { note: 'Bot Basia declared the ♥ marriage: +100. ♥ are trumps.' })} />);
-    expect(screen.getByText('Bot Basia declared the ♥ marriage: +100. ♥ are trumps.')).toBeInTheDocument();
+    render(<ActionZone {...props(bidOther, { note: msg('event.marriage', { player: { player: 'b' }, suit: { suit: 'hearts' }, points: 100 }) })} />);
+    expect(screen.getByText(textSuits('Bot Basia declared the ♥ marriage: +100. ♥ are trumps now.'))).toBeInTheDocument();
     expect(screen.queryByText('Coach:')).toBeNull();
   });
 });
@@ -165,7 +184,7 @@ describe('ActionZone: illegal raised card', () => {
     expect(illegal).toBeDefined();
     render(<ActionZone {...props(v, { selected: illegal! })} />);
     expect(screen.getByRole('button', { name: `Play ${textSuits(cardLabel(illegal!))}` })).toBeDisabled();
-    expect(screen.getByText(explainIllegal(v, illegal!)!)).toBeInTheDocument();
+    expect(screen.getByText(textSuits(engineText(explainIllegal(v, illegal!)!, v)))).toBeInTheDocument();
   });
 });
 

@@ -18,9 +18,11 @@ import { LessonConnection } from '../learn/LessonConnection';
 import { LessonContext, type LessonControl } from '../learn/context';
 import { LEARNER_ID, LESSON_SECRET, LESSON_SEED, buildLesson, expectedAt, lessonBotMove } from '../learn/lesson';
 import { describeExpected, lessonAdvice, lessonHint, nextBeat } from '../learn/beats';
+import { useT } from '../i18n/useT';
 import './learn.css';
 
 export default function Learn() {
+  const t = useT();
   const name = usePrefs(s => s.name);
   const avatar = usePrefs(s => s.avatar);
   const setProfile = usePrefs(s => s.setProfile);
@@ -64,12 +66,12 @@ export default function Learn() {
   if (!name) {
     return (
       <main className="screen">
-        <h1 className="display">Learn to play</h1>
-        <ProfileForm initialName="" initialAvatar={avatar} submitLabel="Start" onSubmit={setProfile} />
+        <h1 className="display">{t('screens.home.learn')}</h1>
+        <ProfileForm initialName="" initialAvatar={avatar} submitLabel={t('screens.learn.start')} onSubmit={setProfile} />
       </main>
     );
   }
-  if (!room || room.status === 'lobby' || !shown) return <Placeholder title="Learn to play" text="Shuffling…" />;
+  if (!room || room.status === 'lobby' || !shown) return <Placeholder title={t('screens.home.learn')} text={t('screens.learn.shuffling')} />;
 
   const practice = async () => {
     setBusy(true);
@@ -78,7 +80,7 @@ export default function Learn() {
       const code = await createRoomAs(3, true, true);
       navigate(`/r/${code}`);
     } catch {
-      setPracticeError("Can't reach the server. Try again.");
+      setPracticeError('unreachable');
       setBusy(false);
     }
   };
@@ -96,15 +98,15 @@ export default function Learn() {
             beat.final ? (
               <div className="lesson__actions">
                 <button type="button" className="btn btn--pri" disabled={busy} onClick={() => void practice()}>
-                  Practice with coach
+                  {t('screens.learn.practice')}
                 </button>
                 <button type="button" className="btn btn--sec" onClick={() => navigate('/')}>
-                  Home
+                  {t('common.home')}
                 </button>
               </div>
             ) : (
               <button type="button" className="btn btn--pri" onClick={done}>
-                Next
+                {t('screens.learn.next')}
               </button>
             )
           }
@@ -115,7 +117,7 @@ export default function Learn() {
             ))}
             {practiceError && (
               <p className="lesson__error" role="alert">
-                {practiceError}
+                {t('errors.unreachableRetry')}
               </p>
             )}
           </div>

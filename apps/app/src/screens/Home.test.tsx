@@ -5,6 +5,7 @@ import Home from './Home';
 import { setServiceForTests } from '../net/service';
 import { usePrefs } from '../store/prefs';
 import { FakeService } from '../test/fakes';
+import { loadLang } from '../i18n';
 
 let svc: FakeService;
 beforeEach(() => {
@@ -15,6 +16,14 @@ beforeEach(() => {
 afterEach(() => setServiceForTests(null));
 
 describe('Home', () => {
+  it('Home in Polish keeps the name Tysiąc', async () => {
+    await loadLang('pl');
+    render(<Home />);
+    expect(screen.getByRole('heading', { name: 'Tysiąc' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Trening z botami' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ustawienia' })).toBeInTheDocument();
+  });
+
   it('first launch asks for a name and avatar', async () => {
     const user = userEvent.setup();
     usePrefs.setState({ name: '' });

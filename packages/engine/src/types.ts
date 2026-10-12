@@ -1,3 +1,5 @@
+import type { EngineMsg } from './messages';
+
 // Public types of @tysiac/engine. Everything here is JSON-serializable.
 
 export type Suit = 'clubs' | 'diamonds' | 'hearts' | 'spades';
@@ -143,7 +145,8 @@ export type RuleErrorCode =
 
 export interface RuleError {
   code: RuleErrorCode;
-  message: string;
+  /** Structured, translatable reason (the app renders it in the player's language). */
+  msg: EngineMsg;
 }
 
 export type Audience = 'all' | PlayerId[];
@@ -224,6 +227,6 @@ export interface PlayerView {
 
 export interface Advice {
   action: Action;
-  headline: string;
-  reasons: string[];
+  headline: EngineMsg;
+  reasons: EngineMsg[];
 }

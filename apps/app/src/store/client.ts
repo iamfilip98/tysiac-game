@@ -1,9 +1,10 @@
 import {
   cardEquals, cardKey,
-  type Card, type GameEvent, type PlayerId, type PlayerView, type RoundSummary, type RoundView, type Suit,
+  type Card, type EngineMsg, type GameEvent, type PlayerId, type PlayerView, type RoundSummary, type RoundView, type Suit,
 } from '@tysiac/engine';
 import type { RoomInfo, ServerMessage } from '../net/protocol';
 import { eventNote } from './notes';
+import { rejectText } from '../i18n/engineText';
 import { announcementFor, type Announcement } from '../game/announce';
 
 export type SoundName = 'card' | 'shuffle' | 'sweep' | 'turn' | 'marriage' | 'roundEnd' | 'gameWin';
@@ -51,7 +52,8 @@ export interface ClientState {
   shake: string | null;
   toast: string | null;
   roundResult: RoundSummary | null;
-  note: string | null;
+  /** Coach explanation of the event being shown; rendered in the current language. */
+  note: EngineMsg | null;
   error: { code: string; message: string } | null;
 }
 
@@ -95,9 +97,9 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       return s.inflight === msg.id ? { ...s, inflight: null } : s;
     case 'reject':
       if (s.pending && s.pending.id === msg.id) {
-        return { ...s, pending: null, shake: cardKey(s.pending.card), toast: msg.message };
+        return { ...s, pending: null, shake: cardKey(s.pending.card), toast: rejectText(msg, s.view) };
       }
-      if (s.inflight === msg.id) return { ...s, inflight: null, toast: msg.message };
+      if (s.inflight === msg.id) return { ...s, inflight: null, toast: rejectText(msg, s.view) };
       return s;
     case 'error':
       return { ...s, error: { code: msg.code, message: msg.message } };

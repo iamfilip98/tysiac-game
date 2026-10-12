@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { PlayerView } from '@tysiac/engine';
 import { ActionZone, type ActionZoneProps } from './ActionZone';
 import { SEATS4, findState, roomInfo, step, viewOf } from '../test/fixtures';
+import { loadLang } from '../i18n';
 
 function props(view: PlayerView, over: Partial<ActionZoneProps> = {}): ActionZoneProps {
   return {
@@ -21,6 +22,22 @@ describe('TalonPanel', () => {
     expect(document.querySelector('.zone')!.getAttribute('data-phase')).toBe('talon');
     await userEvent.click(screen.getByRole('button', { name: 'Seen' }));
     expect(p.onAct).toHaveBeenCalledWith({ type: 'ackTalon' });
+  });
+
+  it('Seen is Widzę in Polish and Set in Danish', async () => {
+    await loadLang('pl');
+    const { unmount } = render(<ActionZone {...props(viewOf(watching))} />);
+    expect(screen.getByRole('button', { name: 'Widzę' })).toBeInTheDocument();
+    unmount();
+    await loadLang('da');
+    render(<ActionZone {...props(viewOf(watching))} />);
+    expect(screen.getByRole('button', { name: 'Set' })).toBeInTheDocument();
+  });
+
+  it('lists who is still looking in the active language', async () => {
+    await loadLang('da');
+    render(<ActionZone {...props(viewOf(bidding))} />);
+    expect(screen.getByText(/Bot Basia og Bot Zenek/)).toBeInTheDocument();
   });
 
   it('the bidder sees who is still looking', () => {

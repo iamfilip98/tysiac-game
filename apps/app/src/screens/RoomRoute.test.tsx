@@ -148,7 +148,7 @@ describe('RoomRoute', () => {
     conn.push({ t: 'error', code: 'versionMismatch', message: 'old' });
     conn.closeReason = 'rejected';
     conn.setStatus('closed');
-    expect(await screen.findByText('The app was updated — please reload.')).toBeInTheDocument();
+    expect(await screen.findByText('The app was updated. Please reload.')).toBeInTheDocument();
     expect(screen.queryByText('The server refused this connection.')).toBeNull();
   });
 

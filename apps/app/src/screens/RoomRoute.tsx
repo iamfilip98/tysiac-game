@@ -10,6 +10,8 @@ import { useRoom } from '../store/room';
 import { ProfileForm } from '../ui/ProfileForm';
 import { Placeholder } from './Placeholder';
 import { usePracticeAutostart } from './practiceAutostart';
+import { useT } from '../i18n/useT';
+import { tAny, type MsgKey } from '../i18n';
 import './home.css';
 
 const Lobby = lazy(() => import('./Lobby'));
@@ -18,18 +20,27 @@ const Game = lazy(() => import('./Game'));
 /** First connect gives up (offers Retry) after this long without a welcome. */
 const CONNECT_TIMEOUT_MS = 8000;
 
-const FATAL_TEXT: Record<string, string> = {
-  roomFull: 'This room is full.',
-  gameInProgress: 'This game has already started without you.',
-  badSecret: 'This seat belongs to another device.',
-  versionMismatch: 'The app was updated — please reload.',
-  notInRoom: 'No such room — it may have expired.',
+const FATAL_TEXT: Partial<Record<string, MsgKey>> = {
+  roomFull: 'errors.roomFull',
+  gameInProgress: 'errors.gameInProgress',
+  badSecret: 'errors.badSecret',
+  versionMismatch: 'errors.versionMismatch',
+  notInRoom: 'errors.notInRoom',
+  badMessage: 'errors.badMessage',
+  notHost: 'errors.notHost',
+  rateLimited: 'errors.rateLimited',
 };
+
+function fatalText(code: string, message: string): string {
+  const key = FATAL_TEXT[code];
+  return key ? tAny(key) : message;
+}
 
 export default function RoomRoute({ code }: { code: string }) {
   useEffect(() => {
     installSounds();
   }, []);
+  const t = useT();
   const norm = normalizeCode(code);
   const name = usePrefs(s => s.name);
   const avatar = usePrefs(s => s.avatar);
@@ -79,8 +90,8 @@ export default function RoomRoute({ code }: { code: string }) {
       setStalled(false);
       return;
     }
-    const t = setTimeout(() => setStalled(true), CONNECT_TIMEOUT_MS);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setStalled(true), CONNECT_TIMEOUT_MS);
+    return () => clearTimeout(timer);
   }, [connected, norm, name, attempt]);
 
   usePracticeAutostart(practice);
@@ -89,34 +100,34 @@ export default function RoomRoute({ code }: { code: string }) {
     if (norm && room?.status === 'playing') usePrefs.getState().noteGameStarted(norm);
   }, [norm, room?.status]);
 
-  if (!norm) return <Placeholder title="Bad room code" text="Room codes have 6 letters or digits." back />;
+  if (!norm) return <Placeholder title={t('screens.room.badCode')} text={t('screens.room.badCodeText')} back />;
   if (!name) {
     return (
       <main className="screen">
-        <h1 className="display">Join game {norm}</h1>
-        <ProfileForm initialName="" initialAvatar={avatar} submitLabel="Join" onSubmit={setProfile} />
+        <h1 className="display">{t('screens.room.join', { code: norm })}</h1>
+        <ProfileForm initialName="" initialAvatar={avatar} submitLabel={t('screens.home.join')} onSubmit={setProfile} />
       </main>
     );
   }
   const goHome = (
     <button type="button" className="btn btn--pri" onClick={() => navigate('/')}>
-      Home
+      {t('common.home')}
     </button>
   );
   const unreachable = loadFailed || (!room && (stalled || status === 'reconnecting')) && !(error && FATAL_ERRORS.has(error.code)) && status !== 'closed';
   if (unreachable) {
     return (
       <main className="screen">
-        <h1 className="display">Can't reach the server</h1>
-        <p>Check your connection and try again.</p>
+        <h1 className="display">{t('errors.unreachable')}</h1>
+        <p>{t('screens.room.checkConnection')}</p>
         <button type="button" className="btn btn--pri" onClick={() => {
             setStalled(false);
             setAttempt(a => a + 1);
           }}>
-          Retry
+          {t('common.retry')}
         </button>
         <button type="button" className="btn btn--sec" onClick={() => navigate('/')}>
-          Home
+          {t('common.home')}
         </button>
       </main>
     );
@@ -124,13 +135,13 @@ export default function RoomRoute({ code }: { code: string }) {
   if (status === 'closed' && conn?.closeReason === 'replaced') {
     return (
       <main className="screen">
-        <h1 className="display">Opened in another tab</h1>
-        <p>This game is open somewhere else. Only one tab can play at a time.</p>
+        <h1 className="display">{t('screens.room.otherTab')}</h1>
+        <p>{t('screens.room.otherTabText')}</p>
         <button type="button" className="btn btn--pri" onClick={() => setAttempt(a => a + 1)}>
-          Use here
+          {t('screens.room.useHere')}
         </button>
         <button type="button" className="btn btn--sec" onClick={() => navigate('/')}>
-          Home
+          {t('common.home')}
         </button>
       </main>
     );
@@ -138,8 +149,8 @@ export default function RoomRoute({ code }: { code: string }) {
   if (error && FATAL_ERRORS.has(error.code)) {
     return (
       <main className="screen">
-        <h1 className="display">Can't join</h1>
-        <p>{FATAL_TEXT[error.code] ?? error.message}</p>
+        <h1 className="display">{t('screens.room.cantJoin')}</h1>
+        <p>{fatalText(error.code, error.message)}</p>
         {goHome}
       </main>
     );
@@ -147,12 +158,8 @@ export default function RoomRoute({ code }: { code: string }) {
   if (status === 'closed' && (conn?.closeReason === 'protocol' || conn?.closeReason === 'rejected')) {
     return (
       <main className="screen">
-        <h1 className="display">Connection closed</h1>
-        <p>
-          {conn.closeReason === 'protocol'
-            ? 'The app and the server are out of sync — please reload the page.'
-            : 'The server refused this connection.'}
-        </p>
+        <h1 className="display">{t('screens.room.closed')}</h1>
+        <p>{conn.closeReason === 'protocol' ? t('screens.room.outOfSync') : t('screens.room.refused')}</p>
         {goHome}
       </main>
     );
@@ -161,17 +168,17 @@ export default function RoomRoute({ code }: { code: string }) {
     <>
       {status === 'reconnecting' && (
         <div className="netbanner" role="status">
-          Reconnecting…
+          {t('screens.room.reconnecting')}
         </div>
       )}
       {!room ? (
-        <Placeholder title={norm} text="Connecting…" />
+        <Placeholder title={norm} text={t('screens.room.connecting')} />
       ) : room.status === 'lobby' ? (
         <Lobby />
       ) : view ? (
         <Game />
       ) : (
-        <Placeholder title={norm} text="Dealing…" />
+        <Placeholder title={norm} text={t('game.dealing')} />
       )}
     </>
   );

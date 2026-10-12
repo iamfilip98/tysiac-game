@@ -14,7 +14,7 @@ export const SEATS4: Seat[] = [...SEATS3, { id: 'd', name: 'Darek', avatar: 'ðŸ
 export const c = (text: string): Card => parseCard(text);
 
 export function ok(result: ReduceResult): Extract<ReduceResult, { ok: true }> {
-  if (!result.ok) throw new Error(`expected ok, got ${result.error.code}: ${result.error.message}`);
+  if (!result.ok) throw new Error(`expected ok, got ${result.error.code}: ${result.error.msg.key}`);
   return result;
 }
 

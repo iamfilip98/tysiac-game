@@ -1,74 +1,88 @@
-import type { GameEvent, PlayerView, RoundSummary } from '../types';
-import { SUIT_SYMBOL } from '../rules';
-import { cardLabel } from '../cards';
+import type { GameEvent, PlayerId, PlayerView, RoundSummary } from '../types';
 import { roundToTen } from '../scoring';
-import { nameOf } from './names';
+import { msg, type EngineMsg } from '../messages';
 
-/** One short sentence explaining an event to `view.me`, or null if it needs no explanation. */
-export function explainEvent(event: GameEvent, view: PlayerView): string | null {
+const pl = (p: PlayerId) => ({ player: p });
+
+/** One short message explaining an event to `view.me`, or null if it needs no explanation. */
+export function explainEvent(event: GameEvent, view: PlayerView): EngineMsg | null {
+  const mine = 'p' in event && event.p === view.me;
   switch (event.type) {
     case 'marriage': {
-      const s = SUIT_SYMBOL[event.suit];
-      return `${nameOf(view, event.p)} declared the ${s} marriage: +${event.points}. ${s} are trumps now.`;
+      const params = { suit: { suit: event.suit }, points: event.points };
+      return mine ? msg('event.marriage.you', params) : msg('event.marriage', { ...params, player: pl(event.p) });
     }
     case 'trickWon':
-      return event.byTrump
-        ? `${nameOf(view, event.p)} won with ${cardLabel(event.card)} — trumps beat every other suit.`
-        : null;
-    case 'biddingWon': {
-      const who = nameOf(view, event.p);
-      if (event.talonPublic) return `${who} won the bid at ${event.amount}. Over 100, so everyone sees the talon.`;
-      const sees = event.p === view.me ? 'you see' : `${who} sees`;
-      return `${who} won the bid at ${event.amount}. At 100 only ${sees} the talon.`;
-    }
+      if (!event.byTrump) return null;
+      return mine
+        ? msg('event.trumpWin.you', { card: { card: event.card } })
+        : msg('event.trumpWin', { player: pl(event.p), card: { card: event.card } });
+    case 'biddingWon':
+      if (event.talonPublic) {
+        return mine
+          ? msg('event.bidWon.public.you', { amount: event.amount })
+          : msg('event.bidWon.public', { player: pl(event.p), amount: event.amount });
+      }
+      return mine
+        ? msg('event.bidWon.private.you', { amount: event.amount })
+        : msg('event.bidWon.private', { player: pl(event.p), amount: event.amount });
     case 'threw':
       return explainThrow(event.summary, event.amount, view);
-    case 'wykladana': {
-      const verb = event.p === view.me ? 'have' : 'has';
-      return `${nameOf(view, event.p)} ${verb} every trick guaranteed — round won outright (wykładana)!`;
-    }
+    case 'wykladana':
+      return mine ? msg('event.wykladana.you') : msg('event.wykladana', { player: pl(event.p) });
     case 'roundScored':
       return explainRound(event.summary, view);
     case 'gameWon':
-      return `${nameOf(view, event.p)} won the game with ${event.totals[event.p]}!`;
+      return mine
+        ? msg('event.gameWon.you', { total: event.totals[event.p] })
+        : msg('event.gameWon', { player: pl(event.p), total: event.totals[event.p] });
     default:
       return null;
   }
 }
 
-function signed(n: number): string {
-  return n > 0 ? `+${n}` : n < 0 ? `−${-n}` : '0';
-}
-
 /** Throw-in text built from the real score changes (barrel players and a sitting-out dealer get 0). */
-function explainThrow(summary: RoundSummary, amount: number, view: PlayerView): string {
-  const who = nameOf(view, summary.bidder);
-  if (summary.players.every(p => p.scoreChange === 0)) return `${who} threw in at ${amount} — nobody scores, new deal.`;
-  const changes = summary.players.map(p => `${nameOf(view, p.playerId)} ${signed(p.scoreChange)}`);
-  return `${who} threw in at ${amount}: ${changes.join(', ')}.`;
+function explainThrow(summary: RoundSummary, amount: number, view: PlayerView): EngineMsg {
+  const you = summary.bidder === view.me;
+  if (summary.players.every(p => p.scoreChange === 0)) {
+    return you ? msg('event.threw.nobody.you', { amount }) : msg('event.threw.nobody', { player: pl(summary.bidder), amount });
+  }
+  const changes = {
+    list: summary.players.map(p => ({
+      msgs: [
+        p.playerId === view.me
+          ? msg('event.change.you', { delta: { signed: p.scoreChange } })
+          : msg('event.change', { player: pl(p.playerId), delta: { signed: p.scoreChange } }),
+      ],
+    })),
+  };
+  return you
+    ? msg('event.threw.changes.you', { amount, changes })
+    : msg('event.threw.changes', { player: pl(summary.bidder), amount, changes });
 }
 
-function explainRound(summary: RoundSummary, view: PlayerView): string {
+function explainRound(summary: RoundSummary, view: PlayerView): EngineMsg {
   if (summary.outcome === 'thrown') return explainThrow(summary, summary.bid, view);
   const bidder = summary.players.find(p => p.playerId === summary.bidder)!;
-  const name = nameOf(view, summary.bidder);
-  const parts: string[] = [];
+  const you = summary.bidder === view.me;
+  const player = pl(summary.bidder);
+  const nums = { bid: summary.bid, scored: bidder.totalRoundPoints };
+  const parts: EngineMsg[] = [];
   if (summary.outcome === 'made') {
-    const rounded = roundToTen(bidder.totalRoundPoints) !== bidder.totalRoundPoints ? ' (rounded)' : '';
-    parts.push(`${name} bid ${summary.bid} and scored ${bidder.totalRoundPoints} → +${bidder.scoreChange}${rounded}`);
-  } else {
+    const p = { ...nums, change: bidder.scoreChange };
+    if (roundToTen(bidder.totalRoundPoints) !== bidder.totalRoundPoints) {
+      parts.push(you ? msg('round.made.rounded.you', p) : msg('round.made.rounded', { ...p, player }));
+    } else parts.push(you ? msg('round.made.you', p) : msg('round.made', { ...p, player }));
+  } else if (roundToTen(bidder.totalRoundPoints) >= summary.bid) {
     // A near miss that would round up to the bid still fails: rounding never helps the bidder.
-    const near = roundToTen(bidder.totalRoundPoints) >= summary.bid
-      ? " — rounding doesn't help a bidder who falls short"
-      : '';
-    parts.push(`${name} bid ${summary.bid} but scored only ${bidder.totalRoundPoints} → −${summary.bid}${near}`);
+    parts.push(you ? msg('round.failed.near.you', nums) : msg('round.failed.near', { ...nums, player }));
+  } else parts.push(you ? msg('round.failed.you', nums) : msg('round.failed', { ...nums, player }));
+  if (bidder.fellOffBarrel) parts.push(you ? msg('round.fellOff.you') : msg('round.fellOff', { player }));
+  const me = summary.players.find(p => p.playerId === view.me);
+  if (me && !you) {
+    if (me.wasOnBarrel) parts.push(msg('round.youBarrel'));
+    else if (me.sittingOut) parts.push(msg('round.youSatOut', { n: me.scoreChange }));
+    else parts.push(msg('round.you', { n: me.scoreChange }));
   }
-  if (bidder.fellOffBarrel) parts.push(`${name} fell off the barrel`);
-  const mine = summary.players.find(p => p.playerId === view.me);
-  if (mine && mine.playerId !== summary.bidder) {
-    if (mine.wasOnBarrel) parts.push("You're on the barrel — only winning a bid scores there");
-    else if (mine.sittingOut) parts.push(`You sat out: +${mine.scoreChange} from the talon`);
-    else parts.push(`You: +${mine.scoreChange}`);
-  }
-  return `${parts.join('. ')}.`;
+  return msg('round.summary', { parts: { msgs: parts } });
 }

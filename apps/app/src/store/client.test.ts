@@ -5,6 +5,7 @@ import {
   type ClientState, type Step,
 } from './client';
 import { eventNote } from './notes';
+import { engineText } from '../i18n/engineText';
 import { botStep, findState, roomInfo, stateMsg, step, viewOf, welcomeMsg } from '../test/fixtures';
 
 const ready = (s: GameState): ClientState => {
@@ -72,6 +73,19 @@ describe('applyServer', () => {
     const r = applyServer(c, { t: 'reject', id: 'a1', code: 'badBid', message: 'Too high' }, 0);
     expect(r.inflight).toBeNull();
     expect(r.toast).toBe('Too high');
+  });
+
+  it('a reject with an unknown message key still clears pending and in-flight', () => {
+    const s0 = findState(x => x.phase === 'tricks' && turnOf(x) === 'me');
+    const card = firstCard(s0);
+    const unknown = { key: 'nope.never' } as never;
+    const c = applyServer(beginPlay(ready(s0), 'p1', card), { t: 'reject', id: 'p1', code: 'x', message: 'Fallback text', msg: unknown }, 0);
+    expect(c.pending).toBeNull();
+    expect(c.toast).toBe('Fallback text');
+    const s1 = findState(x => x.phase === 'bidding' && turnOf(x) === 'me');
+    const r = applyServer(beginAct(ready(s1), 'a1'), { t: 'reject', id: 'a1', code: 'x', message: 'Fallback text', msg: unknown }, 0);
+    expect(r.inflight).toBeNull();
+    expect(r.toast).toBe('Fallback text');
   });
 
   it('ignores a stale state (seq below the last)', () => {
@@ -244,7 +258,7 @@ describe('eventNote', () => {
   });
   it('uses the engine explanation with the coach', () => {
     const e: GameEvent = { type: 'trickWon', p: 'me', cards: [], card: { suit: 'hearts', rank: 'A' }, points: 0, byTrump: true, audience: 'all' };
-    expect(eventNote(e, v, true)).toContain('You won with A♥');
+    expect(engineText(eventNote(e, v, true)!, v)).toContain('You won with A♥');
   });
 });
 

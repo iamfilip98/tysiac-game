@@ -1,4 +1,5 @@
 /** Service-worker update policy: never reload a player out of a room on our own. */
+import { t } from '../i18n';
 
 export type UpdateAction = 'apply' | 'prompt';
 
@@ -39,13 +40,13 @@ export function showUpdateToast(doc: Document, onReload: () => void): HTMLElemen
   const btnCss = 'background:none;border:0;color:inherit;font:inherit;padding:6px;cursor:pointer';
   const reload = doc.createElement('button');
   reload.type = 'button';
-  reload.textContent = 'Update ready — reload';
+  reload.textContent = t('screens.update.ready');
   reload.style.cssText = btnCss;
   reload.addEventListener('click', onReload);
   const dismiss = doc.createElement('button');
   dismiss.type = 'button';
   dismiss.textContent = '✕';
-  dismiss.setAttribute('aria-label', 'Dismiss');
+  dismiss.setAttribute('aria-label', t('common.dismiss'));
   dismiss.style.cssText = btnCss;
   dismiss.addEventListener('click', () => el.remove());
   el.append(reload, dismiss);

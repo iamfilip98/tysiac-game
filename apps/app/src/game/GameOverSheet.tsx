@@ -1,6 +1,7 @@
 import type { PlayerView } from '@tysiac/engine';
 import { Sheet } from '../ui/Sheet';
 import { gameStats } from './stats';
+import { useT } from '../i18n/useT';
 
 export interface GameOverSheetProps {
   view: PlayerView;
@@ -10,20 +11,21 @@ export interface GameOverSheetProps {
 }
 
 export function GameOverSheet({ view, isHost, onRematch, onHome }: GameOverSheetProps) {
+  const t = useT();
   const stats = gameStats(view);
   const winner = view.seats.find(s => s.id === view.winner);
-  const headline = view.winner === view.me ? 'You win!' : `${winner?.name ?? 'Someone'} wins!`;
+  const headline = view.winner === view.me ? t('game.over.you') : t('game.over.win', { player: winner?.name ?? t('common.someone') });
   return (
     <Sheet
-      title="Game over"
+      title={t('game.over.title')}
       footer={
         <>
           <button type="button" className="btn btn--sec" onClick={onHome}>
-            Home
+            {t('game.over.home')}
           </button>
           {isHost && (
             <button type="button" className="btn btn--pri" onClick={onRematch}>
-              Rematch
+              {t('game.over.rematch')}
             </button>
           )}
         </>
@@ -33,12 +35,12 @@ export function GameOverSheet({ view, isHost, onRematch, onHome }: GameOverSheet
       <table className="stats">
         <thead>
           <tr>
-            <th>Player</th>
-            <th>Score</th>
-            <th>Made</th>
-            <th>Failed</th>
-            <th>Marr.</th>
-            <th>Best</th>
+            <th>{t('game.col.player')}</th>
+            <th>{t('game.col.score')}</th>
+            <th>{t('game.col.made')}</th>
+            <th>{t('game.col.failed')}</th>
+            <th>{t('game.col.marr')}</th>
+            <th>{t('game.col.best')}</th>
           </tr>
         </thead>
         <tbody>
@@ -56,7 +58,7 @@ export function GameOverSheet({ view, isHost, onRematch, onHome }: GameOverSheet
           ))}
         </tbody>
       </table>
-      {!isHost && <p className="coachnote">Waiting for the host to start a rematch…</p>}
+      {!isHost && <p className="coachnote">{t('game.over.waitHost')}</p>}
     </Sheet>
   );
 }
