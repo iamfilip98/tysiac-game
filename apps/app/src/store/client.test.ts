@@ -231,3 +231,17 @@ describe('eventNote', () => {
     expect(eventNote(e, v, true)).toContain('You won with A♥');
   });
 });
+
+describe('table fx', () => {
+  const v = viewOf(findState(x => x.phase === 'tricks'));
+  const base: ClientState = { ...initialClient, me: 'me', room: roomInfo(), view: v, shown: v };
+  it('a marriage sets the table fx, and a trump-won trick bursts while it is held', () => {
+    const m = advance({ ...base, queue: [{ type: 'marriage', p: 'b', suit: 'hearts', points: 100, audience: 'all' }] }, false)!;
+    expect(m.state.fx).toMatchObject({ kind: 'marriage', suit: 'hearts' });
+    const won: GameEvent = { type: 'trickWon', p: 'b', cards: [], card: { suit: 'hearts', rank: '9' }, points: 0, byTrump: true, audience: 'all' };
+    const hold = advance({ ...base, queue: [won] }, false)!;
+    expect(hold.state.fx).toMatchObject({ kind: 'trumpWin' });
+    const sweep = advance(hold.state, false)!;
+    expect(sweep.state.fx).toBeNull();
+  });
+});

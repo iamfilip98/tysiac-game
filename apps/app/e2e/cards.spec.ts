@@ -39,4 +39,11 @@ test('a 10-card hand is big, fully on screen and every index is readable', async
     expect(c.rankH).toBeGreaterThanOrEqual(c.width * 0.28);
   }
   await expectFits(page, '10-card hand');
+  // Review focus 4: glows must not be clipped.
+  const glowing = page.locator('.hand .card--glow-marriage, .hand .card--glow-trump');
+  if (await glowing.count()) {
+    const box = await glowing.first().boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+  }
+  await expectFits(page, '10-card hand with glows');
 });

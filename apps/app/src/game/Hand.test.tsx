@@ -4,14 +4,14 @@ import { describe, expect, it, vi } from 'vitest';
 import { cardKey, parseCards, type Card } from '@tysiac/engine';
 import { Hand } from './Hand';
 import { CardFace, SUIT_TEXT } from './Card';
-import { marriageTag, sortHand } from './cards';
+import { glowFor, marriageTag, sortHand } from './cards';
 
 const cards = parseCards('9S KH 10D QH AS');
 const labels = () => within(screen.getByRole('group', { name: 'Your hand' })).getAllByRole('button').map(b => b.getAttribute('aria-label'));
 
 function renderHand(over: Partial<Parameters<typeof Hand>[0]> = {}) {
   const onTap = vi.fn<(c: Card) => void>();
-  render(<Hand cards={cards} selected={null} isPlayable={() => true} recommended={null} declared={[]} shake={null} onTap={onTap} {...over} />);
+  render(<Hand cards={cards} selected={null} isPlayable={() => true} recommended={null} declared={[]} trump={null} shake={null} onTap={onTap} {...over} />);
   return onTap;
 }
 
@@ -71,5 +71,24 @@ describe('CardFace', () => {
 
   it('uses text-presentation suit glyphs (never emoji)', () => {
     for (const s of Object.values(SUIT_TEXT)) expect(s.endsWith('\uFE0E')).toBe(true);
+  });
+});
+
+describe('card glows', () => {
+  const hand = parseCards('KH QH 9H AS 10D');
+  it('gold on both K and Q of an undeclared marriage, beating trump blue', () => {
+    expect(glowFor(hand[0], hand, [], 'hearts')).toBe('marriage');
+    expect(glowFor(hand[1], hand, [], null)).toBe('marriage');
+    expect(glowFor(hand[1], hand, ['hearts'], 'hearts')).toBe('trump');
+  });
+  it('blue on trumps, nothing otherwise', () => {
+    expect(glowFor(hand[2], hand, [], 'hearts')).toBe('trump');
+    expect(glowFor(hand[3], hand, [], 'hearts')).toBeNull();
+    expect(glowFor(hand[2], hand, [], null)).toBeNull();
+  });
+  it('renders the glow classes', () => {
+    render(<Hand cards={hand} selected={null} isPlayable={() => true} recommended={null} declared={[]} trump="diamonds" shake={null} onTap={vi.fn()} />);
+    expect(screen.getByRole('button', { name: 'K♥' })).toHaveClass('card--glow-marriage');
+    expect(screen.getByRole('button', { name: '10♦' })).toHaveClass('card--glow-trump');
   });
 });

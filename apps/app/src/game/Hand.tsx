@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { cardKey, type Card, type Suit } from '@tysiac/engine';
 import { CardButton, type CardLook } from './Card';
-import { marriageTag, sortHand } from './cards';
+import { glowFor, marriageTag, sortHand } from './cards';
 
 export interface HandProps {
   cards: Card[];
@@ -12,12 +12,14 @@ export interface HandProps {
   recommended: string | null;
   /** Marriages already declared by the viewer (no tag for those). */
   declared: readonly Suit[];
+  /** The round's trump suit (blue glow on those cards). */
+  trump: Suit | null;
   shake: string | null;
   onTap(card: Card): void;
 }
 
 /** The viewer's cards. Tapping only reports the tap — it never plays a card. */
-export function Hand({ cards, selected, isPlayable, recommended, declared, shake, onTap }: HandProps) {
+export function Hand({ cards, selected, isPlayable, recommended, declared, trump, shake, onTap }: HandProps) {
   const sorted = sortHand(cards);
   return (
     <div className="hand" role="group" aria-label="Your hand" style={{ '--n': sorted.length } as CSSProperties}>
@@ -30,6 +32,7 @@ export function Hand({ cards, selected, isPlayable, recommended, declared, shake
             card={card}
             look={look}
             tag={marriageTag(card, cards, declared)}
+            glow={glowFor(card, cards, declared, trump)}
             shake={shake === key}
             className="hand__card"
             style={{ '--i': i } as CSSProperties}

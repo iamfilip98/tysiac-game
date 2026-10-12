@@ -62,4 +62,3 @@
 .tcard--top { translate: 0 calc(var(--card-w, 64px) * -0.62); rotate: 3deg; }
 .talon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; align-content: center; }
 .talon__lbl { flex-basis: 100%; text-align: center; font-size: 11px; opacity: 0.6; }
-.lasttrick { position: absolute; left: 0; top: 0; display: flex; gap: 3px; align-items: center; opacity: 0.85; }

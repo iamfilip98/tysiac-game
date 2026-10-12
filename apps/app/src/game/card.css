@@ -35,8 +35,15 @@
 .card--mini .card__pip, .card--mini .card__idx--br { display: none; }
 .card--mini .card__rank { font-size: calc(var(--w) * 0.44); }
 .card--mini .card__suit { font-size: calc(var(--w) * 0.4); }
-.card--dim { filter: saturate(0.55) brightness(0.82); }
-.card--raised { box-shadow: 0 0 0 2px var(--accent), 0 10px 18px rgba(0, 0, 0, 0.45); }
+.card--dim { filter: saturate(0.4) brightness(0.72); }
+.card--raised { outline: 2.5px solid var(--accent); outline-offset: 1px; box-shadow: var(--card-shadow), 0 10px 18px rgba(0, 0, 0, 0.45); }
+.card--glow-marriage { box-shadow: 0 0 0 2px #d4af37, 0 0 12px 3px rgba(212, 175, 55, 0.7), var(--card-shadow); }
+.card--glow-trump { box-shadow: 0 0 0 2px #60a5fa, 0 0 12px 3px rgba(96, 165, 250, 0.65), var(--card-shadow); }
+.card--glow-marriage::before, .card--glow-trump::before {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+}
+.card--glow-marriage::before { background: linear-gradient(135deg, rgba(245, 231, 163, 0.28), transparent 55%); }
+.card--glow-trump::before { background: linear-gradient(135deg, rgba(147, 197, 253, 0.25), transparent 55%); }
 .card--recommended { outline: 1.5px solid var(--accent); outline-offset: 1px; }
 .card__tag {
   position: absolute;

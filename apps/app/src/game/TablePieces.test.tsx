@@ -78,28 +78,42 @@ describe('Opponents', () => {
 
 describe('Table', () => {
   it('shows three talon backs while bidding', () => {
-    render(<Table view={bidding} pending={null} sweepTo={null} />);
+    render(<Table view={bidding} pending={null} sweepTo={null} fx={null} />);
     expect(screen.getByLabelText('Talon').querySelectorAll('.back')).toHaveLength(3);
   });
 
   it('shows the revealed talon in the decision phase', () => {
-    render(<Table view={decision} pending={null} sweepTo={null} />);
+    render(<Table view={decision} pending={null} sweepTo={null} fx={null} />);
     expect(within(screen.getByLabelText('Talon')).getAllByRole('img')).toHaveLength(3);
   });
 
-  it('shows the trick, my pending card and the last trick', () => {
+  it('shows the trick, my pending card', () => {
     const pending = tricks.round!.hand[0];
-    render(<Table view={tricks} pending={pending} sweepTo={null} />);
+    render(<Table view={tricks} pending={pending} sweepTo={null} fx={null} />);
     const table = screen.getByRole('region', { name: 'Table' });
     for (const t of tricks.round!.trick.cards) expect(within(table).getAllByRole('img', { name: cardLabel(t.card) }).length).toBeGreaterThan(0);
     expect(table.querySelectorAll('.tcard')).toHaveLength(3);
     expect(table.querySelector('.tcard--me')).not.toBeNull();
-    expect(within(screen.getByLabelText('Last trick')).getAllByRole('img')).toHaveLength(3);
   });
 
   it('does not duplicate a pending card the server trick already has', () => {
     const pending = tricks.round!.trick.cards[0].card;
-    render(<Table view={tricks} pending={pending} sweepTo={null} />);
+    render(<Table view={tricks} pending={pending} sweepTo={null} fx={null} />);
     expect(screen.getByRole('region', { name: 'Table' }).querySelectorAll('.tcard')).toHaveLength(2);
+  });
+});
+
+describe('Table effects', () => {
+  it('never shows the last trick', () => {
+    render(<Table view={tricks} pending={null} sweepTo={null} fx={null} />);
+    expect(screen.queryByLabelText('Last trick')).toBeNull();
+  });
+
+  it('marks trump cards on the table and shows the marriage ring', () => {
+    const trump = tricks.round!.trick.cards[0].card.suit;
+    const view: PlayerView = { ...tricks, round: { ...tricks.round!, trump } };
+    const { container } = render(<Table view={view} pending={null} sweepTo={null} fx={{ kind: 'marriage', suit: trump, id: 1 }} />);
+    expect(container.querySelector('.tcard.card--glow-trump')).not.toBeNull();
+    expect(container.querySelector('.fx--marriage')).not.toBeNull();
   });
 });

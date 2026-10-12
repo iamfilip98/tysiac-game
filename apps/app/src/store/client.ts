@@ -1,6 +1,6 @@
 import {
   cardEquals, cardKey,
-  type Card, type GameEvent, type PlayerId, type PlayerView, type RoundSummary, type RoundView,
+  type Card, type GameEvent, type PlayerId, type PlayerView, type RoundSummary, type RoundView, type Suit,
 } from '@tysiac/engine';
 import type { RoomInfo, ServerMessage } from '../net/protocol';
 import { eventNote } from './notes';
@@ -12,6 +12,9 @@ export const HOLD_MS = 1000;
 export const SWEEP_MS = 380;
 export const DEAL_MS = 400;
 export const NOTE_MS = 700;
+
+export type TableFx = { kind: 'marriage'; suit: Suit; id: number } | { kind: 'trumpWin'; id: number };
+let fxId = 0;
 
 export interface ClientState {
   me: PlayerId | null;
@@ -31,6 +34,8 @@ export interface ClientState {
   holding: boolean;
   /** Winner of the last swept trick (exit animation target). */
   sweepTo: PlayerId | null;
+  /** Transient table effect (marriage ring, trump burst). */
+  fx: TableFx | null;
   /** Card played optimistically, awaiting the server. */
   pending: { id: string; card: Card } | null;
   /** Non-card action awaiting ack/reject. */
@@ -44,7 +49,7 @@ export interface ClientState {
 }
 
 export const initialClient: ClientState = {
-  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null,
+  me: null, room: null, clockOffset: 0, seq: -1, needsResync: false, view: null, shown: null, queue: [], holding: false, sweepTo: null, fx: null,
   pending: null, inflight: null, shake: null, toast: null, roundResult: null, note: null, error: null,
 };
 
@@ -57,7 +62,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.room?.status === 'finished' && msg.room.status === 'playing') {
         return {
           ...s, room: msg.room, seq: -1, needsResync: true, queue: [], holding: false, roundResult: null,
-          pending: null, inflight: null, note: null, sweepTo: null,
+          pending: null, inflight: null, note: null, sweepTo: null, fx: null,
         };
       }
       return { ...s, room: msg.room };
@@ -74,7 +79,7 @@ export function applyServer(s: ClientState, msg: ServerMessage, localNow: number
       if (s.needsResync || s.shown === null) {
         return {
           ...s, seq: msg.seq, needsResync: false, view: msg.view, shown: msg.view, queue: [], holding: false,
-          pending: null, inflight: null, note: null, sweepTo: null, roundResult: null,
+          pending: null, inflight: null, note: null, sweepTo: null, fx: null, roundResult: null,
         };
       }
       // Newer state: queue its events (possibly none, e.g. choosing to play); `advance` syncs `shown`.
@@ -180,9 +185,9 @@ export function advance(s: ClientState, coach: boolean): Step | null {
       };
     }
     case 'trickWon':
-      if (!s.holding) return { state: { ...s, holding: true, note: note() }, wait: HOLD_MS, kind: 'hold' };
+      if (!s.holding) return { state: { ...s, holding: true, note: note(), fx: e.byTrump ? { kind: 'trumpWin', id: ++fxId } : s.fx }, wait: HOLD_MS, kind: 'hold' };
       return {
-        state: { ...s, queue: rest, holding: false, sweepTo: e.p, shown: withTrickWon(shown, e) },
+        state: { ...s, queue: rest, holding: false, sweepTo: e.p, fx: null, shown: withTrickWon(shown, e) },
         wait: SWEEP_MS,
         kind: 'sweep',
         sound: 'sweep',
@@ -191,9 +196,9 @@ export function advance(s: ClientState, coach: boolean): Step | null {
     case 'threw':
       return { state: { ...s, queue: rest, roundResult: e.summary, note: note() }, wait: 0, kind: 'pause' };
     case 'dealt':
-      return { state: { ...s, queue: rest, note: null, sweepTo: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
+      return { state: { ...s, queue: rest, note: null, sweepTo: null, fx: null }, wait: DEAL_MS, kind: 'beat', sound: 'shuffle' };
     case 'marriage':
-      return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note() }, wait: NOTE_MS, kind: 'beat' };
+      return { state: { ...s, queue: rest, shown: withMarriage(shown, e), note: note(), fx: { kind: 'marriage', suit: e.suit, id: ++fxId } }, wait: NOTE_MS, kind: 'beat' };
     case 'biddingWon':
     case 'wykladana':
       return { state: { ...s, queue: rest, note: note() }, wait: NOTE_MS, kind: 'beat' };

@@ -1,9 +1,11 @@
 import { AnimatePresence, m } from 'motion/react';
-import { cardKey, cardLabel, type Card, type CompletedTrick, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
-import { CardBack, CardFace, MiniCard } from './Card';
+import { cardKey, cardLabel, type Card, type PlayerId, type PlayerView, type TrickCard } from '@tysiac/engine';
+import { CardBack, CardFace } from './Card';
 import { isRed } from './cards';
 import { spotsFor, type Spot } from './seating';
+import type { TableFx } from '../store/client';
 import './table.css';
+import './fx.css';
 
 const FROM: Record<Spot, { x: string; y: string }> = {
   me: { x: '0%', y: '260%' },
@@ -24,15 +26,17 @@ export interface TableProps {
   pending: Card | null;
   /** Winner of the trick being swept away. */
   sweepTo: PlayerId | null;
+  fx: TableFx | null;
 }
 
-export function Table({ view, pending, sweepTo }: TableProps) {
+export function Table({ view, pending, sweepTo, fx }: TableProps) {
   const r = view.round;
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
   const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending && !r.trick.cards.some(t => cardKey(t.card) === cardKey(pending)) ? [{ p: view.me, card: pending }] : [])] : [];
   const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'decision');
   return (
     <section className="table" aria-label="Table">
+      {fx && <div key={fx.id} className={`fx fx--${fx.kind === 'marriage' ? 'marriage' : 'trumpwin'}`} aria-hidden="true" />}
       {showTalon && <Talon cards={view.phase === 'decision' ? (r?.talon ?? null) : null} />}
       <AnimatePresence custom={(sweepTo && spots[sweepTo]) || 'top'}>
         {trick.map(t => {
@@ -48,7 +52,7 @@ export function Table({ view, pending, sweepTo }: TableProps) {
               animate="rest"
               exit="gone"
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
-              className={`card tcard tcard--${spot} ${isRed(t.card) ? 'card--red' : ''}`}
+              className={`card tcard tcard--${spot} ${isRed(t.card) ? 'card--red' : ''} ${r?.trump && t.card.suit === r.trump ? 'card--glow-trump' : ''}`}
               role="img"
               aria-label={cardLabel(t.card)}
             >
@@ -57,7 +61,6 @@ export function Table({ view, pending, sweepTo }: TableProps) {
           );
         })}
       </AnimatePresence>
-      {r?.lastTrick && view.phase === 'tricks' && <LastTrick trick={r.lastTrick} />}
     </section>
   );
 }
@@ -73,17 +76,6 @@ function Talon({ cards }: { cards: Card[] | null }) {
           ))
         : [0, 1, 2].map(i => <CardBack key={i} />)}
       <span className="talon__lbl">talon</span>
-    </div>
-  );
-}
-
-function LastTrick({ trick }: { trick: CompletedTrick }) {
-  return (
-    <div className="lasttrick" aria-label="Last trick">
-      <span className="lbl">Last</span>
-      {trick.cards.map(t => (
-        <MiniCard key={cardKey(t.card)} card={t.card} />
-      ))}
     </div>
   );
 }

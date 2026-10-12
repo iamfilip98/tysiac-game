@@ -18,3 +18,11 @@ export function marriageTag(card: Card, hand: readonly Card[], declared: readonl
   if (card.rank !== 'K' || declared.includes(card.suit) || !hasMarriage(hand, card.suit)) return null;
   return `${SUIT_SYMBOL[card.suit]} ${RULES.marriageValues[card.suit]}`;
 }
+
+export type CardGlow = 'marriage' | 'trump' | null;
+
+/** Gold: K or Q of an undeclared marriage in hand (wins). Blue: a trump. */
+export function glowFor(card: Card, hand: readonly Card[], declared: readonly Suit[], trump: Suit | null): CardGlow {
+  if ((card.rank === 'K' || card.rank === 'Q') && !declared.includes(card.suit) && hasMarriage(hand, card.suit)) return 'marriage';
+  return trump !== null && card.suit === trump ? 'trump' : null;
+}

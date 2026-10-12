@@ -27,7 +27,7 @@ type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
 export default function Game() {
   const s = useRoom(
     useShallow(st => ({
-      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo,
+      me: st.me, room: st.room, view: st.view, shown: st.shown, queue: st.queue, holding: st.holding, sweepTo: st.sweepTo, fx: st.fx,
       pending: st.pending, inflight: st.inflight, shake: st.shake, toast: st.toast, roundResult: st.roundResult, note: st.note,
       clockOffset: st.clockOffset,
     })),
@@ -142,7 +142,7 @@ export default function Game() {
           onTarget={onTarget}
           onUngive={sel.ungive}
         />
-        <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} />
+        <Table view={shown} pending={s.pending?.card ?? null} sweepTo={s.sweepTo} fx={s.fx} />
         <ActionZone
           view={shown}
           room={s.room}
@@ -168,6 +168,7 @@ export default function Game() {
           isPlayable={isPlayable}
           recommended={recommended}
           declared={r?.marriages[shown.me] ?? []}
+          trump={r?.trump ?? null}
           shake={s.shake}
           onTap={onCardTap}
         />
