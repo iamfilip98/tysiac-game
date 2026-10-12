@@ -86,13 +86,14 @@ describe('History screen', () => {
       .mockResolvedValueOnce(respond(data()));
     vi.stubGlobal('fetch', f);
     render(<History />);
-    expect(await screen.findByText('Cannot reach the server. Check your connection.')).toBeInTheDocument();
+    expect(await screen.findByText("Can't reach the server")).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByText('Server error (HTTP 500)')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByText('Unexpected response from the server.')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Retry' }));
     expect(await screen.findByText('You won')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'History' })).toHaveFocus();
     expect(f).toHaveBeenCalledTimes(4);
   });
 

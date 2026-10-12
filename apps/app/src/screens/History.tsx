@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useLocation } from 'wouter';
 import { fetchHistory } from '../net/history';
 import { RoomApiError } from '../net/httpService';
@@ -52,13 +52,19 @@ export default function History() {
   const [tab, setTab] = useState<Tab>('recent');
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  const heading = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
     if (local) return;
     let alive = true;
     setLoad({ kind: 'loading' });
     fetchHistory(me).then(
-      data => alive && setLoad({ kind: 'ok', data }),
+      data => {
+        if (!alive) return;
+        setLoad({ kind: 'ok', data });
+        // The Retry button unmounts on success; park focus on the heading so keyboard/VoiceOver users aren't lost.
+        if (attempt > 0) heading.current?.focus();
+      },
       (e: unknown) => alive && setLoad({ kind: 'error', text: e instanceof RoomApiError ? e.message : 'Something went wrong.' }),
     );
     return () => {
@@ -71,7 +77,7 @@ export default function History() {
   else if (load.kind === 'loading') body = <p className="history__note">Loading…</p>;
   else if (load.kind === 'error') {
     body = (
-      <div className="history__note" role="alert">
+      <div className="history__note">
         <p>{load.text}</p>
         <button type="button" className="btn btn--sec" onClick={() => setAttempt(a => a + 1)}>
           Retry
@@ -132,7 +138,9 @@ export default function History() {
         <button type="button" className="btn btn--sec" onClick={() => navigate('/')}>
           Home
         </button>
-        <h1 className="display">History</h1>
+        <h1 className="display" ref={heading} tabIndex={-1}>
+          History
+        </h1>
       </header>
       <div className="seg" role="radiogroup" aria-label="Show">
         {TABS.map(t => (
@@ -141,7 +149,7 @@ export default function History() {
           </button>
         ))}
       </div>
-      <section className="history__body">{body}</section>
+      <section className="history__body" aria-live={!local && load.kind !== 'ok' ? 'polite' : 'off'}>{body}</section>
     </main>
   );
 }

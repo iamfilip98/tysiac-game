@@ -9,11 +9,24 @@ describe('fetchHistory', () => {
     const f = ok({ games: [], headToHead: [], leaderboard: [] });
     vi.stubGlobal('fetch', f);
     await expect(fetchHistory('a b/c')).resolves.toEqual({ games: [], headToHead: [], leaderboard: [] });
-    expect(f).toHaveBeenCalledWith('/api/history?player=a%20b%2Fc');
+    expect(f).toHaveBeenCalledWith('/api/history?player=a%20b%2Fc', expect.anything());
   });
   it('network failure → kind network', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => { throw new TypeError('offline'); }));
-    await expect(fetchHistory('p')).rejects.toMatchObject({ kind: 'network', message: 'Cannot reach the server. Check your connection.' });
+    await expect(fetchHistory('p')).rejects.toMatchObject({ kind: 'network', message: "Can't reach the server" });
+  });
+  it('a hung request is aborted after 10 s → kind network', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.stubGlobal('fetch', vi.fn((_u: string, init?: RequestInit) => new Promise((_res, rej) => {
+        init?.signal?.addEventListener('abort', () => rej(new DOMException('aborted', 'AbortError')));
+      })));
+      const p = expect(fetchHistory('p')).rejects.toMatchObject({ kind: 'network', message: "Can't reach the server" });
+      await vi.advanceTimersByTimeAsync(10_000);
+      await p;
+    } finally {
+      vi.useRealTimers();
+    }
   });
   it('HTTP 500 → kind server', async () => {
     vi.stubGlobal('fetch', ok({ error: 'Internal error' }, 500));
