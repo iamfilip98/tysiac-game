@@ -2,7 +2,11 @@ import type { Action, GameState } from '@tysiac/engine';
 import type { Schedule } from '../scheduler';
 import type { GameOptions, LogEntry, RoomMeta } from './types';
 
-/** Action log cap (spec §6). Replay = createGame(gameOptions) + reduce over the log. */
+/**
+ * Action log cap (spec §6). Replay = createGame(gameOptions) + reduce over the log. Once a game passes this many
+ * actions the oldest entries are dropped, so replay is unavailable for it (the log no longer starts at seq 1).
+ * That is deliberate: the saved state stays authoritative and only replay-based checks or rebuilds are skipped.
+ */
 export const LOG_CAP = 5000;
 
 type Key = 'meta' | 'state' | 'gameOptions' | 'schedule';

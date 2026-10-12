@@ -15,6 +15,8 @@ type Hello = Extract<ClientMessage, { t: 'hello' }>;
 
 const EMPTY_SCHEDULE: Schedule = { bot: null, cleanup: 0 };
 const BOT_RETRY_MS = 1000;
+/** After a bot move failed twice at the same state, the alarm keeps trying at this slower pace. */
+const BOT_GIVE_UP_RETRY_MS = 30_000;
 
 /** Which player a socket speaks for (null until its hello is accepted). Survives hibernation. */
 export function attachmentOf(ws: WebSocket): SocketAttachment {
@@ -30,7 +32,7 @@ export class Room extends DurableObject<Env> {
   private meta: RoomMeta | null = null;
   private state: GameState | null = null;
   private schedule: Schedule = EMPTY_SCHEDULE;
-  /** In-memory: the state seq whose bot move already failed once (one retry, then stop; never loops). */
+  /** In-memory: the state seq whose bot move already failed once (1 s retry, then every 30 s until a message re-plans). */
   private botFailedAtSeq: number | null = null;
   /** In-memory only: a hibernation simply resets the windows. */
   private readonly buckets = new WeakMap<WebSocket, RateBucket>();
@@ -148,6 +150,7 @@ export class Room extends DurableObject<Env> {
     const verdict = checkRate(bucket, now);
     if (verdict === 'drop') return;
     if (verdict === 'warn') return this.sendError(ws, 'rateLimited', 'Too many messages — slow down');
+    await this.replanAfterBotFailure(now);
 
     const att = attachmentOf(ws);
     const me = att.playerId;
@@ -353,7 +356,7 @@ export class Room extends DurableObject<Env> {
       const action = chooseBotAction(this.state, actor, Math.random);
       const result = reduce(this.state, actor, action, now);
       if (!result.ok) {
-        console.error('bot move rejected', { room: this.meta.code, actor, action, error: result.error });
+        console.error('bot move rejected', { room: this.meta.code, actor, type: action.type, code: result.error.code });
         return false;
       }
       await this.commit(actor, action, result.state, result.events, now);
@@ -364,15 +367,23 @@ export class Room extends DurableObject<Env> {
     }
   }
 
-  /** One retry 1 s later; a second failure at the same state stops the bot (the next human action re-plans). */
+  /** One retry 1 s later; after a second failure at the same state, keep retrying every 30 s (any message re-plans sooner). */
   private async afterBotFailure(now: number): Promise<void> {
     const seq = this.state?.seq ?? null;
-    const retry = this.botFailedAtSeq !== seq;
+    const firstFailure = this.botFailedAtSeq !== seq;
     this.botFailedAtSeq = seq;
-    if (!retry) console.error('bot move failed twice; giving up until the next action', { room: this.meta?.code, seq });
-    this.schedule = { bot: retry ? now + BOT_RETRY_MS : null, cleanup: this.schedule.cleanup };
+    if (!firstFailure) console.error('bot move failed again; retrying slowly', { room: this.meta?.code, seq });
+    this.schedule = { bot: now + (firstFailure ? BOT_RETRY_MS : BOT_GIVE_UP_RETRY_MS), cleanup: this.schedule.cleanup };
     this.store.putSchedule(this.schedule);
     await this.ctx.storage.setAlarm(nextAlarmAt(this.schedule));
+  }
+
+  /** A stalled bot (failed move, waiting on a slow retry) gets a fresh plan as soon as anyone sends anything. */
+  private async replanAfterBotFailure(now: number): Promise<void> {
+    if (this.botFailedAtSeq === null) return;
+    this.botFailedAtSeq = null;
+    this.schedule = { ...this.schedule, bot: null };
+    await this.reschedule(now, null, { touch: false });
   }
 
   /**
