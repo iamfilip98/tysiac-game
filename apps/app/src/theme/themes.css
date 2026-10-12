@@ -30,6 +30,7 @@
   --slot-bg: transparent;
   --chip-muted-bg: rgba(239, 233, 218, 0.14);
   --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-card: 'Fraunces', Georgia, serif;
   --sheet-bg: #0b2b20;
   --table-felt: radial-gradient(#1f6b4c, #0f3f2d);
@@ -70,6 +71,7 @@
   --slot-bg: transparent;
   --chip-muted-bg: rgba(31, 39, 64, 0.1);
   --font-display: 'Young Serif', Georgia, serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-card: 'Young Serif', Georgia, serif;
   --sheet-bg: #fffaf0;
   --table-felt: radial-gradient(#fbf3e2, #efe2c8);
@@ -108,6 +110,7 @@
   --slot-bg: #151821;
   --chip-muted-bg: rgba(238, 240, 245, 0.12);
   --font-display: 'Inter', system-ui, sans-serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-card: 'Inter', system-ui, sans-serif;
   --sheet-bg: #151821;
   --table-felt: radial-gradient(#1c2030, #12141c);
