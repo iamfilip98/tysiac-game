@@ -2,7 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useLocation } from 'wouter';
 import { getService } from '../net/service';
 import { normalizeCode } from '../net/connection';
-import { getIdentity } from '../net/identity';
+import { createRoomAs } from '../net/rooms';
 import { coachEnabled, usePrefs } from '../store/prefs';
 import { ProfileForm } from '../ui/ProfileForm';
 import { SettingsSheet } from './SettingsSheet';
@@ -55,11 +55,8 @@ export default function Home() {
     setBusy(true);
     setError(null);
     try {
-      const svc = await getService();
-      const me = getIdentity();
-      const res = await svc.createRoom({ maxPlayers, playerId: me.playerId, name: p.name, avatar: p.avatar });
-      p.setLastRoom({ code: res.code, practice, at: Date.now() });
-      navigate(`/r/${res.code}`);
+      const roomCode = await createRoomAs(maxPlayers, practice);
+      navigate(`/r/${roomCode}`);
     } catch (e) {
       setError(
         isNetworkError(e)

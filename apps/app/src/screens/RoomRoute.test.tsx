@@ -190,4 +190,16 @@ describe('RoomRoute', () => {
     expect(b.secret).toBe(a.secret);
     expect(a.playerId).toMatch(/^[0-9a-f-]{36}$/);
   });
+  it('a practice room opened from the lesson forces the coach on even if the player turned it off', async () => {
+    usePrefs.setState({ coach: false, lastRoom: { code: 'K7QX2M', practice: true, coach: true, at: Date.now() } });
+    renderRoute();
+    await waitFor(() => expect(svc.hellos).toHaveLength(1));
+    expect(svc.hellos[0]().coach).toBe(true);
+  });
+  it('a normal room keeps the player coach setting', async () => {
+    usePrefs.setState({ coach: false, lastRoom: { code: 'K7QX2M', practice: true, at: Date.now() } });
+    renderRoute();
+    await waitFor(() => expect(svc.hellos).toHaveLength(1));
+    expect(svc.hellos[0]().coach).toBe(false);
+  });
 });

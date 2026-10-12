@@ -5,8 +5,11 @@ import './theme/themes.css';
 import './theme/base.css';
 import { installViewportVar } from './theme/viewport';
 import { App } from './App';
+import { isLocalMode } from './net/service';
 
 installViewportVar();
+// Latch ?local=1 (sticky for the tab) before any navigation drops the query string.
+isLocalMode();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

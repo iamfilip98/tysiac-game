@@ -1,3 +1,4 @@
+import type { Clock } from '../net/localRoom';
 import { Emitter, type CloseReason, type ConnStatus, type HelloMessage, type RoomConnection, type RoomService } from '../net/connection';
 import type { ClientMessage, CreateRoomRequest, CreateRoomResponse, RoomExistsResponse, ServerMessage } from '../net/protocol';
 
@@ -58,5 +59,40 @@ export class FakeService implements RoomService {
     this.conns.push(conn);
     this.hellos.push(hello);
     return conn;
+  }
+}
+
+export class FakeClock implements Clock {
+  t = 1_000_000;
+  private seq = 0;
+  private timers: { at: number; id: number; fn: () => void }[] = [];
+  now() {
+    return this.t;
+  }
+  get pending() {
+    return this.timers.length;
+  }
+  /** Delay until the earliest pending timer, or null. */
+  nextDelay() {
+    return this.timers.length ? Math.min(...this.timers.map(x => x.at)) - this.t : null;
+  }
+  setTimeout(fn: () => void, ms: number) {
+    const id = ++this.seq;
+    this.timers.push({ at: this.t + ms, id, fn });
+    return () => {
+      this.timers = this.timers.filter(x => x.id !== id);
+    };
+  }
+  advance(ms: number) {
+    const end = this.t + ms;
+    for (;;) {
+      this.timers.sort((a, b) => a.at - b.at || a.id - b.id);
+      const next = this.timers[0];
+      if (!next || next.at > end) break;
+      this.timers.shift();
+      this.t = next.at;
+      next.fn();
+    }
+    this.t = end;
   }
 }

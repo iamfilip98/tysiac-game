@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useContext, useEffect, useMemo, useState } from 'react';
 import { useLocation } from 'wouter';
 import { useShallow } from 'zustand/react/shallow';
 import { advise, cardEquals, cardKey, explainIllegal, type Card, type PlayerId } from '@tysiac/engine';
@@ -19,6 +19,7 @@ import { GameOverSheet } from '../game/GameOverSheet';
 import { MenuSheet } from './MenuSheet';
 import { SettingsSheet } from './SettingsSheet';
 import { RulesSheet } from './RulesSheet';
+import { LessonContext } from '../learn/context';
 import './game.css';
 
 type SheetName = 'menu' | 'score' | 'settings' | 'rules' | 'why';
@@ -38,12 +39,16 @@ export default function Game() {
   const [, navigate] = useLocation();
   const shown = s.shown;
   const idle = isIdle(s);
-  const coach = coachOverride ?? coachOn(s);
+  const lesson = useContext(LessonContext);
+  const coach = lesson !== null || (coachOverride ?? coachOn(s));
   const anyAway = !!s.room?.seats.some(x => x && !x.isBot && !x.connected && !x.botFor);
   const now = useNow(anyAway, s.clockOffset);
   const phaseKey = shown ? `${shown.round?.number ?? 0}:${shown.phase}` : '';
   // Hints are private: only ever computed for the viewer's own turn.
-  const advice = useMemo(() => (coach && idle && shown && shown.turn === shown.me && !shown.paused ? advise(shown) : null), [coach, idle, shown]);
+  const advice = useMemo(() => {
+    if (!(coach && idle && shown && shown.turn === shown.me && !shown.paused)) return null;
+    return lesson ? lesson.advice(shown) : advise(shown);
+  }, [lesson, coach, idle, shown]);
 
   useEffect(() => {
     useSelection.getState().reset();

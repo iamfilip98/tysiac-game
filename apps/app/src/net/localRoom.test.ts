@@ -1,43 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { botAction, type PlayerView } from '@tysiac/engine';
 import { PROTOCOL_VERSION, type ClientMessage, type RoomInfo, type ServerMessage } from './protocol';
-import { LocalRoom, type Clock } from './localRoom';
+import { LocalRoom } from './localRoom';
+import { FakeClock } from '../test/fakes';
 import { AWAY_BOT_AFTER_MS, normalizeCode } from './connection';
-
-class FakeClock implements Clock {
-  t = 1_000_000;
-  private seq = 0;
-  private timers: { at: number; id: number; fn: () => void }[] = [];
-  now() {
-    return this.t;
-  }
-  get pending() {
-    return this.timers.length;
-  }
-  /** Delay until the earliest pending timer, or null. */
-  nextDelay() {
-    return this.timers.length ? Math.min(...this.timers.map(x => x.at)) - this.t : null;
-  }
-  setTimeout(fn: () => void, ms: number) {
-    const id = ++this.seq;
-    this.timers.push({ at: this.t + ms, id, fn });
-    return () => {
-      this.timers = this.timers.filter(x => x.id !== id);
-    };
-  }
-  advance(ms: number) {
-    const end = this.t + ms;
-    for (;;) {
-      this.timers.sort((a, b) => a.at - b.at || a.id - b.id);
-      const next = this.timers[0];
-      if (!next || next.at > end) break;
-      this.timers.shift();
-      this.t = next.at;
-      next.fn();
-    }
-    this.t = end;
-  }
-}
 
 interface TestClient {
   id: string;

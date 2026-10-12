@@ -1,4 +1,4 @@
-import { lazy, useEffect, useRef, useState } from 'react';
+import { lazy, useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 import { PROTOCOL_VERSION } from '../net/protocol';
 import { FATAL_ERRORS, normalizeCode } from '../net/connection';
@@ -9,6 +9,7 @@ import { coachForRoom, usePrefs } from '../store/prefs';
 import { useRoom } from '../store/room';
 import { ProfileForm } from '../ui/ProfileForm';
 import { Placeholder } from './Placeholder';
+import { usePracticeAutostart } from './practiceAutostart';
 import './home.css';
 
 const Lobby = lazy(() => import('./Lobby'));
@@ -25,30 +26,6 @@ const FATAL_TEXT: Record<string, string> = {
   notInRoom: 'No such room — it may have expired.',
 };
 
-/** Practice rooms: the host fills empty seats with bots and starts as soon as the table is full. */
-export function usePracticeAutostart(enabled: boolean): void {
-  const room = useRoom(s => s.room);
-  const me = useRoom(s => s.me);
-  const asked = useRef(0);
-  const started = useRef(false);
-  useEffect(() => {
-    if (!enabled || !room || room.status !== 'lobby' || room.hostId !== me) return;
-    const send = useRoom.getState().send;
-    const missing = room.seats.filter(s => s === null).length;
-    if (missing > 0) {
-      if (asked.current < room.maxPlayers - 1) {
-        for (let i = 0; i < missing; i++) send({ t: 'lobby', op: { op: 'addBot' } });
-        asked.current += missing;
-      }
-      return;
-    }
-    if (!started.current) {
-      started.current = true;
-      send({ t: 'lobby', op: { op: 'start' } });
-    }
-  }, [enabled, room, me]);
-}
-
 export default function RoomRoute({ code }: { code: string }) {
   useEffect(() => {
     installSounds();
@@ -58,6 +35,7 @@ export default function RoomRoute({ code }: { code: string }) {
   const avatar = usePrefs(s => s.avatar);
   const setProfile = usePrefs(s => s.setProfile);
   const practice = usePrefs(s => !!norm && s.lastRoom !== null && s.lastRoom.code === norm && s.lastRoom.practice);
+  const forceCoach = usePrefs(s => !!norm && s.lastRoom?.code === norm && s.lastRoom.coach === true);
   const room = useRoom(s => s.room);
   const view = useRoom(s => s.view);
   const status = useRoom(s => s.status);
@@ -79,10 +57,10 @@ export default function RoomRoute({ code }: { code: string }) {
       const conn = svc.connect(norm, () => {
         const p = usePrefs.getState();
         const me = getIdentity();
-        return { t: 'hello', v: PROTOCOL_VERSION, playerId: me.playerId, secret: me.secret, name: p.name, avatar: p.avatar, coach: coachForRoom(norm, p, practice) };
+        return { t: 'hello', v: PROTOCOL_VERSION, playerId: me.playerId, secret: me.secret, name: p.name, avatar: p.avatar, coach: forceCoach || coachForRoom(norm, p, practice) };
       });
       useRoom.getState().attach(conn);
-      usePrefs.getState().setLastRoom({ code: norm, practice, at: Date.now() });
+      usePrefs.getState().setLastRoom({ code: norm, practice, at: Date.now(), ...(forceCoach ? { coach: true } : {}) });
     }).catch(() => {
       if (alive) setLoadFailed(true);
     });
@@ -90,7 +68,7 @@ export default function RoomRoute({ code }: { code: string }) {
       alive = false;
       useRoom.getState().detach();
     };
-  }, [norm, name, practice, attempt]);
+  }, [norm, name, practice, forceCoach, attempt]);
 
   // No welcome within CONNECT_TIMEOUT_MS of (re)starting a connection -> offer Retry.
   useEffect(() => {
