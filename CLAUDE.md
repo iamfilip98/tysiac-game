@@ -2,7 +2,7 @@
 
 ## Debugging game issues (Cloudflare Worker `tysiac`)
 
-Live: https://tysiac.iamfilip98.workers.dev. One Worker (`apps/worker`) serves the app, `/api/*` and `/ws/:code`. Each room is a Durable Object (SQLite storage), and finished games go to D1 (`tysiac`). The old Render/Fastify server and its `/debug/*` API are retired, so don't use them.
+Live: https://tysiac-game.pages.dev (the public link; a Pages front in `apps/front` forwards everything to the Worker through a service binding). The Worker itself is also reachable at https://tysiac.iamfilip98.workers.dev. One Worker (`apps/worker`) serves the app, `/api/*` and `/ws/:code`. `tysiac-game.vercel.app` (the old app) 307-redirects to the pages.dev link via `vercel.json`. Each room is a Durable Object (SQLite storage), and finished games go to D1 (`tysiac`). The old Render/Fastify server and its `/debug/*` API are retired, so don't use them.
 
 When the user reports a game issue:
 1. **Get the room code.** It is 6 characters and appears in the lobby and in the URL `/r/CODE`.

@@ -1,0 +1,11 @@
+# Cloudflare Pages front for https://tysiac-game.pages.dev.
+# It serves nothing itself: every request (pages, /api, /ws WebSockets) goes to
+# the `tysiac` Worker through a service binding, so the public link carries no
+# account name. Deploy: pnpm exec wrangler pages deploy (from this folder).
+name = "tysiac-game"
+pages_build_output_dir = "./dist"
+compatibility_date = "2026-09-01"
+
+[[services]]
+binding = "APP"
+service = "tysiac"
