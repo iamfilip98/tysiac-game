@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { drive, firstLaunch, handOut, labels, move } from './helpers';
+import { drive, firstLaunch, handOut, labels, move, expectPhase } from './helpers';
 import { setSafeInsets } from './layout';
 import type { Lang } from '../src/i18n/types';
 import { en } from '../src/i18n/en';
@@ -166,7 +166,7 @@ for (const lang of ['en', 'pl', 'da'] as const satisfies readonly Lang[]) {
     });
     expect(checked.has('bidding'), 'checked during bidding').toBe(true);
     await move(page, () => handOut(page, lang));
-    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expectPhase(page, 'tricks');
     await stageMarriage(page);
     await checkTicker(page, `${lang} marriage`, stagedMarriage, `${dir}-marriage.png`);
     await checkTicker(page, `${lang} wykladana`, wykladana);
@@ -199,7 +199,7 @@ for (const lang of ['en', 'da'] as const satisfies readonly Lang[]) {
     });
     expect(bidding, 'checked during bidding').toBe(true);
     await move(page, () => handOut(page, lang));
-    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expectPhase(page, 'tricks');
     await stageMarriage(page);
     await checkTicker(page, `4p ${lang} marriage`, stagedMarriage, `${dir}-marriage.png`);
     expect(await pillOpacityAtStart(page), 'the pill over the round title is opaque from its first frame').toBe(1);

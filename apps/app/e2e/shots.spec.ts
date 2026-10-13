@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { CARD_STRIP, drive, firstLaunch, labels, move } from './helpers';
+import { CARD_STRIP, drive, firstLaunch, labels, move, expectPhase } from './helpers';
 import { setSafeInsets } from './layout';
 
 const SHOT_PROJECTS = new Set(['iphone15', 'se']);
@@ -80,7 +80,7 @@ for (const theme of ['Brass', 'Wycinanki', 'Bolesławiec', 'Zakopane', 'Noir', '
     await hand.getByRole('button').first().click({ position: CARD_STRIP });
     await shot('handout-full', 400);
     await move(page, () => page.getByRole('button', { name: 'Confirm hand-out' }).click());
-    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expectPhase(page, 'tricks');
     await shot('coach-arrow');
     for (const kind of ['received', 'marriage', 'held', 'trumpwin'] as const) {
       await stage(page, kind);
@@ -118,7 +118,7 @@ for (const lang of ['pl', 'da'] as const) {
     await shot('handout-one', 400);
     await hand.getByRole('button').first().click({ position: CARD_STRIP });
     await move(page, () => page.getByRole('button', { name: L.confirmHandout }).click());
-    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expectPhase(page, 'tricks');
     for (const kind of ['received', 'held', 'summary'] as const) {
       await stage(page, kind);
       await shot(kind);

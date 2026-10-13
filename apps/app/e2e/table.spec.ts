@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { drive, firstLaunch, handOut, labels, move, selectLegalCard } from './helpers';
+import { drive, firstLaunch, handOut, labels, move, selectLegalCard, expectPhase } from './helpers';
 
 /**
  * Records, on every animation frame, each trick card on the table and the cards the store says are in the
@@ -136,7 +136,7 @@ for (const { lang, coach } of RUNS) {
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await drive(page, { lang, bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
     await move(page, () => handOut(page, lang));
-    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expectPhase(page, 'tricks');
     await expect(page.locator('.selfstrip .chip--coach')).toHaveCount(coach ? 1 : 0);
     await startRecorder(page);
     // Play four tricks through the UI: every one has cards landing next to rested ones, a hold and a winner.
@@ -199,7 +199,7 @@ test('four players: trick cards sit at fixed spots, sitting out and playing (en)
   // A round I play in: win the auction, hand out, then play four tricks through the UI.
   await drive(page, { bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
   await move(page, () => handOut(page));
-  await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+  await expectPhase(page, 'tricks');
   await startRecorder(page);
   for (let n = 0; n < 4; n++) {
     await expect(page.locator('.hand button:not([aria-disabled="true"])').first()).toBeVisible({ timeout: 20_000 });
