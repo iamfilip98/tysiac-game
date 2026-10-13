@@ -20,6 +20,7 @@ This goes first, so that merging into `main` later can't break a Vercel build of
   `{"$schema":"https://openapi.vercel.sh/vercel.json","redirects":[{"source":"/(.*)","destination":"https://tysiac.iamfilip98.workers.dev/$1","permanent":false}]}`
   and set the project's Framework to "Other" with no build command.
 - Check: opening the old URL and an old `/game/...` link both land on the new app.
+- [x] 1. Done with option B (2026-10-13, owner asked to clean up the Vercel link): 307 redirect verified for / and /game/:code.
 
 ## 2. Merge `rebuild` → `main` — OWNER-GATED
 - `gh pr create --base main --head rebuild --title "Tysiąc rebuild (Cloudflare)"`; the owner reviews and merges.
