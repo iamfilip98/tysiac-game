@@ -109,10 +109,13 @@ async function stopRecorder(page: Page): Promise<{ moves: Move[]; checks: number
   });
 }
 
-// With the coach on and off (off, the self strip has no Coach chip and, off my turn, no chip at all).
+// English with the coach on and off (off, the self strip has no Coach chip and, off my turn, no chip at all),
+// and Polish and Danish, whose longer status lines wrap in the top bar.
 const RUNS = [
   { lang: 'en', coach: true },
   { lang: 'en', coach: false },
+  { lang: 'pl', coach: true },
+  { lang: 'da', coach: true },
 ] as const;
 
 for (const { lang, coach } of RUNS) {

@@ -8,7 +8,12 @@
 }
 .topbar > .iconbtn { height: 40px; min-width: 40px; }
 .topbar > .iconbtn:first-child { justify-self: start; }
-.topbar__info { text-align: center; line-height: 1.2; min-width: 0; font-size: 12px; font-family: var(--font-display-small); }
+/* Always as tall as the round title plus a two-line status, so a status line that wraps (Polish, Danish)
+   never makes the bar taller and moves the rows below it (e2e table.spec runs in pl and da). */
+.topbar__info {
+  text-align: center; line-height: 1.2; min-width: 0; font-size: 12px; font-family: var(--font-display-small);
+  min-height: calc(14px * 1.25 + 2 * 12px * 1.2); display: flex; flex-direction: column; justify-content: center;
+}
 .topbar__info b { display: block; font-family: var(--font-display-small); font-size: 14px; line-height: 1.25; color: var(--ink); }
 /* A long status line wraps to a second line (balanced) instead of pushing or being cut short. */
 .topbar__info span {
