@@ -8,8 +8,13 @@
 }
 .topbar > .iconbtn { height: 40px; min-width: 40px; }
 .topbar > .iconbtn:first-child { justify-self: start; }
-.topbar__info { text-align: center; line-height: 1.2; min-width: 0; font-size: 12px; font-family: var(--font-display); }
-.topbar__info b { display: block; font-size: 14px; line-height: 1.25; color: var(--ink); }
+/* Always as tall as the round title plus a two-line status, so a status line that wraps (Polish, Danish)
+   never makes the bar taller and moves the rows below it (e2e table.spec runs in pl and da). */
+.topbar__info {
+  text-align: center; line-height: 1.2; min-width: 0; font-size: 12px; font-family: var(--font-display-small);
+  min-height: calc(14px * 1.25 + 2 * 12px * 1.2); display: flex; flex-direction: column; justify-content: center;
+}
+.topbar__info b { display: block; font-family: var(--font-display-small); font-size: 14px; line-height: 1.25; color: var(--ink); }
 /* A long status line wraps to a second line (balanced) instead of pushing or being cut short. */
 .topbar__info span {
   color: var(--accent-soft); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
@@ -23,6 +28,7 @@
 .topbar__scorelbl { font: 600 11px/1 var(--font-ui); opacity: 0.8; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .topbar__scoreval { font-size: 17px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
 .topbar__scoreval[data-long] { font-size: 14px; }
+.topbar__score .topbar__scoreval { font-family: var(--font-display-small); }
 
 .opps { grid-area: opps; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; min-width: 0; --avatar: clamp(32px, 5.4dvh, 44px); }
 .opps[data-count='3'] .opp:nth-child(2) { margin-top: 0; }
@@ -84,10 +90,27 @@
 .tcard--top { translate: 0 calc(var(--card-w, 64px) * -0.62); rotate: 3deg; }
 .talon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; align-content: center; }
 .talon__lbl { flex-basis: 100%; text-align: center; font-size: 11px; opacity: 0.6; }
-.ticker { grid-area: table; align-self: start; justify-self: center; z-index: 2; margin: 2px 0 0; max-width: 100%; pointer-events: none;
-  font: 600 14px/1.25 var(--font-ui); text-align: center; min-height: 1.25em; }
-.ticker__text { display: inline-block; padding: 3px 10px; border-radius: 12px; background: var(--panel); border: var(--panel-border);
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 32px); animation: ticker-in .25s ease-out; }
+/* The ticker is laid over a grid cell without sizing it (contain: size: it adds nothing to the row), so an
+   announcement, however long, never changes a row height and never moves the trick cards (e2e table.spec).
+   It never covers a card or an opponent either (e2e ticker.spec). */
+.ticker { z-index: 3; margin: 0; pointer-events: none; contain: size; display: flex; justify-content: center; min-width: 0;
+  font: 600 13px/1.25 var(--font-ui); text-align: center; }
+.ticker__text { display: flex; flex-direction: column; justify-content: center; min-width: 0; padding: 3px 9px; border-radius: 12px;
+  background: var(--panel); border: var(--panel-border); box-shadow: var(--panel-shadow); animation: ticker-in .25s ease-out; }
+.ticker__line { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; overflow: hidden; overflow-wrap: anywhere; text-wrap: balance; }
+/* Two opponents: in the empty middle of their row (each opponent takes 31 %), wrapped to a few balanced lines. */
+.ticker--opps { grid-area: opps; justify-self: center; align-self: stretch; align-items: center; width: calc(38% - 14px); }
+/* Three opponents fill the row (the middle one is the player across) and on a small phone the talon leaves
+   no free band on the table, so the ticker is laid over the top bar's round and status lines (between its
+   two buttons), on an opaque pill, and gives them back after a few seconds. */
+.ticker--top { grid-area: top; justify-self: center; align-self: stretch; align-items: stretch; width: calc(100% - 2 * 66px - 16px); }
+.ticker--top .ticker__text {
+  flex: 1; background: linear-gradient(var(--panel), var(--panel)), var(--bg-solid); font-size: 12.5px; line-height: 1.2;
+  animation: ticker-in .25s ease-out, ticker-out .4s ease-in 4s forwards;
+}
+.ticker--top .ticker__line { -webkit-line-clamp: 3; }
+@keyframes ticker-out { to { opacity: 0; visibility: hidden; } }
+@media (prefers-reduced-motion: reduce) { .ticker--top .ticker__text { animation: ticker-out 0s 4s forwards; } }
 @keyframes ticker-in { from { opacity: 0; translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .ticker__text { animation: none; } }
 .selfstrip--turn .selfstrip__avatar { box-shadow: 0 0 0 2.5px var(--accent), 0 0 12px var(--accent); }

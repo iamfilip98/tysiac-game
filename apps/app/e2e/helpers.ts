@@ -31,7 +31,9 @@ export function labels(lang: Lang = 'en') {
     gameOver: str('game.over.title'),
     rematch: str('game.over.rematch'),
     settings: str('common.settings'),
+    rules: str('common.rules'),
     close: str('common.close'),
+    coachHints: str('common.coachHints'),
   };
 }
 

@@ -13,9 +13,20 @@ function block(id: string): string {
 }
 
 describe('themes', () => {
-  it('lists the three themes with brass first', () => {
-    expect(THEMES.map(t => t.id)).toEqual(['brass', 'wycinanki', 'midnight']);
-    expect(THEMES.map(t => t.name)).toEqual(['Brass & Baize', 'Wycinanki', 'Midnight']);
+  it('lists the six themes with brass (the default) first', () => {
+    expect(THEMES.map(t => t.id)).toEqual(['brass', 'wycinanki', 'boleslawiec', 'zakopane', 'noir', 'midnight']);
+  });
+
+  it('every theme has a name in every language', async () => {
+    for (const lang of ['en', 'pl', 'da'] as const) {
+      const dict = (await import(`../i18n/${lang}.ts`))[lang] as Record<string, string>;
+      for (const th of THEMES) expect(dict[`theme.${th.id}`], `${lang} theme.${th.id}`).toBeTruthy();
+    }
+  });
+
+  it('the first-paint script in index.html knows every theme', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    for (const th of THEMES) expect(html, th.id).toContain(`'${th.id}'`);
   });
 
   it('every theme defines every token', () => {
@@ -25,6 +36,25 @@ describe('themes', () => {
     }
   });
 
+  it('small display text has its own face: the display face unless a theme overrides it (Noir: not Didot)', () => {
+    const shared = css.slice(0, css.indexOf(`[data-theme='brass']`));
+    expect(shared).toMatch(/\[data-theme\] \{\s*(\/\*[^]*?\*\/\s*)?--font-display-small: var\(--font-display\);/);
+    const noir = block('noir').match(/--font-display-small: ([^;]+);/)?.[1];
+    expect(noir).toBeTruthy();
+    expect(noir).not.toMatch(/Didot|Bodoni/);
+  });
+
+  it('light themes lay a dark scrim under the white status bar text; dark themes none', () => {
+    for (const t of THEMES) {
+      const b = block(t.id);
+      const scrim = b.match(/--status-scrim: ([^;]+);/)?.[1];
+      if (b.includes('color-scheme: light')) expect(scrim, t.id).not.toBe('transparent');
+      else expect(scrim, t.id).toBe('transparent');
+    }
+    const base = readFileSync(resolve(process.cwd(), 'src/theme/base.css'), 'utf8');
+    expect(base).toMatch(/body::before \{[^}]*height: var\(--sa-top\);[^}]*background: var\(--status-scrim/);
+  });
+
   it('uses the reference colours', () => {
     expect(block('brass')).toContain('#d4af6a');
     expect(block('brass')).toContain('#f8f4ea');
@@ -32,6 +62,9 @@ describe('themes', () => {
     expect(block('wycinanki')).toContain('#1f2740');
     expect(block('midnight')).toContain('#ff7a45');
     expect(block('midnight')).toContain('#0e1016');
+    expect(block('boleslawiec')).toContain('#2148a8');
+    expect(block('zakopane')).toContain('#2e1e13');
+    expect(block('noir')).toContain('#f0c75e');
   });
 
   it('applyTheme sets data-theme and theme-color', () => {

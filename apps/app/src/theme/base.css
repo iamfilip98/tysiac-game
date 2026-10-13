@@ -16,6 +16,7 @@
   --assist-text: #5eead4;
 }
 :root[data-theme='wycinanki'] { --assist: #0f6b63; --assist-ink: #fffaf0; --assist-text: #0b5c55; }
+:root[data-theme='boleslawiec'] { --assist: #0f6b63; --assist-ink: #fffaf0; --assist-text: #0b5c55; }
 
 *,
 *::before,
@@ -36,6 +37,13 @@ body {
   background: var(--bg);
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
+}
+/* The home-screen app's status bar is black-translucent: white text drawn over the page. A light theme lays
+   its --status-scrim behind it (over sheets too); dark themes leave it transparent. A browser tab has no
+   inset, so nothing shows. */
+body::before {
+  content: ''; position: fixed; inset: 0 0 auto; height: var(--sa-top); z-index: 1000; pointer-events: none;
+  background: var(--status-scrim, transparent);
 }
 button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
 /* >= 16px stops iOS Safari zooming (and scrolling) when an input is focused. */
@@ -110,17 +118,6 @@ input, select, textarea { font: inherit; font-size: 16px; }
   color: var(--ink);
   padding: 0 12px;
 }
-.switch { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 44px; background: none; border: 0; padding: 0; width: 100%; text-align: left; }
-.switch::after {
-  content: '';
-  flex: none;
-  width: 44px;
-  height: 26px;
-  border-radius: 13px;
-  background: var(--chip-muted-bg);
-  box-shadow: inset 0 0 0 2px var(--chip-muted-bg);
-}
-.switch[aria-checked='true']::after { background: var(--accent); box-shadow: inset 20px 0 0 2px var(--accent), inset 0 0 0 9px var(--accent-ink); }
 .visually-hidden { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 @media (prefers-reduced-motion: reduce) {

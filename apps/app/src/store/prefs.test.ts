@@ -41,6 +41,22 @@ describe('prefs', () => {
     expect(document.documentElement.dataset.theme).toBe('wycinanki');
   });
 
+  it('an unknown saved theme falls back to brass, in the state and on the page', async () => {
+    localStorage.setItem('tysiac.prefs', JSON.stringify({ state: { name: 'Ola', theme: 'neon' }, version: 1 }));
+    document.documentElement.dataset.theme = 'neon';
+    await usePrefs.persist.rehydrate();
+    expect(usePrefs.getState().theme).toBe('brass');
+    expect(usePrefs.getState().name).toBe('Ola');
+    expect(document.documentElement.dataset.theme).toBe('brass');
+  });
+
+  it('a valid saved theme survives a reload', async () => {
+    localStorage.setItem('tysiac.prefs', JSON.stringify({ state: { theme: 'noir' }, version: 1 }));
+    await usePrefs.persist.rehydrate();
+    expect(usePrefs.getState().theme).toBe('noir');
+    expect(document.documentElement.dataset.theme).toBe('noir');
+  });
+
   it('counts a started game once per room code', () => {
     const p = usePrefs.getState();
     p.noteGameStarted('ABCDEF');

@@ -60,8 +60,10 @@ export function Sheet({ title, onClose, children, footer }: SheetProps) {
         <header className="sheet__head">
           <h2 className="display">{title}</h2>
           {onClose && (
-            <button type="button" className="iconbtn" aria-label={t('common.close')} onClick={onClose}>
-              ✕
+            <button type="button" className="sheet__close" aria-label={t('common.close')} onClick={onClose}>
+              <svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false">
+                <path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" />
+              </svg>
             </button>
           )}
         </header>

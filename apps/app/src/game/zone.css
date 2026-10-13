@@ -19,10 +19,11 @@
 .zone__wait { margin: 0; font-size: 13px; opacity: 0.9; min-height: 44px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 /* The zone's footer: always two 12 px lines tall (content is clamped to two lines). Its height used to follow
    the coach text (one line on others' turns, two on mine), so every play resized the zone, the table above it
-   and moved the trick cards centred in the table by half the difference (e2e table.spec). */
+   and moved the trick cards centred in the table by half the difference (e2e table.spec). The height is a
+   border box: the two lines, the 6 px top padding and the 1 px top border. */
 .zone__foot {
   flex: none;
-  height: calc(12px * 1.35 * 2 + 6px);
+  height: calc(12px * 1.35 * 2 + 6px + 1px);
   padding-top: 6px;
   border-top: 1px solid var(--chip-muted-bg);
   font-size: 12px;

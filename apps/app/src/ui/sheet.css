@@ -25,8 +25,19 @@
   padding: 14px max(var(--sa-right), 16px) max(var(--sa-bottom), 14px) max(var(--sa-left), 16px);
 }
 .sheet:focus { outline: none; }
-.sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sheet__head h2 { margin: 0; font-size: 20px; }
+.sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
+.sheet__head h2 { margin: 0; font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
+/* Close: a 30px round chip inside a 44px tap target, pulled into the corner. */
+.sheet__close {
+  position: relative; flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: -4px -6px -4px 0; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: var(--ink-dim); isolation: isolate;
+}
+.sheet__close::before {
+  content: ''; position: absolute; inset: 7px; z-index: -1; border-radius: 50%;
+  background: color-mix(in srgb, var(--ink) 12%, transparent);
+}
+.sheet__close:active::before { background: color-mix(in srgb, var(--ink) 22%, transparent); }
+.sheet__close:focus-visible { outline: 2.5px solid var(--accent); outline-offset: -2px; }
 .sheet__body { overflow: auto; overscroll-behavior: contain; min-height: 0; padding: 8px 0; }
 .sheet__foot { display: flex; gap: 8px; padding-top: 10px; }
 .sheet__foot > * { flex: 1; }
@@ -67,15 +78,3 @@
 .rrow__total b { color: var(--ink); font-size: 16px; }
 .coachnote { font-size: 13px; line-height: 1.4; margin: 10px 0 0; }
 .coachnote b { color: var(--accent-soft); }
-
-.settings, .menu { display: flex; flex-direction: column; gap: 10px; }
-.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.theme-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; border-radius: 12px; background: var(--btn-sec-bg); border: var(--btn-sec-border); font-size: 12px; }
-.theme-pick[aria-checked='true'] { outline: 2px solid var(--accent); }
-.theme-pick__sw { display: flex; }
-.theme-pick__sw i { width: 16px; height: 16px; border-radius: 50%; margin-left: -4px; border: 1px solid rgba(0, 0, 0, 0.25); }
-.seg { display: grid; grid-auto-flow: column; gap: 6px; }
-.seg button { min-height: 40px; border-radius: 10px; background: var(--btn-sec-bg); border: var(--btn-sec-border); }
-.seg button[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); }
-.rules h3 { margin: 12px 0 4px; font-size: 15px; font-family: var(--font-display); }
-.rules p { margin: 0; line-height: 1.45; font-size: 14px; }

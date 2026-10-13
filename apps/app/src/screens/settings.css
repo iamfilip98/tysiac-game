@@ -1,0 +1,55 @@
+/* Settings sheet. The rows and controls live in ui/controls.css; this is the layout and the theme picker. */
+.settings { padding-bottom: 4px; }
+.srow__head { display: flex; align-items: center; gap: 12px; }
+.settings__profile { padding: 14px; }
+.settings__error { margin: 2px 4px 0; font-size: 13px; color: var(--danger); }
+
+/* Theme picker: each option is a little table drawn in its own theme. */
+/* The padding keeps the selection ring and the check badge clear of the scroller's edge. */
+.tpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; padding: 6px 4px 2px; }
+.tpick__opt {
+  display: flex; flex-direction: column; align-items: stretch; gap: 7px; min-width: 0; padding: 0;
+  background: none; border: 0; color: var(--ink); text-align: center;
+}
+.tpick__opt:focus-visible { outline: none; }
+.tpick__opt:focus-visible .tpick__frame { box-shadow: 0 0 0 2.5px var(--accent), 0 0 0 5px color-mix(in srgb, var(--accent) 35%, transparent); }
+.tpick__frame {
+  position: relative; display: block; padding: 3px; border-radius: 15px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--ink) 16%, transparent);
+  transition: box-shadow 0.2s, scale 0.2s;
+}
+.tpick__opt:active .tpick__frame { scale: 0.96; }
+.tpick__opt[aria-checked='true'] .tpick__frame { box-shadow: 0 0 0 2.5px var(--accent); }
+.tpick__scene {
+  --card-w: 29px;
+  position: relative; display: block; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden;
+  background: var(--bg); background-color: var(--bg-solid);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--ink) 14%, transparent);
+}
+.tpick__back, .tpick__card { position: absolute; top: 44%; left: 50%; }
+.tpick__back { translate: -112% -50%; rotate: -14deg; }
+.tpick__card--a { translate: -50% -54%; rotate: -2deg; z-index: 1; }
+.tpick__card--b { translate: 10% -48%; rotate: 11deg; z-index: 2; }
+.tpick__card .card__pip { display: none; }
+/* The theme's accent, as a marriage pill would wear it. */
+.tpick__accent {
+  position: absolute; left: 50%; bottom: 7%; translate: -50% 0; width: 46%; height: 7px; border-radius: 4px;
+  background: var(--accent); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+}
+.tpick__check {
+  position: absolute; top: -5px; right: -5px; z-index: 3; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 50%;
+  background: var(--accent); color: var(--accent-ink); box-shadow: 0 0 0 2px var(--sheet-bg);
+  opacity: 0; scale: 0.4; transition: opacity 0.18s, scale 0.24s cubic-bezier(0.3, 0.7, 0.4, 1.4);
+}
+.tpick__opt[aria-checked='true'] .tpick__check { opacity: 1; scale: 1; }
+/* The name is set in the theme's own display face; its colour stays the sheet's. */
+.tpick__name { font: 600 13px/1.2 var(--font-display-small); overflow-wrap: anywhere; }
+.tpick__opt[aria-checked='true'] { color: var(--accent-soft); }
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation: none !important; }
+}
+
+/* The profile form inside a group: sentence-case field labels (the group already says "Profile"). */
+.settings__profile .lbl { text-transform: none; letter-spacing: 0; font-size: 13px; opacity: 1; color: var(--ink-dim); font-weight: 600; }
+.settings__profile .avatars { padding: 2px; }

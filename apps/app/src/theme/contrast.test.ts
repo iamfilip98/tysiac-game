@@ -55,7 +55,8 @@ const PAIRS: [string, string][] = [
 ];
 
 describe('theme contrast (WCAG AA 4.5:1)', () => {
-  it('finds all three themes', () => expect([...themes.keys()].sort()).toEqual(['brass', 'midnight', 'wycinanki']));
+  it('finds all six themes', () =>
+    expect([...themes.keys()].sort()).toEqual(['boleslawiec', 'brass', 'midnight', 'noir', 'wycinanki', 'zakopane']));
   for (const [name, own] of themes) {
     const v = { ...assistFor(name), ...own };
     for (const [fg, bg] of PAIRS) {
@@ -77,12 +78,37 @@ describe('coach outline (gold, 3:1 non-text contrast against the table)', () => 
   }
 });
 
+/** The table effects keep their own colours in every theme (fx.css, card.css). */
+const MARRIAGE_GOLD = parse('#d4af37');
+const TRUMP_BLUE = parse('#60a5fa');
+const hue = ([r, g, b]: RGBA): number => {
+  const [R, G, B] = [r, g, b].map(v => v / 255);
+  const max = Math.max(R, G, B);
+  const d = max - Math.min(R, G, B);
+  if (d === 0) return 0;
+  const h = max === R ? ((G - B) / d) % 6 : max === G ? (B - R) / d + 2 : (R - G) / d + 4;
+  return (h * 60 + 360) % 360;
+};
+const hueGap = (a: RGBA, b: RGBA) => Math.min(Math.abs(hue(a) - hue(b)), 360 - Math.abs(hue(a) - hue(b)));
+
+describe('marriage gold and trump blue stay readable on every table', () => {
+  for (const [name, v] of themes) {
+    const table = parse(v['--bg-solid']);
+    it(`${name}: the gold ring and the blue glow stand off the table`, () => {
+      expect(ratio(MARRIAGE_GOLD, table)).toBeGreaterThanOrEqual(1.5);
+      expect(ratio(TRUMP_BLUE, table)).toBeGreaterThanOrEqual(1.5);
+    });
+    it(`${name}: a trump win (blue) never looks like an ordinary win (accent ring)`, () => {
+      const accent = parse(v['--accent']);
+      expect(hueGap(TRUMP_BLUE, accent) >= 40 || ratio(TRUMP_BLUE, accent) >= 2).toBe(true);
+    });
+    it(`${name}: the coach gold is not the trump blue`, () => {
+      expect(hueGap(parse(v['--coach']), TRUMP_BLUE)).toBeGreaterThanOrEqual(90);
+    });
+  }
+});
+
 describe("the coach's own colour (teal, apart from the marriage gold, red suits and trump blue)", () => {
-  const hue = ([r, g, b]: RGBA) => {
-    const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
-    const h = max === r ? ((g - b) / d) % 6 : max === g ? (b - r) / d + 2 : (r - g) / d + 4;
-    return (h * 60 + 360) % 360;
-  };
   for (const name of themes.keys()) {
     it(`${name}: --assist is a teal hue (160-185 deg)`, () => {
       const h = hue(parse(assistFor(name)['--assist']));
