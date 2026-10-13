@@ -5,6 +5,6 @@
   "buildCommand": "mkdir -p vercel-redirect && echo moved > vercel-redirect/index.html",
   "outputDirectory": "vercel-redirect",
   "redirects": [
-    { "source": "/(.*)", "destination": "https://tysiac.iamfilip98.workers.dev/$1", "permanent": false }
+    { "source": "/(.*)", "destination": "https://tysiac-game.pages.dev/$1", "permanent": false }
   ]
 }
