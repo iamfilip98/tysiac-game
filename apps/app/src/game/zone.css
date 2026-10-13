@@ -29,7 +29,7 @@
   line-height: 1.35;
   overflow: hidden;
 }
-.zone__foot:empty { border-top-color: transparent; }
+.zone__foot:empty, .zone__foot:has(> .coachline:empty) { border-top-color: transparent; }
 .zone__hint, .zone__note {
   margin: 0; color: var(--accent-soft);
   display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
