@@ -113,7 +113,8 @@ for (const lang of ['en'] as const) {
   test(`trick cards sit at fixed spots: a new card, the held trick and the winner never move another card (${lang})`, async ({ page }, info) => {
     test.skip(!['se', 'iphone15'].includes(info.project.name), 'the two phones');
     const L = labels(lang);
-    await firstLaunch(page, lang);
+    // Real timing: in fast mode the bots play before the previous card has landed, so too little is checked.
+    await firstLaunch(page, lang, { fast: false });
     await page.getByRole('button', { name: L.practice }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await drive(page, { lang, bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
@@ -138,7 +139,7 @@ for (const lang of ['en'] as const) {
     await page.waitForTimeout(3000);
     const res = await stopRecorder(page);
     console.log(info.project.name, JSON.stringify({ frames: res.frames, checks: res.checks, held: res.heldFrames, win: res.winFrames, moves: res.moves.slice(0, 20) }));
-    expect(res.checks, 'resting cards were checked while others landed or the trick was held').toBeGreaterThan(8);
+    expect(res.checks, 'resting cards were checked while others landed or the trick was held').toBeGreaterThan(100);
     expect(res.heldFrames, 'a held trick was recorded').toBeGreaterThan(0);
     expect(res.winFrames, 'a highlighted winner was recorded').toBeGreaterThan(0);
     expect(res.moves).toEqual([]);

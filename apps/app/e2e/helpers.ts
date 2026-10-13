@@ -58,10 +58,13 @@ async function recordTaps(page: Page): Promise<void> {
   });
 }
 
-/** First launch through the profile form; with a `lang`, picks it in Settings (the default is always English). */
-export async function firstLaunch(page: Page, lang: Lang = 'en'): Promise<void> {
+/**
+ * First launch through the profile form; with a `lang`, picks it in Settings (the default is always English).
+ * Bots and animations run fast unless `fast: false` (real timing, e.g. to watch cards come to rest).
+ */
+export async function firstLaunch(page: Page, lang: Lang = 'en', opts: { fast?: boolean } = {}): Promise<void> {
   await recordTaps(page);
-  await page.goto('/?local=1&fast=1');
+  await page.goto(opts.fast === false ? '/?local=1' : '/?local=1&fast=1');
   const name = page.getByLabel('Your name');
   await name.focus();
   await name.fill('Tester');
