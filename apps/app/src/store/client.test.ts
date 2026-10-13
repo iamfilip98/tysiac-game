@@ -334,10 +334,10 @@ describe('received card', () => {
     expect(step.wait).toBe(NOTE_MS);
     expect(step.sound).toBe('receive');
   });
-  it("other players' cards do not clear the received banner", () => {
+  it("another player's card closes the banner (it lies over the table and would hide the lead); the card stays marked", () => {
     const e = { type: 'cardPlayed', p: 'b', card: { suit: 'clubs', rank: '9' }, audience: 'all' } as GameEvent;
     const step = advance({ ...base, received: got, queue: [e] }, false)!;
-    expect(step.state.received).toEqual(got);
+    expect(step.state.received).toEqual({ ...got, open: false });
   });
   it('my first card closes the banner; the received card stays marked until it is played', () => {
     let c = beginPlay({ ...base, received: got }, 'p1', { suit: 'clubs', rank: 'A' });
