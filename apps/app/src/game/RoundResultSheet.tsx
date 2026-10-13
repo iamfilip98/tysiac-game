@@ -70,7 +70,7 @@ export function RoundResultSheet({ summary, view, note, onContinue }: RoundResul
               <span className={`rrow__delta display ${p.scoreChange < 0 ? 'neg' : p.scoreChange > 0 ? 'pos' : ''}`}>{signed(p.scoreChange)}</span>
               <span className="rrow__detail">
                 {p.sittingOut ? (
-                  t('game.opp.sitsOut')
+                  p.marriagePoints > 0 ? t('game.result.satOutTalon', { n: p.marriagePoints }) : t('game.result.satOut')
                 ) : (
                   <>
                     {t('game.col.tricks')} {p.trickPoints}

@@ -9,7 +9,7 @@ import { SUIT_TEXT, isRed, textSuits } from './cards';
 import { CardFace } from './Card';
 import { appLine, cardText, lineText, type AppLine } from '../i18n/engineText';
 import { useT } from '../i18n/useT';
-import type { MsgKey } from '../i18n';
+import { t, type MsgKey } from '../i18n';
 
 const WAIT: Partial<Record<PlayerView['phase'], MsgKey & `game.wait.${string}`>> = {
   bidding: 'game.wait.bidding',
@@ -232,14 +232,19 @@ export function HandoutPanel({ view, myTurn, busy, wait, given, next, onSlot, on
   );
 }
 
-export function TrickPanel({ view, myTurn, busy, wait, selected, onPlay }: PanelProps & { selected: Card | null; onPlay(card: Card): void }) {
-  const t = useT();
+/** "Trick 3 · trump ♥": the trick being played, numbered from 1. */
+export function trickTitle(view: PlayerView): string {
   const r = view.round!;
   const trickNo = Object.values(r.tricksTaken).reduce((a, b) => a + b, 0) + 1;
+  return r.trump ? t('game.trick.titleTrump', { n: trickNo, suit: SUIT_TEXT[r.trump] }) : t('game.trick.title', { n: trickNo });
+}
+
+export function TrickPanel({ view, myTurn, busy, wait, selected, onPlay }: PanelProps & { selected: Card | null; onPlay(card: Card): void }) {
+  const t = useT();
   const illegal = selected ? explainIllegal(view, selected) : null;
   return (
     <>
-      <div className="lbl">{r.trump ? t('game.trick.titleTrump', { n: trickNo, suit: SUIT_TEXT[r.trump] }) : t('game.trick.title', { n: trickNo })}</div>
+      <div className="lbl">{trickTitle(view)}</div>
       <div className="zone__buttons">
         {myTurn ? (
           <button type="button" className="btn btn--pri" disabled={busy || !selected || !!illegal} onClick={() => selected && onPlay(selected)}>

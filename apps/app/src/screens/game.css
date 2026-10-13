@@ -4,13 +4,14 @@
   --hand-avail: calc(min(100vw, 720px) - max(var(--sa-left), 12px) - max(var(--sa-right), 12px));
   --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), 12.6dvh), 104px);
   /* Table cards: a little smaller than the hand (3-4 cards side by side in a ring). */
-  --card-w: clamp(46px, min(17vw, 9.6dvh), 92px);
+  --table-card-w: clamp(46px, min(17vw, 9.6dvh), 92px);
+  --card-w: var(--table-card-w);
   --hand-h: calc(var(--hand-card-w) * 1.66 + 4px);
 }
 @supports not (height: 1dvh) {
   :root {
     --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), calc(var(--vvh, 100vh) * 0.126)), 104px);
-    --card-w: clamp(46px, min(17vw, calc(var(--vvh, 100vh) * 0.096)), 92px);
+    --table-card-w: clamp(46px, min(17vw, calc(var(--vvh, 100vh) * 0.096)), 92px);
   }
 }
 
@@ -47,6 +48,10 @@ html:has(.game), body:has(.game) {
   .game { height: var(--app-h, var(--vvh, 100vh)); }
 }
 .game--loading { display: grid; place-items: center; }
+/* Sitting out (4 players, my deal): no hand, so no empty hand row. The table takes the room and its cards
+   grow to the hand's size, since watching the trick is all there is to do. */
+.game[data-out] { grid-template-rows: auto auto minmax(0, 1fr) auto auto 0; --table-card-w: var(--hand-card-w); }
+.game[data-out] .hand { display: none; }
 
 /* Avatar | name ... score
           | chips (full width under them)
@@ -75,7 +80,7 @@ html:has(.game), body:has(.game) {
 .selfstrip__dealer { background: var(--ink); color: var(--bg-solid); }
 
 @media (orientation: landscape) and (max-height: 520px) {
-  :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
+  :root { --table-card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
   .game {
     max-width: none;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
@@ -83,6 +88,7 @@ html:has(.game), body:has(.game) {
     grid-template-areas: 'top top' 'opps zone' 'table zone' 'table self' 'table hand';
     column-gap: 14px;
   }
+  .game[data-out] { grid-template-rows: auto auto minmax(0, 1fr) auto 0; }
   .opps { --avatar: clamp(28px, 8dvh, 38px); }
   .zone { min-height: 172px; }
 }

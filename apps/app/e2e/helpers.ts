@@ -167,13 +167,13 @@ export interface DriveOptions {
 }
 
 /** What the client store and the screen show, for a drive that stopped making progress. */
-async function stuckReport(page: Page): Promise<string> {
+export async function stuckReport(page: Page): Promise<string> {
   return page.evaluate(() => {
     type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const s = (window as unknown as { __tysiacRoom?: { getState(): Any } }).__tysiacRoom?.getState();
     const v = s?.view;
     const store = s
-      ? JSON.stringify({ phase: v?.phase, turn: v?.turn, me: v?.me, legal: v?.legal?.map((a: Any) => a.type), queue: s.queue?.length, holding: s.holding, shownIsView: s.shown === s.view, roundResult: !!s.roundResult, received: s.received, pending: !!s.pending, inflight: !!s.inflight, paused: v?.paused, talonWaiting: v?.round?.talonWaiting })
+      ? JSON.stringify({ queued: s.queue?.map((e: Any) => e.type), shownPhase: s.shown?.phase, shownSeq: s.shown?.seq, seq: v?.seq, sweepTo: s.sweepTo, phase: v?.phase, turn: v?.turn, me: v?.me, legal: v?.legal?.map((a: Any) => a.type), queue: s.queue?.length, holding: s.holding, shownIsView: s.shown === s.view, roundResult: !!s.roundResult, received: s.received, pending: !!s.pending, inflight: !!s.inflight, paused: v?.paused, talonWaiting: v?.round?.talonWaiting })
       : 'no store';
     const buttons = Array.from(document.querySelectorAll('button')).map(b => `${b.getAttribute('aria-label') ?? b.textContent?.trim()}${(b as HTMLButtonElement).disabled ? '(disabled)' : ''}`).join(', ');
     const dialogs = Array.from(document.querySelectorAll('[role=dialog]')).map(d => d.getAttribute('aria-label')).join(', ');
@@ -247,4 +247,13 @@ export async function drive(page: Page, opts: DriveOptions): Promise<void> {
   }
   if (!(await stop())) throw new Error('drive ended without reaching the stop condition');
   await check(opts.stop ? 'stopped' : 'game over');
+}
+
+/** Waits for the action zone to reach a phase; when it does not, says what the store and the screen show. */
+export async function expectPhase(page: Page, phase: string, timeout = 20_000): Promise<void> {
+  try {
+    await expect(page.locator('.zone')).toHaveAttribute('data-phase', phase, { timeout });
+  } catch (err) {
+    throw new Error(`the zone never reached ${phase}. ${await stuckReport(page)}\n${String(err)}`);
+  }
 }

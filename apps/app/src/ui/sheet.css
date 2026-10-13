@@ -65,7 +65,8 @@
 .rrow--bidder { border: 2px solid var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); }
 .rrow--out { opacity: 0.7; }
 .rrow__avatar { grid-area: av; }
-.rrow__who { grid-area: who; display: flex; align-items: center; gap: 8px; min-width: 0; }
+/* A long name and the bid badge: the badge wraps under the name rather than cutting it short (Polish, Danish at se). */
+.rrow__who { grid-area: who; display: flex; flex-wrap: wrap; align-items: center; gap: 2px 8px; min-width: 0; }
 .rrow__name { font-weight: 700; font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .rrow--me .rrow__name { color: var(--accent-soft); }
 .rrow__bid { flex: none; font-size: 11px; padding: 2px 8px; }

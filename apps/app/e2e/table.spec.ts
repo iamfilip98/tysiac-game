@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { drive, firstLaunch, handOut, labels, move, selectLegalCard } from './helpers';
+import { drive, firstLaunch, handOut, labels, move, selectLegalCard, expectPhase } from './helpers';
 
 /**
  * Records, on every animation frame, each trick card on the table and the cards the store says are in the
@@ -136,7 +136,7 @@ for (const { lang, coach } of RUNS) {
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await drive(page, { lang, bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
     await move(page, () => handOut(page, lang));
-    await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expectPhase(page, 'tricks');
     await expect(page.locator('.selfstrip .chip--coach')).toHaveCount(coach ? 1 : 0);
     await startRecorder(page);
     // Play four tricks through the UI: every one has cards landing next to rested ones, a hold and a winner.
@@ -163,3 +163,66 @@ for (const { lang, coach } of RUNS) {
     expect(res.moves).toEqual([]);
   });
 }
+
+// Four players: the dealer sits out and the other three play to spots fixed for the round. Watched from the
+// sit-out round (three opponents' cards) and from a round I play in (with the player across in the trick or not).
+test('four players: trick cards sit at fixed spots, sitting out and playing (en)', async ({ page }, info) => {
+  test.skip(!['se', 'iphone15'].includes(info.project.name), 'the two phones');
+  const L = labels('en');
+  await firstLaunch(page, 'en', { fast: false });
+  await page.getByRole('button', { name: '4 players' }).click();
+  for (let k = 0; k < 3; k++) await page.getByRole('button', { name: 'Add bot' }).click();
+  await page.getByRole('button', { name: 'Start game' }).click(); // the host deals first: round 1 is my sit-out round
+  await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
+  const tricksDone = () => page.evaluate(() => {
+    const s = (window as unknown as { __tysiacRoom: { getState(): { shown: { me: string; round: { number: number; sittingOut: string | null; tricksTaken: Record<string, number> } | null } | null } } }).__tysiacRoom.getState();
+    const r = s.shown?.round;
+    return { round: r?.number ?? 0, out: r?.sittingOut === s.shown?.me, done: Object.values(r?.tricksTaken ?? {}).reduce((a, b) => a + b, 0) };
+  });
+  expect((await tricksDone()).out, 'round 1: I sit out').toBe(true);
+  // Sitting out I still confirm a public talon (bid over 100), then watch the tricks. When the bidder throws in,
+  // the round has no tricks: play on to my next sit-out round.
+  await drive(page, {
+    check: async () => {},
+    stop: async () => {
+      const seen = page.getByRole('button', { name: L.seen });
+      if (await seen.isVisible()) await seen.click();
+      const s = await tricksDone();
+      return s.out && /Trick 1/.test((await page.locator('.zone').textContent()) ?? '');
+    },
+  });
+  await startRecorder(page);
+  await expect.poll(async () => (await tricksDone()).done, { timeout: 60_000 }).toBeGreaterThanOrEqual(4);
+  await page.waitForTimeout(3000);
+  let res = await stopRecorder(page);
+  console.log(info.project.name, '4p out', JSON.stringify({ frames: res.frames, checks: res.checks, held: res.heldFrames, win: res.winFrames, moves: res.moves.slice(0, 20) }));
+  expect(res.checks, 'sitting out: resting cards were checked while others landed or the trick was held').toBeGreaterThan(100);
+  expect(res.heldFrames).toBeGreaterThan(0);
+  expect(res.winFrames).toBeGreaterThan(0);
+  expect(res.moves).toEqual([]);
+
+  // A round I play in: win the auction, hand out, then play four tricks through the UI.
+  await drive(page, { bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
+  await move(page, () => handOut(page));
+  await expectPhase(page, 'tricks');
+  await startRecorder(page);
+  for (let n = 0; n < 4; n++) {
+    await expect(page.locator('.hand button:not([aria-disabled="true"])').first()).toBeVisible({ timeout: 20_000 });
+    await page.waitForFunction(() => {
+      const s = (window as unknown as { __tysiacRoom: { getState(): { shown: { turn: string; me: string } | null; queue: unknown[]; holding: boolean } } }).__tysiacRoom.getState();
+      return s.shown?.turn === s.shown?.me && s.queue.length === 0 && !s.holding;
+    }, null, { timeout: 20_000 });
+    await move(page, async () => {
+      const label = await selectLegalCard(page, false);
+      await page.getByRole('button', { name: L.playCard(label) }).click();
+    });
+    await page.waitForTimeout(400);
+  }
+  await page.waitForTimeout(3000);
+  res = await stopRecorder(page);
+  console.log(info.project.name, '4p in', JSON.stringify({ frames: res.frames, checks: res.checks, held: res.heldFrames, win: res.winFrames, moves: res.moves.slice(0, 20) }));
+  expect(res.checks, 'playing: resting cards were checked while others landed or the trick was held').toBeGreaterThan(100);
+  expect(res.heldFrames).toBeGreaterThan(0);
+  expect(res.winFrames).toBeGreaterThan(0);
+  expect(res.moves).toEqual([]);
+});

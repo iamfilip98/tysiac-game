@@ -217,7 +217,9 @@ function advanceRaw(s: ClientState, coach: boolean): Step | null {
   switch (e.type) {
     case 'cardPlayed': {
       const mine = e.p === s.me && s.pending !== null && cardEquals(s.pending.card, e.card);
-      const rec = e.p !== s.me || !s.received ? s.received : cardEquals(s.received.card, e.card) ? null : closeReceived(s.received);
+      // The banner lies over the table: the first card to land (anyone's) closes it, so it never hides the lead.
+      // The received card stays marked in the hand until it is played.
+      const rec = !s.received ? null : e.p === s.me && cardEquals(s.received.card, e.card) ? null : closeReceived(s.received);
       return {
         state: { ...s, queue: rest, shown: withCardPlayed(shown, e.p, e.card), pending: mine ? null : s.pending, received: rec },
         wait: mine ? 0 : FLIGHT_MS,

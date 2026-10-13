@@ -165,6 +165,7 @@ export default function Game() {
         data-phase={shown.phase}
         data-seq={s.view?.seq ?? 0}
         data-holding={s.holding || undefined}
+        data-out={(r?.sittingOut === shown.me && shown.phase !== 'gameEnd') || undefined}
         onClick={e => {
           // The table takes no taps (pointer-events: none), so a tap on it lands here: it skips the trick hold.
           if (e.target === e.currentTarget) room.skipHold();
