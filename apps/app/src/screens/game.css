@@ -68,7 +68,7 @@ html:has(.game), body:has(.game) {
 }
 .selfstrip__avatar { grid-area: av; font-size: calc(var(--avatar) * 0.58); }
 .selfstrip__name { grid-area: name; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.selfstrip__score { grid-area: score; font-weight: 700; font-family: var(--font-display); font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.selfstrip__score { grid-area: score; font-weight: 700; font-family: var(--font-display-small); font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .selfstrip__chips { grid-area: chips; display: flex; gap: 5px; min-width: 0; }
 .selfstrip__chips:empty { display: none; }
 .selfstrip__dealer { background: var(--ink); color: var(--bg-solid); }

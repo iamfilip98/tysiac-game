@@ -1,6 +1,6 @@
 /* Settings-style controls: grouped rows, iOS switches and segmented controls. Every colour is a theme token. */
 .sgroup { display: flex; flex-direction: column; gap: 7px; margin: 0; }
-.sgroup__title { margin: 0 4px; font: 600 14px/1.2 var(--font-display); color: var(--ink-dim); letter-spacing: 0.01em; }
+.sgroup__title { margin: 0 4px; font: 600 14px/1.2 var(--font-display-small); color: var(--ink-dim); letter-spacing: 0.01em; }
 .sgroup__box {
   --hair: color-mix(in srgb, var(--ink) 13%, transparent);
   border-radius: 14px; overflow: hidden;

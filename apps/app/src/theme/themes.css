@@ -1,3 +1,12 @@
+/* Defaults every theme (and every element that carries data-theme, like a theme picker preview) shares,
+   resolved against that element's own tokens. A theme block below overrides them. */
+:root,
+[data-theme] {
+  /* Display text at 12-17 px (top bar, group titles, theme names, scores). Most display faces read fine there;
+     a hairline face (Noir's Didot) sets a sturdier one. */
+  --font-display-small: var(--font-display);
+}
+
 :root,
 [data-theme='brass'] {
   color-scheme: dark;
@@ -251,6 +260,8 @@
   --chip-muted-bg: rgba(245, 241, 230, 0.13);
   /* Deco high-contrast serif, as on a casino's brass plaque. */
   --font-display: Didot, 'Bodoni 72', 'Bodoni Moda', Georgia, serif;
+  /* Didot's hairlines vanish at 12-14 px: small display text is set in Optima (the plaque's lettering). */
+  --font-display-small: Optima, Candara, 'Fraunces', Georgia, serif;
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-card: 'Fraunces', Georgia, serif;
   --sheet-bg: #0b0a08;

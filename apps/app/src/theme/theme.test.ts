@@ -36,6 +36,14 @@ describe('themes', () => {
     }
   });
 
+  it('small display text has its own face: the display face unless a theme overrides it (Noir: not Didot)', () => {
+    const shared = css.slice(0, css.indexOf(`[data-theme='brass']`));
+    expect(shared).toMatch(/\[data-theme\] \{\s*(\/\*[^]*?\*\/\s*)?--font-display-small: var\(--font-display\);/);
+    const noir = block('noir').match(/--font-display-small: ([^;]+);/)?.[1];
+    expect(noir).toBeTruthy();
+    expect(noir).not.toMatch(/Didot|Bodoni/);
+  });
+
   it('uses the reference colours', () => {
     expect(block('brass')).toContain('#d4af6a');
     expect(block('brass')).toContain('#f8f4ea');

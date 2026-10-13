@@ -43,7 +43,7 @@
 }
 .tpick__opt[aria-checked='true'] .tpick__check { opacity: 1; scale: 1; }
 /* The name is set in the theme's own display face; its colour stays the sheet's. */
-.tpick__name { font: 600 13px/1.2 var(--font-display); overflow-wrap: anywhere; }
+.tpick__name { font: 600 13px/1.2 var(--font-display-small); overflow-wrap: anywhere; }
 .tpick__opt[aria-checked='true'] { color: var(--accent-soft); }
 
 @media (prefers-reduced-motion: reduce) {
