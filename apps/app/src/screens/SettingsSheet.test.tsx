@@ -90,6 +90,31 @@ describe('SettingsSheet', () => {
     expect(sound).toHaveAttribute('aria-checked', 'false');
   });
 
+  it('titled settings groups are groups, not landmarks', () => {
+    render(<SettingsSheet allowProfile={false} coachOn={false} onRules={() => {}} onClose={() => {}} />);
+    expect(screen.queryAllByRole('region')).toHaveLength(0);
+    for (const name of ['Game', 'Theme', 'Language']) expect(screen.getByRole('group', { name })).toBeInTheDocument();
+  });
+
+  it('cross-fades a theme picked by tap, not one picked from the keyboard', async () => {
+    const vt = vi.fn((cb: () => void) => cb());
+    Object.defineProperty(document, 'startViewTransition', { value: vt, configurable: true });
+    try {
+      render(<SettingsSheet allowProfile={false} coachOn={false} onRules={() => {}} onClose={() => {}} />);
+      await userEvent.click(screen.getByRole('radio', { name: 'Noir' }));
+      expect(vt).toHaveBeenCalledTimes(1);
+      expect(usePrefs.getState().theme).toBe('noir');
+      await userEvent.keyboard('{ArrowRight}');
+      expect(usePrefs.getState().theme).toBe('midnight');
+      screen.getByRole('radio', { name: 'Zakopane' }).focus();
+      await userEvent.keyboard('{Enter}');
+      expect(usePrefs.getState().theme).toBe('zakopane');
+      expect(vt).toHaveBeenCalledTimes(1);
+    } finally {
+      delete (document as { startViewTransition?: unknown }).startViewTransition;
+    }
+  });
+
   it('the coach switch describes itself', () => {
     render(<SettingsSheet allowProfile={false} coachOn onRules={() => {}} onClose={() => {}} />);
     expect(screen.getByRole('switch', { name: 'Coach hints' })).toHaveAccessibleDescription('A gold arrow and a tip on your turn');

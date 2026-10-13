@@ -122,18 +122,18 @@ function RowIcon({ children }: { children: ReactNode }) {
   );
 }
 
-/** A titled group of rows (iOS inset grouped list). */
+/** A titled group of rows (iOS inset grouped list). A group, not a landmark: a sheet holds several. */
 export function Group({ title, children, boxed = true }: { title?: string; children: ReactNode; boxed?: boolean }) {
   const id = useId();
   return (
-    <section className="sgroup" aria-labelledby={title ? id : undefined}>
+    <div className="sgroup" role={title ? 'group' : undefined} aria-labelledby={title ? id : undefined}>
       {title && (
         <h3 id={id} className="sgroup__title">
           {title}
         </h3>
       )}
       {boxed ? <div className="sgroup__box">{children}</div> : children}
-    </section>
+    </div>
   );
 }
 

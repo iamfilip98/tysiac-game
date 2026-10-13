@@ -26,7 +26,11 @@ const LANG_OPTIONS: readonly { value: Lang; label: string; lang: string }[] = [
   { value: 'da', label: 'Dansk', lang: 'da' },
 ];
 
-/** Repaints with a short cross-fade where the browser supports view transitions (and motion is welcome). */
+/**
+ * Repaints with a short cross-fade where the browser supports view transitions (and motion is welcome). Not for
+ * a change made from the keyboard: arrowing through the themes would fade on every step and freeze the page
+ * (and the focus ring) for each transition.
+ */
 function crossFade(change: () => void): void {
   const doc = document as Document & { startViewTransition?: (cb: () => void) => unknown };
   const still = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -79,7 +83,7 @@ export function SettingsSheet({ allowProfile, coachOn, onCoachChange, onRules, o
         </Group>
 
         <Group title={t('common.theme')} boxed={false}>
-          <ThemePicker value={p.theme} label={t('common.theme')} onChange={id => crossFade(() => p.setTheme(id))} />
+          <ThemePicker value={p.theme} label={t('common.theme')} onChange={(id, keyboard) => (keyboard ? p.setTheme(id) : crossFade(() => p.setTheme(id)))} />
         </Group>
 
         <Group title={t('common.language')} boxed={false}>
@@ -117,16 +121,17 @@ const KING = { suit: 'spades', rank: 'K' } as const;
 
 /**
  * Each option is a tiny table drawn in that theme's own tokens (the scene carries `data-theme`), so the
- * preview is the real felt, card face, card back and accent rather than a hand-kept swatch.
+ * preview is the real felt, card face, card back and accent rather than a hand-kept swatch. `keyboard` tells
+ * the arrow keys and Enter/Space (a click with detail 0) from a tap.
  */
-function ThemePicker({ value, label, onChange }: { value: ThemeId; label: string; onChange(id: ThemeId): void }) {
+function ThemePicker({ value, label, onChange }: { value: ThemeId; label: string; onChange(id: ThemeId, keyboard: boolean): void }) {
   const t = useT();
   const index = THEMES.findIndex(th => th.id === value);
-  const keys = useRadioKeys(THEMES.length, index, i => onChange(THEMES[i]!.id));
+  const keys = useRadioKeys(THEMES.length, index, i => onChange(THEMES[i]!.id, true));
   return (
     <div className="tpick" role="radiogroup" aria-label={label} onKeyDown={keys.onKeyDown}>
       {THEMES.map((th, i) => (
-        <button key={th.id} type="button" role="radio" aria-checked={th.id === value} className="tpick__opt" onClick={() => onChange(th.id)} {...keys.item(i)}>
+        <button key={th.id} type="button" role="radio" aria-checked={th.id === value} className="tpick__opt" onClick={e => onChange(th.id, e.detail === 0)} {...keys.item(i)}>
           <span className="tpick__frame" aria-hidden="true">
             <span className="tpick__scene" data-theme={th.id}>
               <span className="back tpick__back" />
