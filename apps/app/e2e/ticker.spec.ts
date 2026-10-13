@@ -63,6 +63,20 @@ async function stageMarriage(page: Page): Promise<void> {
   await page.waitForTimeout(900);
 }
 
+/** With three opponents the ticker lies over the round title: its pill must be opaque from its first frame. */
+async function pillOpacityAtStart(page: Page): Promise<number> {
+  await setAnnounce(page, () => null);
+  return page.evaluate(async () => {
+    type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const store = (window as unknown as { __tysiacRoom: Any }).__tysiacRoom;
+    const v = store.getState().shown;
+    const p = v.round.active.find((x: string) => x !== v.me);
+    store.setState({ announce: { a: { kind: 'talonSeen', p }, id: 4242 } });
+    await new Promise(r => requestAnimationFrame(() => requestAnimationFrame(r)));
+    return Number(getComputedStyle(document.querySelector('.ticker__text')!).opacity);
+  });
+}
+
 /** Row boxes, and what the ticker overlaps. */
 async function geometry(page: Page) {
   return page.evaluate(() => {
@@ -170,6 +184,7 @@ for (const lang of ['en', 'da'] as const satisfies readonly Lang[]) {
     await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
     await stageMarriage(page);
     await checkTicker(page, `4p ${lang} marriage`, stagedMarriage, `${dir}-marriage.png`);
+    expect(await pillOpacityAtStart(page), 'the pill over the round title is opaque from its first frame').toBe(1);
     await checkTicker(page, `4p ${lang} wykladana`, wykladana);
   });
 }
