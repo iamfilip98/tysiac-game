@@ -47,15 +47,17 @@ async function stage(page: Page, kind: 'marriage' | 'held' | 'trumpwin' | 'recei
   }, kind);
 }
 
-for (const theme of ['Brass', 'Wycinanki', 'Midnight']) {
+for (const theme of ['Brass', 'Wycinanki', 'Bolesławiec', 'Zakopane', 'Noir', 'Midnight']) {
   test(`screenshots in ${theme}`, async ({ page }, info) => {
     test.skip(!SHOT_PROJECTS.has(info.project.name), 'owner phone (iphone15) and the smallest phone (se)');
-    const dir = `e2e-shots/${info.project.name === 'iphone15' ? '' : `${info.project.name}-`}${theme.toLowerCase()}`;
+    const dir = `e2e-shots/${info.project.name === 'iphone15' ? '' : `${info.project.name}-`}${theme.toLowerCase().replace('ł', 'l')}`;
     await firstLaunch(page);
     await page.getByRole('button', { name: 'Settings' }).click();
     await page.getByRole('radio', { name: new RegExp(theme) }).click();
     const coach = page.getByRole('switch', { name: 'Coach hints' });
     if ((await coach.getAttribute('aria-checked')) !== 'true') await coach.click();
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: `${dir}-settings.png` });
     await page.getByRole('button', { name: 'Close' }).click();
     await page.getByRole('button', { name: 'Practice vs bots' }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
@@ -127,5 +129,59 @@ for (const lang of ['pl', 'da'] as const) {
         .map(e => `${e.className}: ${e.textContent}`),
     );
     expect(clipped).toEqual([]);
+  });
+}
+
+/** Text in the Settings and menu rows that must never be cut off, in any language. */
+async function clippedSheetText(page: Page): Promise<string[]> {
+  return page.evaluate(() =>
+    Array.from(document.querySelectorAll<HTMLElement>('.sheet .srow__label, .sheet .srow__hint, .sheet .segmented__opt, .sheet .tpick__name, .sheet .sgroup__title, .sheet__head h2'))
+      .filter(e => e.offsetParent !== null && (e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1))
+      .map(e => `${e.className}: ${e.textContent}`),
+  );
+}
+
+// Settings and the in-game menu (and what they open) in every language, on the owner's phone and the smallest.
+const LANG_NAME = { en: 'English', pl: 'Polski', da: 'Dansk' } as const;
+for (const lang of ['en', 'pl', 'da'] as const) {
+  test(`settings and menu sheets in ${lang}`, async ({ page }, info) => {
+    test.skip(!SHOT_PROJECTS.has(info.project.name), 'owner phone (iphone15) and the smallest phone (se)');
+    const se = info.project.name === 'se';
+    const insets = se ? { top: 20, bottom: 0, left: 0, right: 0 } : { top: 59, bottom: 34, left: 0, right: 0 };
+    const base = `e2e-shots/${se ? 'se-' : ''}sheets-${lang}`;
+    const L = labels(lang);
+    const shot = async (name: string) => {
+      await page.waitForTimeout(700);
+      expect(await clippedSheetText(page), `${lang} ${name}`).toEqual([]);
+      await page.screenshot({ path: `${base}-${name}.png` });
+      const body = page.locator('.sheet__body');
+      if (await body.evaluate(e => e.scrollHeight > e.clientHeight + 1)) {
+        await body.evaluate(e => { e.scrollTop = e.scrollHeight; });
+        await page.waitForTimeout(300);
+        await page.screenshot({ path: `${base}-${name}-end.png` });
+      }
+    };
+    await firstLaunch(page);
+    await setSafeInsets(page, insets);
+    await page.getByRole('button', { name: 'Settings' }).click();
+    if (lang !== 'en') await page.getByRole('radio', { name: LANG_NAME[lang] }).click();
+    await expect(page.getByRole('dialog', { name: L.settings })).toBeVisible();
+    await shot('settings');
+    await page.getByRole('dialog').getByRole('button', { name: L.close }).click();
+    await page.getByRole('button', { name: L.practice }).click();
+    await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
+    await setSafeInsets(page, insets);
+    const menu = page.locator('.topbar button').first();
+    await menu.click();
+    await shot('menu');
+    await page.getByRole('dialog').getByRole('button', { name: L.settings }).click();
+    await shot('settings-game');
+    await page.getByRole('dialog').getByRole('button', { name: L.close }).click();
+    await menu.click();
+    await page.getByRole('dialog').getByRole('button', { name: L.rules }).click();
+    await shot('rules');
+    await page.getByRole('dialog').getByRole('button', { name: L.close }).click();
+    await page.locator('.topbar button').last().click();
+    await shot('score');
   });
 }

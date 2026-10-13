@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { RULES } from '@tysiac/engine';
@@ -8,7 +8,7 @@ import { MenuSheet } from './MenuSheet';
 import { ProfileForm } from '../ui/ProfileForm';
 import { usePrefs } from '../store/prefs';
 
-beforeEach(() => usePrefs.setState({ name: 'Filip', avatar: '🦊', theme: 'brass', sound: true, coach: null, speed: 'normal' }));
+beforeEach(() => usePrefs.setState({ name: 'Filip', avatar: '🦊', theme: 'brass', sound: true, coach: null, speed: 'normal', lang: 'en' }));
 
 describe('SettingsSheet', () => {
   it('switches theme, sound and speed', async () => {
@@ -56,6 +56,45 @@ describe('SettingsSheet', () => {
     expect(usePrefs.getState().lang).toBe('en');
   });
 
+  it('picks among six themes, each a live preview in its own tokens', async () => {
+    render(<SettingsSheet allowProfile={false} coachOn={false} onRules={() => {}} onClose={() => {}} />);
+    const group = screen.getByRole('radiogroup', { name: 'Theme' });
+    expect(within(group).getAllByRole('radio')).toHaveLength(6);
+    for (const name of ['Brass & Baize', 'Wycinanki', 'Bolesławiec', 'Zakopane', 'Noir', 'Midnight']) within(group).getByRole('radio', { name });
+    expect(group.querySelectorAll('.tpick__scene[data-theme]')).toHaveLength(6);
+    await userEvent.click(screen.getByRole('radio', { name: 'Zakopane' }));
+    expect(usePrefs.getState().theme).toBe('zakopane');
+    expect(document.documentElement.dataset.theme).toBe('zakopane');
+  });
+
+  it('arrow keys move through radios (roving focus) and switches toggle with Space', async () => {
+    render(<SettingsSheet allowProfile={false} coachOn={false} onRules={() => {}} onClose={() => {}} />);
+    const normal = screen.getByRole('radio', { name: 'Normal' });
+    expect(normal).toHaveAttribute('tabindex', '0');
+    expect(screen.getByRole('radio', { name: 'Fast' })).toHaveAttribute('tabindex', '-1');
+    normal.focus();
+    await userEvent.keyboard('{ArrowRight}');
+    expect(usePrefs.getState().speed).toBe('fast');
+    expect(screen.getByRole('radio', { name: 'Fast' })).toHaveFocus();
+    const brass = screen.getByRole('radio', { name: 'Brass & Baize' });
+    brass.focus();
+    await userEvent.keyboard('{ArrowLeft}');
+    expect(usePrefs.getState().theme).toBe('midnight');
+    expect(screen.getByRole('radio', { name: 'Midnight' })).toHaveFocus();
+    await userEvent.keyboard('{Home}');
+    expect(usePrefs.getState().theme).toBe('brass');
+    const sound = screen.getByRole('switch', { name: 'Sound' });
+    sound.focus();
+    await userEvent.keyboard(' ');
+    expect(usePrefs.getState().sound).toBe(false);
+    expect(sound).toHaveAttribute('aria-checked', 'false');
+  });
+
+  it('the coach switch describes itself', () => {
+    render(<SettingsSheet allowProfile={false} coachOn onRules={() => {}} onClose={() => {}} />);
+    expect(screen.getByRole('switch', { name: 'Coach hints' })).toHaveAccessibleDescription('A gold arrow and a tip on your turn');
+  });
+
   it('opens the rules', async () => {
     const onRules = vi.fn();
     render(<SettingsSheet allowProfile={false} coachOn={false} onRules={onRules} onClose={() => {}} />);
@@ -97,6 +136,18 @@ describe('MenuSheet', () => {
     unmount();
     render(<MenuSheet paused onPause={() => {}} onResume={() => {}} onSettings={() => {}} onRules={() => {}} onLeave={() => {}} onClose={() => {}} />);
     expect(screen.getByRole('button', { name: 'Resume game' })).toBeInTheDocument();
+  });
+
+  it('has sound one tap away, and opens settings, rules and leave', async () => {
+    const onSettings = vi.fn();
+    const onLeave = vi.fn();
+    render(<MenuSheet paused={false} onPause={() => {}} onResume={() => {}} onSettings={onSettings} onRules={() => {}} onLeave={onLeave} onClose={() => {}} />);
+    await userEvent.click(screen.getByRole('switch', { name: 'Sound' }));
+    expect(usePrefs.getState().sound).toBe(false);
+    await userEvent.click(screen.getByRole('button', { name: 'Settings' }));
+    expect(onSettings).toHaveBeenCalledOnce();
+    await userEvent.click(screen.getByRole('button', { name: 'Leave to home' }));
+    expect(onLeave).toHaveBeenCalledOnce();
   });
 });
 

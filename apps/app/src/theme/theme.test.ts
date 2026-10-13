@@ -13,9 +13,20 @@ function block(id: string): string {
 }
 
 describe('themes', () => {
-  it('lists the three themes with brass first', () => {
-    expect(THEMES.map(t => t.id)).toEqual(['brass', 'wycinanki', 'midnight']);
-    expect(THEMES.map(t => t.name)).toEqual(['Brass & Baize', 'Wycinanki', 'Midnight']);
+  it('lists the six themes with brass (the default) first', () => {
+    expect(THEMES.map(t => t.id)).toEqual(['brass', 'wycinanki', 'boleslawiec', 'zakopane', 'noir', 'midnight']);
+  });
+
+  it('every theme has a name in every language', async () => {
+    for (const lang of ['en', 'pl', 'da'] as const) {
+      const dict = (await import(`../i18n/${lang}.ts`))[lang] as Record<string, string>;
+      for (const th of THEMES) expect(dict[`theme.${th.id}`], `${lang} theme.${th.id}`).toBeTruthy();
+    }
+  });
+
+  it('the first-paint script in index.html knows every theme', () => {
+    const html = readFileSync(resolve(process.cwd(), 'index.html'), 'utf8');
+    for (const th of THEMES) expect(html, th.id).toContain(`'${th.id}'`);
   });
 
   it('every theme defines every token', () => {
@@ -32,6 +43,9 @@ describe('themes', () => {
     expect(block('wycinanki')).toContain('#1f2740');
     expect(block('midnight')).toContain('#ff7a45');
     expect(block('midnight')).toContain('#0e1016');
+    expect(block('boleslawiec')).toContain('#2148a8');
+    expect(block('zakopane')).toContain('#2e1e13');
+    expect(block('noir')).toContain('#f0c75e');
   });
 
   it('applyTheme sets data-theme and theme-color', () => {

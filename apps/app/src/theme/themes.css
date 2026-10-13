@@ -120,3 +120,136 @@
   --table-rim: #2a2f3d;
   --danger: #ff6b6b;
 }
+
+/* Bolesławiec stoneware: cobalt sponge-print dots on a glazed cream plate, double rim bands. */
+[data-theme='boleslawiec'] {
+  color-scheme: light;
+  --bg: radial-gradient(circle at 50% 46%, transparent 0 132px, rgba(33, 72, 168, 0.12) 133px 136px, transparent 137px 143px, rgba(33, 72, 168, 0.08) 144px 145px, transparent 146px),
+    radial-gradient(circle, rgba(33, 72, 168, 0.11) 0 2.6px, transparent 3.2px) 0 0 / 26px 26px,
+    radial-gradient(circle, rgba(33, 72, 168, 0.07) 0 1.4px, transparent 1.9px) 13px 13px / 26px 26px,
+    #f5f2e8;
+  --bg-solid: #f5f2e8;
+  --ink: #172a5c;
+  --ink-dim: rgba(23, 42, 92, 0.72);
+  --accent: #2148a8;
+  --accent-ink: #fbf9f2;
+  --accent-soft: #1e4299;
+  --coach: #a26f08;
+  --panel: #fffdf7;
+  --panel-border: 1.5px solid #2148a8;
+  --panel-shadow: 0 0 0 3px #fffdf7, 0 0 0 4.5px rgba(33, 72, 168, 0.4);
+  --btn-sec-bg: #fffdf7;
+  --btn-sec-border: 1.5px solid rgba(33, 72, 168, 0.5);
+  --icon-bg: #fffdf7;
+  --icon-border: 1.5px solid rgba(33, 72, 168, 0.5);
+  --avatar-bg: #2148a8;
+  --avatar-ink: #fbf9f2;
+  --avatar-ring: 0 0 0 2.5px #f5f2e8, 0 0 0 4px #2148a8;
+  --turn-ring: 2.5px dotted #2148a8;
+  --card-bg: #fffdf8;
+  --card-ink: #172a5c;
+  --card-red: #b8261d;
+  --card-border: 1px solid rgba(33, 72, 168, 0.32);
+  --card-shadow: 0 2px 0 rgba(23, 42, 92, 0.1), 0 6px 14px rgba(23, 42, 92, 0.16);
+  --back-bg: radial-gradient(circle, #f5f2e8 0 1.8px, transparent 2.3px) 0 0 / 9px 9px,
+    radial-gradient(circle, #8fb0ea 0 1px, transparent 1.5px) 4.5px 4.5px / 9px 9px, #2148a8;
+  --back-border: 1.5px solid #172a5c;
+  --slot-border: 2px dotted rgba(33, 72, 168, 0.35);
+  --slot-bg: transparent;
+  --chip-muted-bg: rgba(33, 72, 168, 0.1);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-card: 'Fraunces', Georgia, serif;
+  --sheet-bg: #fbf9f2;
+  --table-felt: radial-gradient(#fbf9f2, #ebe5d3);
+  --table-rim: #2148a8;
+  --danger: #b3261e;
+}
+
+/* Zakopane: a larch-log chalet wall under a warm lamp, spruce-green shutters, a carved highland rosette. */
+[data-theme='zakopane'] {
+  color-scheme: dark;
+  --bg: radial-gradient(110% 60% at 50% 40%, rgba(222, 150, 80, 0.2), transparent 70%),
+    repeating-linear-gradient(180deg, rgba(255, 214, 160, 0.05) 0 2px, transparent 2px 44px, rgba(0, 0, 0, 0.26) 44px 47px),
+    linear-gradient(#3b2718, #24170e);
+  --bg-solid: #2e1e13;
+  --ink: #f3e6cc;
+  --ink-dim: rgba(243, 230, 204, 0.72);
+  --accent: #a9cf8a;
+  --accent-ink: #13210f;
+  --accent-soft: #c3e0a8;
+  --coach: #ffd24a;
+  --panel: rgba(24, 41, 30, 0.94);
+  --panel-border: 1px solid rgba(169, 207, 138, 0.32);
+  --panel-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
+  --btn-sec-bg: rgba(243, 230, 204, 0.1);
+  --btn-sec-border: 1px solid rgba(243, 230, 204, 0.2);
+  --icon-bg: rgba(0, 0, 0, 0.25);
+  --icon-border: 1px solid rgba(243, 230, 204, 0.16);
+  --avatar-bg: #1c3124;
+  --avatar-ink: #a9cf8a;
+  --avatar-ring: 0 0 0 2px #2e1e13, 0 0 0 3.5px #c48a52;
+  --turn-ring: 2px solid #a9cf8a;
+  --card-bg: #f8eedb;
+  --card-ink: #2a1a0f;
+  --card-red: #ad2918;
+  --card-border: 0 solid transparent;
+  --card-shadow: 0 1px 0 rgba(255, 255, 255, 0.6) inset, 0 6px 14px rgba(0, 0, 0, 0.42);
+  --back-bg: radial-gradient(circle, #f3e6cc 0 9%, transparent 10%),
+    radial-gradient(circle, transparent 0 33%, #c48a52 34% 38%, transparent 39%),
+    repeating-conic-gradient(#2f5a3c 0 15deg, #234630 15deg 30deg);
+  --back-border: 1.5px solid #c48a52;
+  --slot-border: 1.5px dashed rgba(243, 230, 204, 0.28);
+  --slot-bg: transparent;
+  --chip-muted-bg: rgba(243, 230, 204, 0.14);
+  --font-display: 'Young Serif', Georgia, serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-card: 'Young Serif', Georgia, serif;
+  --sheet-bg: #1b2a1f;
+  --table-felt: radial-gradient(#3d6b4a, #1f3a29);
+  --table-rim: #6b4426;
+  --danger: #f08a74;
+}
+
+/* Noir: a black casino table under one spotlight, champagne gold rails and a deco lattice back. */
+[data-theme='noir'] {
+  color-scheme: dark;
+  --bg: radial-gradient(circle at 50% 46%, transparent 0 148px, rgba(240, 199, 94, 0.16) 149px 150px, transparent 151px),
+    radial-gradient(90% 55% at 50% 42%, #1d1a14 0%, #0a0907 58%, #000 100%);
+  --bg-solid: #000000;
+  --ink: #f5f1e6;
+  --ink-dim: rgba(245, 241, 230, 0.68);
+  --accent: #f0c75e;
+  --accent-ink: #0d0b05;
+  --accent-soft: #f3d488;
+  --coach: #ffd24a;
+  --panel: rgba(10, 9, 7, 0.94);
+  --panel-border: 1px solid rgba(240, 199, 94, 0.5);
+  --panel-shadow: 0 0 0 3px #000, 0 0 0 4px rgba(240, 199, 94, 0.22);
+  --btn-sec-bg: #15130f;
+  --btn-sec-border: 1px solid rgba(240, 199, 94, 0.35);
+  --icon-bg: #0c0b09;
+  --icon-border: 1px solid rgba(240, 199, 94, 0.35);
+  --avatar-bg: #0c0b09;
+  --avatar-ink: #f0c75e;
+  --avatar-ring: 0 0 0 1px #f0c75e, 0 0 0 3px #000, 0 0 0 4px rgba(240, 199, 94, 0.5);
+  --turn-ring: 2px solid #f0c75e;
+  --card-bg: #ffffff;
+  --card-ink: #000000;
+  --card-red: #c8102e;
+  --card-border: 0 solid transparent;
+  --card-shadow: 0 0 0 1px rgba(240, 199, 94, 0.35), 0 8px 20px rgba(0, 0, 0, 0.7);
+  --back-bg: repeating-linear-gradient(45deg, transparent 0 5px, rgba(240, 199, 94, 0.5) 5px 6px),
+    repeating-linear-gradient(-45deg, transparent 0 5px, rgba(240, 199, 94, 0.5) 5px 6px), #0a0907;
+  --back-border: 1.5px solid #f0c75e;
+  --slot-border: 1px solid rgba(240, 199, 94, 0.3);
+  --slot-bg: rgba(240, 199, 94, 0.04);
+  --chip-muted-bg: rgba(245, 241, 230, 0.13);
+  --font-display: 'Fraunces', Georgia, serif;
+  --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-card: 'Fraunces', Georgia, serif;
+  --sheet-bg: #0b0a08;
+  --table-felt: radial-gradient(#1d1a14, #050505);
+  --table-rim: #2a2416;
+  --danger: #ff6b5e;
+}

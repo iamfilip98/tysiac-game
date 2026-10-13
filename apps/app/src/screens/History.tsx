@@ -7,6 +7,7 @@ import { isLocalMode } from '../net/service';
 import type { HistoryGame, HistoryResponse } from '../net/protocol';
 import { currentLang, t as tr } from '../i18n';
 import { useT } from '../i18n/useT';
+import { Segmented } from '../ui/controls';
 import './history.css';
 
 type Tab = 'recent' | 'rivals' | 'board';
@@ -159,13 +160,7 @@ export default function History() {
           {t('screens.history.title')}
         </h1>
       </header>
-      <div className="seg" role="radiogroup" aria-label={t('screens.history.show')}>
-        {TABS.map(tb => (
-          <button key={tb.id} type="button" role="radio" aria-checked={tab === tb.id} onClick={() => setTab(tb.id)}>
-            {t(tb.label)}
-          </button>
-        ))}
-      </div>
+      <Segmented<Tab> label={t('screens.history.show')} value={tab} options={TABS.map(tb => ({ value: tb.id, label: t(tb.label) }))} onChange={setTab} />
       <section className="history__body" aria-live={!local && load.kind !== 'ok' ? 'polite' : 'off'}>{body}</section>
     </main>
   );

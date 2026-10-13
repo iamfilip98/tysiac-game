@@ -16,7 +16,7 @@
       try {
         var p = JSON.parse(localStorage.getItem('tysiac.prefs') || '{}');
         var t = p && p.state && p.state.theme;
-        if (t === 'brass' || t === 'wycinanki' || t === 'midnight') document.documentElement.dataset.theme = t;
+        if (['brass', 'wycinanki', 'midnight', 'boleslawiec', 'zakopane', 'noir'].indexOf(t) >= 0) document.documentElement.dataset.theme = t;
       } catch (e) {}
     </script>
   </head>

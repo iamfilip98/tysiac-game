@@ -1,14 +1,18 @@
-export type ThemeId = 'brass' | 'wycinanki' | 'midnight';
+export type ThemeId = 'brass' | 'wycinanki' | 'midnight' | 'boleslawiec' | 'zakopane' | 'noir';
 
-export const THEMES: { id: ThemeId; name: string; themeColor: string; swatch: [string, string, string] }[] = [
-  { id: 'brass', name: 'Brass & Baize', themeColor: '#0d3528', swatch: ['#0d3528', '#f8f4ea', '#d4af6a'] },
-  { id: 'wycinanki', name: 'Wycinanki', themeColor: '#f3ead8', swatch: ['#f3ead8', '#1f2740', '#c8312b'] },
-  { id: 'midnight', name: 'Midnight', themeColor: '#0e1016', swatch: ['#0e1016', '#ffffff', '#ff7a45'] },
+/** The picker order (brass is the default). Names are localized (`theme.<id>`); the preview reads the theme's own tokens. */
+export const THEMES: { id: ThemeId; themeColor: string }[] = [
+  { id: 'brass', themeColor: '#0d3528' },
+  { id: 'wycinanki', themeColor: '#f3ead8' },
+  { id: 'boleslawiec', themeColor: '#f6f1e4' },
+  { id: 'zakopane', themeColor: '#2e1e13' },
+  { id: 'noir', themeColor: '#000000' },
+  { id: 'midnight', themeColor: '#0e1016' },
 ];
 
 /** Every custom property a theme block in themes.css must define. */
 export const THEME_TOKENS = [
-  '--bg', '--bg-solid', '--ink', '--ink-dim', '--accent', '--accent-ink', '--accent-soft',
+  '--bg', '--bg-solid', '--ink', '--ink-dim', '--accent', '--accent-ink', '--accent-soft', '--coach',
   '--panel', '--panel-border', '--panel-shadow', '--btn-sec-bg', '--btn-sec-border', '--icon-bg', '--icon-border',
   '--avatar-bg', '--avatar-ink', '--avatar-ring', '--turn-ring', '--card-bg', '--card-ink', '--card-red',
   '--card-border', '--card-shadow', '--back-bg', '--back-border', '--slot-border', '--slot-bg', '--chip-muted-bg',
