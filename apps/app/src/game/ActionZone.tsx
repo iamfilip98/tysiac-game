@@ -86,16 +86,19 @@ export function ActionZone(p: ActionZoneProps) {
   return (
     <section className="zone panel" data-phase={phase} aria-label={t('game.actions')}>
       <div className="zone__main">{body}</div>
-      {hint && (
-        <p className="zone__hint" role="status">
-          {hint}
-        </p>
-      )}
-      {p.coach ? (
-        <CoachLine view={view} advice={myTurn ? p.advice : null} note={p.note} onWhy={p.onWhy} />
-      ) : (
-        p.note && <p className="zone__note">{textSuits(engineText(p.note, view))}</p>
-      )}
+      {/* One fixed two-line slot for the hint, the coach line or the note, so the zone (and with it the table
+          above, whose centre holds the trick) never changes height while a trick is played. */}
+      <div className="zone__foot">
+        {hint ? (
+          <p className="zone__hint" role="status">
+            {hint}
+          </p>
+        ) : p.coach ? (
+          <CoachLine view={view} advice={myTurn ? p.advice : null} note={p.note} onWhy={p.onWhy} />
+        ) : (
+          p.note && <p className="zone__note">{textSuits(engineText(p.note, view))}</p>
+        )}
+      </div>
     </section>
   );
 }

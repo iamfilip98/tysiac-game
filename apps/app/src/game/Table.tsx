@@ -97,6 +97,7 @@ export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
               role="img"
               aria-label={cardText(tc.card)}
               data-win={win || undefined}
+              data-key={`${tc.card.rank}${tc.card.suit}`}
             >
               <CardFace card={tc.card} />
             </m.div>

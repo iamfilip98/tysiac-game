@@ -10,6 +10,15 @@ for (const m of css.matchAll(/\[data-theme='(\w+)'\]\s*\{([^}]*)\}/g)) {
   themes.set(m[1], vars);
 }
 
+/** The coach's teal (--assist*) lives in base.css: :root defaults, overridden per theme with :root[data-theme='x']. */
+const base = readFileSync(join(process.cwd(), 'src/theme/base.css'), 'utf8');
+const declsOf = (body: string) => Object.fromEntries([...body.matchAll(/(--assist[\w-]*):\s*([^;]+);/g)].map(d => [d[1], d[2].trim()]));
+const assistDefault = declsOf(base.match(/:root\s*\{([^}]*)\}/)![1]);
+const assistFor = (theme: string): Record<string, string> => {
+  const own = base.match(new RegExp(`:root\\[data-theme='${theme}'\\]\\s*\\{([^}]*)\\}`));
+  return { ...assistDefault, ...(own ? declsOf(own[1]) : {}) };
+};
+
 type RGBA = [number, number, number, number];
 function parse(raw: string): RGBA {
   const c = raw.replace(/^#([0-9a-f])([0-9a-f])([0-9a-f])$/i, '#$1$1$2$2$3$3');
@@ -37,12 +46,19 @@ const PAIRS: [string, string][] = [
   ['--accent-soft', '--bg-solid'],
   ['--card-ink', '--card-bg'],
   ['--card-red', '--card-bg'],
+  // Self-strip chips: "Your turn" (accent fill) is covered above; "Dealer" is --bg-solid text on an --ink fill.
+  ['--bg-solid', '--ink'],
+  // The Coach chip (text on the teal fill) and the coach line label (teal text on the table).
+  ['--assist-ink', '--assist'],
+  ['--assist-text', '--bg-solid'],
+  ['--assist-text', '--panel'],
 ];
 
 describe('theme contrast (WCAG AA 4.5:1)', () => {
   it('finds all six themes', () =>
     expect([...themes.keys()].sort()).toEqual(['boleslawiec', 'brass', 'midnight', 'noir', 'wycinanki', 'zakopane']));
-  for (const [name, v] of themes) {
+  for (const [name, own] of themes) {
+    const v = { ...assistFor(name), ...own };
     for (const [fg, bg] of PAIRS) {
       it(`${name}: ${fg} on ${bg}`, () => {
         const base = parse(v['--bg-solid']);
@@ -88,6 +104,16 @@ describe('marriage gold and trump blue stay readable on every table', () => {
     });
     it(`${name}: the coach gold is not the trump blue`, () => {
       expect(hueGap(parse(v['--coach']), TRUMP_BLUE)).toBeGreaterThanOrEqual(90);
+    });
+  }
+});
+
+describe("the coach's own colour (teal, apart from the marriage gold, red suits and trump blue)", () => {
+  for (const name of themes.keys()) {
+    it(`${name}: --assist is a teal hue (160-185 deg)`, () => {
+      const h = hue(parse(assistFor(name)['--assist']));
+      expect(h).toBeGreaterThanOrEqual(160);
+      expect(h).toBeLessThanOrEqual(185);
     });
   }
 });

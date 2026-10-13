@@ -48,22 +48,30 @@ html:has(.game), body:has(.game) {
 }
 .game--loading { display: grid; place-items: center; }
 
+/* Avatar | name ... score
+          | chips (full width under them)
+   Two rows beside the avatar fit in the avatar's own height, so the chips can be big without crowding the name. */
 .selfstrip {
   grid-area: self;
-  display: flex;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  grid-template-areas: 'av name score' 'av chips chips';
   align-items: center;
-  gap: 6px;
+  column-gap: 8px;
+  row-gap: 2px;
   min-width: 0;
-  min-height: 22px;
   font-size: 14px;
-  line-height: 1;
+  line-height: 1.1;
+  /* My own avatar is a real avatar circle, about the opponents' size, so the chosen emoji is clear. */
+  --avatar: clamp(36px, 5.6dvh, 42px);
 }
-.selfstrip__name { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
-.selfstrip__dealer {
-  font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 8px;
-  background: var(--ink); color: var(--bg-solid);
-}
-.selfstrip__score { margin-left: auto; font-weight: 700; font-family: var(--font-display); font-size: 15px; font-variant-numeric: tabular-nums; }
+.selfstrip__avatar { grid-area: av; font-size: calc(var(--avatar) * 0.58); }
+.selfstrip__name { grid-area: name; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.selfstrip__score { grid-area: score; font-weight: 700; font-family: var(--font-display); font-size: 16px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.selfstrip__chips { grid-area: chips; display: flex; gap: 5px; min-width: 0; }
+.selfstrip__chips:empty { display: none; }
+.selfstrip__dealer { background: var(--ink); color: var(--bg-solid); }
 
 @media (orientation: landscape) and (max-height: 520px) {
   :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
@@ -78,7 +86,3 @@ html:has(.game), body:has(.game) {
   .zone { min-height: 172px; }
 }
 
-.topbar__score { flex-direction: column; line-height: 1; padding: 4px 10px; min-width: 56px; }
-.topbar__scorelbl { font-size: 9px; text-transform: uppercase; letter-spacing: 0.08em; opacity: 0.75; }
-.topbar__scoreval { font-size: 18px; font-variant-numeric: tabular-nums; }
-.topbar__info b { color: var(--ink); }
