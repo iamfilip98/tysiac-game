@@ -65,6 +65,7 @@ async function chromeGeometry(page: Page) {
       name: text(document.querySelector('.selfstrip__name')),
       nameClipped: (() => { const n = document.querySelector<HTMLElement>('.selfstrip__name')!; return n.scrollWidth > n.clientWidth + 1; })(),
       chips,
+      oppScores: Array.from(document.querySelectorAll<HTMLElement>('.opp__score')).map(e => ({ text: e.textContent, h: e.getBoundingClientRect().height, lh: parseFloat(getComputedStyle(e).fontSize) * 1.6 })),
     };
   });
 }
@@ -90,6 +91,8 @@ function checkChrome(g: Geo, where: string): void {
     expect(inside(c.ink, c.box), `${where}: ${c.text} text inside its chip`).toBe(true);
     expect(c.box.r, `${where}: ${c.text} on screen`).toBeLessThanOrEqual(g.vw);
   }
+  // Opponents' scores stay on one line ("0 point" next to a bid chip used to break in Danish).
+  for (const o of g.oppScores) expect(o.h, `${where}: opponent score "${o.text}" on one line`).toBeLessThanOrEqual(o.lh);
   // 4. My avatar is about the opponents' size, and the strip (with my score) fits.
   expect(g.selfAvatar!.w, `${where}: my avatar size`).toBeGreaterThanOrEqual(Math.min(34, g.oppAvatar!.w * 0.85));
   expect(g.selfScore!.r, `${where}: my score on screen`).toBeLessThanOrEqual(g.self!.r + 0.5);
