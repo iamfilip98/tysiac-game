@@ -213,10 +213,11 @@
   --slot-border: 1.5px dashed rgba(243, 230, 204, 0.28);
   --slot-bg: transparent;
   --chip-muted-bg: rgba(243, 230, 204, 0.14);
-  /* Slab serif with lining figures (a fallback Georgia shows 0 as a small o). */
-  --font-display: Rockwell, 'Roboto Slab', Charter, Georgia, serif;
+  /* Slab serif with lining figures. None is bundled: Rockwell and Charter on Apple, then Cambria (Windows) and
+     Noto Serif (Android) before Georgia, whose old-style figures show 0 as a small o. */
+  --font-display: Rockwell, Charter, Cambria, 'Noto Serif', Georgia, serif;
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-card: Rockwell, 'Roboto Slab', Charter, Georgia, serif;
+  --font-card: Rockwell, Charter, Cambria, 'Noto Serif', Georgia, serif;
   --font-suit: 'Fraunces', Georgia, serif;
   --sheet-bg: #1b2a1f;
   --table-felt: radial-gradient(#3d6b4a, #1f3a29);
@@ -259,7 +260,7 @@
   --slot-bg: rgba(240, 199, 94, 0.04);
   --chip-muted-bg: rgba(245, 241, 230, 0.13);
   /* Deco high-contrast serif, as on a casino's brass plaque. */
-  --font-display: Didot, 'Bodoni 72', 'Bodoni Moda', Georgia, serif;
+  --font-display: Didot, 'Bodoni 72', Cambria, 'Noto Serif', Georgia, serif;
   /* Didot's hairlines vanish at 12-14 px: small display text is set in Optima (the plaque's lettering). */
   --font-display-small: Optima, Candara, 'Fraunces', Georgia, serif;
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
