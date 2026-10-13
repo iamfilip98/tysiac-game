@@ -1,7 +1,7 @@
 import type { CSSProperties } from 'react';
 import { m } from 'motion/react';
 import { cardKey, type Card } from '@tysiac/engine';
-import { SUIT_TEXT, isRed, type CardGlow } from './cards';
+import { SUIT_TEXT, hasTail, isRed, type CardGlow } from './cards';
 import { cardText } from '../i18n/engineText';
 import { t } from '../i18n';
 import { useT } from '../i18n/useT';
@@ -16,8 +16,10 @@ export function CardFace({ card }: { card: Card }) {
   useT();
   const s = SUIT_TEXT[card.suit];
   const rank = t(`card.rank.${card.rank}`);
+  // A letter with a tail below the baseline (Q) needs more room above the suit under it.
+  const tail = hasTail(rank) || undefined;
   const idx = (br: boolean) => (
-    <span className={`card__idx ${br ? 'card__idx--br' : ''}`} aria-hidden="true">
+    <span className={`card__idx ${br ? 'card__idx--br' : ''}`} data-tail={tail} aria-hidden="true">
       <span className="card__rank">{rank}</span>
       <span className="card__suit">{s}</span>
     </span>

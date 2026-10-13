@@ -1,6 +1,10 @@
+import { mkdir, writeFile } from 'node:fs/promises';
+import { dirname } from 'node:path';
+import { PNG } from 'playwright-core/lib/utilsBundle';
 import { expect, test, type Page } from '@playwright/test';
-import { drive, firstLaunch } from './helpers';
+import { drive, firstLaunch, labelsRank } from './helpers';
 import { expectFits } from './layout';
+import { hasTail } from '../src/game/cards';
 
 /** Minimum hand-card width per project (px). */
 const MIN_W: Record<string, number> = { se: 70, iphone15: 76, promax: 84, landscape: 38, desktop: 90 };
@@ -103,57 +107,152 @@ test('a 10-card hand is big, fully on screen and every index is readable', async
   await expectFits(page, '10-card hand with glows');
 });
 
-test('the centre pip keeps clear of both corner indexes on every rank, in the hand and on the table', async ({ page }) => {
-  await firstLaunch(page);
-  await page.getByRole('button', { name: 'Practice vs bots' }).click();
-  await expect(page.locator('.hand .hand__card').first()).toBeVisible({ timeout: 20_000 });
-  const SUITS: Record<string, string> = { hearts: '♥︎', diamonds: '♦︎', clubs: '♣︎', spades: '♠︎' };
-  const problems = await page.evaluate(suits => {
-    const out: string[] = [];
-    const ctx = document.createElement('canvas').getContext('2d')!;
-    /** The glyphs' ink (not their em boxes), from canvas text metrics and CSS half-leading. */
-    const ink = (el: Element) => {
-      const r = el.getBoundingClientRect();
-      const cs = getComputedStyle(el);
-      ctx.font = `${cs.fontWeight} ${cs.fontSize} ${cs.fontFamily}`;
-      const m = ctx.measureText(el.textContent ?? '');
-      const lh = parseFloat(cs.lineHeight) || parseFloat(cs.fontSize);
-      const rotated = cs.transform !== 'none' || getComputedStyle(el.parentElement!).transform !== 'none';
-      const baseline = r.top + (lh - (m.fontBoundingBoxAscent + m.fontBoundingBoxDescent)) / 2 + m.fontBoundingBoxAscent;
-      const x0 = r.left + (r.width - m.width) / 2; // glyphs are centred in their boxes
-      const box = { left: x0 - m.actualBoundingBoxLeft, right: x0 + m.actualBoundingBoxRight, top: baseline - m.actualBoundingBoxAscent, bottom: baseline + m.actualBoundingBoxDescent };
-      if (!rotated) return box;
-      // Rotated 180° about the box centre.
-      const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-      return { left: 2 * cx - box.right, right: 2 * cx - box.left, top: 2 * cy - box.bottom, bottom: 2 * cy - box.top };
-    };
-    const hosts = [document.querySelector<HTMLElement>('.hand')!, document.querySelector<HTMLElement>('.table')!];
-    for (const host of hosts) {
-      for (const rank of ['9', '10', 'J', 'Q', 'K', 'A']) {
-        for (const s of Object.values(suits)) {
-          const c = document.createElement('span');
-          c.className = 'card';
-          c.style.position = 'absolute';
-          c.style.left = '0';
-          c.style.top = '0';
-          const idx = (br: boolean) => `<span class="card__idx ${br ? 'card__idx--br' : ''}"><span class="card__rank">${rank}</span><span class="card__suit">${s}</span></span>`;
-          c.innerHTML = `<span class="card__face">${idx(false)}<span class="card__pip">${s}</span>${idx(true)}</span>`;
-          host.appendChild(c);
-          const w = c.getBoundingClientRect().width;
-          const pipEl = c.querySelector('.card__pip')!;
-          const pip = ink(pipEl);
-          const gap = Math.max(2.5, w * 0.04);
-          if (pip.right - pip.left < w * 0.22) out.push(`${host.className} ${rank}${s}: pip too small (${Math.round(pip.right - pip.left)} px)`);
-          for (const el of Array.from(c.querySelectorAll('.card__idx > span'))) {
-            const r = ink(el);
-            const apart = pip.left >= r.right + gap || pip.right <= r.left - gap || pip.top >= r.bottom + gap || pip.bottom <= r.top - gap;
-            if (!apart) out.push(`${host.className} ${rank}${s} (w ${Math.round(w)}): pip ink within ${gap.toFixed(1)} px of ${el.className} ${JSON.stringify([pip, r].map(b => Object.values(b).map(Math.round)))}`);
-          }
-          c.remove();
-        }
+/**
+ * Card faces, measured on real pixels: every part of the face is drawn in its own pure colour on a white card,
+ * the probe is screenshotted, and each part's ink box is read back from the image. So a glyph's real ink counts,
+ * Q's tail included, in the theme's real font. Parts: top rank, top suit, centre pip, and the mirrored
+ * bottom-right rank and suit. Every pair must stay apart by a visible gap.
+ */
+const PARTS = [
+  { name: 'top rank', sel: '.card__idx:not(.card__idx--br) .card__rank', rgb: [255, 0, 0] },
+  { name: 'top suit', sel: '.card__idx:not(.card__idx--br) .card__suit', rgb: [255, 255, 0] },
+  { name: 'pip', sel: '.card__pip', rgb: [0, 255, 0] },
+  { name: 'bottom rank', sel: '.card__idx--br .card__rank', rgb: [0, 0, 255] },
+  { name: 'bottom suit', sel: '.card__idx--br .card__suit', rgb: [255, 0, 255] },
+] as const;
+const RANKS = [...new Set(['en', 'pl', 'da'].flatMap(l => ['9', '10', 'J', 'Q', 'K', 'A'].map(r => labelsRank(l, r))))];
+const SUIT_GLYPHS = ['♥︎', '♦︎', '♣︎', '♠︎'];
+
+/**
+ * The pip's ink width as a share of the card width, so no fix shrinks it to make room. The theme fonts have no suit
+ * glyphs; the serif themes fall back to a face whose suits ink about 0.2w at 0.27w type, the sans one (midnight)
+ * to the system face, whose diamond inks about 0.12w.
+ */
+const MIN_PIP: Record<string, number> = { brass: 0.19, wycinanki: 0.19, midnight: 0.11 };
+
+async function savePng(path: string, body: Buffer): Promise<string> {
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, body);
+  return path;
+}
+
+interface FaceLayout { w: number; h: number; cells: { rank: string; suit: string; x: number; y: number }[] }
+
+/** Each part's ink box per probe card in one screenshot slice; every pair of parts must be a visible gap apart. */
+function faceInk(img: { width: number; height: number; data: Buffer }, layout: FaceLayout, shift: number, vh: number, vw: number, host: string, minPip: number): string[] {
+  const scale = img.width / vw;
+  const out: string[] = [];
+  for (const cell of layout.cells) {
+    const top = cell.y - shift;
+    if (top < 0 || top + layout.h > vh) continue;
+    const x0 = Math.round(cell.x * scale), y0 = Math.round(top * scale);
+    const W = Math.round(layout.w * scale), H = Math.round(layout.h * scale);
+    const boxes = PARTS.map(() => ({ l: Infinity, r: -Infinity, t: Infinity, b: -Infinity, n: 0 }));
+    for (let y = y0 + 1; y < y0 + H - 1; y++) {
+      for (let x = x0 + 1; x < x0 + W - 1; x++) {
+        const i = (y * img.width + x) * 4;
+        const px = [img.data[i], img.data[i + 1], img.data[i + 2]];
+        const low = px.map(v => v < 150);
+        if (!low.some(Boolean)) continue; // white, or ink too faint to see
+        const k = PARTS.findIndex(p => p.rgb.every((c, j) => (c === 0) === low[j] && (c === 0 || px[j] > 215)));
+        if (k < 0) continue; // overlapping inks blend into another colour; the boxes still catch the overlap
+        const b = boxes[k];
+        b.l = Math.min(b.l, x); b.r = Math.max(b.r, x + 1); b.t = Math.min(b.t, y); b.b = Math.max(b.b, y + 1); b.n++;
       }
     }
-    return out;
-  }, SUITS);
-  expect(problems).toEqual([]);
-});
+    const gap = Math.max(2, layout.w * 0.035) * scale;
+    const name = `${host} ${cell.rank}${cell.suit.slice(0, 1)} (w ${Math.round(layout.w)})`;
+    for (let a = 0; a < PARTS.length; a++) {
+      if (boxes[a].n < 4) { out.push(`${name}: no ink for ${PARTS[a].name}`); continue; }
+      for (let b = a + 1; b < PARTS.length; b++) {
+        const A = boxes[a], B = boxes[b];
+        if (B.n < 4) continue;
+        const apart = Math.max(B.l - A.r, A.l - B.r, B.t - A.b, A.t - B.b);
+        if (apart < gap) out.push(`${name}: ${PARTS[a].name} and ${PARTS[b].name} ink ${(apart / scale).toFixed(1)} px apart (< ${(gap / scale).toFixed(1)})`);
+      }
+    }
+    const pip = boxes[2];
+    if ((pip.r - pip.l) / scale < layout.w * minPip) out.push(`${name}: pip too small (${((pip.r - pip.l) / scale).toFixed(1)} px)`);
+  }
+  return out;
+}
+
+for (const theme of ['brass', 'wycinanki', 'midnight']) {
+  test(`card faces in ${theme}: rank, suit, centre pip and the mirrored index never touch, on every rank (hand and table)`, async ({ page }) => {
+    await firstLaunch(page);
+    await page.getByRole('button', { name: 'Practice vs bots' }).click();
+    await expect(page.locator('.hand .hand__card').first()).toBeVisible({ timeout: 20_000 });
+    await expect(page.locator('.table')).toBeVisible();
+    const problems: string[] = [];
+    for (const host of ['hand', 'table'] as const) {
+      // Lay every rank x suit out on a white, fixed overlay at the host's real card width.
+      const layout = await page.evaluate(async ({ host, theme, ranks, tails, suits, parts }) => {
+        document.documentElement.dataset.theme = theme;
+        const probe = document.createElement('div');
+        probe.className = 'card';
+        document.querySelector(`.${host}`)!.appendChild(probe);
+        const w = probe.getBoundingClientRect().width;
+        probe.remove();
+        document.querySelector('#face-probe')?.remove();
+        const style = document.createElement('style');
+        style.id = 'face-probe-style';
+        style.textContent = `#face-probe .card { background: #fff !important; box-shadow: none !important; border: 0 !important; position: absolute; }
+          #face-probe .card__face::after, #face-probe .card::before { display: none !important; }
+          ${parts.map(p => `#face-probe ${p.sel} { color: rgb(${p.rgb.join(',')}) !important; }`).join('\n')}`;
+        document.querySelector('#face-probe-style')?.remove();
+        document.head.appendChild(style);
+        const box = document.createElement('div');
+        box.id = 'face-probe';
+        box.setAttribute('style', `position: fixed; inset: 0; z-index: 9999; background: #fff; --w: ${w}px; --card-w: ${w}px; pointer-events: none;`);
+        document.body.appendChild(box);
+        // The cards ride on an inner sheet that slides up for each screenshot slice; the white overlay stays put,
+        // so nothing of the game below ever shows through between the cards.
+        const sheet = document.createElement('div');
+        sheet.id = 'face-sheet';
+        sheet.style.position = 'absolute';
+        sheet.style.inset = '0';
+        box.appendChild(sheet);
+        const cols = Math.floor(window.innerWidth / (w + 6));
+        const cells: { rank: string; suit: string; x: number; y: number }[] = [];
+        let n = 0;
+        for (const rank of ranks) {
+          for (const suit of suits) {
+            const x = 4 + (n % cols) * (w + 6);
+            const y = 4 + Math.floor(n / cols) * (w * 1.42 + 6);
+            const c = document.createElement('span');
+            c.className = 'card';
+            c.style.left = `${x}px`;
+            c.style.top = `${y}px`;
+            const idx = (br: boolean) => `<span class="card__idx ${br ? 'card__idx--br' : ''}"${tails.includes(rank) ? ' data-tail' : ''}><span class="card__rank">${rank}</span><span class="card__suit">${suit}</span></span>`;
+            c.innerHTML = `<span class="card__face">${idx(false)}<span class="card__pip">${suit}</span>${idx(true)}</span>`;
+            sheet.appendChild(c);
+            cells.push({ rank, suit, x, y });
+            n++;
+          }
+        }
+        const font = getComputedStyle(box.querySelector('.card__rank')!);
+        await document.fonts.load(`${font.fontWeight} ${font.fontSize} ${font.fontFamily}`, 'QKAJ10DWEB');
+        await document.fonts.ready;
+        return { w, h: w * 1.42, cells, bottom: 4 + Math.ceil(n / cols) * (w * 1.42 + 6) };
+      }, { host, theme, ranks: RANKS, tails: RANKS.filter(hasTail), suits: SUIT_GLYPHS, parts: PARTS.map(p => ({ sel: p.sel, rgb: [...p.rgb] })) });
+      // The overlay may be taller than the screen on small phones: shoot it in screen-high slices.
+      const vh = page.viewportSize()!.height;
+      const rows = Math.ceil(layout.cells.length / Math.floor(page.viewportSize()!.width / (layout.w + 6)));
+      const perPage = Math.max(1, Math.floor((vh - 8) / (layout.h + 6)));
+      for (let first = 0; first < rows; first += perPage) {
+        await page.evaluate(({ shift }) => {
+          document.querySelector<HTMLElement>('#face-sheet')!.style.transform = `translateY(${-shift}px)`;
+        }, { shift: first * (layout.h + 6) });
+        await page.waitForTimeout(50);
+        // Decoded here in Node, not on a page canvas: WebKit colour-manages images drawn to a canvas, which
+        // shifts the pure probe colours and hides ink.
+        const raw = await page.screenshot({ animations: 'disabled' });
+        const found = faceInk(PNG.sync.read(raw), layout, first * (layout.h + 6), vh, page.viewportSize()!.width, host, MIN_PIP[theme]);
+        if (found.length || first === 0) await test.info().attach(`${theme}-${host}-${first}`, { path: await savePng(test.info().outputPath(`${theme}-${host}-${first}.png`), raw), contentType: 'image/png' });
+        problems.push(...found);
+      }
+      await page.evaluate(() => document.querySelector('#face-probe')?.remove());
+    }
+    expect(problems).toEqual([]);
+  });
+}

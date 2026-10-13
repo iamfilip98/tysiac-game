@@ -35,6 +35,11 @@ export function labels(lang: Lang = 'en') {
   };
 }
 
+/** A card rank letter in one language (Polish D/W, Danish E/D/B). */
+export function labelsRank(lang: string, rank: string): string {
+  return DICTS[lang as Lang][`card.rank.${rank}` as keyof typeof en] as string;
+}
+
 /** Records the targets of recent pointer/click events so a failed move can say where a tap actually landed. */
 async function recordTaps(page: Page): Promise<void> {
   await page.addInitScript(() => {
