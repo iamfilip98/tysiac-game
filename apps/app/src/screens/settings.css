@@ -5,7 +5,8 @@
 .settings__error { margin: 2px 4px 0; font-size: 13px; color: var(--danger); }
 
 /* Theme picker: each option is a little table drawn in its own theme. */
-.tpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px 10px; }
+/* The padding keeps the selection ring and the check badge clear of the scroller's edge. */
+.tpick { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 10px; padding: 6px 4px 2px; }
 .tpick__opt {
   display: flex; flex-direction: column; align-items: stretch; gap: 7px; min-width: 0; padding: 0;
   background: none; border: 0; color: var(--ink); text-align: center;

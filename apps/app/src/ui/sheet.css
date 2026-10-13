@@ -25,8 +25,7 @@
   padding: 14px max(var(--sa-right), 16px) max(var(--sa-bottom), 14px) max(var(--sa-left), 16px);
 }
 .sheet:focus { outline: none; }
-.sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.sheet__head { min-height: 44px; }
+.sheet__head { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 44px; }
 .sheet__head h2 { margin: 0; font-size: 22px; line-height: 1.15; overflow-wrap: anywhere; }
 /* Close: a 30px round chip inside a 44px tap target, pulled into the corner. */
 .sheet__close {
@@ -79,15 +78,3 @@
 .rrow__total b { color: var(--ink); font-size: 16px; }
 .coachnote { font-size: 13px; line-height: 1.4; margin: 10px 0 0; }
 .coachnote b { color: var(--accent-soft); }
-
-.settings, .menu { display: flex; flex-direction: column; gap: 10px; }
-.themes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-.theme-pick { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 4px; border-radius: 12px; background: var(--btn-sec-bg); border: var(--btn-sec-border); font-size: 12px; }
-.theme-pick[aria-checked='true'] { outline: 2px solid var(--accent); }
-.theme-pick__sw { display: flex; }
-.theme-pick__sw i { width: 16px; height: 16px; border-radius: 50%; margin-left: -4px; border: 1px solid rgba(0, 0, 0, 0.25); }
-.seg { display: grid; grid-auto-flow: column; gap: 6px; }
-.seg button { min-height: 40px; border-radius: 10px; background: var(--btn-sec-bg); border: var(--btn-sec-border); }
-.seg button[aria-checked='true'] { background: var(--accent); color: var(--accent-ink); }
-.rules h3 { margin: 12px 0 4px; font-size: 15px; font-family: var(--font-display); }
-.rules p { margin: 0; line-height: 1.45; font-size: 14px; }

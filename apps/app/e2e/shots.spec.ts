@@ -152,6 +152,8 @@ for (const lang of ['en', 'pl', 'da'] as const) {
     const L = labels(lang);
     const shot = async (name: string) => {
       await page.waitForTimeout(700);
+      await page.locator('.sheet__body').evaluate(e => { e.scrollTop = 0; });
+      await page.waitForTimeout(100);
       expect(await clippedSheetText(page), `${lang} ${name}`).toEqual([]);
       await page.screenshot({ path: `${base}-${name}.png` });
       const body = page.locator('.sheet__body');
