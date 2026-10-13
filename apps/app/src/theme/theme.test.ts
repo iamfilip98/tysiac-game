@@ -44,6 +44,17 @@ describe('themes', () => {
     expect(noir).not.toMatch(/Didot|Bodoni/);
   });
 
+  it('light themes lay a dark scrim under the white status bar text; dark themes none', () => {
+    for (const t of THEMES) {
+      const b = block(t.id);
+      const scrim = b.match(/--status-scrim: ([^;]+);/)?.[1];
+      if (b.includes('color-scheme: light')) expect(scrim, t.id).not.toBe('transparent');
+      else expect(scrim, t.id).toBe('transparent');
+    }
+    const base = readFileSync(resolve(process.cwd(), 'src/theme/base.css'), 'utf8');
+    expect(base).toMatch(/body::before \{[^}]*height: var\(--sa-top\);[^}]*background: var\(--status-scrim/);
+  });
+
   it('uses the reference colours', () => {
     expect(block('brass')).toContain('#d4af6a');
     expect(block('brass')).toContain('#f8f4ea');

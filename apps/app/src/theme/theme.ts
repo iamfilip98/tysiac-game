@@ -16,7 +16,7 @@ export const THEME_TOKENS = [
   '--panel', '--panel-border', '--panel-shadow', '--btn-sec-bg', '--btn-sec-border', '--icon-bg', '--icon-border',
   '--avatar-bg', '--avatar-ink', '--avatar-ring', '--turn-ring', '--card-bg', '--card-ink', '--card-red',
   '--card-border', '--card-shadow', '--back-bg', '--back-border', '--slot-border', '--slot-bg', '--chip-muted-bg',
-  '--font-display', '--font-card', '--sheet-bg', '--table-felt', '--table-rim', '--danger',
+  '--font-display', '--font-card', '--sheet-bg', '--table-felt', '--table-rim', '--danger', '--status-scrim',
 ] as const;
 
 export function isThemeId(x: unknown): x is ThemeId {

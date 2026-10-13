@@ -38,6 +38,13 @@ body {
   -webkit-tap-highlight-color: transparent;
   overscroll-behavior-y: none;
 }
+/* The home-screen app's status bar is black-translucent: white text drawn over the page. A light theme lays
+   its --status-scrim behind it (over sheets too); dark themes leave it transparent. A browser tab has no
+   inset, so nothing shows. */
+body::before {
+  content: ''; position: fixed; inset: 0 0 auto; height: var(--sa-top); z-index: 1000; pointer-events: none;
+  background: var(--status-scrim, transparent);
+}
 button { font: inherit; color: inherit; cursor: pointer; touch-action: manipulation; }
 /* >= 16px stops iOS Safari zooming (and scrolling) when an input is focused. */
 input, select, textarea { font: inherit; font-size: 16px; }

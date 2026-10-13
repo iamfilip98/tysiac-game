@@ -46,6 +46,7 @@
   --table-felt: radial-gradient(#1f6b4c, #0f3f2d);
   --table-rim: #5a3a22;
   --danger: #e0796f;
+  --status-scrim: transparent;
 }
 
 [data-theme='wycinanki'] {
@@ -88,6 +89,8 @@
   --table-felt: radial-gradient(#fbf3e2, #efe2c8);
   --table-rim: #1f2740;
   --danger: #c8312b;
+  /* Behind the home-screen app's white status bar text (black-translucent): the theme's ink, not cream. */
+  --status-scrim: #1f2740;
 }
 
 [data-theme='midnight'] {
@@ -129,6 +132,7 @@
   --table-felt: radial-gradient(#1c2030, #12141c);
   --table-rim: #2a2f3d;
   --danger: #ff6b6b;
+  --status-scrim: transparent;
 }
 
 /* Bolesławiec stoneware: cobalt sponge-print dots on a glazed cream plate, double rim bands. */
@@ -174,6 +178,8 @@
   --table-felt: radial-gradient(#fbf9f2, #ebe5d3);
   --table-rim: #2148a8;
   --danger: #b3261e;
+  /* Behind the home-screen app's white status bar text (black-translucent): the theme's ink, not cream. */
+  --status-scrim: #172a5c;
 }
 
 /* Zakopane: a larch-log chalet wall under a warm lamp, spruce-green shutters, a carved highland rosette. */
@@ -223,6 +229,7 @@
   --table-felt: radial-gradient(#3d6b4a, #1f3a29);
   --table-rim: #6b4426;
   --danger: #f08a74;
+  --status-scrim: transparent;
 }
 
 /* Noir: a black casino table under one spotlight, champagne gold rails and a deco lattice back. */
@@ -269,4 +276,5 @@
   --table-felt: radial-gradient(#1d1a14, #050505);
   --table-rim: #2a2416;
   --danger: #ff6b5e;
+  --status-scrim: transparent;
 }
