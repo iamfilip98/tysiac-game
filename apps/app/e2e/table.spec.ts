@@ -180,12 +180,17 @@ test('four players: trick cards sit at fixed spots, sitting out and playing (en)
     return { round: r?.number ?? 0, out: r?.sittingOut === s.shown?.me, done: Object.values(r?.tricksTaken ?? {}).reduce((a, b) => a + b, 0) };
   });
   expect((await tricksDone()).out, 'round 1: I sit out').toBe(true);
-  // Sitting out I still confirm a public talon (bid over 100), then watch the tricks.
-  await expect.poll(async () => {
-    const seen = page.getByRole('button', { name: L.seen });
-    if (await seen.isVisible()) await seen.click();
-    return (await page.locator('.zone').textContent()) ?? '';
-  }, { timeout: 40_000 }).toMatch(/Trick 1/);
+  // Sitting out I still confirm a public talon (bid over 100), then watch the tricks. When the bidder throws in,
+  // the round has no tricks: play on to my next sit-out round.
+  await drive(page, {
+    check: async () => {},
+    stop: async () => {
+      const seen = page.getByRole('button', { name: L.seen });
+      if (await seen.isVisible()) await seen.click();
+      const s = await tricksDone();
+      return s.out && /Trick 1/.test((await page.locator('.zone').textContent()) ?? '');
+    },
+  });
   await startRecorder(page);
   await expect.poll(async () => (await tricksDone()).done, { timeout: 60_000 }).toBeGreaterThanOrEqual(4);
   await page.waitForTimeout(3000);
