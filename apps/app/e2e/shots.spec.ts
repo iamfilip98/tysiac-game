@@ -39,10 +39,11 @@ async function stage(page: Page, kind: 'marriage' | 'held' | 'trumpwin' | 'recei
     } else {
       const seats = v.seats.map((x: Any) => x.id);
       const players = seats.map((id: string, i: number) => ({
-        playerId: id, trickPoints: [85, 20, 15][i] ?? 0, marriagePoints: i === 0 ? 60 : 0, totalRoundPoints: 0,
-        scoreChange: [120, 20, -10][i] ?? 0, newTotalScore: [640, 820, 310][i] ?? 0, wasOnBarrel: false, fellOffBarrel: false, isDealer: i === 2, sittingOut: false,
+        playerId: id, trickPoints: [20, 85, 15][i] ?? 0, marriagePoints: i === 1 ? 60 : 0, totalRoundPoints: 0,
+        scoreChange: [20, 120, -10][i] ?? 0, newTotalScore: [640, 820, 310][i] ?? 0, wasOnBarrel: false, fellOffBarrel: false, isDealer: i === 2, sittingOut: false,
       }));
-      store.setState({ note: null, roundResult: { number: v.round.number, dealer: seats[2], bidder: seats[0], bid: 120, outcome: 'made', wykladana: false, players } });
+      // An opponent bid: the longest row (a bot's name next to the made badge).
+      store.setState({ note: null, roundResult: { number: v.round.number, dealer: seats[2], bidder: seats[1], bid: 120, outcome: 'made', wykladana: false, players } });
     }
   }, kind);
 }
@@ -124,7 +125,7 @@ for (const lang of ['pl', 'da'] as const) {
     }
     // Nothing clipped in the new UI.
     const clipped = await page.evaluate(() =>
-      Array.from(document.querySelectorAll<HTMLElement>('.rrow__bid, .rrow__detail, .rrow__total, .received__lbl, .chip--coach'))
+      Array.from(document.querySelectorAll<HTMLElement>('.rrow__name, .rrow__bid, .rrow__detail, .rrow__total, .received__lbl, .chip--coach'))
         .filter(e => e.offsetParent !== null && e.scrollWidth > e.clientWidth + 1)
         .map(e => `${e.className}: ${e.textContent}`),
     );

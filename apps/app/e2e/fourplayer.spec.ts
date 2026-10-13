@@ -159,13 +159,14 @@ async function startFourPlayers(page: Page, lang: Lang): Promise<void> {
   await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
 }
 
-const RUNS: { lang: Lang; theme: string; rounds: number }[] = [
-  { lang: 'en', theme: 'brass', rounds: 4 },
-  { lang: 'pl', theme: 'wycinanki', rounds: 2 },
-  { lang: 'da', theme: 'boleslawiec', rounds: 2 },
+/** `sitters`: how many different seats (the viewer's first) must have sat out under measured held tricks. */
+const RUNS: { lang: Lang; theme: string; sitters: number }[] = [
+  { lang: 'en', theme: 'brass', sitters: 4 },
+  { lang: 'pl', theme: 'wycinanki', sitters: 2 },
+  { lang: 'da', theme: 'boleslawiec', sitters: 2 },
 ];
 
-for (const { lang, theme, rounds } of RUNS) {
+for (const { lang, theme, sitters } of RUNS) {
   test(`four players: nothing overlaps, every trick card's index shows, all fits (${lang}, ${theme})`, async ({ page }, info) => {
     test.skip(!['se', 'iphone15', 'landscape'].includes(info.project.name), 'phones and landscape');
     const L = labels(lang);
@@ -206,12 +207,25 @@ for (const { lang, theme, rounds } of RUNS) {
         const r = s.shown?.round;
         return { round: r?.number ?? 0, out: r?.sittingOut === s.shown?.me, cards: (r?.trick.cards.length ?? 0) + (s.pending ? 1 : 0), holding: !!s.holding };
       });
-      if (state.round > rounds) break;
+      // Done once enough seats have sat out under measured held tricks. A round the bidder throws in has no
+      // tricks: its sitter comes round again four rounds later.
+      const held = new Map<number, number>();
+      for (const x of samples) if (x.held && x.cards === 3) held.set(x.sitter, (held.get(x.sitter) ?? 0) + 1);
+      const ready = [...held.values()].filter(n => n >= 3).length;
+      if (ready >= sitters && (held.get(0) ?? 0) >= 3) break;
+      if (state.round > sitters + 4) break;
       if (await page.getByRole('dialog', { name: L.gameOver }).isVisible()) break;
       const cont = page.getByRole('button', { name: L.continue });
       if (await cont.isVisible()) {
         await page.waitForTimeout(600);
         await page.screenshot({ path: `${dir}-summary-r${state.round}.png` });
+        // The round summary: every player's name, badge, detail and total in full (the sitter-out's row too).
+        const cut = await page.evaluate(() =>
+          Array.from(document.querySelectorAll<HTMLElement>('.rrow__name, .rrow__bid, .rrow__detail, .rrow__total'))
+            .filter(e => e.scrollWidth > e.clientWidth + 1)
+            .map(e => `${e.className}: ${e.textContent}`),
+        );
+        expect.soft(cut, `${lang} round ${state.round} summary text cut short`).toEqual([]);
         await cont.click();
         continue;
       }
@@ -253,8 +267,8 @@ for (const { lang, theme, rounds } of RUNS) {
     const heldBySitter = new Map<number, number>();
     for (const s of samples) if (s.held && s.cards === 3) heldBySitter.set(s.sitter, (heldBySitter.get(s.sitter) ?? 0) + 1);
     console.log(info.project.name, lang, JSON.stringify({ samples: samples.length, heldBySitter: [...heldBySitter] }));
-    // Every round's sitter was seen with full held tricks (four rounds: every seat, the viewer included).
-    expect(heldBySitter.size, 'rounds with held three-card tricks measured').toBe(rounds);
-    for (const [, n] of heldBySitter) expect(n).toBeGreaterThanOrEqual(3);
+    // Enough seats (the viewer's included) were seen sitting out under held three-card tricks.
+    expect([...heldBySitter.values()].filter(n => n >= 3).length, 'seats seen sitting out under held tricks').toBeGreaterThanOrEqual(sitters);
+    expect(heldBySitter.get(0) ?? 0, 'held tricks measured while I sat out').toBeGreaterThanOrEqual(3);
   });
 }
