@@ -4,6 +4,7 @@ import { cardEquals, cardKey, type Card, type PlayerId, type PlayerView, type Tr
 import { CardBack, CardFace } from './Card';
 import { isRed } from './cards';
 import { spotsFor, type Spot } from './seating';
+import { ringFor } from './ring';
 import type { HeldTrick, MarriageFx } from '../store/client';
 import { cardText } from '../i18n/engineText';
 import { useT } from '../i18n/useT';
@@ -68,8 +69,11 @@ export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
   const spots = spotsFor(view.seats.map(s => s.id), view.me);
   const trick: TrickCard[] = r ? [...r.trick.cards, ...(pending && !r.trick.cards.some(t => cardKey(t.card) === cardKey(pending)) ? [{ p: view.me, card: pending }] : [])] : [];
   const showTalon = !!r && (view.phase === 'bidding' || view.phase === 'talon' || view.phase === 'decision');
+  // The round's players (with four, the dealer sits out) get fixed spots for the whole round.
+  const ring = ringFor((r?.active ?? view.seats.map(s => s.id)).map(p => spots[p]).filter((s): s is Spot => !!s));
+  const fallback = ring.places.top ?? ring.places.me ?? { x: 0, y: 0, rot: 0 };
   return (
-    <section className="table" aria-label={t('game.table')}>
+    <section className="table" aria-label={t('game.table')} style={{ '--ring-w': ring.w, '--ring-h': ring.h } as CSSProperties}>
       {marriage && <MarriageRing key={marriage.id} />}
       {held?.byTrump && <TrumpBurst />}
       {showTalon && <Talon cards={view.phase === 'bidding' ? null : (r?.talon ?? null)} />}
@@ -79,6 +83,7 @@ export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
           const mine = tc.p === view.me;
           const gold = !!marriage && tc.p === marriage.p && tc.card.suit === marriage.suit && (tc.card.rank === 'Q' || tc.card.rank === 'K');
           const win = !!held && cardEquals(held.card, tc.card);
+          const place = ring.places[spot] ?? fallback;
           const look = [
             gold ? 'card--gold' : r?.trump && tc.card.suit === r.trump ? 'card--glow-trump' : '',
             win ? (held!.byTrump ? 'tcard--win tcard--win-trump' : 'tcard--win') : held ? 'tcard--lost' : '',
@@ -94,6 +99,7 @@ export function Table({ view, pending, sweepTo, marriage, held }: TableProps) {
               exit="gone"
               transition={{ type: 'spring', stiffness: 380, damping: 32 }}
               className={`card tcard tcard--${spot} ${isRed(tc.card) ? 'card--red' : ''} ${look}`}
+              style={{ '--x': place.x, '--y': place.y, '--rot': `${place.rot}deg` } as CSSProperties}
               role="img"
               aria-label={cardText(tc.card)}
               data-win={win || undefined}

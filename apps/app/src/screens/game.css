@@ -4,13 +4,14 @@
   --hand-avail: calc(min(100vw, 720px) - max(var(--sa-left), 12px) - max(var(--sa-right), 12px));
   --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), 12.6dvh), 104px);
   /* Table cards: a little smaller than the hand (3-4 cards side by side in a ring). */
-  --card-w: clamp(46px, min(17vw, 9.6dvh), 92px);
+  --table-card-w: clamp(46px, min(17vw, 9.6dvh), 92px);
+  --card-w: var(--table-card-w);
   --hand-h: calc(var(--hand-card-w) * 1.66 + 4px);
 }
 @supports not (height: 1dvh) {
   :root {
     --hand-card-w: clamp(48px, min(calc(var(--hand-avail) / 4.6), calc(var(--vvh, 100vh) * 0.126)), 104px);
-    --card-w: clamp(46px, min(17vw, calc(var(--vvh, 100vh) * 0.096)), 92px);
+    --table-card-w: clamp(46px, min(17vw, calc(var(--vvh, 100vh) * 0.096)), 92px);
   }
 }
 
@@ -75,7 +76,7 @@ html:has(.game), body:has(.game) {
 .selfstrip__dealer { background: var(--ink); color: var(--bg-solid); }
 
 @media (orientation: landscape) and (max-height: 520px) {
-  :root { --card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
+  :root { --table-card-w: clamp(38px, min(7vw, 15dvh), 72px); --hand-card-w: clamp(38px, min(7vw, 15dvh), 72px); }
   .game {
     max-width: none;
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);

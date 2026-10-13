@@ -75,20 +75,24 @@
 /* The table is display-only. Its cards fly over the action zone and the hand (a trick swept to the
    viewer slides down across the Play button while it is already their turn), so it must never take a
    tap: pointer-events is inherited by everything inside. */
-.table { grid-area: table; position: relative; min-height: 0; min-width: 0; pointer-events: none; }
+.table { grid-area: table; position: relative; min-height: 0; min-width: 0; pointer-events: none;
+  /* The table sizes its cards to its own box (Table.tsx sets the ring's extent in card widths for the round's
+     three players): the trick never spills over the opponents' row or the zone, on any phone. */
+  container-type: size;
+  --card-w: min(var(--table-card-w), calc(100cqh / var(--ring-h, 2.5)), calc(100cqw / var(--ring-w, 4.3)));
+}
+/* Each card at its seat's fixed spot for the round (ring.ts): never covering another card's corner index. */
 .tcard {
   position: absolute;
   left: 50%;
   top: 50%;
   margin-left: calc(var(--card-w, 64px) / -2);
-  max-width: 100%;
   margin-top: calc(var(--card-w, 64px) * -0.71);
+  translate: calc(var(--card-w, 64px) * var(--x, 0)) calc(var(--card-w, 64px) * var(--y, 0));
+  rotate: var(--rot, 0deg);
 }
-.tcard--me { translate: 0 calc(var(--card-w, 64px) * 0.62); }
-.tcard--left { translate: calc(var(--card-w, 64px) * -0.85) calc(var(--card-w, 64px) * -0.14); rotate: -9deg; }
-.tcard--right { translate: calc(var(--card-w, 64px) * 0.85) calc(var(--card-w, 64px) * -0.14); rotate: 8deg; }
-.tcard--top { translate: 0 calc(var(--card-w, 64px) * -0.62); rotate: 3deg; }
-.talon { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; align-content: center; }
+.talon { --card-w: min(var(--table-card-w), calc((100cqh - 24px) / 1.42), calc((100cqw - 12px) / 3));
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 6px; flex-wrap: wrap; align-content: center; }
 .talon__lbl { flex-basis: 100%; text-align: center; font-size: 11px; opacity: 0.6; }
 /* The ticker is laid over a grid cell without sizing it (contain: size: it adds nothing to the row), so an
    announcement, however long, never changes a row height and never moves the trick cards (e2e table.spec).
