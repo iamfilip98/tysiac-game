@@ -33,6 +33,7 @@ export function labels(lang: Lang = 'en') {
     settings: str('common.settings'),
     rules: str('common.rules'),
     close: str('common.close'),
+    coachHints: str('common.coachHints'),
   };
 }
 

@@ -109,17 +109,32 @@ async function stopRecorder(page: Page): Promise<{ moves: Move[]; checks: number
   });
 }
 
-for (const lang of ['en'] as const) {
-  test(`trick cards sit at fixed spots: a new card, the held trick and the winner never move another card (${lang})`, async ({ page }, info) => {
+// With the coach on and off (off, the self strip has no Coach chip and, off my turn, no chip at all).
+const RUNS = [
+  { lang: 'en', coach: true },
+  { lang: 'en', coach: false },
+] as const;
+
+for (const { lang, coach } of RUNS) {
+  test(`trick cards sit at fixed spots: a new card, the held trick and the winner never move another card (${lang}, coach ${coach ? 'on' : 'off'})`, async ({ page }, info) => {
     test.skip(!['se', 'iphone15'].includes(info.project.name), 'the two phones');
     const L = labels(lang);
     // Real timing: in fast mode the bots play before the previous card has landed, so too little is checked.
     await firstLaunch(page, lang, { fast: false });
+    if (!coach) {
+      await page.getByRole('button', { name: L.settings }).click();
+      const sheet = page.getByRole('dialog', { name: L.settings });
+      const sw = sheet.getByRole('switch', { name: L.coachHints });
+      if ((await sw.getAttribute('aria-checked')) === 'true') await sw.click();
+      await expect(sw).toHaveAttribute('aria-checked', 'false');
+      await sheet.getByRole('button', { name: L.close }).click();
+    }
     await page.getByRole('button', { name: L.practice }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await drive(page, { lang, bidAlways: true, check: async () => {}, stop: async () => (await page.locator('.zone').getAttribute('data-phase')) === 'handout' });
     await move(page, () => handOut(page, lang));
     await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
+    await expect(page.locator('.selfstrip .chip--coach')).toHaveCount(coach ? 1 : 0);
     await startRecorder(page);
     // Play four tricks through the UI: every one has cards landing next to rested ones, a hold and a winner.
     for (let n = 0; n < 4; n++) {
