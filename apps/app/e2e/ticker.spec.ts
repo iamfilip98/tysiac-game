@@ -16,41 +16,50 @@ const DICTS = { en, da } as const;
 
 type Ann = Record<string, unknown>;
 
-/** Sets the announcement (null: none) and the trick through the store (?local=1&fast=1). */
+/**
+ * Sets the announcement (null: none) through the store (?local=1&fast=1). `opps` are the opponents who play
+ * this round (with four players the dealer sits out: a sitter-out never bids, sees, declares or plays), in
+ * the round's own order; the staged announcement must never name the sitter-out.
+ */
 async function setAnnounce(page: Page, ann: (opps: string[], me: string) => Ann | null): Promise<void> {
   const fn = ann.toString();
   await page.evaluate(src => {
     type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const store = (window as unknown as { __tysiacRoom: Any }).__tysiacRoom;
-    const s = store.getState();
-    const v = s.shown;
-    const opps: string[] = v.seats.map((x: Any) => x.id).filter((p: string) => p !== v.me);
+    const v = store.getState().shown;
+    const opps: string[] = (v.round?.active ?? v.seats.map((x: Any) => x.id)).filter((p: string) => p !== v.me);
     const a = (0, eval)(`(${src})`)(opps, v.me);
+    if (a && v.round?.sittingOut && a.p === v.round.sittingOut) throw new Error(`staged ${a.kind} by the player who sits out`);
     store.setState({ announce: a ? { a, id: Math.floor(Math.random() * 1e9) } : null });
   }, fn);
   await page.waitForTimeout(350); // the ticker's fade-in
 }
 
-/** A marriage lead (and the follows) on the table, my turn, with the marriage announced. */
-async function stageMarriage(page: Page, followers: number): Promise<void> {
-  await page.evaluate(n => {
+/**
+ * A marriage lead and a follow on the table, my turn, with the marriage announced. Realistic: only the round's
+ * players are in the trick (with four players the dealer sits out), the first of them in the round's order (the
+ * opponent the ticker names) leads the queen of a suit whose king and queen I do not hold, the next one follows
+ * with a card I do not hold, and I am to play.
+ */
+async function stageMarriage(page: Page): Promise<void> {
+  await page.evaluate(() => {
     type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
     const store = (window as unknown as { __tysiacRoom: Any }).__tysiacRoom;
     const v = store.getState().view;
-    const seats: string[] = v.seats.map((x: Any) => x.id);
     const me = v.me;
-    // Clockwise from me: the opponents in seat order; the one across (4 players) leads, so the top spot is used.
-    const opps = Array.from({ length: seats.length - 1 }, (_, k) => seats[(seats.indexOf(me) + k + 1) % seats.length]);
-    const lead = seats.length === 4 ? opps[1] : opps[0];
-    const others = (seats.length === 4 ? [opps[2]] : opps.filter(p => p !== lead)).slice(0, n);
-    const cards = [{ p: lead, card: { suit: 'hearts', rank: 'Q' } }, ...others.map((p, i) => ({ p, card: { suit: 'hearts', rank: ['9', 'J', '10'][i] } }))];
-    if (seats.length === 4) cards.push({ p: me, card: v.round.hand[0] });
-    const shown = { ...v, round: { ...v.round, trump: 'hearts', trick: { leader: lead, cards } } };
+    const hand: { suit: string; rank: string }[] = v.round.hand;
+    const mine = (suit: string, rank: string) => hand.some(c => c.suit === suit && c.rank === rank);
+    const suit = ['hearts', 'diamonds', 'clubs', 'spades'].find(x => !mine(x, 'Q') && !mine(x, 'K'))!;
+    const follow = ['9', 'J', '10', 'A'].find(r => !mine(suit, r))!;
+    const [lead, next] = v.round.active.filter((p: string) => p !== me);
+    const cards = [{ p: lead, card: { suit, rank: 'Q' } }, { p: next, card: { suit, rank: follow } }];
+    if (cards.some(c => c.p === v.round.sittingOut)) throw new Error('staged a card for the player who sits out');
+    const shown = { ...v, turn: me, round: { ...v.round, trump: suit, trick: { leader: lead, cards } } };
     store.setState({
-      shown, view: shown, received: null, held: null, holding: false, marriage: { p: lead, suit: 'hearts', id: 7 },
-      announce: { a: { kind: 'marriage', p: lead, suit: 'hearts', points: 100 }, id: 777 },
+      shown, view: shown, received: null, held: null, holding: false, marriage: { p: lead, suit, id: 7 },
+      announce: { a: { kind: 'marriage', p: lead, suit, points: 100 }, id: 777 },
     });
-  }, followers);
+  });
   await page.waitForTimeout(900);
 }
 
@@ -89,6 +98,11 @@ async function checkTicker(page: Page, where: string, ann: (opps: string[], me: 
 
 const insetsFor = (project: string) => (project === 'se' ? { top: 20, bottom: 0, left: 0, right: 0 } : { top: 59, bottom: 34, left: 0, right: 0 });
 
+/** The staged marriage (run in the page): the lead and suit stageMarriage chose. */
+const stagedMarriage = () => {
+  const m = (window as unknown as { __tysiacRoom: { getState(): { marriage: { p: string; suit: string } } } }).__tysiacRoom.getState().marriage;
+  return { kind: 'marriage', p: m.p, suit: m.suit, points: 100 };
+};
 const bidWon = (opps: string[]) => ({ kind: 'bidWon', p: opps[0], amount: 120 });
 const passed = (opps: string[]) => ({ kind: 'pass', p: opps[1] ?? opps[0] });
 const talonSeen = (opps: string[]) => ({ kind: 'talonSeen', p: opps[0] });
@@ -121,8 +135,8 @@ for (const lang of ['en', 'pl', 'da'] as const satisfies readonly Lang[]) {
     expect(checked.has('bidding'), 'checked during bidding').toBe(true);
     await move(page, () => handOut(page, lang));
     await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
-    await stageMarriage(page, 1);
-    await checkTicker(page, `${lang} marriage`, opps => ({ kind: 'marriage', p: opps[0], suit: 'hearts', points: 100 }), `${dir}-marriage.png`);
+    await stageMarriage(page);
+    await checkTicker(page, `${lang} marriage`, stagedMarriage, `${dir}-marriage.png`);
     await checkTicker(page, `${lang} wykladana`, wykladana);
   });
 }
@@ -135,10 +149,6 @@ for (const lang of ['en', 'da'] as const satisfies readonly Lang[]) {
     await firstLaunch(page, lang);
     await page.getByRole('button', { name: d('screens.home.players4') }).click();
     for (let k = 0; k < 3; k++) await page.getByRole('button', { name: d('screens.lobby.addBot') }).click();
-    // The player on my left deals and sits the round out, so I play and the opponent across leads.
-    const seat2 = new RegExp(`^${d('screens.lobby.seat').replace('{n}', '2').replace('{name}', '')}`);
-    await page.getByRole('button', { name: seat2 }).click();
-    await page.getByRole('button', { name: d('screens.lobby.firstDealer') }).click();
     await page.getByRole('button', { name: d('screens.lobby.start') }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await setSafeInsets(page, insetsFor(info.project.name));
@@ -158,8 +168,8 @@ for (const lang of ['en', 'da'] as const satisfies readonly Lang[]) {
     expect(bidding, 'checked during bidding').toBe(true);
     await move(page, () => handOut(page, lang));
     await expect(page.locator('.zone')).toHaveAttribute('data-phase', 'tricks', { timeout: 20_000 });
-    await stageMarriage(page, 1);
-    await checkTicker(page, `4p ${lang} marriage`, opps => ({ kind: 'marriage', p: opps[1], suit: 'hearts', points: 100 }), `${dir}-marriage.png`);
+    await stageMarriage(page);
+    await checkTicker(page, `4p ${lang} marriage`, stagedMarriage, `${dir}-marriage.png`);
     await checkTicker(page, `4p ${lang} wykladana`, wykladana);
   });
 }
