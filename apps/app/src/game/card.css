@@ -30,8 +30,11 @@
    measures every rank's real ink against the suit, the pip and the mirrored index). */
 .card__suit { font-size: calc(var(--w) * 0.27); margin-top: calc(var(--w) * 0.045); }
 .card__idx[data-tail] .card__suit { margin-top: calc(var(--w) * 0.105); }
-/* A theme whose card face has no suit glyphs (Rockwell, Inter) names one that does (Fraunces) in --font-suit, or the
-   browser's fallback draws the suits small. */
+/* No face here has suit glyphs: fonts.ts loads Fraunces, Young Serif and Inter in latin/latin-ext subsets only,
+   and Georgia has none either. So ♠♥♦♣ always come from the browser's per-character fallback, which takes its
+   cue from the stack: after the Fraunces/Georgia serif stack it draws them full size, after Rockwell or Inter
+   small. A theme whose card face is Rockwell or Inter sets --font-suit to that serif stack (Fraunces in it only
+   picks the fallback; it draws no suit itself). */
 .card__rank, .card__suit, .card__pip { font-family: var(--font-card); font-variant-emoji: text; }
 .card__suit, .card__pip { font-family: var(--font-suit, var(--font-card)); }
 /* The centre pip sits in the column between the two corner indexes. Suit glyphs ink about 1em wide,
