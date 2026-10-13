@@ -128,7 +128,7 @@ const SUIT_GLYPHS = ['♥︎', '♦︎', '♣︎', '♠︎'];
  * glyphs; the serif themes fall back to a face whose suits ink about 0.2w at 0.27w type, the sans one (midnight)
  * to the system face, whose diamond inks about 0.12w.
  */
-const MIN_PIP: Record<string, number> = { brass: 0.19, wycinanki: 0.19, midnight: 0.11 };
+const MIN_PIP: Record<string, number> = { brass: 0.19, wycinanki: 0.19, boleslawiec: 0.19, zakopane: 0.19, noir: 0.19, midnight: 0.19 };
 
 async function savePng(path: string, body: Buffer): Promise<string> {
   await mkdir(dirname(path), { recursive: true });
@@ -177,7 +177,7 @@ function faceInk(img: { width: number; height: number; data: Buffer }, layout: F
   return out;
 }
 
-for (const theme of ['brass', 'wycinanki', 'midnight']) {
+for (const theme of ['brass', 'wycinanki', 'boleslawiec', 'zakopane', 'noir', 'midnight']) {
   test(`card faces in ${theme}: rank, suit, centre pip and the mirrored index never touch, on every rank (hand and table)`, async ({ page }) => {
     await firstLaunch(page);
     await page.getByRole('button', { name: 'Practice vs bots' }).click();

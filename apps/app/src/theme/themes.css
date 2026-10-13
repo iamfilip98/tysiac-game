@@ -115,6 +115,7 @@
   --font-display: 'Inter', system-ui, sans-serif;
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-card: 'Inter', system-ui, sans-serif;
+  --font-suit: 'Fraunces', Georgia, serif;
   --sheet-bg: #151821;
   --table-felt: radial-gradient(#1c2030, #12141c);
   --table-rim: #2a2f3d;
@@ -169,7 +170,8 @@
 /* Zakopane: a larch-log chalet wall under a warm lamp, spruce-green shutters, a carved highland rosette. */
 [data-theme='zakopane'] {
   color-scheme: dark;
-  --bg: radial-gradient(110% 60% at 50% 40%, rgba(222, 150, 80, 0.2), transparent 70%),
+  --bg: radial-gradient(circle at 50% 46%, transparent 0 136px, rgba(236, 190, 128, 0.2) 137px 139px, transparent 140px 147px, rgba(236, 190, 128, 0.12) 148px 149px, transparent 150px),
+    radial-gradient(110% 60% at 50% 40%, rgba(222, 150, 80, 0.2), transparent 70%),
     repeating-linear-gradient(180deg, rgba(255, 214, 160, 0.05) 0 2px, transparent 2px 44px, rgba(0, 0, 0, 0.26) 44px 47px),
     linear-gradient(#3b2718, #24170e);
   --bg-solid: #2e1e13;
@@ -202,9 +204,11 @@
   --slot-border: 1.5px dashed rgba(243, 230, 204, 0.28);
   --slot-bg: transparent;
   --chip-muted-bg: rgba(243, 230, 204, 0.14);
-  --font-display: 'Young Serif', Georgia, serif;
+  /* Slab serif with lining figures (a fallback Georgia shows 0 as a small o). */
+  --font-display: Rockwell, 'Roboto Slab', Charter, Georgia, serif;
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-card: 'Young Serif', Georgia, serif;
+  --font-card: Rockwell, 'Roboto Slab', Charter, Georgia, serif;
+  --font-suit: 'Fraunces', Georgia, serif;
   --sheet-bg: #1b2a1f;
   --table-felt: radial-gradient(#3d6b4a, #1f3a29);
   --table-rim: #6b4426;
@@ -245,7 +249,8 @@
   --slot-border: 1px solid rgba(240, 199, 94, 0.3);
   --slot-bg: rgba(240, 199, 94, 0.04);
   --chip-muted-bg: rgba(245, 241, 230, 0.13);
-  --font-display: 'Fraunces', Georgia, serif;
+  /* Deco high-contrast serif, as on a casino's brass plaque. */
+  --font-display: Didot, 'Bodoni 72', 'Bodoni Moda', Georgia, serif;
   --font-ui: system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-card: 'Fraunces', Georgia, serif;
   --sheet-bg: #0b0a08;
