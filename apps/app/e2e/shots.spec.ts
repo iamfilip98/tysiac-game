@@ -132,13 +132,16 @@ for (const lang of ['pl', 'da'] as const) {
   });
 }
 
-/** Text in the Settings and menu rows that must never be cut off, in any language. */
-async function clippedSheetText(page: Page): Promise<string[]> {
-  return page.evaluate(() =>
-    Array.from(document.querySelectorAll<HTMLElement>('.sheet .srow__label, .sheet .srow__hint, .sheet .segmented__opt, .sheet .tpick__name, .sheet .sgroup__title, .sheet__head h2'))
-      .filter(e => e.offsetParent !== null && (e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1))
-      .map(e => `${e.className}: ${e.textContent}`),
-  );
+/** Text in the Settings and menu rows that must never be cut off, in any language, and how much was checked. */
+async function clippedSheetText(page: Page): Promise<{ checked: number; clipped: string[] }> {
+  return page.evaluate(() => {
+    const shown = Array.from(document.querySelectorAll<HTMLElement>('.sheet .srow__label, .sheet .srow__hint, .sheet .segmented__opt, .sheet .tpick__name, .sheet .sgroup__title, .sheet__head h2'))
+      .filter(e => e.offsetParent !== null);
+    return {
+      checked: shown.length,
+      clipped: shown.filter(e => e.scrollWidth > e.clientWidth + 1 || e.scrollHeight > e.clientHeight + 1).map(e => `${e.className}: ${e.textContent}`),
+    };
+  });
 }
 
 // Settings and the in-game menu (and what they open) in every language, on the owner's phone and the smallest.
@@ -150,11 +153,15 @@ for (const lang of ['en', 'pl', 'da'] as const) {
     const insets = se ? { top: 20, bottom: 0, left: 0, right: 0 } : { top: 59, bottom: 34, left: 0, right: 0 };
     const base = `e2e-shots/${se ? 'se-' : ''}sheets-${lang}`;
     const L = labels(lang);
-    const shot = async (name: string) => {
+    /** `min`: at least this much text was found and checked (a selector typo would otherwise pass with none).
+     *  Settings and the menu have rows (more than 5); Rules and Score have only their title among these. */
+    const shot = async (name: string, min: number) => {
       await page.waitForTimeout(700);
       await page.locator('.sheet__body').evaluate(e => { e.scrollTop = 0; });
       await page.waitForTimeout(100);
-      expect(await clippedSheetText(page), `${lang} ${name}`).toEqual([]);
+      const text = await clippedSheetText(page);
+      expect(text.checked, `${lang} ${name}: sheet text found to check`).toBeGreaterThanOrEqual(min);
+      expect(text.clipped, `${lang} ${name}`).toEqual([]);
       await page.screenshot({ path: `${base}-${name}.png` });
       const body = page.locator('.sheet__body');
       if (await body.evaluate(e => e.scrollHeight > e.clientHeight + 1)) {
@@ -168,22 +175,22 @@ for (const lang of ['en', 'pl', 'da'] as const) {
     await page.getByRole('button', { name: 'Settings' }).click();
     if (lang !== 'en') await page.getByRole('radio', { name: LANG_NAME[lang] }).click();
     await expect(page.getByRole('dialog', { name: L.settings })).toBeVisible();
-    await shot('settings');
+    await shot('settings', 6);
     await page.getByRole('dialog').getByRole('button', { name: L.close }).click();
     await page.getByRole('button', { name: L.practice }).click();
     await expect(page.locator('.zone')).toBeVisible({ timeout: 20_000 });
     await setSafeInsets(page, insets);
     const menu = page.locator('.topbar button').first();
     await menu.click();
-    await shot('menu');
+    await shot('menu', 6);
     await page.getByRole('dialog').getByRole('button', { name: L.settings }).click();
-    await shot('settings-game');
+    await shot('settings-game', 6);
     await page.getByRole('dialog').getByRole('button', { name: L.close }).click();
     await menu.click();
     await page.getByRole('dialog').getByRole('button', { name: L.rules }).click();
-    await shot('rules');
+    await shot('rules', 1);
     await page.getByRole('dialog').getByRole('button', { name: L.close }).click();
     await page.locator('.topbar button').last().click();
-    await shot('score');
+    await shot('score', 1);
   });
 }
