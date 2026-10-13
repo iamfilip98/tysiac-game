@@ -25,7 +25,11 @@
 }
 .card__idx--br { top: auto; left: auto; right: 3%; bottom: 4%; transform: rotate(180deg); }
 .card__rank { font-size: calc(var(--w) * 0.34); font-weight: 800; letter-spacing: -0.05em; }
-.card__suit { font-size: calc(var(--w) * 0.27); margin-top: calc(var(--w) * 0.01); }
+/* The suit sits a visible gap under the rank's ink. The index's tight line-height (0.92) hugs the caps, so a
+   letter with a tail below the baseline (Q) gets its own extra room, or the tail touches the suit (e2e cards.spec
+   measures every rank's real ink against the suit, the pip and the mirrored index). */
+.card__suit { font-size: calc(var(--w) * 0.27); margin-top: calc(var(--w) * 0.045); }
+.card__idx[data-tail] .card__suit { margin-top: calc(var(--w) * 0.105); }
 .card__rank, .card__suit, .card__pip { font-family: var(--font-card); font-variant-emoji: text; }
 /* The centre pip sits in the column between the two corner indexes. Suit glyphs ink about 1em wide,
    so at 0.27w (the corner suit size) it keeps >= 0.04w clear of both index suits on every rank (e2e cards.spec). */

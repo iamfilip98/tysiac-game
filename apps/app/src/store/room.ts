@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import type { Action, Card } from '@tysiac/engine';
 import type { ClientMessage, ServerMessage } from '../net/protocol';
 import { FATAL_ERRORS, type ConnStatus, type RoomConnection } from '../net/connection';
-import { isFastLocal } from '../net/service';
+import { isFastLocal, isLocalMode } from '../net/service';
 import { usePrefs, type Speed } from './prefs';
 import {
   advance, applyServer, beginAct, beginPlay, dismissReceived, dismissResult, initialClient,
@@ -148,5 +148,6 @@ export function pump(): void {
   }, wait);
 }
 
-// e2e only (?local=1&fast=1): screenshot specs stage table states (a held trick, a marriage) through the store.
-if (typeof window !== 'undefined' && isFastLocal()) (window as unknown as { __tysiacRoom?: typeof useRoom }).__tysiacRoom = useRoom;
+// e2e only (?local=1, in-browser games): specs stage table states (a held trick, a marriage) and watch playback
+// through the store.
+if (typeof window !== 'undefined' && isLocalMode()) (window as unknown as { __tysiacRoom?: typeof useRoom }).__tysiacRoom = useRoom;

@@ -8,6 +8,9 @@ export const SUIT_TEXT: Record<Suit, string> = {
   spades: '♠\uFE0E',
 };
 
+/** A rank letter with a tail below the baseline (Q), which needs extra room above the suit in a card index. */
+export const hasTail = (rank: string): boolean => /Q/.test(rank);
+
 /** Forces text presentation on suit glyphs inside engine-made strings (cardLabel etc.). */
 export const textSuits = (s: string): string => s.replace(/([♥♦♣♠])\uFE0E?/g, '$1\uFE0E');
 

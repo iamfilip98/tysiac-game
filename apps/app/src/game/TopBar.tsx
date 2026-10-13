@@ -29,7 +29,9 @@ export function TopBar({ view, onMenu, onScores }: { view: PlayerView; onMenu():
       </div>
       <button type="button" className="iconbtn topbar__score" aria-label={t('game.top.scoreAria', { points: pts(mine) })} onClick={onScores}>
         <span className="topbar__scorelbl">{t('game.top.score')}</span>
-        <b className="topbar__scoreval display">{mine}</b>
+        <b className="topbar__scoreval display" data-long={String(mine).length > 4 || undefined}>
+          {mine}
+        </b>
       </button>
     </header>
   );

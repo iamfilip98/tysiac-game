@@ -35,6 +35,11 @@ export function labels(lang: Lang = 'en') {
   };
 }
 
+/** A card rank letter in one language (Polish D/W, Danish E/D/B). */
+export function labelsRank(lang: string, rank: string): string {
+  return DICTS[lang as Lang][`card.rank.${rank}` as keyof typeof en] as string;
+}
+
 /** Records the targets of recent pointer/click events so a failed move can say where a tap actually landed. */
 async function recordTaps(page: Page): Promise<void> {
   await page.addInitScript(() => {
@@ -53,10 +58,13 @@ async function recordTaps(page: Page): Promise<void> {
   });
 }
 
-/** First launch through the profile form; with a `lang`, picks it in Settings (the default is always English). */
-export async function firstLaunch(page: Page, lang: Lang = 'en'): Promise<void> {
+/**
+ * First launch through the profile form; with a `lang`, picks it in Settings (the default is always English).
+ * Bots and animations run fast unless `fast: false` (real timing, e.g. to watch cards come to rest).
+ */
+export async function firstLaunch(page: Page, lang: Lang = 'en', opts: { fast?: boolean } = {}): Promise<void> {
   await recordTaps(page);
-  await page.goto('/?local=1&fast=1');
+  await page.goto(opts.fast === false ? '/?local=1' : '/?local=1&fast=1');
   const name = page.getByLabel('Your name');
   await name.focus();
   await name.fill('Tester');
@@ -149,6 +157,26 @@ export interface DriveOptions {
   passAlways?: boolean;
   /** UI language the buttons are found in (default English). */
   lang?: Lang;
+  /**
+   * With a custom `stop`: when the game ends before the stop condition, start a rematch and keep going
+   * (for a condition that depends on the deal). Without it, a game that ends first fails the drive at once.
+   */
+  rematch?: boolean;
+}
+
+/** What the client store and the screen show, for a drive that stopped making progress. */
+async function stuckReport(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    type Any = any; // eslint-disable-line @typescript-eslint/no-explicit-any
+    const s = (window as unknown as { __tysiacRoom?: { getState(): Any } }).__tysiacRoom?.getState();
+    const v = s?.view;
+    const store = s
+      ? JSON.stringify({ phase: v?.phase, turn: v?.turn, me: v?.me, legal: v?.legal?.map((a: Any) => a.type), queue: s.queue?.length, holding: s.holding, shownIsView: s.shown === s.view, roundResult: !!s.roundResult, received: s.received, pending: !!s.pending, inflight: !!s.inflight, paused: v?.paused, talonWaiting: v?.round?.talonWaiting })
+      : 'no store';
+    const buttons = Array.from(document.querySelectorAll('button')).map(b => `${b.getAttribute('aria-label') ?? b.textContent?.trim()}${(b as HTMLButtonElement).disabled ? '(disabled)' : ''}`).join(', ');
+    const dialogs = Array.from(document.querySelectorAll('[role=dialog]')).map(d => d.getAttribute('aria-label')).join(', ');
+    return `store: ${store}\nzone: ${document.querySelector('.zone')?.textContent}\ndialogs: ${dialogs}\nbuttons: ${buttons}`;
+  });
 }
 
 /** Plays the game through the UI: bids, plays, hands out, continues past round results. */
@@ -163,8 +191,19 @@ export async function drive(page: Page, opts: DriveOptions): Promise<void> {
   };
   const stop = opts.stop ?? (() => page.getByRole('dialog', { name: L.gameOver }).isVisible());
   let tapChecked = false;
+  let mark = { key: '', since: Date.now() };
   for (let i = 0; i < 6000; i++) {
     if (await stop()) break;
+    if (opts.stop && (await page.getByRole('dialog', { name: L.gameOver }).isVisible())) {
+      if (!opts.rematch) throw new Error('drive: the game ended before the stop condition was reached');
+      await page.getByRole('button', { name: L.rematch }).click();
+      await expect(page.getByRole('dialog', { name: L.gameOver })).toBeHidden();
+      continue;
+    }
+    // A game that sits in one state for 30 s is stuck (or over): say where, instead of spinning for minutes.
+    const key = `${await zone.getAttribute('data-phase')}:${await page.locator('.game').getAttribute('data-seq')}`;
+    if (key !== mark.key) mark = { key, since: Date.now() };
+    else if (Date.now() - mark.since > 30_000) throw new Error(`drive: no progress for 30 s at ${key}. ${await stuckReport(page)}`);
     const cont = page.getByRole('button', { name: L.continue });
     if (await cont.isVisible()) {
       await check('round result');

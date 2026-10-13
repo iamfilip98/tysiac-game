@@ -17,19 +17,26 @@
 .zone__text { margin: 0; font-size: 13px; line-height: 1.35; }
 .zone__muted { opacity: 0.7; font-size: 12px; }
 .zone__wait { margin: 0; font-size: 13px; opacity: 0.9; min-height: 44px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.zone__hint, .zone__note { margin: 0; font-size: 12px; line-height: 1.3; color: var(--accent-soft); }
-.coachline {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
+/* The zone's footer: always two 12 px lines tall (content is clamped to two lines). Its height used to follow
+   the coach text (one line on others' turns, two on mine), so every play resized the zone, the table above it
+   and moved the trick cards centred in the table by half the difference (e2e table.spec). */
+.zone__foot {
+  flex: none;
+  height: calc(12px * 1.35 * 2 + 6px);
   padding-top: 6px;
   border-top: 1px solid var(--chip-muted-bg);
   font-size: 12px;
   line-height: 1.35;
-  min-height: calc(12px * 1.35 + 6px);
+  overflow: hidden;
 }
+.zone__foot:empty, .zone__foot:has(> .coachline:empty) { border-top-color: transparent; }
+.zone__hint, .zone__note {
+  margin: 0; color: var(--accent-soft);
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.coachline { display: flex; align-items: flex-start; gap: 6px; }
 .coachline__text { flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.coachline b { color: var(--accent-soft); }
+.coachline b { color: var(--assist-text); }
 .why { padding-left: 18px; line-height: 1.5; }
 
 /* Hand-out slots (OG DistributionModal, inline): one per recipient, the next empty one ringed. */
