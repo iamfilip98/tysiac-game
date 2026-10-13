@@ -125,6 +125,8 @@ export const game = {
   'game.result.badgeMade': '{bid} ✓ made',
   'game.result.badgeFailed': '{bid} ✗ failed',
   'game.result.fellOff': 'fell off the barrel',
+  'game.result.satOut': 'Sat out',
+  'game.result.satOutTalon': 'Sat out · talon +{n}',
   'game.col.player': 'Player',
   'game.col.tricks': 'Tricks',
   'game.col.marriages': 'Marriages',

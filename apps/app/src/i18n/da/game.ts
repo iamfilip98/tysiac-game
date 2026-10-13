@@ -125,6 +125,8 @@ export const game = {
   'game.result.badgeMade': '{bid} ✓ klaret',
   'game.result.badgeFailed': '{bid} ✗ tabt',
   'game.result.fellOff': 'faldt af tønden',
+  'game.result.satOut': 'Sad over',
+  'game.result.satOutTalon': 'Sad over · talon +{n}',
   'game.col.player': 'Spiller',
   'game.col.tricks': 'Stik',
   'game.col.marriages': 'Mariager',

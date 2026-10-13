@@ -125,6 +125,8 @@ export const game = {
   'game.result.badgeMade': '{bid} ✓ ugrane',
   'game.result.badgeFailed': '{bid} ✗ nieugrane',
   'game.result.fellOff': 'spada z beczki',
+  'game.result.satOut': 'Pauza',
+  'game.result.satOutTalon': 'Pauza · musik +{n}',
   'game.col.player': 'Gracz',
   'game.col.tricks': 'Lewy',
   'game.col.marriages': 'Meldunki',

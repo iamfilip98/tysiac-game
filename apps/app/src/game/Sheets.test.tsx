@@ -82,6 +82,15 @@ describe('RoundResultSheet', () => {
     expect(rows[0]).toHaveTextContent('Marriages +60');
     expect(rows[1]).not.toHaveTextContent('Marriages');
   });
+
+  it('a sitting-out dealer sat out, with the talon bonus when there is one', () => {
+    const out = (bonus: number) => base.players.map((p, i) => (i === 2 ? { ...p, sittingOut: true, trickPoints: 0, marriagePoints: bonus, scoreChange: bonus } : p));
+    const { unmount } = render(<RoundResultSheet summary={{ ...base, players: out(0) }} view={mid} note={null} onContinue={vi.fn()} />);
+    expect(screen.getAllByRole('listitem')[2].querySelector('.rrow__detail')).toHaveTextContent(/^Sat out$/);
+    unmount();
+    render(<RoundResultSheet summary={{ ...base, players: out(50) }} view={mid} note={null} onContinue={vi.fn()} />);
+    expect(screen.getAllByRole('listitem')[2].querySelector('.rrow__detail')).toHaveTextContent(/^Sat out · talon \+50$/);
+  });
 });
 
 describe('game over', () => {
