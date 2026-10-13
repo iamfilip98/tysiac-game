@@ -1,8 +1,28 @@
-.topbar { grid-area: top; display: flex; align-items: center; justify-content: space-between; gap: 8px; min-width: 0; }
-.topbar__info { text-align: center; line-height: 1.25; min-width: 0; font-size: 12px; font-family: var(--font-display); }
-.topbar__info b { display: block; font-size: 14px; }
-.topbar__info span { color: var(--accent-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
-.topbar__score { gap: 4px; display: inline-flex; font-weight: 700; }
+/* Three columns: the two side columns are always the same width, so the round title and status line are
+   centred on the screen whatever the score box or the language (a flex row centred them between buttons
+   of different widths, so the middle drifted in Polish and Danish). */
+.topbar {
+  grid-area: top; display: grid; align-items: center; column-gap: 8px; min-width: 0;
+  --topbar-side: 66px;
+  grid-template-columns: var(--topbar-side) minmax(0, 1fr) var(--topbar-side);
+}
+.topbar > .iconbtn { height: 40px; min-width: 40px; }
+.topbar > .iconbtn:first-child { justify-self: start; }
+.topbar__info { text-align: center; line-height: 1.2; min-width: 0; font-size: 12px; font-family: var(--font-display); }
+.topbar__info b { display: block; font-size: 14px; line-height: 1.25; color: var(--ink); }
+/* A long status line wraps to a second line (balanced) instead of pushing or being cut short. */
+.topbar__info span {
+  color: var(--accent-soft); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+  text-wrap: balance; overflow-wrap: anywhere;
+}
+/* The score box: its label and number always fit inside it (it used to be a 36 px box holding 39 px of text). */
+.topbar__score {
+  justify-self: end; width: var(--topbar-side); display: inline-flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 2px; padding: 3px 4px; overflow: hidden; line-height: 1;
+}
+.topbar__scorelbl { font: 600 11px/1 var(--font-ui); opacity: 0.8; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.topbar__scoreval { font-size: 17px; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; white-space: nowrap; }
+.topbar__scoreval[data-long] { font-size: 14px; }
 
 .opps { grid-area: opps; display: flex; justify-content: space-between; align-items: flex-start; gap: 6px; min-width: 0; --avatar: clamp(32px, 5.4dvh, 44px); }
 .opps[data-count='3'] .opp:nth-child(2) { margin-top: 0; }
@@ -69,10 +89,14 @@
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: calc(100vw - 32px); animation: ticker-in .25s ease-out; }
 @keyframes ticker-in { from { opacity: 0; translate: 0 -4px; } }
 @media (prefers-reduced-motion: reduce) { .ticker__text { animation: none; } }
-.selfstrip__avatar { margin-right: 5px; }
-.selfstrip--turn .selfstrip__avatar { border-radius: 50%; box-shadow: 0 0 0 2px var(--accent), 0 0 10px var(--accent); }
-.selfstrip__turn { font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 10px; background: var(--accent); color: var(--accent-ink); animation: turn-pulse 1.6s ease-in-out 3; }
-@keyframes turn-pulse { 50% { opacity: .55; } }
+.selfstrip--turn .selfstrip__avatar { box-shadow: 0 0 0 2.5px var(--accent), 0 0 12px var(--accent); }
+/* Self-strip chips: 13 px bold text on a solid fill (contrast.test checks each fill / text pair in every theme). */
+.selfstrip__chip {
+  flex: none; font: 800 13px/1 var(--font-ui); padding: 4px 9px; border-radius: 999px; white-space: nowrap; letter-spacing: 0;
+}
+.selfstrip__turn { background: var(--accent); color: var(--accent-ink); animation: turn-pulse 1.6s ease-in-out 3; }
+/* Pulse the ring, not the chip: fading the chip would drop its contrast. */
+@keyframes turn-pulse { 50% { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); } }
 @media (prefers-reduced-motion: reduce) { .selfstrip__turn { animation: none; } }
 .received { grid-area: table; align-self: end; justify-self: center; z-index: 3; display: flex; flex-direction: row; align-items: center; gap: 12px;
   max-width: 100%; margin-bottom: 2px; padding: 8px 12px 8px 8px; border-radius: 16px; background: var(--panel); border: var(--panel-border);
@@ -97,4 +121,4 @@
 .opp__given .card--mini .card__idx { left: 0; right: 0; width: auto; top: 8%; }
 .opp__given .card--mini .card__rank { font-size: calc(var(--w) * 0.5); }
 .opp__given .card--mini .card__suit { font-size: calc(var(--w) * 0.44); }
-.opp .chip--coach { font-size: 10px; padding: 1px 7px; }
+.opp .chip--coach { font-size: 11px; padding: 2px 7px; }

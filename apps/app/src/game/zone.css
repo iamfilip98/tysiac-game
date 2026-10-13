@@ -29,7 +29,7 @@
   min-height: calc(12px * 1.35 + 6px);
 }
 .coachline__text { flex: 1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.coachline b { color: var(--accent-soft); }
+.coachline b { color: var(--assist-text); }
 .why { padding-left: 18px; line-height: 1.5; }
 
 /* Hand-out slots (OG DistributionModal, inline): one per recipient, the next empty one ringed. */
