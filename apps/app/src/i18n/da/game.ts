@@ -68,6 +68,8 @@ export const game = {
   'game.resume': 'Fortsæt',
   'game.gameOver': 'Spillet er slut',
   'game.sitOut': 'Du giver og sidder over i denne runde.',
+  'game.sitOut.title': 'Sidder over',
+  'game.sitOut.talon': 'Talonens mariager og esser ({ace} pr. es) tæller for dig.',
   'game.actions': 'Handlinger',
   'game.talon.title': 'Talon · {player} vandt på {amount}',
   'game.talon.title.you': 'Talon · du vandt på {amount}',

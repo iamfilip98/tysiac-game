@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react';
-import { explainIllegal, type Action, type Card, type EngineMsg, type PlayerId, type PlayerView } from '@tysiac/engine';
+import { RULES, explainIllegal, type Action, type Card, type EngineMsg, type PlayerId, type PlayerView } from '@tysiac/engine';
 import type { RoomInfo } from '../net/protocol';
 import type { HeldTrick } from '../store/client';
-import { BidPanel, DecisionPanel, HandoutPanel, PausedPanel, TrickPanel, WaitLine } from './panels';
+import { BidPanel, DecisionPanel, HandoutPanel, PausedPanel, TrickPanel, WaitLine, trickTitle } from './panels';
 import { TalonPanel } from './TalonPanel';
 import { CoachLine } from './CoachLine';
 import { textSuits } from './cards';
@@ -58,9 +58,13 @@ export function ActionZone(p: ActionZoneProps) {
   else if (view.phase === 'gameEnd') body = <p className="zone__text">{t('game.gameOver')}</p>;
   else if (view.phase === 'talon') body = <TalonPanel view={view} room={p.room} now={p.now} busy={p.busy} idle={p.idle} onAct={p.onAct} onBotFor={p.onBotFor} />;
   else if (view.round?.sittingOut === view.me) {
+    // Sitting out: the same trick title as the players see, what sitting out means for me, and whose turn it is.
     body = (
       <>
-        <p className="zone__text">{t('game.sitOut')}</p>
+        <div className="lbl">{view.phase === 'tricks' ? trickTitle(view) : t('game.sitOut.title')}</div>
+        <p className="zone__text">
+          {t('game.sitOut')} <span className="zone__muted">{t('game.sitOut.talon', { ace: RULES.talonAcePoints })}</span>
+        </p>
         {wait}
       </>
     );

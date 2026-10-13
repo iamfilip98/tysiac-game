@@ -77,12 +77,14 @@ describe('ActionZone: away and paused', () => {
     expect(p.onAct).toHaveBeenCalledWith({ type: 'resume' });
   });
 
-  it('sitting-out dealer sees a sit-out note and no buttons', () => {
+  it('sitting-out dealer sees a sit-out note, what the talon scores for them, and no buttons', () => {
     const g = createGame({ seed: 's4', seats: SEATS4, maxPlayers: 4, firstDealer: 0 });
     const v = viewOf(g);
     expect(v.round!.sittingOut).toBe('me');
     render(<ActionZone {...props(v, { room: roomInfo({}, SEATS4) })} />);
     expect(screen.getByText('You deal and sit out this round.')).toBeInTheDocument();
+    expect(screen.getByText('Sitting out')).toBeInTheDocument();
+    expect(screen.getByText("The talon's marriages and aces (50 each) score for you.")).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Pass' })).toBeNull();
   });
 });

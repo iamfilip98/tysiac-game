@@ -68,6 +68,8 @@ export const game = {
   'game.resume': 'Resume',
   'game.gameOver': 'Game over',
   'game.sitOut': 'You deal and sit out this round.',
+  'game.sitOut.title': 'Sitting out',
+  'game.sitOut.talon': "The talon's marriages and aces ({ace} each) score for you.",
   'game.actions': 'Actions',
   'game.talon.title': 'Talon · {player} won at {amount}',
   'game.talon.title.you': 'Talon · you won at {amount}',

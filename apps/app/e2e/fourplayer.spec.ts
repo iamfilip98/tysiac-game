@@ -15,6 +15,7 @@ import type { Lang } from '../src/i18n/types';
  * - each trick card's corner index (rank and suit) is uncovered, whatever order the cards landed in;
  * - every card stays inside the table's own box (it used to spill over the opponents' row on a small phone);
  * - nothing is off screen.
+ * While the viewer sits out, the screen says so and leaves no empty band where the hand would be.
  */
 
 const DICTS = { en, pl, da } as const;
@@ -198,6 +199,7 @@ for (const { lang, theme, rounds } of RUNS) {
       if (still) expect.soft(fit, `${lang} ${m.key} fits`).toEqual([]);
     };
 
+    let sitOutChecked = false;
     for (let i = 0; i < 20000; i++) {
       const state = await page.evaluate(() => {
         const s = (window as unknown as { __tysiacRoom: { getState(): any } }).__tysiacRoom.getState(); // eslint-disable-line @typescript-eslint/no-explicit-any
@@ -214,6 +216,17 @@ for (const { lang, theme, rounds } of RUNS) {
         continue;
       }
       const phase = await page.locator('.zone').getAttribute('data-phase');
+      if (state.out && !sitOutChecked && (phase === 'wait' || phase === 'bidding')) {
+        // Sitting out: the zone says so, and no empty band is left where the hand would be.
+        await expect(page.locator('.zone')).toContainText(d('game.sitOut').split('.')[0]!);
+        const band = await page.evaluate(() => {
+          const self = document.querySelector('.selfstrip')!.getBoundingClientRect();
+          const pad = parseFloat(getComputedStyle(document.querySelector('.game')!).paddingBottom);
+          return window.innerHeight - pad - self.bottom;
+        });
+        expect.soft(band, 'empty space under the self strip while sitting out').toBeLessThan(24);
+        sitOutChecked = true;
+      }
       if (state.cards >= 2 || phase === 'talon' || (phase === 'bidding' && state.out)) await check();
       if (phase === 'bidding') {
         const bid = page.getByRole('button', { name: L.bid('(110|120)') }).first();
@@ -236,6 +249,7 @@ for (const { lang, theme, rounds } of RUNS) {
         });
       } else await page.waitForTimeout(50);
     }
+    expect(sitOutChecked, 'the sit-out round was checked').toBe(true);
     const heldBySitter = new Map<number, number>();
     for (const s of samples) if (s.held && s.cards === 3) heldBySitter.set(s.sitter, (heldBySitter.get(s.sitter) ?? 0) + 1);
     console.log(info.project.name, lang, JSON.stringify({ samples: samples.length, heldBySitter: [...heldBySitter] }));

@@ -68,6 +68,8 @@ export const game = {
   'game.resume': 'Wznów',
   'game.gameOver': 'Koniec gry',
   'game.sitOut': 'Rozdajesz i pauzujesz w tej rundzie.',
+  'game.sitOut.title': 'Pauza',
+  'game.sitOut.talon': 'Meldunki i asy z musiku ({ace} za asa) liczą się dla ciebie.',
   'game.actions': 'Akcje',
   'game.talon.title': 'Musik · licytację wygrywa {player} ({amount})',
   'game.talon.title.you': 'Musik · wygrywasz licytację ({amount})',
