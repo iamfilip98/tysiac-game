@@ -123,8 +123,13 @@ export const usePrefs = create<Prefs & PrefsActions>()(
         name: s.name, avatar: s.avatar, theme: s.theme, sound: s.sound, coach: s.coach, speed: s.speed,
         gamesStarted: s.gamesStarted, countedRoom: s.countedRoom, lastRoom: s.lastRoom, lang: s.lang,
       }),
+      // A theme saved by another version (renamed or removed) falls back to the default, in the state itself.
+      merge: (persisted, current) => {
+        const saved = (persisted ?? {}) as Partial<Prefs>;
+        return { ...current, ...saved, theme: isThemeId(saved.theme) ? saved.theme : 'brass' };
+      },
       onRehydrateStorage: () => state => {
-        if (state && isThemeId(state.theme)) applyTheme(state.theme);
+        if (state) applyTheme(state.theme);
       },
     },
   ),
