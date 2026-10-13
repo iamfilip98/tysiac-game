@@ -37,9 +37,8 @@ async function setAnnounce(page: Page, ann: (opps: string[], me: string) => Ann 
 
 /**
  * A marriage lead and a follow on the table, my turn, with the marriage announced. Realistic: only the round's
- * players are in the trick (with four players the dealer sits out), the first of them in the round's order (the
- * opponent the ticker names) leads the queen of a suit whose king and queen I do not hold, the next one follows
- * with a card I do not hold, and I am to play.
+ * players are in the trick (with four players the dealer sits out): the two before me in play order lead the
+ * queen of a suit whose king and queen I do not hold and follow with a card I do not hold, and I am to play.
  */
 async function stageMarriage(page: Page): Promise<void> {
   await page.evaluate(() => {
@@ -47,14 +46,33 @@ async function stageMarriage(page: Page): Promise<void> {
     const store = (window as unknown as { __tysiacRoom: Any }).__tysiacRoom;
     const v = store.getState().view;
     const me = v.me;
-    const hand: { suit: string; rank: string }[] = v.round.hand;
+    const SUITS = ['hearts', 'diamonds', 'clubs', 'spades'];
+    let hand: { suit: string; rank: string }[] = v.round.hand;
     const mine = (suit: string, rank: string) => hand.some(c => c.suit === suit && c.rank === rank);
-    const suit = ['hearts', 'diamonds', 'clubs', 'spades'].find(x => !mine(x, 'Q') && !mine(x, 'K'))!;
-    const follow = ['9', 'J', '10', 'A'].find(r => !mine(suit, r))!;
-    const [lead, next] = v.round.active.filter((p: string) => p !== me);
+    const spare = () => SUITS.flatMap(x => ['9', 'J'].map(rank => ({ suit: x, rank }))).find(c => c.suit !== suit && !mine(c.suit, c.rank))!;
+    /** Swaps my cards of the staged suit with these ranks, one at a time, for spare cards I do not hold. */
+    const swap = (ranks: string[]) => {
+      for (let i = 0; i < hand.length; i++) if (hand[i]!.suit === suit && ranks.includes(hand[i]!.rank)) hand = hand.map((c, j) => (j === i ? spare() : c));
+    };
+    // A suit whose king and queen I do not hold; failing that, mine of the first suit are swapped for spare cards.
+    let suit = SUITS.find(x => !mine(x, 'Q') && !mine(x, 'K'));
+    if (!suit) {
+      suit = SUITS[0]!;
+      swap(['Q', 'K']);
+    }
+    let follow = ['9', 'J', '10', 'A'].find(r => !mine(suit!, r));
+    if (!follow) {
+      follow = '9';
+      swap(['9']);
+    }
+    // The two players before me in play order: the first leads, the second follows, then it is my turn.
+    const order: string[] = v.round.active;
+    const k = order.indexOf(me);
+    const lead = order[(k + 1) % 3]!;
+    const next = order[(k + 2) % 3]!;
     const cards = [{ p: lead, card: { suit, rank: 'Q' } }, { p: next, card: { suit, rank: follow } }];
     if (cards.some(c => c.p === v.round.sittingOut)) throw new Error('staged a card for the player who sits out');
-    const shown = { ...v, turn: me, round: { ...v.round, trump: suit, trick: { leader: lead, cards } } };
+    const shown = { ...v, turn: me, round: { ...v.round, hand, trump: suit, trick: { leader: lead, cards } } };
     store.setState({
       shown, view: shown, received: null, held: null, holding: false, marriage: { p: lead, suit, id: 7 },
       announce: { a: { kind: 'marriage', p: lead, suit, points: 100 }, id: 777 },

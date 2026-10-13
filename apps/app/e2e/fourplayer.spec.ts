@@ -205,7 +205,7 @@ for (const { lang, theme, sitters } of RUNS) {
       const state = await page.evaluate(() => {
         const s = (window as unknown as { __tysiacRoom: { getState(): any } }).__tysiacRoom.getState(); // eslint-disable-line @typescript-eslint/no-explicit-any
         const r = s.shown?.round;
-        return { round: r?.number ?? 0, out: r?.sittingOut === s.shown?.me, cards: (r?.trick.cards.length ?? 0) + (s.pending ? 1 : 0), holding: !!s.holding };
+        return { round: r?.number ?? 0, phase: s.shown?.phase as string, out: r?.sittingOut === s.shown?.me, cards: (r?.trick.cards.length ?? 0) + (s.pending ? 1 : 0), holding: !!s.holding };
       });
       // Done once enough seats have sat out under measured held tricks. A round the bidder throws in has no
       // tricks: its sitter comes round again four rounds later.
@@ -241,7 +241,7 @@ for (const { lang, theme, sitters } of RUNS) {
         expect.soft(band, 'empty space under the self strip while sitting out').toBeLessThan(24);
         sitOutChecked = true;
       }
-      if (state.cards >= 2 || phase === 'talon' || (phase === 'bidding' && state.out)) await check();
+      if (state.cards >= 2 || phase === 'talon' || (state.out && state.phase === 'bidding')) await check();
       if (phase === 'bidding') {
         const bid = page.getByRole('button', { name: L.bid('(110|120)') }).first();
         await move(page, async () => {
